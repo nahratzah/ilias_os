@@ -5,8 +5,10 @@ namespace util {
 
 c_chord& c_chord::operator+=(c_string_piece other) {
   size_type add_len = other.length();
-  data_.emplace_back(std::move(other));
-  len_ += add_len;
+  if (add_len > 0) {
+    data_.emplace_back(std::move(other));
+    len_ += add_len;
+  }
   return *this;
 }
 
