@@ -24,7 +24,7 @@ class cpp_namespace
 
   cpp_namespace operator+(c_string_ptr&&) const;
   cpp_namespace operator+(const c_string_ptr&) const;
-  cpp_namespace operator+(c_string_piece&) const;
+  cpp_namespace operator+(c_string_piece) const;
 
   std::unique_ptr<cpp_namespace> clone() const;
 

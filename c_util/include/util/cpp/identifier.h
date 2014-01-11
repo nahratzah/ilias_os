@@ -2,6 +2,7 @@
 #define UTIL_CPP_IDENTIFIER_H
 
 #include <util/c_string_ptr.h>
+#include <util/string_piece.h>
 #include <memory>
 
 namespace util {

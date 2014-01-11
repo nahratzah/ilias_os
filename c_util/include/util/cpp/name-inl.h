@@ -2,16 +2,16 @@ namespace util {
 namespace cpp {
 
 
-inline cpp_name::cpp_name(const cpp_identifier& parent_name, string_piece name)
+inline cpp_name::cpp_name(const cpp_identifier& parent_name, c_string_piece name)
 : parent_(parent_name.clone()),
   name_(name)
 {}
 
-inline cpp_name::cpp_name(string_piece name) : name_(name) {}
+inline cpp_name::cpp_name(c_string_piece name) : name_(name) {}
 
 inline cpp_name::cpp_name(const cpp_name& o)
-: parent_(parent_->clone()),
-  name_(name)
+: parent_((o.parent_ ? o.parent_->clone() : nullptr)),
+  name_(o.name_)
 {}
 
 

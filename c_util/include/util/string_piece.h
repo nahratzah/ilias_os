@@ -2,6 +2,8 @@
 #define UTIL_STRING_PIECE_H
 
 #include <util/c_string_ptr.h>
+#include <stdexcept>
+#include <vector>
 
 namespace util {
 
@@ -17,7 +19,7 @@ class c_string_piece {
 
   c_string_piece() = default;
   c_string_piece(const c_string_piece&) = default;
-  c_string_piece(c_string_piece&&);
+  c_string_piece(c_string_piece&&) noexcept;
   inline constexpr c_string_piece(const char*) noexcept;
   inline constexpr c_string_piece(pointer, size_type) noexcept;
   inline constexpr c_string_piece(const c_string_ptr&) noexcept;
@@ -32,7 +34,7 @@ class c_string_piece {
 
   inline c_string_piece& operator=(const c_string_piece&) = default;
   inline c_string_piece& operator=(c_string_piece&&) noexcept;
-  inline c_string_piece operator+=(size_type l);
+  inline c_string_piece& operator+=(size_type l);
   inline c_string_piece operator+(size_type l) const;
 
   inline bool operator==(const c_string_piece&) const noexcept;
@@ -72,9 +74,9 @@ class c_chord {
   c_chord& operator+=(const c_chord&);
   inline c_chord& operator+=(const char*);
 
-  bool operator==(const c_string_piece& other) const noexcept;
+  bool operator==(c_string_piece other) const noexcept;
   bool operator==(const c_chord& other) const noexcept;
-  inline bool operator!=(const c_string_piece& other) const noexcept;
+  inline bool operator!=(c_string_piece other) const noexcept;
   inline bool operator!=(const c_chord& other) const noexcept;
 
   operator c_string_ptr() const;

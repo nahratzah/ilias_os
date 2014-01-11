@@ -1,10 +1,17 @@
 #ifndef UTIL_C_STRING_PTR_H
 #define UTIL_C_STRING_PTR_H
 
+#include <cassert>
+#include <cstddef>
+#include <cstdlib>
+#include <utility>
+#include <cstring>
+#include <new>
+
 namespace util {
 
 
-class string_piece;
+class c_string_piece;
 
 class c_string_ptr {
  public:
@@ -30,12 +37,15 @@ class c_string_ptr {
   friend inline c_string_ptr make_c_string_ptr_buffer(char*, size_type) noexcept;
 
   inline bool operator==(const c_string_ptr&) const noexcept;
+  inline bool operator==(const char*) const noexcept;
+  inline bool operator!=(const c_string_ptr&) const noexcept;
+  inline bool operator!=(const char*) const noexcept;
 
   c_string_ptr& operator=(const c_string_ptr&);
   inline c_string_ptr& operator=(c_string_ptr&&) noexcept;
 
   inline c_string_ptr& operator+=(const c_string_ptr&);
-  c_string_ptr& operator+=(string_piece);
+  c_string_ptr& operator+=(c_string_piece);
   inline c_string_ptr& operator+=(const char*);
   inline void append(const c_string_ptr&);
   inline void append(const char*);
@@ -58,7 +68,12 @@ class c_string_ptr {
 };
 
 inline c_string_ptr make_c_string_ptr(const char*);
-inline c_string_ptr make_c_string_ptr_buffer(size_type);
+inline c_string_ptr make_c_string_ptr(const char*, c_string_ptr::size_type);
+inline c_string_ptr make_c_string_ptr_buffer(c_string_ptr::size_type);
+inline c_string_ptr make_c_string_ptr_buffer(const char*, c_string_ptr::size_type);
+
+inline bool operator==(const char* a, const c_string_ptr& b) noexcept;
+inline bool operator!=(const char* a, const c_string_ptr& b) noexcept;
 
 
 } /* namespace util */

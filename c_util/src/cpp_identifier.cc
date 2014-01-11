@@ -9,7 +9,7 @@ cpp_identifier::~cpp_identifier() noexcept {
 }
 
 std::unique_ptr<cpp_identifier> cpp_identifier::clone() const {
-  return clone_();
+  return std::unique_ptr<cpp_identifier>{ clone_() };
 }
 
 c_chord printable_chord(const cpp_identifier& i) {

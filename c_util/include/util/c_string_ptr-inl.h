@@ -1,14 +1,14 @@
 namespace util {
 
 
-inline c_string_ptr::~c_string_ptr() noexcept { if (data_) free(data_); }
+inline c_string_ptr::~c_string_ptr() noexcept { if (data_) std::free(data_); }
 inline c_string_ptr::c_string_ptr(c_string_ptr&& other) noexcept { swap(other); }
 
 inline c_string_ptr::size_type c_string_ptr::size() const noexcept { return len_; }
 inline c_string_ptr::size_type c_string_ptr::length() const noexcept { return size(); }
 inline bool c_string_ptr::empty() const noexcept { return size() == 0U; }
 
-inline char* c_string_ptr::release() const noexcept {
+inline char* c_string_ptr::release() noexcept {
   char* result = c_str();
   len_ = 0U;
   capacity_ = 0U;
@@ -26,7 +26,7 @@ inline char* c_string_ptr::data() const noexcept {
   return data_;
 }
 
-inline void c_string_ptr::swap(c_string_ptr& other) {
+inline void c_string_ptr::swap(c_string_ptr& other) noexcept {
   using std::swap;
 
   swap(data_, other.data_);
@@ -36,23 +36,31 @@ inline void c_string_ptr::swap(c_string_ptr& other) {
 
 inline void swap(c_string_ptr& a, c_string_ptr& b) noexcept { a.swap(b); }
 
-inline bool c_string_ptr::operator==(const c_string_ptr& other) noexcept {
+inline bool c_string_ptr::operator==(const c_string_ptr& other) const noexcept {
   if (empty() || size() != other.size()) return size() == other.size();
-  return memcmp(data_, other.data_, len_) == 0;
+  return std::memcmp(data(), other.data(), size()) == 0;
 }
 
 inline bool c_string_ptr::operator==(const char* s) const noexcept {
   return strcmp(c_str(), s) == 0;
 }
 
+inline bool c_string_ptr::operator!=(const c_string_ptr& other) const noexcept {
+  return !(*this == other);
+}
+
+inline bool c_string_ptr::operator!=(const char* s) const noexcept {
+  return !(*this == s);
+}
+
 inline c_string_ptr& c_string_ptr::operator=(c_string_ptr&& other) noexcept {
-  if (data_) free(data_);
+  if (data_) std::free(data_);
   data_ = other.data_;
   len_ = other.len_;
   capacity_ = other.capacity_;
   other.data_ = nullptr;
   other.len_ = 0U;
-  other.capacity = 0U;
+  other.capacity_ = 0U;
   return *this;
 }
 
@@ -67,9 +75,8 @@ inline c_string_ptr& c_string_ptr::operator+=(const char* s) {
 
 inline void c_string_ptr::append(const c_string_ptr& other) {
   if (!other.empty()) append(other.data_, other.len_);
-  return *this;
 }
-inline void append(const char* s) {
+inline void c_string_ptr::append(const char* s) {
   append(s, strlen(s));
 }
 
@@ -110,6 +117,12 @@ inline c_string_ptr make_c_string_ptr(const char* s) {
   return result;
 }
 
+inline c_string_ptr make_c_string_ptr(const char* s, c_string_ptr::size_type len) {
+  c_string_ptr result;
+  result.append(s, len);
+  return result;
+}
+
 inline c_string_ptr make_c_string_ptr_buffer(char* buf, c_string_ptr::size_type len) noexcept {
   c_string_ptr result;
   if (buf) {
@@ -121,9 +134,17 @@ inline c_string_ptr make_c_string_ptr_buffer(char* buf, c_string_ptr::size_type 
 }
 
 inline c_string_ptr make_c_string_ptr_buffer(c_string_ptr::size_type len) {
-  char* buf = nullptr;
-  if (len > 0 && (buf = malloc(len)) == nullptr) throw std::bad_alloc();
-  return make_c_string_ptr_buffer(buf, len);
+  void* buf = nullptr;
+  if (len > 0 && (buf = std::malloc(len)) == nullptr) throw std::bad_alloc();
+  return make_c_string_ptr_buffer(static_cast<char*>(buf), len);
+}
+
+inline bool operator==(const char* a, const c_string_ptr& b) noexcept {
+  return b == a;
+}
+
+inline bool operator!=(const char* a, const c_string_ptr& b) noexcept {
+  return b != a;
 }
 
 

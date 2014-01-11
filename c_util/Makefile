@@ -13,3 +13,9 @@ SRCS +=	src/c_string_ptr.cc						\
 	src/cpp_identifier.cc						\
 	src/cpp_name.cc							\
 	src/cpp_namespace.cc
+
+CXXOPTS += -Iinclude -std=c++11
+
+LIB = util
+
+.include <bsd.lib.mk>

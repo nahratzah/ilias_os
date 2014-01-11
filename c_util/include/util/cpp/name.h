@@ -20,8 +20,8 @@ class cpp_name
   c_string_ptr name_;
 
  public:
-  inline cpp_name(const cpp_identifier& parent_name, string_piece name);
-  inline cpp_name(string_piece name);
+  inline cpp_name(const cpp_identifier& parent_name, c_string_piece name);
+  inline cpp_name(c_string_piece name);
   std::unique_ptr<cpp_name> clone() const;
 
  private:

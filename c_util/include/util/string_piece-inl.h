@@ -1,6 +1,3 @@
-#ifndef UTIL_STRING_PIECE_H
-#define UTIL_STRING_PIECE_H
-
 #include <util/c_string_ptr.h>
 
 namespace util {
@@ -113,5 +110,3 @@ template<typename... T> c_chord chord_cat(T&&... t) {
 
 
 } /* namespace util */
-
-#endif /* UTIL_STRING_PIECE_H */

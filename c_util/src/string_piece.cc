@@ -48,7 +48,7 @@ bool c_chord::operator==(const c_chord& other) const noexcept {
   return true;
 }
 
-operator c_chord::c_string_ptr() const {
+c_chord::operator c_string_ptr() const {
   c_string_ptr result;
   result.reserve(size());
   for (const auto& i : data_) result += i;
