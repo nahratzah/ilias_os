@@ -94,13 +94,13 @@ inline bool c_chord::operator!=(const c_chord& other) const noexcept { return !(
 
 
 namespace chord_cat_detail {
-  template<typename U, typename... T> c_chord& chord_cat_(c_chord&& out, U&& u, T&&... t) {
-    out += u;
-    return chord_cat_(std::move(out), std::forward<T>(t)...);
+  inline c_chord chord_cat_(c_chord&& out) {
+    return out;
   }
 
-  inline c_chord& chord_cat_(c_chord&& out) {
-    return out;
+  template<typename U, typename... T> c_chord chord_cat_(c_chord&& out, U&& u, T&&... t) {
+    out += u;
+    return chord_cat_(std::move(out), std::forward<T>(t)...);
   }
 } /* namespace util::chord_cat_detail */
 
