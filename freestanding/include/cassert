@@ -8,7 +8,7 @@ _cdecl_begin
 
 inline void _assert_test(bool p, const char* file, const char* func, int line,
                          const char* pred, const char* optmsg) {
-  if (!p)
+  if (_predict_false(!p))
     kernel::panic("Assertion at %s:%d  %s() failed:  %s%s%s", file, line, func,
                   pred, (optmsg ? "  ||  " : ""), (optmsg ? optmsg : ""));
 }

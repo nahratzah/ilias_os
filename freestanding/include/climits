@@ -1,0 +1,44 @@
+#ifndef _CLIMITS_
+#define _CLIMITS_
+
+#define CHAR_BIT	8
+#define SCHAR_MIN	(-SCHAR_MAX - 1)
+#define SCHAR_MAX	0x7f
+#define UCHAR_MAX	0xffU
+
+#ifdef __CHAR_UNSIGNED__
+#define CHAR_MIN	0
+#define CHAR_MAX	UCHAR_MAX
+#else
+#define CHAR_MIN	SCHAR_MIN
+#define CHAR_MAX	SCHAR_MAX
+#endif
+
+// #define MB_LEN_MAX	4
+#define SHRT_MIN	(-SHRT_MAX - 1)
+#define SHRT_MAX	0x7fff
+#define USHRT_MAX	0xffff
+#define INT_MIN		(-INT_MAX - 1)
+#define INT_MAX		0x7fffffff
+#define UINT_MAX	0xffffffff
+
+#define LONG_MIN	(-LONG_MAX - 1)
+#ifdef __LP64__
+#define LONG_MAX	0x7fffffffffffffffL
+#define ULONG_MAX	0xffffffffffffffffUL
+#else
+#define LONG_MAX	0x7fffffffL
+#define ULONG_MAX	0xffffffffUL
+#endif
+
+#define LLONG_MIN	(-LLONG_MAX - 1)
+#define LLONG_MAX	0x7fffffffffffffffLL
+#define ULLONG_MAX	0xffffffffffffffffULL
+
+#ifdef __LP64__
+#define SIZE_MAX	LLONG_MAX
+#else
+#define SIZE_MAX	INT_MAX
+#endif
+
+#endif /* _CLIMITS_ */

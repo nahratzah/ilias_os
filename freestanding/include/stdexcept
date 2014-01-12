@@ -1,0 +1,96 @@
+#include <exception>
+#include <util/c_string_ptr.h>
+
+namespace std {
+
+
+class logic_error
+: public exception
+{
+ public:
+  // explicit logic_error(const string&);
+  explicit logic_error(const char*);
+
+  logic_error(const logic_error&) noexcept;
+  logic_error& operator=(const logic_error&) noexcept;
+
+  ~logic_error() noexcept override;
+  const char* what() const noexcept override;
+
+ private:
+  util::c_string_ptr msg_;
+};
+
+class domain_error
+: public logic_error {
+ public:
+  // explicit domain_error(const string& msg) : logic_error(msg) {}
+  explicit domain_error(const char* msg) : logic_error(msg) {}
+
+  ~domain_error() noexcept override;
+};
+class invalid_argument
+: public logic_error {
+  // explicit invalid_argument(const string& msg) : logic_error(msg) {}
+  explicit invalid_argument(const char* msg) : logic_error(msg) {}
+
+  ~invalid_argument() noexcept override;
+};
+class length_error
+: public logic_error {
+  // explicit length_error(const string& msg) : logic_error(msg) {}
+  explicit length_error(const char* msg) : logic_error(msg) {}
+
+  ~length_error() noexcept override;
+};
+class out_of_range
+: public logic_error {
+  // explicit out_of_range(const string& msg) : logic_error(msg) {}
+  explicit out_of_range(const char* msg) : logic_error(msg) {}
+
+  ~out_of_range() noexcept override;
+};
+
+class runtime_error
+: public exception {
+ public:
+  // explicit runtime_error(const string&);
+  explicit runtime_error(const char*);
+
+  runtime_error(const runtime_error&) noexcept;
+  runtime_error& operator=(const runtime_error&) noexcept;
+
+  ~runtime_error() noexcept override;
+  const char* what() const noexcept override;
+
+ private:
+  util::c_string_ptr msg_;
+};
+
+class range_error
+: public runtime_error {
+ public:
+  // explicit range_error(const string& msg) : runtime_error(msg) {}
+  explicit range_error(const char* msg) : runtime_error(msg) {}
+
+  ~range_error() noexcept override;
+};
+class overflow_error
+: public runtime_error {
+ public:
+  // explicit overflow_error(const string& msg) : runtime_error(msg) {}
+  explicit overflow_error(const char* msg) : runtime_error(msg) {}
+
+  ~overflow_error() noexcept override;
+};
+class underflow_error
+: public runtime_error {
+ public:
+  // explicit underflow_error(const string& msg) : runtime_error(msg) {}
+  explicit underflow_error(const char* msg) : runtime_error(msg) {}
+
+  ~underflow_error() noexcept override;
+};
+
+
+} /* namespace std */

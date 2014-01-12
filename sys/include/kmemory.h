@@ -20,6 +20,6 @@ _cdecl_end
 
 #ifdef __cplusplus
 } /* namespace kernel */
-#ifdef __cplusplus
+#endif /* __cplusplus */
 
 #endif /* KMEMORY_H */

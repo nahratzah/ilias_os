@@ -1,7 +1,17 @@
 #ifndef CSTDLIB
 #define CSTDLIB
 
+#include <kmemory.h>
+
+namespace std {
 
 
+using kernel::malloc;
+using kernel::free;
+using kernel::realloc;
+using kernel::calloc;
+
+
+} /* namespace std */
 
 #endif /* CSTDLIB */

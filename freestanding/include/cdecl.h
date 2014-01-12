@@ -10,5 +10,16 @@
 # define _cdecl_end	/* empty */
 #endif
 
+#define _predict_true(x)	__builtin_expect(((x) != 0), 1)
+#define _predict_false(x)	__builtin_expect(((x) != 0), 0)
+
+#ifndef _LIBC_EXPORT
+# define _LIBC_EXPORT		/* External function requires no linkage spec. */
+#endif /* _LIBC_EXPORT */
+
+#ifndef __cplusplus
+# define noexcept		/* C is always noexcept. */
+#endif
+
 
 #endif /* CDECL_H */
