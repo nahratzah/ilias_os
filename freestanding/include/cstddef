@@ -1,0 +1,13 @@
+#ifndef CSTDDEF
+#define CSTDDEF
+
+#include <cstddef_misc/null.h>
+
+
+namespace std {
+} /* namespace std */
+
+#define offsetof	__builtin_offsetof
+
+
+#endif /* CSTDDEF */
