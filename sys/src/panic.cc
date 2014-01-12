@@ -4,7 +4,7 @@
 namespace kernel {
 
 
-void panic(const char*, ...) noexcept {
+void panic(const char* msg, ...) noexcept {
   va_list ap;
 
   va_start(ap, msg);	/* XXX implement printf semantics */
@@ -23,7 +23,7 @@ void panic(const char*, ...) noexcept {
   for (;;);
 }
 
-void warn(const char*, ...) noexcept {
+void warn(const char* msg, ...) noexcept {
   va_list ap;
 
   va_start(ap, msg);	/* XXX implement printf semantics */

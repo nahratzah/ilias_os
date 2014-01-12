@@ -1,0 +1,9 @@
+#ifndef _CSTDIO_
+#define _CSTDIO_
+
+#define EOF	(-1)
+
+#include <cstddef>
+#include <cassert>
+
+#endif /* _CSTDIO_ */

@@ -1,0 +1,46 @@
+#ifndef _CWCHAR_
+#define _CWCHAR_
+
+#include <cdecl.h>
+#include <abi/abi.h>
+#include <cstddef>
+
+#ifdef __cplusplus
+namespace std {
+#endif
+
+
+typedef _TYPES(mbstate_t)	mbstate_t;
+typedef _TYPES(int32_t)		wint_t;
+
+#ifndef __cplusplus
+typedef _TYPES(wchar_t)		wchar_t;
+#endif
+
+_cdecl_begin
+size_t wcslen(const wchar_t*) noexcept;
+wchar_t* wmemchr(const wchar_t*, wchar_t, size_t) noexcept;
+int wmemcmp(const wchar_t*, const wchar_t*, size_t) noexcept;
+wchar_t* wmemcpy(wchar_t*, const wchar_t*, size_t) noexcept;
+wchar_t* wmemmove(wchar_t*, const wchar_t*, size_t) noexcept;
+wchar_t* wmemset(wchar_t*, wchar_t, size_t) noexcept;
+_cdecl_end
+
+
+#ifdef __cplusplus
+} /* namespace std */
+
+using std::wcslen;
+using std::wmemchr;
+using std::wmemcmp;
+using std::wmemcpy;
+using std::wmemmove;
+using std::wmemset;
+
+#endif /* __cplusplus */
+
+#define WINT_MAX		WCHAR_MAX
+#define WINT_MIN		WCHAR_MIN
+#define WEOF			(-1LL)
+
+#endif /* _CWCHAR_ */

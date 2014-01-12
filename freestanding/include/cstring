@@ -9,6 +9,7 @@
 namespace std {
 #endif
 
+
 _cdecl_begin
 
 int memcmp(const void*, const void*, size_t) noexcept;
@@ -30,6 +31,26 @@ _cdecl_end
 
 
 #ifdef __cplusplus
+
+inline namespace __1 {
+
+using std::memcmp;
+using std::memchr;
+using std::memcpy;
+using std::memmove;
+using std::memrchr;
+using std::memset;
+using std::strcpy;
+using std::strlen;
+using std::strerror;
+using std::strcmp;
+using std::strncmp;
+using std::strdup;
+using std::strcat;
+using std::strstr;
+
+} /* namespace std::__1 */
+
 } /* namespace std */
 
 using std::memcmp;

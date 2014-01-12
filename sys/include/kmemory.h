@@ -1,6 +1,7 @@
 #ifndef KMEMORY_H
 #define KMEMORY_H
 
+#include <cdecl.h>
 #include <cstddef_misc/size_ptrdiff.h>
 
 #ifdef __cplusplus

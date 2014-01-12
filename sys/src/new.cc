@@ -1,7 +1,8 @@
 #include <new>
 #include <utility>
-#include <kmemory.h>
+#include <cstdlib>
 #include <cdecl.h>
+#include <atomic>
 
 
 namespace std {
@@ -9,13 +10,16 @@ namespace std {
 
 bad_alloc::bad_alloc() noexcept {}
 bad_alloc::bad_alloc(const bad_alloc& o) noexcept : exception(o) {}
-bad_alloc& bad_alloc::operator=(const bad_alloc& o) noexcept : exception(o) {}
+bad_alloc& bad_alloc::operator=(const bad_alloc& o) noexcept {
+  this->std::exception::operator=(o);
+  return *this;
+}
 bad_alloc::~bad_alloc() noexcept {}
 
 const nothrow_t nothrow = {};
 
 namespace {
-std::atomic<new_handler> nh_ = nullptr;
+std::atomic<new_handler> nh_{ nullptr };
 }
 
 new_handler set_new_handler(new_handler nh) noexcept {
@@ -41,7 +45,7 @@ void* operator new(std::size_t sz, const std::nothrow_t&) noexcept {
 
   /* Try to run new_handler on allocation failure. */
   if (_predict_false(rv == nullptr)) {
-    new_handler nh = get_new_handler();
+    std::new_handler nh = std::get_new_handler();
     if (nh) {
       nh();
       rv = std::malloc(sz);
@@ -60,11 +64,11 @@ void operator delete(void* p, const std::nothrow_t&) noexcept {
 }
 
 void* operator new[](std::size_t sz) {
-  operator new(sz);
+  return operator new(sz);
 }
 
 void* operator new[](std::size_t sz, const std::nothrow_t&) noexcept {
-  operator new(sz, std::nothrow);
+  return operator new(sz, std::nothrow);
 }
 
 void operator delete[](void* p) noexcept {
