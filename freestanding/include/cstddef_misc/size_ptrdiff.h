@@ -14,4 +14,11 @@ using ::abi::intptr_t;
 
 } /* namespace std */
 
+
+using std::size_t;
+using std::ptrdiff_t;
+using std::uintptr_t;
+using std::intptr_t;
+
+
 #endif /* CSTDDEF_MISC_SIZE_PTRDIFF_H */

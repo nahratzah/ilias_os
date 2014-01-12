@@ -2,6 +2,7 @@
 #define CSTDDEF
 
 #include <cstddef_misc/null.h>
+#include <cstddef_misc/size_ptrdiff.h>
 
 
 namespace std {

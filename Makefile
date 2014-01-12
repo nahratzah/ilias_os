@@ -7,6 +7,7 @@ all: kernel
 .include "freestanding/Makefile.inc"
 .include "c_util/Makefile.inc"
 .include "sys/Makefile.inc"
+.include "contrib/freestanding/libcxx/Makefile.inc"
 
 # Import build rules.
 .include "Makefile.inc"
