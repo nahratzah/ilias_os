@@ -22,14 +22,14 @@ struct ilp32 {
 
 #if defined(__LP64__)
 using ilp = lp64;
-#elif defined(__ILP32__)
+#else  /* XXX find a better way to determine ilp32 archs. */
 using ilp = ilp32;
 #endif
 
-using ilp::size_t;
-using ilp::ptrdiff_t;
-using ilp::uintptr_t;
-using ilp::intptr_t;
+typedef ilp::size_t size_t;
+typedef ilp::ptrdiff_t ptrdiff_t;
+typedef ilp::uintptr_t uintptr_t;
+typedef ilp::intptr_t intptr_t;
 
 
 } /* namespace abi */
