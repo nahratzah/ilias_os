@@ -2,6 +2,7 @@
 #define UTIL_STRING_PIECE_H
 
 #include <util/c_string_ptr.h>
+#include <iosfwd>
 #include <stdexcept>
 #include <vector>
 
@@ -47,6 +48,7 @@ class c_string_piece {
   inline c_string_piece substr(size_type s, size_type len) const;
 
   inline operator c_string_ptr() const;
+  operator std::string() const;
 
   inline iterator begin() const;
   inline iterator end() const;
@@ -80,6 +82,7 @@ class c_chord {
   inline bool operator!=(const c_chord& other) const noexcept;
 
   operator c_string_ptr() const;
+  operator std::string() const;
 
  private:
   data_t data_;

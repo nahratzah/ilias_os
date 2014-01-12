@@ -1,9 +1,16 @@
 #include <util/c_string_ptr.h>
 #include <util/string_piece.h>
 #include <stdexcept>
+#include <string>
 
 namespace util {
 
+
+c_string_ptr::c_string_ptr(const std::string& s) : c_string_ptr() {
+  reserve(s.length());
+  len_ = s.length();
+  std::memcpy(data(), s.data(), len_);
+}
 
 c_string_ptr::c_string_ptr(const c_string_ptr& other) {
   reserve(other.size());
@@ -49,6 +56,10 @@ void c_string_ptr::append(const char* s, size_type len) {
   reserve(size() + len);
   std::memcpy(&data()[size()], s, len);
   len_ += len;
+}
+
+c_string_ptr::operator std::string() const {
+  return std::string(data(), size());
 }
 
 } /* namespace util */

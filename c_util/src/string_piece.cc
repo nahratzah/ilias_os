@@ -1,7 +1,12 @@
 #include <util/string_piece.h>
+#include <string>
 
 namespace util {
 
+
+c_string_piece::operator std::string() const {
+  return std::string(data(), size());
+}
 
 c_chord& c_chord::operator+=(c_string_piece other) {
   size_type add_len = other.length();
@@ -54,6 +59,13 @@ c_chord::operator c_string_ptr() const {
   c_string_ptr result;
   result.reserve(size());
   for (const auto& i : data_) result += i;
+  return result;
+}
+
+c_chord::operator std::string() const {
+  std::string result;
+  result.reserve(size());
+  for (const auto& i : data_) result.append(i.data(), i.size());
   return result;
 }
 

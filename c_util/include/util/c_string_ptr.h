@@ -4,9 +4,10 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
-#include <utility>
 #include <cstring>
+#include <iosfwd>
 #include <new>
+#include <utility>
 
 namespace util {
 
@@ -23,6 +24,7 @@ class c_string_ptr {
   inline ~c_string_ptr() noexcept;
   c_string_ptr(const c_string_ptr&);
   inline c_string_ptr(c_string_ptr&&) noexcept;
+  c_string_ptr(const std::string&);
 
   void reserve(size_type);
   void shrink_to_fit() noexcept;
@@ -60,6 +62,8 @@ class c_string_ptr {
   inline const_iterator cend() const;
   inline char& operator[](size_type idx);
   inline const char& operator[](size_type idx) const;
+
+  operator std::string() const;
 
  private:
   char* data_ = nullptr;
