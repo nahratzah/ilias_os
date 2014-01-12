@@ -2,7 +2,7 @@
 #define ABI_ILP_H
 
 
-namespace abi {		/* XXX move to abi defn */
+namespace abi {
 
 
 struct lp64 {
