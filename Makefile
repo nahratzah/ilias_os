@@ -4,6 +4,7 @@ OBJS_LOADER += 32.kgzo 64.kgzo
 all: kernel
 
 # Import lists of sources.
+.include "abi/Makefile.inc"
 .include "freestanding/Makefile.inc"
 .include "c_util/Makefile.inc"
 .include "sys/Makefile.inc"
