@@ -7,6 +7,7 @@
 #ifdef __cplusplus
 # include <atomic>
 # include <typeinfo>
+# include <exception>
 #endif
 
 namespace abi {
@@ -147,26 +148,26 @@ _Unwind_Reason_Code (*__personality_routine)(int version, _Unwind_Action actions
  */
 struct __cxa_exception {
 #ifdef __cplusplus
-  std::atomic<uintptr_t> refcount;  // # references to this exception.
+  std::atomic<uintptr_t>	refcount;  // # references to this exception.
 #else
-  _Atomic(uintptr_t)	refcount; // # references to this exception.
+  _Atomic(uintptr_t)		refcount; // # references to this exception.
 #endif
 
   /* ABI starts here.  Extensions go before. */
-  const std::type_info*	exceptionType;
+  const std::type_info*		exceptionType;
   void (*exceptionDestructor)(void *);
-  unexpected_handler	unexpectedHandler;
-  terminate_handler	terminateHandler;
-  __cxa_exception*	nextException;
+  std::unexpected_handler	unexpectedHandler;
+  std::terminate_handler	terminateHandler;
+  __cxa_exception*		nextException;
 
-  int			handlerCount;
-  int			handlerSwitchValue;
-  const char*		actionRecord;
-  const char*		languageSpecificData;
-  void*			catchTemp;
-  void*			adjustedPtr;
+  int				handlerCount;
+  int				handlerSwitchValue;
+  const char*			actionRecord;
+  const char*			languageSpecificData;
+  void*				catchTemp;
+  void*				adjustedPtr;
 
-  _Unwind_Exception	unwindHeader;
+  _Unwind_Exception		unwindHeader;
 
 
 #ifdef __cplusplus

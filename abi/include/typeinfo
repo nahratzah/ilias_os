@@ -1,0 +1,53 @@
+#ifndef _TYPEINFO_
+#define _TYPEINFO_
+
+#include <abi/abi.h>
+#include <exception>
+
+namespace std {
+
+
+class type_info {
+ protected:
+  constexpr type_info(const char* type_name);
+
+ public:
+  virtual ~type_info() noexcept;
+  inline bool operator==(const type_info&) const noexcept;
+  inline bool operator!=(const type_info&) const noexcept;
+  inline bool before(const type_info&) const noexcept;
+
+  inline _ABI_TYPES(size_t) hash_code() const noexcept;
+  inline const char* name() const noexcept;
+
+  type_info(const type_info&) = delete;
+  type_info& operator=(const type_info&) = delete;
+
+ private:
+  const char* __type_name;
+};
+
+
+class bad_cast
+: public exception
+{
+ public:
+  ~bad_cast() noexcept override;
+  const char* what() const noexcept override;
+};
+
+
+class bad_typeid
+: public exception
+{
+ public:
+  ~bad_typeid() noexcept override;
+  const char* what() const noexcept override;
+};
+
+
+} /* namespace std */
+
+#include <typeinfo-inl.h>
+
+#endif /* _TYPEINFO_ */
