@@ -8,6 +8,7 @@ namespace __cxxabiv1 {
 
 
 using _config::heap;
+using _config::big_heap;
 
 
 /*

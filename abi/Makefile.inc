@@ -6,5 +6,7 @@ SRCS +=	abi/src/abi_ref_cstr.cc
 SRCS +=	abi/src/abi_semaphore.cc
 SRCS +=	abi/src/abi_typeinfo.cc
 SRCS += abi/src/cstdlib.cc
-SRCS +=	abi/src/exception.cc
+SRCS += abi/src/new.cc
 SRCS +=	abi/src/typeinfo.cc
+
+SRCS +=	abi/src/exception.cc

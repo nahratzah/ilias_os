@@ -124,6 +124,20 @@ inline void panic(const char*, ...) noexcept {
  */
 
 
+/*
+ * Struct big_heap: an implementation of heap, but with bells, whistles etc.
+ * Feel free to go totally crazy with exceptions, TLS...
+ *
+ * Must provide the member functions:
+ * - malloc: allocates sz bytes
+ * - free: releases storage previously acquired via malloc.
+ */
+using big_heap = heap;
+/*
+ * End of struct big_heap.
+ */
+
+
 }} /* namespace __cxxabiv1::_config */
 
 #endif /* _ABI_CONFIG_H_ */
