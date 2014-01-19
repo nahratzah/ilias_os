@@ -1,5 +1,6 @@
 #define _SHOW_UNWIND_INTERNAL
 #include <abi/eh.h>
+#include <abi/memory.h>
 
 namespace __cxxabiv1 {
 
@@ -19,6 +20,8 @@ class emergency_slot {
   };
 
  public:
+  static constexpr size_t space_size = sizeof(emergency_space);
+
   void* claim() noexcept;
   bool release(void*) noexcept;
 
@@ -34,7 +37,7 @@ void* emergency_slot::claim() noexcept {
                                      std::memory_order_relaxed))
     return nullptr;
 
-  std::memset(&space_, 0, sizeof(space_));
+  memzero(&space_, space_size);
   return &space_;
 }
 
@@ -54,7 +57,7 @@ emergency_slot emergency[EMERGENCY_SZ];
 
 /* Allocate space from emergency. */
 void* acquire_emergency_space(size_t sz) noexcept {
-  if (sz > sizeof(emergency_slot::emergency_space)) return nullptr;
+  if (sz > emergency_slot::space_size) return nullptr;
 
   auto use = thr_emergency_use.fetch_add(1U, std::memory_order_acquire);
   if (use <= 4U) {
@@ -96,9 +99,9 @@ void* __cxa_allocate_exception(size_t throw_sz) noexcept {
   const size_t sz = header_sz + throw_sz;
 
   /* Try allocating from heap. */
-  void* storage = abi::malloc(sz);
+  void* storage = abi::malloc(sz, "abi/exception");
   if (storage)
-    std::memset(storage, 0, sz);
+    memzero(storage, sz);
   else
     storage = acquire_emergency_space(sz);
 
