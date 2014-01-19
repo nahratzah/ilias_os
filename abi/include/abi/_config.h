@@ -18,7 +18,7 @@ namespace _config {
 
 
 /*
- * Allocation code.
+ * Struct heap: allocation code.
  *
  * Contains member functions:
  * - malloc: allocate heap memory;
@@ -31,22 +31,23 @@ namespace _config {
  * The code paths in this function may not use exceptions
  * (no try-catch, for instance), as it is used by the
  * exception handling code.
- *
- * See __cxxabiv1::heap for a way to override this function
- * if you want to provide a more powerful interface.
  */
 struct heap {
   constexpr heap(const char* name) : name(name) {}
   heap(const heap&) = delete;
+  heap& operator=(const heap&) = delete;
   inline void* malloc(size_t) noexcept;
   inline void free(void*) noexcept;
 
   const char* name;
 };
+/*
+ * End of struct heap.
+ */
 
 
 /*
- * Malloc: allocate heap memory.
+ * Heap::malloc: allocate heap memory.
  *
  * This function is allowed to fail.
  * This function must be thread-safe.
@@ -62,7 +63,7 @@ inline void* heap::malloc(size_t) noexcept {
  */
 
 /*
- * Free: release memory previously allocated with malloc.
+ * Heap::free: release memory previously allocated with malloc.
  *
  * This function may never fail.
  * This function must be thread-safe.
