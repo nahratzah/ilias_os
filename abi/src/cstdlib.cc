@@ -80,7 +80,7 @@ constexpr fn_type::fn_type(void (*fn)(), bool is_quick)
 {}
 
 bool fn_type::resolve(bool quick_only) noexcept {
-  if (!(fn_ && (is_quick_ || !quick_only))) return false;
+  if (!(fn_ && (is_quick_ == quick_only))) return false;
   (*fn_)();
   return true;
 }
