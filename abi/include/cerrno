@@ -1,0 +1,95 @@
+#ifndef _CERRNO_
+#define _CERRNO_
+
+#include <cdecl.h>
+#include <abi/errno.h>
+
+_cdecl_begin
+
+thread_local int	errno;
+
+_cdecl_end
+
+#define E2BIG			_E2BIG
+#define EACCES			_EACCES
+#define EADDRINUSE		_EADDRINUSE
+#define EADDRNOTAVAIL		_EADDRNOTAVAIL
+#define EAFNOSUPPORT		_EAFNOSUPPORT
+#define EAGAIN			_EAGAIN
+#define EALREADY		_EALREADY
+#define EBADF			_EBADF
+#define EBADMSG			_EBADMSG
+#define EBUSY			_EBUSY
+#define ECANCELED		_ECANCELED
+#define ECHILD			_ECHILD
+#define ECONNABORTED		_ECONNABORTED
+#define ECONNREFUSED		_ECONNREFUSED
+#define ECONNRESET		_ECONNRESET
+#define EDEADLK			_EDEADLK
+#define EDESTADDRREQ		_EDESTADDRREQ
+#define EDOM			_EDOM
+#define EDQUOT			_EDQUOT
+#define EEXIST			_EEXIST
+#define EFAULT			_EFAULT
+#define EFBIG			_EFBIG
+#define EHOSTUNREACH		_EHOSTUNREACH
+#define EIDRM			_EIDRM
+#define EILSEQ			_EILSEQ
+#define EINPROGRESS		_EINPROGRESS
+#define EINTR			_EINTR
+#define EINVAL			_EINVAL
+#define EIO			_EIO
+#define EISCONN			_EISCONN
+#define EISDIR			_EISDIR
+#define ELOOP			_ELOOP
+#define EMFILE			_EMFILE
+#define EMLINK			_EMLINK
+#define EMSGSIZE		_EMSGSIZE
+#define EMULTIHOP		_EMULTIHOP
+#define ENAMETOOLONG		_ENAMETOOLONG
+#define ENETDOWN		_ENETDOWN
+#define ENETRESET		_ENETRESET
+#define ENETUNREACH		_ENETUNREACH
+#define ENFILE			_ENFILE
+#define ENOBUFS			_ENOBUFS
+#define ENODATA			_ENODATA
+#define ENODEV			_ENODEV
+#define ENOENT			_ENOENT
+#define ENOEXEC			_ENOEXEC
+#define ENOLCK			_ENOLCK
+#define ENOLINK			_ENOLINK
+#define ENOMEM			_ENOMEM
+#define ENOMSG			_ENOMSG
+#define ENOPROTOOPT		_ENOPROTOOPT
+#define ENOSPC			_ENOSPC
+#define ENOSR			_ENOSR
+#define ENOSTR			_ENOSTR
+#define ENOSYS			_ENOSYS
+#define ENOTCONN		_ENOTCONN
+#define ENOTDIR			_ENOTDIR
+#define ENOTEMPTY		_ENOTEMPTY
+#define ENOTRECOVERABLE		_ENOTRECOVERABLE
+#define ENOTSOCK		_ENOTSOCK
+#define ENOTSUP			_ENOTSUP
+#define ENOTTY			_ENOTTY
+#define ENXIO			_ENXIO
+#define EOPNOTSUPP		_EOPNOTSUPP
+#define EOVERFLOW		_EOVERFLOW
+#define EOWNERDEAD		_EOWNERDEAD
+#define EPERM			_EPERM
+#define EPIPE			_EPIPE
+#define EPROTO			_EPROTO
+#define EPROTONOSUPPORT		_EPROTONOSUPPORT
+#define EPROTOTYPE		_EPROTOTYPE
+#define ERANGE			_ERANGE
+#define EROFS			_EROFS
+#define ESPIPE			_ESPIPE
+#define ESRCH			_ESRCH
+#define ESTALE			_ESTALE
+#define ETIME			_ETIME
+#define ETIMEDOUT		_ETIMEDOUT
+#define ETXTBSY			_ETXTBSY
+#define EWOULDBLOCK		_EWOULDBLOCK
+#define EXDEV			_EXDEV
+
+#endif /* _CERRNO_ */

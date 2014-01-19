@@ -3,6 +3,7 @@
 #include <abi/semaphore.h>
 #include <abi/memory.h>
 #include <abi/panic.h>
+#include <abi/errno.h>
 #include <new>
 
 namespace std {
@@ -144,14 +145,14 @@ int push(fn_type fn) noexcept {
   if (fn_stack::push(fn)) return 0;
 
   fn_lock lck;
-  if (!fn_stack::empty()) return ENOMEM;
+  if (!fn_stack::empty()) return _ENOMEM;
   for (fn_type* f = &fn_array[0]; f != &fn_array[fn_count]; ++f) {
     if (f->empty()) {
       *f = fn;
       return 0;
     }
   }
-  return ENOMEM;
+  return _ENOMEM;
 }
 
 void resolve(bool quick_only) noexcept {
@@ -213,12 +214,12 @@ void exit(int s) noexcept {
 }
 
 int atexit(void (*fn)()) noexcept {
-  if (fn == nullptr) return EINVAL;
+  if (fn == nullptr) return _EINVAL;
   return push(fn_type(fn, false));
 }
 
 int at_quick_exit(void (*fn)()) noexcept {
-  if (fn == nullptr) return EINVAL;
+  if (fn == nullptr) return _EINVAL;
   return push(fn_type(fn, true));
 }
 
