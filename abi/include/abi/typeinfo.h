@@ -7,7 +7,16 @@
 namespace __cxxabiv1 {
 
 
-class __class_type_info; // Forward declaration
+class __class_type_info;  // Forward declaration
+class __dyn_cast_request;  // Internal to dynamic_cast
+class __dyn_cast_response;  // Internal to dynamic_cast
+
+/* Result type of __class_type_info::__has_base. */
+enum __has_base_result {
+  __has_base_no = 0,  // not a base of class
+  __bas_base_non_virtual,  // non-virtual base of class
+  __has_base_virtual  // virtual base of class
+};
 
 
 struct __base_class_type_info {
@@ -64,8 +73,13 @@ class __class_type_info
 {
  public:
   ~__class_type_info() noexcept override;
-  virtual const void* __dynamic_cast(const void*, const std::type_info&)
-                                                         const noexcept;
+
+  virtual __has_base_result __has_base(const void*, const void*,
+                                       const std::type_info&,
+                                       bool = false) const noexcept;
+  virtual __dyn_cast_response __dyn_cast_support(const void*,
+                                                 const __dyn_cast_request&)
+                                                            const noexcept;
 };
 
 /* Classes with 1 base class at offset 0. */
@@ -74,8 +88,14 @@ class __si_class_type_info
 {
  public:
   ~__si_class_type_info() noexcept override;
-  const void* __dynamic_cast(const void*, const std::type_info&)
-                                        const noexcept override;
+
+  __has_base_result __has_base(const void*, const void*,
+                               const std::type_info&,
+                               bool) const noexcept override;
+  __dyn_cast_response __dyn_cast_support(const void*,
+                                         const __dyn_cast_request&)
+                                           const noexcept override;
+
  private:
   const __class_type_info* __base_type;
 };
@@ -91,14 +111,20 @@ class __vmi_class_type_info
   };
 
   ~__vmi_class_type_info() noexcept override;
-  const void* __dynamic_cast(const void*, const std::type_info&)
-                                        const noexcept override;
+
+  __has_base_result __has_base(const void*, const void*,
+                               const std::type_info&,
+                               bool) const noexcept override;
+  __dyn_cast_response __dyn_cast_support(const void*,
+                                         const __dyn_cast_request&)
+                                           const noexcept override;
 
  private:
   unsigned int __flags;  // XXX lookup per abi: type is arch dependant
   unsigned int __base_count;  // XXX lookup per abi: type is arch dependant
   __base_class_type_info __base_info[1];
 };
+
 
 /* Pointer (basic implementation). */
 class __pbase_type_info

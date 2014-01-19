@@ -16,6 +16,74 @@ __pointer_type_info::~__pointer_type_info() noexcept {}
 __pointer_to_member_type_info::~__pointer_to_member_type_info() noexcept {}
 
 
+__has_base_result __class_type_info::__has_base(
+    const void* v, const void* p, const std::type_info& p_ti,
+    bool) const noexcept {
+  return (p == v && *this == p_ti ? __has_base_non_virtual : __has_base_no);
+}
+
+__has_base_result __si_class_type_info::__has_base(
+    const void* v, const void* p, const std::type_info& p_ti,
+    bool) const noexcept {
+  if (p == v && *this == p_ti) return __has_base_non_virtual;
+  return __base_type->__has_base(v, p, p_ti);
+}
+
+__has_base_result __vmi_class_type_info::__has_base(
+    const void* v, const void* p, const std::type_info& p_ti,
+    bool skip_virtual) const noexcept {
+  if (p == v && *this == p_ti) return __has_base_non_virtual;
+
+  const __base_class_type_info*const begin = &__base_info[0];
+  const __base_class_type_info*const end = begin + __base_count;
+  for (const __base_class_type_info* i = begin; i != end; ++i) {
+    const void* v_of_i = reinterpret_cast<const uint8_t*>(v) +
+                         __base_class_type_info::get_offset(*i);
+    bool is_public = (get_flags(*i) & __base_class_type_info::__public_mask);
+    if (!is_public) continue;
+
+    bool is_virt = (get_flags(*i) & __base_class_type_info::__virtual_mask);
+    if (is_virt && skip_virtual) continue;
+
+    __has_base_result hbrv = i->__base_type->__has_base(v_of_i, p, p_ti);
+    if (hbrv != __has_base_no) return (is_virt ? __has_base_virtual : hbrv);
+  }
+
+  return __has_base_no;
+}
+
+
+__dyn_cast_response __class_type_info::__dyn_cast_support(
+    const void* v, const __dyn_cast_request& request) const noexcept {
+  return request.leaf(v, *this);
+}
+
+__dyn_cast_response __si_class_type_info::__dyn_cast_support(
+    const void* v, const __dyn_cast_request& request) const noexcept {
+  __dyn_cast_response r = request.leaf(v, *this);
+  if (!r.return_now(request, v)) r.merge(request.resolve(v, __base_type));
+  return r;
+}
+
+__dyn_cast_response __vmi_class_type_info::__dyn_cast_support(
+    const void* v, const __dyn_cast_request& request) const noexcept {
+  __dyn_cast_response r = request.leaf(v, *this);
+
+  const __base_class_type_info*const begin = &__base_info[0];
+  const __base_class_type_info*const end = begin + __base_count;
+  for (const __base_class_type_info* i = begin;
+       !r.return_now(request, v) && i != end;
+       ++i) {
+    const void* v_of_i = reinterpret_cast<const uint8_t*>(v) +
+                         __base_class_type_info::get_offset(*i);
+    bool is_public = (get_flags(*i) & __base_class_type_info::__public_mask);
+    if (is_public) r.merge(request.resolve(v_of_i, *i->__base_type));
+  }
+
+  return r;
+}
+
+
 /*
  * XXX: __fundamental_type_info for cartesian product of:
  * - void, std::nullptr_t, bool, wchar_t, char, unsigned char, signed char,
