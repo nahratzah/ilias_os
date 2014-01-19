@@ -4,7 +4,9 @@
 #include <abi/abi.h>
 #include <cstddef_misc/intptr.h>
 
+#ifdef __cplusplus
 namespace std {
+#endif
 
 
 typedef _TYPES(uint8_t)		uint8_t;
@@ -42,6 +44,7 @@ typedef uint32_t		u_int32_t;
 typedef uint64_t		u_int64_t;
 
 
+#ifdef __cplusplus
 } /* namespace std */
 
 using std::uint8_t;
@@ -77,6 +80,7 @@ using std::u_int8_t;
 using std::u_int16_t;
 using std::u_int32_t;
 using std::u_int64_t;
+#endif /* __cplusplus */
 
 #define INT8_C(x)	(x)
 #define UINT8_C(x)	(x##U)
