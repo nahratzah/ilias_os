@@ -91,6 +91,8 @@ using std::u_int64_t;
 #define UINT32_C(x)		(x##U)
 #define INT64_C(x)		(x##LL)
 #define UINT64_C(x)		(x##ULL)
+#define INTMAX_C(x)		(x##LL)
+#define UINTMAX_C(x)		(x##ULL)
 
 #define INT_FAST8_MIN		SCHAR_MIN
 #define INT_FAST8_MAX		SCHAR_MAX
