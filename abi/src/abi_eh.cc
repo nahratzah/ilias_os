@@ -159,6 +159,7 @@ void __cxa_throw(void* exc_addr, const std::type_info* ti,
 
   /* If _Unwind_RaiseException returns, there are serious problems. */
   (*terminate)();  // XXX report fail
+  for (;;);
 }
 
 

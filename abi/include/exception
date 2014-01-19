@@ -30,7 +30,7 @@ class bad_exception
 
 class exception_ptr {
  public:
-  exception_ptr() noexcept;
+  exception_ptr() = default;
   exception_ptr(nullptr_t) noexcept;
   exception_ptr(const exception_ptr&) noexcept;
   exception_ptr(exception_ptr&&) noexcept;
@@ -47,7 +47,7 @@ class exception_ptr {
   template<typename T> friend exception_ptr make_exception_ptr(T e) noexcept;
 
  private:
-  void* ptr_;
+  void* ptr_ = nullptr;
 };
 
 
