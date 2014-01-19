@@ -1,10 +1,12 @@
 #define _SHOW_UNWIND_INTERNAL
-#include <abi/unwind.h>
+#include <abi/abi.h>
+#include <abi/eh.h>
 #include <exception>
 #include <utility>
 
 namespace std {
 namespace {
+
 
 inline abi::__cxa_exception* exc_ptr(void* p) noexcept {
   if (p == nullptr) return nullptr;
@@ -13,15 +15,17 @@ inline abi::__cxa_exception* exc_ptr(void* p) noexcept {
 
 inline void* exc_acquire(void* p) noexcept {
   if (!p) return nullptr;
-  abi::__cxa_exception::acquire(exc_ptr(p));
+  abi::__cxa_exception::acquire(*exc_ptr(p));
   return p;
 }
 
 inline void exc_release(void* p) noexcept {
   if (!p) return;
-  abi::__cxa_exception::release(exc_ptr(p));
-  return p;
+  abi::__cxa_exception::release(*exc_ptr(p));
 }
+
+} /* namespace std::<unnamed> */
+
 
 exception_ptr::exception_ptr(const exception_ptr& other) noexcept
 : ptr_(exc_acquire(other.ptr_))
@@ -51,9 +55,7 @@ exception_ptr::~exception_ptr() noexcept {
 
 void rethrow_exception(exception_ptr p) {
   /* XXX implement this */
-  void* p = nullptr;
-  swap(p, ptr_);
-  __cxa_throw(p, ..., ...);
+  __cxa_throw(p.ptr_, ..., ...);
 }
 
 
