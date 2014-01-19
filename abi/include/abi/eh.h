@@ -10,7 +10,7 @@
 # include <exception>
 #endif
 
-namespace abi {
+namespace __cxxabiv1 {
 
 _cdecl_begin
 
@@ -206,6 +206,6 @@ void __cxa_throw(void*, const std::type_info*, void (*)(void*)) noexcept
 
 _cdecl_end
 
-} /* namespace abi */
+} /* namespace __cxxabiv1 */
 
 #endif /* _ABI_EH_H_ */

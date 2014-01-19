@@ -1,3 +1,7 @@
+#ifndef _ABI_DYNAMIC_CAST_H_
+#define _ABI_DYNAMIC_CAST_H_
+
+#include <cdecl.h>
 #include <abi/abi.h>
 #include <abi/typeinfo.h>
 
@@ -6,7 +10,7 @@ namespace __cxxabiv1 {
 _cdecl_begin
 
 void* __dynamic_cast(const void*, const abi::__class_type_info*,
-                     const abi::__class_type_info*, ptrdiff_t);
+                     const abi::__class_type_info*, ptrdiff_t) noexcept;
 
 _cdecl_end
 
@@ -21,9 +25,9 @@ class __dyn_cast_request {
   __dyn_cast_request& operator=(const __dyn_cast_request&) = default;
 
   __dyn_cast_response resolve(const void*,
-                              const __class_type_info*) const noexcept;
+                              const __class_type_info&) const noexcept;
   __dyn_cast_response leaf(const void*,
-                           const __class_type_info*) const noexcept;
+                           const __class_type_info&) const noexcept;
 
  private:
   const void* subject_;
@@ -35,16 +39,16 @@ class __dyn_cast_request {
 
 class __dyn_cast_response {
  public:
-  __dyn_cast_respone() = default;
-  __dyn_cast_respone(const __dyn_cast_response&) = default;
-  __dyn_cast_respone& operator=(const __dyn_cast_response&) = default;
+  __dyn_cast_response() = default;
+  __dyn_cast_response(const __dyn_cast_response&) = default;
+  __dyn_cast_response& operator=(const __dyn_cast_response&) = default;
 
-  inline __dyn_cast_response(const void*, __has_base_result) noexcept;
+  constexpr __dyn_cast_response(const void*, __has_base_result);
 
   inline bool return_now(const __dyn_cast_request&,
                          const void*) const noexcept;
   inline const void* resolution() const noexcept;
-  void merge(__dyn_cast_response r) const noexcept;
+  void merge(__dyn_cast_response r) noexcept;
 
  private:
   const void* target_ = nullptr;
@@ -60,8 +64,8 @@ constexpr __dyn_cast_response::__dyn_cast_response(
 
 inline bool __dyn_cast_response::return_now(
     const __dyn_cast_request& req, const void* v) const noexcept {
-  if (!target) return false;
-  if (target == v) return true;  // Type cannot inherit itself.
+  if (!target_) return false;
+  if (target_ == v) return true;  // Type cannot inherit itself.
 
   /*
    * Stop the search if:
@@ -88,3 +92,5 @@ inline const void* __dyn_cast_response::resolution() const noexcept {
 
 
 } /* namespace __cxxabiv1 */
+
+#endif /* _ABI_DYNAMIC_CAST_H_ */

@@ -67,6 +67,9 @@ typedef _ABI_TYPES(int64_t)	_ABI_TYPES(fpos_t);
 typedef _ABI_TYPES(uint64_t)	_ABI_TYPES(uintmax_t);
 typedef _ABI_TYPES(int64_t)	_ABI_TYPES(intmax_t);
 
+/* Type with greatest alignment restriction. */
+typedef long double		_ABI_TYPES(max_align_t);
+
 
 /* Verify pointer types. */
 #ifdef __cplusplus
@@ -101,15 +104,15 @@ struct _ABI_TYPES(mbstate_t)
 
 struct _ABI_TYPES(stack32_t)	/* 32-bit register stack. */
 {
-	_TYPES(uint32_t)	ss_sp;
-	_TYPES(uint32_t)	ss_size;
-	_TYPES(int32_t)		ss_flags;
+	_ABI_TYPES(uint32_t)	ss_sp;
+	_ABI_TYPES(uint32_t)	ss_size;
+	_ABI_TYPES(int32_t)	ss_flags;
 };
 struct _ABI_TYPES(stack64_t)	/* 64-bit register stack. */
 {
-	_TYPES(uint64_t)	ss_sp;
-	_TYPES(uint64_t)	ss_size;
-	_TYPES(int32_t)		ss_flags;
+	_ABI_TYPES(uint64_t)	ss_sp;
+	_ABI_TYPES(uint64_t)	ss_size;
+	_ABI_TYPES(int32_t)	ss_flags;
 };
 typedef _ABI_TYPES(uint32_t)	_ABI_TYPES(sigset_t);
 

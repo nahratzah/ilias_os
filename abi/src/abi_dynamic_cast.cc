@@ -19,16 +19,15 @@ __dyn_cast_response __dyn_cast_request::leaf(
     const void* v, const __class_type_info& v_ti) const noexcept {
   if (v_ti != target_ti_) return __dyn_cast_response();
 
-  bool subj_is_base = !is_cross_cast_ && subject_ != nullptr &&
-                      v_ti.__has_base(subject_, subject_ti_, skip_v_base_);
+  __has_base_result subj_is_base = ((!is_cross_cast_ && subject_ != nullptr) ?
+                                    __has_base_no :
+                                    v_ti.__has_base(v, subject_, subject_ti_,
+                                                    skip_v_base_));
   return __dyn_cast_response(v, subj_is_base);
 }
 
 __dyn_cast_response __dyn_cast_request::resolve(
     const void* p, const __class_type_info& p_ti) const noexcept {
-  /* Cannot search without type info. */
-  if (!p_ti) return __dyn_cast_response();
-
   /*
    * Since we are only invoked for subject is-base-of target,
    * skip searches in subject type.
@@ -37,10 +36,10 @@ __dyn_cast_response __dyn_cast_request::resolve(
     return __dyn_cast_response();
 
   /* Cascade into v. */
-  return p_ti->__dyn_cast_support(p, *this);
+  return p_ti.__dyn_cast_support(p, *this);
 }
 
-void __dyn_cast_response::merge(__dyn_cast_response r) const noexcept {
+void __dyn_cast_response::merge(__dyn_cast_response r) noexcept {
   /* Handle case were at least one of { *this, r } has not located anything. */
   if (!r.target_) return;  // Nothing there.
   if (!target_) {  // r has a match, while *this does not.
@@ -76,14 +75,14 @@ namespace {
 
 struct vtt;
 
-inline std::type_info* vtt_2_ti(const vtt* v) noexcept {
-  const void*const* entry = static_cast<const void*const*>(v) - 1;
+inline const std::type_info* vtt_2_ti(const vtt* v) noexcept {
+  const void*const* entry = reinterpret_cast<const void*const*&>(v) - 1;
   return static_cast<const std::type_info*>(*entry);
 }
 
 inline ptrdiff_t vtt_2_off(const vtt* v) noexcept {
-  const void*const* entry = static_cast<const void*const*>(v) - 2;
-  return static_cast<ptrdiff_t>(*entry);
+  const void*const* entry = reinterpret_cast<const void*const*&>(v) - 2;
+  return reinterpret_cast<const ptrdiff_t&>(*entry);
 }
 
 inline const vtt* get_vtt(const void* obj) noexcept {
@@ -113,7 +112,7 @@ inline const __class_type_info* base_type(const void* obj) noexcept {
 
 
 void* __dynamic_cast(const void* subject, const __class_type_info* ti_src,
-                     const class_type_info* ti_dst,
+                     const __class_type_info* ti_dst,
                      ptrdiff_t src2dst_offset) noexcept {
   /*
    * subject: source address to be adjusted; nonnull, and since
@@ -131,6 +130,7 @@ void* __dynamic_cast(const void* subject, const __class_type_info* ti_src,
    */
   const void*const md = base_addr(subject);
   const __class_type_info*const md_ti = base_type(subject);
+  if (!md_ti) return nullptr;  // Cannot search without typeinfo.
 
   /*
    * Observation: if src is a non-virtual base of dst,
@@ -149,15 +149,16 @@ void* __dynamic_cast(const void* subject, const __class_type_info* ti_src,
    */
   if (src2dst_offset >= 0) {
     const void* maybe = void_sub(subject, src2dst_offset);
-    if (_predict_true(md_ti->__has_base(md, maybe, ti_dst) !=
+    if (_predict_true(md_ti->__has_base(md, maybe, *ti_dst) !=
                       __has_base_no))
-      return maybe;
+      return const_cast<void*>(maybe);
   }
 
-  const dyn_cast_request request = dyn_cast_request(subject, ti_src, ti_dst,
-                                                    src2dst_offset);
-  const dyn_cast_response response = request.resolve(md, md_ti);
-  return response.resolution();
+  const __dyn_cast_request request = __dyn_cast_request(subject,
+                                                        *ti_src, *ti_dst,
+                                                        src2dst_offset);
+  const __dyn_cast_response response = request.resolve(md, *md_ti);
+  return const_cast<void*>(response.resolution());
 }
 
 

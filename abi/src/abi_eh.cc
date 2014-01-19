@@ -1,7 +1,7 @@
 #define _SHOW_UNWIND_INTERNAL
 #include <abi/eh.h>
 
-namespace abi {
+namespace __cxxabiv1 {
 
 /* Anonymous namespace, gathers all emergency exception allocation code. */
 namespace {
@@ -14,7 +14,9 @@ semaphore emergency_use_threads = 16;  // # threads that can use emergency buffe
 
 class emergency_slot {
  private:
-  typedef uint8_t alignas(max_align_t) emergency_space[1024];  // Emergency block space.
+  struct alignas(max_align_t) emergency_space {
+    uint8_t data_[1024];  // Emergency block space.
+  };
 
  public:
   void* claim() noexcept;
@@ -32,8 +34,8 @@ void* emergency_slot::claim() noexcept {
                                      std::memory_order_relaxed))
     return nullptr;
 
-  std::memset(space_, 0, sizeof(space_));
-  return space_;
+  std::memset(&space_, 0, sizeof(space_));
+  return &space_;
 }
 
 bool emergency_slot::release(void* p) noexcept {
@@ -51,19 +53,21 @@ const unsigned int EMERGENCY_SZ = 64;
 emergency_slot emergency[EMERGENCY_SZ];
 
 /* Allocate space from emergency. */
-bool acquire_emergency_space(void* p) noexcept {
-  bool use = (thr_emergency_use.fetch_add(1U, std::memory_order_acquire) == 0);
+void* acquire_emergency_space(size_t sz) noexcept {
+  if (sz > sizeof(emergency_slot::emergency_space)) return nullptr;
+
+  auto use = thr_emergency_use.fetch_add(1U, std::memory_order_acquire);
   if (use <= 4U) {
-    if (use) emergency_use_threads.decrement();  // May block.
+    if (use == 0U) emergency_use_threads.decrement();  // May block.
     for (emergency_slot* e = emergency; e != emergency + EMERGENCY_SZ; ++e) {
       void* addr = e->claim();
       if (addr) return addr;
     }
-    emergency_use_threads.increment();
   }
 
-  thr_emergency_use.fetch_sub(1U, std::memory_order_release);
-  return false;
+  if (thr_emergency_use.fetch_sub(1U, std::memory_order_release) == 1U)
+    emergency_use_threads.increment();
+  return nullptr;
 }
 
 /* Try to release space to emergency. */
@@ -74,7 +78,10 @@ bool release_emergency_space(void* p) noexcept {
 }
 
 
-} /* namespace abi::<unnamed> */
+} /* namespace __cxxabiv1::<unnamed> */
+
+/* Size of cxa exception. */
+constexpr size_t header_sz = sizeof(__cxa_exception);
 
 __cxa_eh_globals* __cxa_get_globals() noexcept {
   static thread_local __cxa_eh_globals impl{ nullptr, 0 };
@@ -86,15 +93,14 @@ __cxa_eh_globals* __cxa_get_globals_fast() noexcept {
 }
 
 void* __cxa_allocate_exception(size_t throw_sz) noexcept {
-  constexpr size_t header_sz = sizeof(__cxa_exception);
-  constexpr size_t sz = header_sz + throw_sz;
+  const size_t sz = header_sz + throw_sz;
 
   /* Try allocating from heap. */
   void* storage = abi::malloc(sz);
   if (storage)
     std::memset(storage, 0, sz);
   else
-    storage = acquire_emergency_space();
+    storage = acquire_emergency_space(sz);
 
   if (_predict_false(!storage)) {
     /*
@@ -135,19 +141,20 @@ void __cxa_throw(void* exc_addr, const std::type_info* ti,
 
   exc->exceptionType = ti;
   exc->exceptionDestructor = destructor;
-  exc->unexpectedHandler = get_unexpected();
-  terminate_handler terminate = exc->terminateHandler = get_terminate();
+  exc->unexpectedHandler = std::get_unexpected();
+  std::terminate_handler terminate = exc->terminateHandler =
+                                     std::get_terminate();
 
-  exc->unwindHeader.exceptionClass = _Unwind_Exception::GNU_CXX;
+  exc->unwindHeader.exception_class = _Unwind_Exception::GNU_CXX();
 
   /* Increment # uncaught exceptions. */
   __cxa_get_globals()->uncaughtExceptions++;
 
-  _Unwind_Reason_Code fail = _Unwind_RaiseException(exc);
+  _Unwind_Reason_Code fail = _Unwind_RaiseException(&exc->unwindHeader);
 
   /* If _Unwind_RaiseException returns, there are serious problems. */
   (*terminate)();  // XXX report fail
 }
 
 
-} /* namespace abi */
+} /* namespace __cxxabiv1 */

@@ -21,9 +21,9 @@ inline const char* type_info::name() const noexcept {
   return __type_name;
 }
 
-inline _ABI_TYPES(size_t) type_info::hash_code() const noexcept {
+inline _TYPES(size_t) type_info::hash_code() const noexcept {
   /* XXX This is not a very good hash function. */
-  return static_cast<_ABI_TYPES(size_t)>(name());
+  return reinterpret_cast<_TYPES(uintptr_t)>(name());
 }
 
 

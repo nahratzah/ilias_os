@@ -17,7 +17,7 @@ class type_info {
   inline bool operator!=(const type_info&) const noexcept;
   inline bool before(const type_info&) const noexcept;
 
-  inline _ABI_TYPES(size_t) hash_code() const noexcept;
+  inline _TYPES(size_t) hash_code() const noexcept;
   inline const char* name() const noexcept;
 
   type_info(const type_info&) = delete;

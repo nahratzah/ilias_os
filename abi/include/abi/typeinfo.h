@@ -14,7 +14,7 @@ class __dyn_cast_response;  // Internal to dynamic_cast
 /* Result type of __class_type_info::__has_base. */
 enum __has_base_result {
   __has_base_no = 0,  // not a base of class
-  __bas_base_non_virtual,  // non-virtual base of class
+  __has_base_non_virtual,  // non-virtual base of class
   __has_base_virtual  // virtual base of class
 };
 

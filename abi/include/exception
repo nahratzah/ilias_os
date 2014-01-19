@@ -1,6 +1,8 @@
 #ifndef _EXCEPTION_
 #define _EXCEPTION_
 
+#include <cstddef>
+
 namespace std {
 
 
@@ -51,8 +53,8 @@ class exception_ptr {
 
 /* Implement std::unexpected. */
 using unexpected_handler = void (*)();
-unexpected_handler set_unexcepted(unexpected_handler) noexcept;
-unexpected_handler get_unexcepted() noexcept;
+unexpected_handler set_unexpected(unexpected_handler) noexcept;
+unexpected_handler get_unexpected() noexcept;
 void unexpected() noexcept __attribute__((__noreturn__));
 
 /* Implement std::terminate. */
