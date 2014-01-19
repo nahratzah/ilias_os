@@ -131,8 +131,8 @@ class __pbase_type_info
 : public std::type_info
 {
  public:
-  inline constexpr __pbase_type_info(const char*, unsigned int,
-                                     const std::type_info&);
+  inline __pbase_type_info(const char*, unsigned int,
+                           const std::type_info&) noexcept;
 
   ~__pbase_type_info() noexcept override;
 
@@ -163,9 +163,9 @@ class __pointer_to_member_type_info
 : public __pbase_type_info
 {
  public:
-  inline constexpr __pointer_to_member_type_info(const char*, unsigned int,
-                                                 const std::type_info&,
-                                                 const __class_type_info&);
+  inline __pointer_to_member_type_info(const char*, unsigned int,
+                                       const std::type_info&,
+                                       const __class_type_info&) noexcept;
 
   ~__pointer_to_member_type_info() noexcept override;
 
@@ -176,6 +176,6 @@ class __pointer_to_member_type_info
 
 } /* namespace __cxxabiv1 */
 
-#include <abi/typeinfo.h>
+#include <abi/typeinfo-inl.h>
 
 #endif /* _ABI_TYPEINFO_H_ */

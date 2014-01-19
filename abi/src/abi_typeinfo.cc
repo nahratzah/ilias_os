@@ -1,4 +1,5 @@
 #include <abi/typeinfo.h>
+#include <abi/dynamic_cast.h>
 
 namespace __cxxabiv1 {
 
@@ -39,10 +40,11 @@ __has_base_result __vmi_class_type_info::__has_base(
   for (const __base_class_type_info* i = begin; i != end; ++i) {
     const void* v_of_i = reinterpret_cast<const uint8_t*>(v) +
                          __base_class_type_info::get_offset(*i);
-    bool is_public = (get_flags(*i) & __base_class_type_info::__public_mask);
+    const auto fl = __base_class_type_info::get_flags(*i);
+    bool is_public = (fl & __base_class_type_info::__public_mask);
     if (!is_public) continue;
 
-    bool is_virt = (get_flags(*i) & __base_class_type_info::__virtual_mask);
+    bool is_virt = (fl & __base_class_type_info::__virtual_mask);
     if (is_virt && skip_virtual) continue;
 
     __has_base_result hbrv = i->__base_type->__has_base(v_of_i, p, p_ti);
@@ -61,7 +63,7 @@ __dyn_cast_response __class_type_info::__dyn_cast_support(
 __dyn_cast_response __si_class_type_info::__dyn_cast_support(
     const void* v, const __dyn_cast_request& request) const noexcept {
   __dyn_cast_response r = request.leaf(v, *this);
-  if (!r.return_now(request, v)) r.merge(request.resolve(v, __base_type));
+  if (!r.return_now(request, v)) r.merge(request.resolve(v, *__base_type));
   return r;
 }
 
@@ -76,7 +78,8 @@ __dyn_cast_response __vmi_class_type_info::__dyn_cast_support(
        ++i) {
     const void* v_of_i = reinterpret_cast<const uint8_t*>(v) +
                          __base_class_type_info::get_offset(*i);
-    bool is_public = (get_flags(*i) & __base_class_type_info::__public_mask);
+    const auto fl = __base_class_type_info::get_flags(*i);
+    bool is_public = (fl & __base_class_type_info::__public_mask);
     if (is_public) r.merge(request.resolve(v_of_i, *i->__base_type));
   }
 
