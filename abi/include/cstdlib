@@ -1,0 +1,15 @@
+#include <cdecl.h>
+
+namespace std {
+
+_cdecl_begin
+
+void abort() noexcept __attribute__((__noreturn__));
+int atexit(void (*)()) noexcept;
+int at_quick_exit(void (*)()) noexcept;
+void exit(int) noexcept __attribute__((__noreturn__));
+void quick_exit(int) noexcept __attribute__((__noreturn__));
+
+_cdecl_end
+
+} /* namespace std */

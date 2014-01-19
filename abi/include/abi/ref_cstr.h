@@ -13,12 +13,14 @@ class ref_cstr {
   inline ref_cstr(const ref_cstr&) noexcept;
   inline ref_cstr(ref_cstr&&) noexcept;
   inline ~ref_cstr() noexcept;
-  inline ref_cstr(const char*) noexcept;
+  ref_cstr(const char*) noexcept;
   ref_cstr& operator=(ref_cstr) noexcept;
 
   inline operator const char*() const noexcept;
   inline void swap(ref_cstr&) noexcept;
   explicit inline operator bool() const noexcept;
+
+  void reset() noexcept;
 
  private:
   using atom_t = std::atomic<uint32_t>;

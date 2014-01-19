@@ -1,30 +1,14 @@
 #ifndef _ABI_MEMORY_H_
 #define _ABI_MEMORY_H_
 
+#include <abi/_config.h>
 #include <abi/abi.h>
 
 namespace __cxxabiv1 {
 
 
-/*
- * Memory allocation function.
- *
- * sz: size of allocation
- * subsys: a string indicating what the memory is used for;
- *         all allocations from the abi start with "abi/".
- *
- * Returns null if the allocation fails.
- */
-inline void* malloc(size_t sz, const char* subsys) noexcept {
-  return nullptr;  // XXX implement
-}
+using _config::heap;
 
-/*
- * Free memory previously allocated using abi::malloc.
- */
-inline void free(void*) noexcept {
-  return;  // XXX implement
-}
 
 /*
  * Zero memory at given address, for sz bytes.
@@ -54,6 +38,13 @@ inline void memzero(void* addr, size_t sz) noexcept {
     sz -= sizeof(*i);
   }
 }
+
+/*
+ * Zero memory at given address, for sz bytes.
+ * This function is external, to prevent the compiler from
+ * optimizing it out.
+ */
+void safe_memzero(void*, size_t) noexcept;
 
 
 } /* namespace __cxxabiv1 */

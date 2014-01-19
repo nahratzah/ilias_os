@@ -22,8 +22,8 @@ inline const char* type_info::name() const noexcept {
 }
 
 inline _TYPES(size_t) type_info::hash_code() const noexcept {
-  /* XXX This is not a very good hash function. */
-  return reinterpret_cast<_TYPES(uintptr_t)>(name());
+  _TYPES(uintptr_t) v = reinterpret_cast<_TYPES(uintptr_t)>(name());
+  return v | (v >> 8) | (v >> 16) | (v >> 24);
 }
 
 

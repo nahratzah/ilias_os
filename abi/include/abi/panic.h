@@ -1,10 +1,13 @@
 #ifndef _ABI_PANIC_H_
 #define _ABI_PANIC_H_
 
+#include <abi/abi.h>
+#include <abi/_config.h>
+
 namespace __cxxabiv1 {
 
 
-inline void panic(const char* v, ...) noexcept {}  // XXX implement
+using _config::panic;
 
 
 }

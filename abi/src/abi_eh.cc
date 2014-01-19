@@ -88,6 +88,9 @@ bool release_emergency_space(void* p) noexcept {
 /* Size of cxa exception. */
 constexpr size_t header_sz = sizeof(__cxa_exception);
 
+/* Exception heap. */
+abi::heap abi_eh_heap{ "abi/exception" };
+
 __cxa_eh_globals* __cxa_get_globals() noexcept {
   static thread_local __cxa_eh_globals impl{ nullptr, 0 };
   return &impl;
@@ -101,7 +104,7 @@ void* __cxa_allocate_exception(size_t throw_sz) noexcept {
   const size_t sz = header_sz + throw_sz;
 
   /* Try allocating from heap. */
-  void* storage = abi::malloc(sz, "abi/exception");
+  void* storage = abi_eh_heap.malloc(sz);
   if (storage)
     memzero(storage, sz);
   else
@@ -129,7 +132,7 @@ void __cxa_free_exception(void* exc_addr) noexcept {
   /* Release emergency resources. */
   if (_predict_true(!release_emergency_space(addr))) {
     /* Release heap resources. */
-    abi::free(addr);
+    abi_eh_heap.free(addr);
   }
 }
 
