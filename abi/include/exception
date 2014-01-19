@@ -8,10 +8,6 @@ namespace std {
 
 class exception {
  public:
-  exception() noexcept;
-  exception(const exception&) noexcept;
-  exception& operator=(const exception&) noexcept;
-
   virtual ~exception() noexcept;
   virtual const char* what() const noexcept;
 };
@@ -20,10 +16,6 @@ class bad_exception
 : public exception
 {
  public:
-  bad_exception() noexcept;
-  bad_exception(const bad_exception&) noexcept;
-  bad_exception& operator=(const bad_exception&) noexcept;
-
   ~bad_exception() noexcept override;
   const char* what() const noexcept override;
 };
@@ -44,7 +36,6 @@ class exception_ptr {
   inline bool operator!=(const exception_ptr&) const noexcept;
 
   friend void rethrow_exception(exception_ptr) __attribute__((__noreturn__));
-  template<typename T> friend exception_ptr make_exception_ptr(T e) noexcept;
 
  private:
   void* ptr_ = nullptr;
@@ -69,7 +60,7 @@ class nested_exception {
   virtual ~nested_exception() noexcept;
 
   void rethrow_nested() const __attribute__((__noreturn__));
-  exception_ptr nested_ptr() const noexcept;
+  inline exception_ptr nested_ptr() const noexcept;
 
  private:
   exception_ptr nested_;
@@ -78,10 +69,12 @@ class nested_exception {
 template<typename T> void throw_with_nested(T&&) __attribute__((__noreturn__));
 template<typename T> void rethrow_if_nested(const T&);
 
+template<typename T> exception_ptr make_exception_ptr(T e) noexcept;
 exception_ptr current_exception() noexcept;
-void rethrow_exception(exception_ptr);
 
 
 } /* namespace std */
+
+#include <exception-inl.h>
 
 #endif /* _EXCEPTION_ */

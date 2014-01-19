@@ -30,13 +30,25 @@ inline void free(void*) noexcept {
  * Zero memory at given address, for sz bytes.
  */
 inline void memzero(void* addr, size_t sz) noexcept {
-  uintptr_t* lp = reinterpret_cast<uintptr_t*>(addr);
+  uintptr_t* lp;
+  uint8_t* i = reinterpret_cast<uint8_t*>(addr);
+
+  /* Zero bytes until we reach alignment of lp. */
+  while (sz >= sizeof(*i) &&
+         reinterpret_cast<uintptr_t>(i) % alignof(decltype(*lp)) != 0) {
+    *i++ = 0;
+    sz -= sizeof(*i);
+  }
+
+  /* Zero bytes while lp is fully within (addr, sz). */
+  lp = reinterpret_cast<uintptr_t*>(i);
   while (sz >= sizeof(*lp)) {
     *lp++ = 0;
     sz -= sizeof(*lp);
   }
 
-  uint8_t* i = reinterpret_cast<uint8_t*>(lp);
+  /* Zero last trailing bytes of (data, sz). */
+  i = reinterpret_cast<uint8_t*>(lp);
   while (sz >= sizeof(*i)) {
     *i++ = 0;
     sz -= sizeof(*i);
