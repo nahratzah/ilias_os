@@ -1,0 +1,11 @@
+*.ol
+*.o32
+*.o64
+*.kernel
+*.kgz
+*.kgzo
+*.ol.d
+*.o32.d
+*.o64.d
+*.kgzo.d
+kernel
