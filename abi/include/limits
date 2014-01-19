@@ -226,22 +226,22 @@ template<> class numeric_limits<unsigned char> {
   static constexpr bool tinyness_before = false;
   static constexpr float_round_style round_style = round_toward_zero;
 };
-template<> class numeric_limits<wchar16_t> {
+template<> class numeric_limits<char16_t> {
  public:
   static constexpr bool is_specialized = true;
-  static constexpr wchar16_t min() noexcept { return ...; }
-  static constexpr wchar16_t max() noexcept { return ...; }
-  static constexpr wchar16_t lowest() noexcept { return min(); }
+  static constexpr char16_t min() noexcept { return ...; }
+  static constexpr char16_t max() noexcept { return ...; }
+  static constexpr char16_t lowest() noexcept { return min(); }
 
-  static constexpr int digits = sizeof(wchar16_t) * CHAR_BIT - (min() < 0 ? 1 : 0);
+  static constexpr int digits = sizeof(char16_t) * CHAR_BIT - (min() < 0 ? 1 : 0);
   static constexpr int digits10 = ...;
   static constexpr int max_digits10 = ...;
-  static constexpr bool is_signed = min() < wchar16_t(0);
+  static constexpr bool is_signed = min() < char16_t(0);
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
   static constexpr int radix = 2;
-  static constexpr wchar16_t epsilon() noexcept { return 0; }
-  static constexpr wchar16_t round_error() noexcept { return 0; }
+  static constexpr char16_t epsilon() noexcept { return 0; }
+  static constexpr char16_t round_error() noexcept { return 0; }
 
   static constexpr int min_exponent = 0;
   static constexpr int min_exponent10 = 0;
@@ -253,10 +253,10 @@ template<> class numeric_limits<wchar16_t> {
   static constexpr bool has_signaling_NaN = false;
   static constexpr float_denorm_style has_denorm = denorm_absent;
   static constexpr bool has_denorm_loss = false;
-  static constexpr wchar16_t infinity() noexcept { return 0; }
-  static constexpr wchar16_t quiet_NaN() noexcept { return 0; }
-  static constexpr wchar16_t signaling_NaN() noexcept { return 0; }
-  static constexpr wchar16_t denorm_min() noexcept { return 0; }
+  static constexpr char16_t infinity() noexcept { return 0; }
+  static constexpr char16_t quiet_NaN() noexcept { return 0; }
+  static constexpr char16_t signaling_NaN() noexcept { return 0; }
+  static constexpr char16_t denorm_min() noexcept { return 0; }
 
   static constexpr bool is_iec559 = false;
   static constexpr bool is_bounded = true;
@@ -266,22 +266,22 @@ template<> class numeric_limits<wchar16_t> {
   static constexpr bool tinyness_before = false;
   static constexpr float_round_style round_style = round_toward_zero;
 };
-template<> class numeric_limits<wchar32_t> {
+template<> class numeric_limits<char32_t> {
  public:
   static constexpr bool is_specialized = true;
-  static constexpr wchar32_t min() noexcept { return ...; }
-  static constexpr wchar32_t max() noexcept { return ...; }
-  static constexpr wchar32_t lowest() noexcept { return min(); }
+  static constexpr char32_t min() noexcept { return ...; }
+  static constexpr char32_t max() noexcept { return ...; }
+  static constexpr char32_t lowest() noexcept { return min(); }
 
-  static constexpr int digits = sizeof(wchar32_t) * CHAR_BIT - (min() < 0 ? 1 : 0);
+  static constexpr int digits = sizeof(char32_t) * CHAR_BIT - (min() < 0 ? 1 : 0);
   static constexpr int digits10 = ...;
   static constexpr int max_digits10 = ...;
-  static constexpr bool is_signed = min() < wchar32_t(0);
+  static constexpr bool is_signed = min() < char32_t(0);
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
   static constexpr int radix = 2;
-  static constexpr wchar32_t epsilon() noexcept { return 0; }
-  static constexpr wchar32_t round_error() noexcept { return 0; }
+  static constexpr char32_t epsilon() noexcept { return 0; }
+  static constexpr char32_t round_error() noexcept { return 0; }
 
   static constexpr int min_exponent = 0;
   static constexpr int min_exponent10 = 0;
@@ -293,10 +293,10 @@ template<> class numeric_limits<wchar32_t> {
   static constexpr bool has_signaling_NaN = false;
   static constexpr float_denorm_style has_denorm = denorm_absent;
   static constexpr bool has_denorm_loss = false;
-  static constexpr wchar32_t infinity() noexcept { return 0; }
-  static constexpr wchar32_t quiet_NaN() noexcept { return 0; }
-  static constexpr wchar32_t signaling_NaN() noexcept { return 0; }
-  static constexpr wchar32_t denorm_min() noexcept { return 0; }
+  static constexpr char32_t infinity() noexcept { return 0; }
+  static constexpr char32_t quiet_NaN() noexcept { return 0; }
+  static constexpr char32_t signaling_NaN() noexcept { return 0; }
+  static constexpr char32_t denorm_min() noexcept { return 0; }
 
   static constexpr bool is_iec559 = false;
   static constexpr bool is_bounded = true;
