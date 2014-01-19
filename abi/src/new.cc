@@ -60,16 +60,18 @@ abi::heap& no_throw_array_heap() noexcept {
   return impl;
 }
 
-inline void* new_impl(abi::heap& heap, std::size_t sz, bool do_throw) {
+void* new_impl(abi::heap& heap, std::size_t sz) {
   void* p;
   for (p = heap.malloc(sz); _predict_false(!p); p = heap.malloc(sz)) {
     std::new_handler nh = std::get_new_handler();
-    if (!nh) {
-      if (do_throw)
-        throw std::bad_alloc();
-      return nullptr;
+    if (!nh) throw std::bad_alloc();
+    try {
+      (*nh)();
+    } catch (const std::bad_alloc&) {
+      throw;
+    } catch (...) {
+      std::unexpected();
     }
-    (*nh)();
   }
 
   abi::memzero(p, sz);
@@ -80,11 +82,15 @@ inline void* new_impl(abi::heap& heap, std::size_t sz, bool do_throw) {
 
 
 void* operator new(std::size_t sz) {
-  return new_impl(throwing_heap(), sz, true);
+  return new_impl(throwing_heap(), sz);
 }
 
 void* operator new(std::size_t sz, const std::nothrow_t&) noexcept {
-  return new_impl(no_throw_heap(), sz, false);
+  try {
+    return new_impl(no_throw_heap(), sz);
+  } catch (const std::bad_alloc&) {
+    return nullptr;
+  }
 }
 
 void operator delete(void* p) noexcept {
@@ -97,11 +103,15 @@ void operator delete(void* p, const std::nothrow_t&) noexcept {
 
 
 void* operator new[](std::size_t sz) {
-  return new_impl(throwing_array_heap(), sz, true);
+  return new_impl(throwing_array_heap(), sz);
 }
 
 void* operator new[](std::size_t sz, const std::nothrow_t&) noexcept {
-  return new_impl(no_throw_array_heap(), sz, false);
+  try {
+    return new_impl(no_throw_array_heap(), sz);
+  } catch (const std::bad_alloc&) {
+    return nullptr;
+  }
 }
 
 void operator delete[](void* p) noexcept {

@@ -126,7 +126,8 @@ inline void panic(const char*, ...) noexcept {
 
 /*
  * Struct big_heap: an implementation of heap, but with bells, whistles etc.
- * Feel free to go totally crazy with exceptions, TLS...
+ * Feel free to go totally crazy with exceptions, TLS, complex constructors...
+ * But please keep the destructor trivial/non-existant.
  *
  * Must provide the member functions:
  * - malloc: allocates sz bytes
