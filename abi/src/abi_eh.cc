@@ -1,6 +1,7 @@
 #define _SHOW_UNWIND_INTERNAL
 #include <abi/eh.h>
 #include <abi/memory.h>
+#include <abi/semaphore.h>
 
 namespace __cxxabiv1 {
 
@@ -11,7 +12,8 @@ namespace {
 typedef std::atomic<unsigned int> thr_emergency_use_t;
 thread_local thr_emergency_use_t thr_emergency_use;
 
-semaphore emergency_use_threads = 16;  // # threads that can use emergency buffers.
+/* # threads that can use emergency buffers. */
+semaphore emergency_use_threads{ 16U };
 
 class emergency_slot {
  private:
