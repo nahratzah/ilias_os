@@ -165,5 +165,9 @@ void __cxa_throw(void* exc_addr, const std::type_info* ti,
   for (;;);
 }
 
+bool __cxa_uncaught_exception() noexcept {
+  return __cxa_get_globals()->uncaughtExceptions != 0;
+}
+
 
 } /* namespace __cxxabiv1 */
