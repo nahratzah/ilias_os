@@ -1,6 +1,14 @@
 #ifndef _ABI_ERRNO_H_
 #define _ABI_ERRNO_H_
 
+#include <cdecl.h>
+
+_cdecl_begin
+
+extern thread_local int errno;
+
+_cdecl_end
+
 #define _E2BIG			 1
 #define _EACCES			 2
 #define _EADDRINUSE		 3

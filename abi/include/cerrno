@@ -1,14 +1,7 @@
 #ifndef _CERRNO_
 #define _CERRNO_
 
-#include <cdecl.h>
 #include <abi/errno.h>
-
-_cdecl_begin
-
-thread_local int	errno;
-
-_cdecl_end
 
 #define E2BIG			_E2BIG
 #define EACCES			_EACCES

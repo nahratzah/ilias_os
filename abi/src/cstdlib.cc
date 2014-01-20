@@ -214,13 +214,29 @@ void exit(int s) noexcept {
 }
 
 int atexit(void (*fn)()) noexcept {
-  if (fn == nullptr) return _EINVAL;
-  return push(fn_type(fn, false));
+  if (fn == nullptr) {
+    errno = _EINVAL;
+    return -1;
+  }
+  int e = push(fn_type(fn, false));
+  if (e) {
+    errno = e;
+    return -1;
+  }
+  return 0;
 }
 
 int at_quick_exit(void (*fn)()) noexcept {
-  if (fn == nullptr) return _EINVAL;
-  return push(fn_type(fn, true));
+  if (fn == nullptr) {
+    errno = _EINVAL;
+    return -1;
+  }
+  int e = push(fn_type(fn, true));
+  if (e) {
+    errno = e;
+    return -1;
+  }
+  return 0;
 }
 
 
