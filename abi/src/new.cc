@@ -60,8 +60,6 @@ abi::heap& no_throw_array_heap() noexcept {
   return impl;
 }
 
-} /* namespace <unnamed> */
-
 
 void* __new_impl(abi::heap& heap, std::size_t sz) {
   void* p;
@@ -88,6 +86,8 @@ void* __new_impl_nothrow(abi::heap& heap, std::size_t sz) noexcept {
     return nullptr;
   }
 }
+
+} /* namespace <unnamed> */
 
 
 void* __attribute__((weak)) operator new(std::size_t sz) {
