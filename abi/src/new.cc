@@ -78,6 +78,14 @@ void* new_impl(abi::heap& heap, std::size_t sz) {
   return p;
 }
 
+void* new_impl_nothrow(abi::heap& heap, std::size_t sz) noexcept {
+  try {
+    return new_impl(heap, sz);
+  } catch (const std::bad_alloc&) {
+    return nullptr;
+  }
+}
+
 } /* namespace <unnamed> */
 
 
@@ -87,11 +95,7 @@ void* __attribute__((weak)) operator new(std::size_t sz) {
 
 void* __attribute__((weak)) operator new(
     std::size_t sz, const std::nothrow_t&) noexcept {
-  try {
-    return new_impl(no_throw_heap(), sz);
-  } catch (const std::bad_alloc&) {
-    return nullptr;
-  }
+  return new_impl_nothrow(no_throw_heap(), sz);
 }
 
 void __attribute__((weak)) operator delete(void* p) noexcept {
@@ -110,11 +114,7 @@ void* __attribute__((weak)) operator new[](std::size_t sz) {
 
 void* __attribute__((weak)) operator new[](
     std::size_t sz, const std::nothrow_t&) noexcept {
-  try {
-    return new_impl(no_throw_array_heap(), sz);
-  } catch (const std::bad_alloc&) {
-    return nullptr;
-  }
+  return new_impl_nothrow(no_throw_array_heap(), sz);
 }
 
 void __attribute__((weak)) operator delete[](void* p) noexcept {
