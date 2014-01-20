@@ -1,4 +1,3 @@
-#define _SHOW_UNWIND_INTERNAL
 #include <abi/abi.h>
 #include <abi/eh.h>
 #include <abi/panic.h>

@@ -1,4 +1,3 @@
-#define _SHOW_UNWIND_INTERNAL
 #include <abi/eh.h>
 #include <abi/memory.h>
 #include <abi/semaphore.h>

@@ -193,15 +193,11 @@ struct __cxa_eh_globals {
 __cxa_eh_globals* __cxa_get_globals() noexcept;
 __cxa_eh_globals* __cxa_get_globals_fast() noexcept;
 
-bool __cxa_uncaught_exception() noexcept;
-
-
-#ifdef _SHOW_UNWIND_INTERNAL
 void* __cxa_allocate_exception(size_t) noexcept;
 void __cxa_free_exception(void*) noexcept;
 void __cxa_throw(void*, const std::type_info*, void (*)(void*)) noexcept
                 __attribute__((__noreturn__));
-#endif
+bool __cxa_uncaught_exception() noexcept;
 
 
 #undef Struct
