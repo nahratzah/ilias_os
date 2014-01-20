@@ -2,6 +2,8 @@
 #define _EXCEPTION_
 
 #include <cstddef>
+#include <type_traits>
+#include <utility>
 
 namespace std {
 
@@ -41,6 +43,20 @@ class exception_ptr {
   void* ptr_ = nullptr;
 };
 
+class nested_exception {
+ public:
+  nested_exception() noexcept;
+  nested_exception(const nested_exception&) = default;
+  nested_exception& operator=(const nested_exception&) = default;
+  virtual ~nested_exception() noexcept;
+
+  void rethrow_nested() const __attribute__((__noreturn__));
+  inline exception_ptr nested_ptr() const noexcept;
+
+ private:
+  exception_ptr nested_;
+};
+
 
 /* Implement std::unexpected. */
 using unexpected_handler = void (*)();
@@ -54,23 +70,12 @@ terminate_handler set_terminate(terminate_handler) noexcept;
 terminate_handler get_terminate() noexcept;
 void terminate() noexcept __attribute__((__noreturn__));
 
+bool uncaught_exception() noexcept;
 
-class nested_exception {
- public:
-  virtual ~nested_exception() noexcept;
-
-  void rethrow_nested() const __attribute__((__noreturn__));
-  inline exception_ptr nested_ptr() const noexcept;
-
- private:
-  exception_ptr nested_;
-};
-
-template<typename T> void throw_with_nested(T&&) __attribute__((__noreturn__));
-template<typename T> void rethrow_if_nested(const T&);
-
-template<typename T> exception_ptr make_exception_ptr(T e) noexcept;
 exception_ptr current_exception() noexcept;
+template<typename E> exception_ptr make_exception_ptr(E e) noexcept;
+template<typename T> void throw_with_nested(T&&) __attribute__((__noreturn__));
+template<typename E> void rethrow_if_nested(const E&);
 
 
 } /* namespace std */

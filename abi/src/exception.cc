@@ -71,16 +71,20 @@ exception_ptr::~exception_ptr() noexcept {
 }
 
 void rethrow_exception(exception_ptr p) {
-  if (p.ptr_) __cxa_rethrow_primary_exception(p.ptr_);
+  if (p.ptr_) ::abi::__cxa_rethrow_primary_exception(p.ptr_);
   terminate();
   for (;;);
 }
 
 
+nested_exception::nested_exception() noexcept
+: nested_(current_exception())
+{}
+
 nested_exception::~nested_exception() noexcept {}
 
 void nested_exception::rethrow_nested() const {
-  ...
+  rethrow_exception(nested_);
 }
 
 
@@ -102,12 +106,12 @@ std::atomic<terminate_handler> terminate_impl;  // Zero initialized
 
 unexpected_handler set_unexpected(unexpected_handler h) noexcept {
   unexpected_handler rv = unexpected_impl.exchange(h,
-                                                   std::memory_order_relaxed);
+                                                   std::memory_order_acq_rel);
   return (rv ? rv : &dfl_unexpected);
 }
 
 unexpected_handler get_unexpected() noexcept {
-  unexpected_handler rv = unexpected_impl.load(std::memory_order_relaxed);
+  unexpected_handler rv = unexpected_impl.load(std::memory_order_acquire);
   return (rv ? rv : &dfl_unexpected);
 }
 
@@ -120,12 +124,12 @@ void unexpected() noexcept {
 
 
 terminate_handler set_terminate(terminate_handler h) noexcept {
-  terminate_handler rv = terminate_impl.exchange(h, std::memory_order_relaxed);
+  terminate_handler rv = terminate_impl.exchange(h, std::memory_order_acq_rel);
   return (rv ? rv : &dfl_terminate);
 }
 
 terminate_handler get_terminate() noexcept {
-  terminate_handler rv = terminate_impl.load(std::memory_order_relaxed);
+  terminate_handler rv = terminate_impl.load(std::memory_order_acquire);
   return (rv ? rv : &dfl_terminate);
 }
 
@@ -134,6 +138,10 @@ void terminate() noexcept {
   (*h)();
   ::abi::panic("std::terminate_handler %p returned", h);
   for (;;);
+}
+
+bool uncaught_exception() noexcept {
+  return ::abi::__cxa_uncaught_exception();
 }
 
 
