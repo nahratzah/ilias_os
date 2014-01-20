@@ -64,7 +64,7 @@ void* new_impl(abi::heap& heap, std::size_t sz) {
   void* p;
   for (p = heap.malloc(sz); _predict_false(!p); p = heap.malloc(sz)) {
     std::new_handler nh = std::get_new_handler();
-    if (!nh) throw std::bad_alloc();
+    if (!nh) std::__throw_bad_alloc();
     try {
       (*nh)();
     } catch (const std::bad_alloc&) {
@@ -124,4 +124,8 @@ void __attribute__((weak)) operator delete[](void* p) noexcept {
 void __attribute__((weak)) operator delete[](
     void* p, const std::nothrow_t&) noexcept {
   if (p) no_throw_array_heap().free(p);
+}
+
+void __throw_bad_alloc() {
+  throw std::bad_alloc();
 }

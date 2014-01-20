@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <exception>
+#include <cdecl.h>
 
 namespace std {
 
@@ -30,6 +31,11 @@ using new_handler = void (*)();
 
 new_handler get_new_handler() noexcept;
 new_handler set_new_handler(new_handler) noexcept;
+
+
+_cdecl_begin
+void __throw_bad_alloc() __attribute__((__noreturn__));
+_cdecl_end
 
 
 } /* namespace std */

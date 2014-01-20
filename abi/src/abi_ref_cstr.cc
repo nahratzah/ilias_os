@@ -18,7 +18,7 @@ ref_cstr::ref_cstr(const char* s) noexcept
   /* Allocate space for reference counter + str. */
   head_ = static_cast<atom_t*>(ref_cstr_heap.malloc(sizeof(*head_) +
                                                     len + 1U));
-  if (!head_) throw std::bad_alloc();
+  if (!head_) std::__throw_bad_alloc();
 
   /* Initialize reference counter. */
   atomic_init(head_, 1U);
