@@ -1,5 +1,6 @@
 INCLUDES += -Iabi/include
 SRCS +=	abi/src/abi_assert.cc
+SRCS +=	abi/src/abi_demangle.cc
 SRCS +=	abi/src/abi_dynamic_cast.cc
 SRCS +=	abi/src/abi_eh.cc
 SRCS += abi/src/abi_errno.cc
