@@ -74,4 +74,4 @@ template<typename E> void rethrow_if_nested(const E& e) {
 }
 
 
-}
+} /* namespace std */

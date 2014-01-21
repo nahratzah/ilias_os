@@ -22,7 +22,7 @@ inline void* exc_acquire(void* p) noexcept {
 
 inline void exc_release(void* p) noexcept {
   if (!p) return;
-  abi::__cxa_exception::release(*exc_ptr(p));
+  if (abi::__cxa_exception::release(*exc_ptr(p))) abi::__cxa_free_exception(p);
 }
 
 
@@ -70,7 +70,7 @@ exception_ptr::~exception_ptr() noexcept {
 }
 
 void rethrow_exception(exception_ptr p) {
-  if (p.ptr_) ::abi::__cxa_rethrow_primary_exception(p.ptr_);
+  if (p.ptr_) abi::__cxa_rethrow_primary_exception(p.ptr_);
   terminate();
   for (;;);
 }
@@ -90,11 +90,11 @@ void nested_exception::rethrow_nested() const {
 namespace {
 
 void dfl_unexpected() noexcept {
-  ::abi::panic("std::unexpected");
+  abi::panic("std::unexpected");
 }
 
 void dfl_terminate() noexcept {
-  ::abi::panic("std::terminate");
+  abi::panic("std::terminate");
 }
 
 std::atomic<unexpected_handler> unexpected_impl;  // Zero initialized
@@ -117,7 +117,7 @@ unexpected_handler get_unexpected() noexcept {
 void unexpected() noexcept {
   unexpected_handler h = get_unexpected();
   (*h)();
-  ::abi::panic("std::unexpected_handler %p returned", h);
+  abi::panic("std::unexpected_handler %p returned", h);
   for (;;);
 }
 
@@ -135,12 +135,18 @@ terminate_handler get_terminate() noexcept {
 void terminate() noexcept {
   terminate_handler h = get_terminate();
   (*h)();
-  ::abi::panic("std::terminate_handler %p returned", h);
+  abi::panic("std::terminate_handler %p returned", h);
   for (;;);
 }
 
 bool uncaught_exception() noexcept {
-  return ::abi::__cxa_uncaught_exception();
+  return abi::__cxa_uncaught_exception();
+}
+
+exception_ptr current_exception() noexcept {
+  exception_ptr p;
+  p.ptr_ = abi::__cxa_current_primary_exception();
+  return p;
 }
 
 

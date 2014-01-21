@@ -1,5 +1,6 @@
 #include <abi/eh.h>
 #include <abi/memory.h>
+#include <abi/panic.h>
 #include <abi/semaphore.h>
 
 namespace __cxxabiv1 {
@@ -81,14 +82,21 @@ bool release_emergency_space(void* p) noexcept {
   return false;
 }
 
-
-} /* namespace __cxxabiv1::<unnamed> */
-
 /* Size of cxa exception. */
 constexpr size_t header_sz = sizeof(__cxa_exception);
 
 /* Exception heap. */
 abi::heap abi_eh_heap{ "abi/exception" };
+
+inline __cxa_exception* exc2hdr(void* exc) noexcept {
+  if (exc == nullptr) return nullptr;
+  void* base = reinterpret_cast<uint8_t*>(exc) - header_sz;
+  return reinterpret_cast<__cxa_exception*>(base);
+}
+
+
+} /* namespace __cxxabiv1::<unnamed> */
+
 
 __cxa_eh_globals* __cxa_get_globals() noexcept {
   static thread_local __cxa_eh_globals impl{ nullptr, 0 };
@@ -103,11 +111,12 @@ void* __cxa_allocate_exception(size_t throw_sz) noexcept {
   const size_t sz = header_sz + throw_sz;
 
   /* Try allocating from heap. */
-  void* storage = abi_eh_heap.malloc(sz);
-  if (storage)
+  __cxa_exception* storage =
+    static_cast<__cxa_exception*>(abi_eh_heap.malloc(sz));
+  if (_predict_true(storage))
     memzero(storage, sz);
   else
-    storage = acquire_emergency_space(sz);
+    storage = static_cast<__cxa_exception*>(acquire_emergency_space(sz));
 
   if (_predict_false(!storage)) {
     /*
@@ -118,21 +127,36 @@ void* __cxa_allocate_exception(size_t throw_sz) noexcept {
   }
 
   /* Return address where exception is to be created. */
-  return static_cast<uint8_t*>(storage) + header_sz;
+  return storage + 1;
 }
 
 void __cxa_free_exception(void* exc_addr) noexcept {
-  void* addr = reinterpret_cast<uint8_t*>(exc_addr) - header_sz;
-  __cxa_exception* exc = reinterpret_cast<__cxa_exception*>(addr);
+  __cxa_exception* next = nullptr;
+  __cxa_exception* exc = exc2hdr(exc_addr);
+  do {
+    if (exc->refcount.load(std::memory_order_acquire) != 0U) {
+      panic("%s: %s", __func__, "exception reference count != 0");
+      for (;;);
+    }
 
-  /* Destroy exception object. */
-  if (exc->exceptionDestructor) exc->exceptionDestructor(exc_addr);
+    /*
+     * Release next exception in the chain;
+     * if the exception has to be destroyed as well,
+     * keep it in next.
+     */
+    next = exc->nextException;
+    exc->nextException = nullptr;
+    if (next && !__cxa_exception::release(*next)) next = nullptr;
 
-  /* Release emergency resources. */
-  if (_predict_true(!release_emergency_space(addr))) {
-    /* Release heap resources. */
-    abi_eh_heap.free(addr);
-  }
+    /* Destroy exception object. */
+    if (exc->exceptionDestructor) exc->exceptionDestructor(exc_addr);
+
+    /* Release emergency resources. */
+    if (_predict_true(!release_emergency_space(exc))) {
+      /* Release heap resources. */
+      abi_eh_heap.free(exc);
+    }
+  } while ((exc = next) != nullptr);
 }
 
 void __cxa_throw(void* exc_addr, const std::type_info* ti,
@@ -141,10 +165,9 @@ void __cxa_throw(void* exc_addr, const std::type_info* ti,
    * Note: __cxa_exception of exc_addr was zeroed at allocation.
    * Thus no initializing to zero is required.
    */
-  void* addr = reinterpret_cast<uint8_t*>(exc_addr) - header_sz;
-  __cxa_exception* exc = reinterpret_cast<__cxa_exception*>(addr);
+  __cxa_exception* exc = exc2hdr(exc_addr);
 
-  exc->refcount = 1;
+  atomic_init(&exc->refcount, 1U);
 
   exc->exceptionType = ti;
   exc->exceptionDestructor = destructor;
@@ -166,6 +189,43 @@ void __cxa_throw(void* exc_addr, const std::type_info* ti,
 
 bool __cxa_uncaught_exception() noexcept {
   return __cxa_get_globals()->uncaughtExceptions != 0;
+}
+
+void __cxa_rethrow_primary_exception(void* exc_addr) noexcept {
+  if (_predict_false(!exc_addr)) {
+    std::terminate();
+    for (;;);
+  }
+  /* Resolve primary exception. */
+  __cxa_exception* exc = exc2hdr(exc_addr);
+  while (exc->nextException) exc = exc->nextException;
+
+  __cxa_exception* rv = exc2hdr(__cxa_allocate_exception(0));
+  atomic_init(&rv->refcount, 1U);
+
+  std::terminate_handler terminate = rv->terminateHandler =
+                                     std::get_terminate();
+  rv->unexpectedHandler = std::get_unexpected();
+  rv->nextException = exc;
+  __cxa_exception::acquire(*exc);  // Because of rv->nextException above.
+
+  rv->unwindHeader.exception_class = _Unwind_Exception::GNU_CXX_dependant();
+
+  /* Increment # uncaught exceptions. */
+  __cxa_get_globals()->uncaughtExceptions++;
+
+  _Unwind_Reason_Code fail = _Unwind_RaiseException(&rv->unwindHeader);
+
+  /* If _Unwind_RaiseException returns, there are serious problems. */
+  (*terminate)();  // XXX report fail
+  for (;;);
+}
+
+void* __cxa_current_primary_exception() noexcept {
+  __cxa_exception* exc = __cxa_get_globals()->caughtExceptions;
+  if (!exc) return nullptr;
+  while (exc->nextException) exc = exc->nextException;
+  return exc + 1;
 }
 
 

@@ -81,8 +81,14 @@ struct _Unwind_Exception {
   static constexpr uint32_t CXX_abi() {
     return str_to_vendorabi('C', '+', '+', '\0');
   }
+  static constexpr uint32_t CXX_dependant_abi() {
+    return str_to_vendorabi('C', '+', '+', '\1');
+  }
   static constexpr uint64_t GNU_CXX() {
     return make_exception_class(GNU_vendor(), CXX_abi());
+  }
+  static constexpr uint64_t GNU_CXX_dependant() {
+    return make_exception_class(GNU_vendor(), CXX_dependant_abi());
   }
 #endif
 };
@@ -198,6 +204,9 @@ void __cxa_free_exception(void*) noexcept;
 void __cxa_throw(void*, const std::type_info*, void (*)(void*)) noexcept
                 __attribute__((__noreturn__));
 bool __cxa_uncaught_exception() noexcept;
+void __cxa_rethrow_primary_exception(void*) noexcept
+                                    __attribute__((__noreturn__));
+void* __cxa_current_primary_exception() noexcept;
 
 
 #undef Struct

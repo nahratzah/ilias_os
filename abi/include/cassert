@@ -8,8 +8,8 @@
 # define assert_msg(p, msg)  do { /* nothing */ } while (0)
 #else
 # define assert_msg(p, m)                                                     \
-         _assert_test(bool(pred), __FILE__, __func__, __LINE__,               \
-                      #pred, m)
+         _assert_test(bool(p), __FILE__, __func__, __LINE__,                  \
+                      #p, m)
 #endif
 
 #ifdef __cplusplus
@@ -18,4 +18,4 @@
 # define assert(p)           assert_msg(p, (void*)0)
 #endif
 
-#endif _CASSERT_
+#endif /* _CASSERT_ */

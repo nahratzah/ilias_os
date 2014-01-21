@@ -8,6 +8,9 @@
 namespace std {
 
 
+class exception_ptr;
+exception_ptr current_exception() noexcept;
+
 class exception {
  public:
   virtual ~exception() noexcept;
@@ -38,6 +41,7 @@ class exception_ptr {
   inline bool operator!=(const exception_ptr&) const noexcept;
 
   friend void rethrow_exception(exception_ptr) __attribute__((__noreturn__));
+  friend exception_ptr current_exception() noexcept;
 
  private:
   void* ptr_ = nullptr;
@@ -72,7 +76,6 @@ void terminate() noexcept __attribute__((__noreturn__));
 
 bool uncaught_exception() noexcept;
 
-exception_ptr current_exception() noexcept;
 template<typename E> exception_ptr make_exception_ptr(E e) noexcept;
 template<typename T> void throw_with_nested(T&&) __attribute__((__noreturn__));
 template<typename E> void rethrow_if_nested(const E&);
