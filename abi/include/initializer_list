@@ -24,20 +24,22 @@ template<typename E> class initializer_list {
   inline size_type size() const noexcept;
   inline const_iterator begin() const noexcept;
   inline const_iterator end() const noexcept;
-  inline iterator begin() const noexcept;
-  inline iterator end() const noexcept;
+  inline iterator begin() noexcept;
+  inline iterator end() noexcept;
 };
 
 template<typename E>
-inline initializer_list<E>::iterator begin(initializer_list<E>&) noexcept;
+inline typename initializer_list<E>::iterator begin(initializer_list<E>&)
+    noexcept;
 template<typename E>
-inline initializer_list<E>::iterator end(initializer_list<E>&) noexcept;
+inline typename initializer_list<E>::iterator end(initializer_list<E>&)
+    noexcept;
 
 template<typename E>
-inline initializer_list<E>::const_iterator begin(
+inline typename initializer_list<E>::const_iterator begin(
     const initializer_list<E>&) noexcept;
 template<typename E>
-inline initializer_list<E>::const_iterator end(
+inline typename initializer_list<E>::const_iterator end(
     const initializer_list<E>&) noexcept;
 
 
