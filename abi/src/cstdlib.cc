@@ -246,11 +246,11 @@ int at_quick_exit(void (*fn)()) noexcept {
 }
 
 
-void* malloc(size_t sz) noexcept {
+void* __attribute__((weak)) malloc(size_t sz) noexcept {
   return c_malloc_heap().malloc(sz);
 }
 
-void free(void* p) noexcept {
+void __attribute__((weak)) free(void* p) noexcept {
   c_malloc_heap().free(p);
 }
 
