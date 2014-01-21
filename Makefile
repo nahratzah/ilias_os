@@ -11,7 +11,7 @@ all: kernel
 .include "contrib/freestanding/libcxx/Makefile.inc"
 
 # Import build rules.
-.include "Makefile.inc"
+.include "Makefile.rules"
 
 32.kernel: ${OBJS_32} i386.ld
 	${LD} -T i386.ld ${LDFLAGS} -o $@ ${OBJS_32}
