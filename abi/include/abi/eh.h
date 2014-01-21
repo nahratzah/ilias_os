@@ -204,9 +204,12 @@ void __cxa_free_exception(void*) noexcept;
 void __cxa_throw(void*, const std::type_info*, void (*)(void*)) noexcept
                 __attribute__((__noreturn__));
 bool __cxa_uncaught_exception() noexcept;
-void __cxa_rethrow_primary_exception(void*) noexcept
+void __cxa_rethrow_primary_exception(void*)
                                     __attribute__((__noreturn__));
 void* __cxa_current_primary_exception() noexcept;
+
+void __cxa_bad_cast() __attribute__((__noreturn__));
+void __cxa_bad_typeid() __attribute__((__noreturn__));
 
 
 #undef Struct

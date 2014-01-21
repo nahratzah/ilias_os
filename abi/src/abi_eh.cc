@@ -191,7 +191,7 @@ bool __cxa_uncaught_exception() noexcept {
   return __cxa_get_globals()->uncaughtExceptions != 0;
 }
 
-void __cxa_rethrow_primary_exception(void* exc_addr) noexcept {
+void __cxa_rethrow_primary_exception(void* exc_addr) {
   if (_predict_false(!exc_addr)) {
     std::terminate();
     for (;;);
@@ -226,6 +226,14 @@ void* __cxa_current_primary_exception() noexcept {
   if (!exc) return nullptr;
   while (exc->nextException) exc = exc->nextException;
   return exc + 1;
+}
+
+void __cxa_bad_cast() {
+  throw std::bad_cast();
+}
+
+void __cxa_bad_typeid() {
+  throw std::bad_typeid();
 }
 
 
