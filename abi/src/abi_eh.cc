@@ -167,7 +167,7 @@ void __cxa_throw(void* exc_addr, const std::type_info* ti,
    */
   __cxa_exception* exc = exc2hdr(exc_addr);
 
-  atomic_init(&exc->refcount, 1U);
+  __cxa_exception::acquire(*exc);
 
   exc->exceptionType = ti;
   exc->exceptionDestructor = destructor;
@@ -201,7 +201,7 @@ void __cxa_rethrow_primary_exception(void* exc_addr) noexcept {
   while (exc->nextException) exc = exc->nextException;
 
   __cxa_exception* rv = exc2hdr(__cxa_allocate_exception(0));
-  atomic_init(&rv->refcount, 1U);
+  __cxa_exception::acquire(*rv);
 
   std::terminate_handler terminate = rv->terminateHandler =
                                      std::get_terminate();
