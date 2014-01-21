@@ -1,6 +1,34 @@
 namespace std {
 
 
+constexpr exception_ptr::exception_ptr(nullptr_t) noexcept {}
+
+inline exception_ptr::exception_ptr(exception_ptr&& o) noexcept
+: exception_ptr()
+{
+  swap(*this, o);
+}
+
+inline exception_ptr::~exception_ptr() noexcept {
+  if (ptr_) reset();
+}
+
+inline exception_ptr& exception_ptr::operator=(exception_ptr o) noexcept {
+  swap(*this, o);
+  return *this;
+}
+
+inline exception_ptr& exception_ptr::operator=(nullptr_t) noexcept {
+  if (ptr_) reset();
+  return *this;
+}
+
+inline void swap(exception_ptr& a, exception_ptr& b) noexcept {
+  void* p_ = a.ptr_;
+  a.ptr_ = b.ptr_;
+  b.ptr_ = p_;
+}
+
 inline exception_ptr::operator bool() const noexcept {
   return bool(ptr_);
 }

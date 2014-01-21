@@ -47,26 +47,9 @@ exception_ptr::exception_ptr(const exception_ptr& other) noexcept
 : ptr_(exc_acquire(other.ptr_))
 {}
 
-exception_ptr::exception_ptr(exception_ptr&& other) noexcept
-: exception_ptr() {
-  swap(ptr_, other.ptr_);
-}
-
-exception_ptr& exception_ptr::operator=(const exception_ptr& other) noexcept {
+void exception_ptr::reset() noexcept {
   exc_release(ptr_);
-  ptr_ = exc_acquire(other.ptr_);
-  return *this;
-}
-
-exception_ptr& exception_ptr::operator=(exception_ptr&& other) noexcept {
-  exc_release(ptr_);
-  ptr_ = other.ptr_;
-  other.ptr_ = nullptr;
-  return *this;
-}
-
-exception_ptr::~exception_ptr() noexcept {
-  exc_release(ptr_);
+  ptr_ = nullptr;
 }
 
 void rethrow_exception(exception_ptr p) {
@@ -145,7 +128,7 @@ bool uncaught_exception() noexcept {
 
 exception_ptr current_exception() noexcept {
   exception_ptr p;
-  p.ptr_ = abi::__cxa_current_primary_exception();
+  p.ptr_ = exc_acquire(abi::__cxa_current_primary_exception());
   return p;
 }
 
