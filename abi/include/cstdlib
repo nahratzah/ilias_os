@@ -1,6 +1,12 @@
-#include <cdecl.h>
+#ifndef _CSTDLIB_
+#define _CSTDLIB_
 
+#include <cdecl.h>
+#include <cstddef>
+
+#ifdef __cplusplus
 namespace std {
+#endif
 
 _cdecl_begin
 
@@ -10,6 +16,21 @@ int at_quick_exit(void (*)()) noexcept;
 void exit(int) noexcept __attribute__((__noreturn__));
 void quick_exit(int) noexcept __attribute__((__noreturn__));
 
+void* malloc(size_t) noexcept;
+void free(void*) noexcept;
+
 _cdecl_end
 
+#ifdef __cplusplus
 } /* namespace std */
+
+using std::abort;
+using std::atexit;
+using std::at_quick_exit;
+using std::exit;
+using std::quick_exit;
+using std::malloc;
+using std::free;
+#endif /* __cplusplus */
+
+#endif /* _CSTDLIB_ */

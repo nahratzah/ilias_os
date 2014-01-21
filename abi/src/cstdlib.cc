@@ -190,6 +190,12 @@ fn_stack* fn_stack::head_ = nullptr;
 abi::semaphore fn_lock::fn_lck_{ 1U };
 
 
+abi::big_heap& c_malloc_heap() noexcept {
+  static abi::big_heap impl{ "" };
+  return impl;
+}
+
+
 } /* namespace std::<unnamed> */
 
 
@@ -237,6 +243,15 @@ int at_quick_exit(void (*fn)()) noexcept {
     return -1;
   }
   return 0;
+}
+
+
+void* malloc(size_t sz) noexcept {
+  return c_malloc_heap().malloc(sz);
+}
+
+void free(void* p) noexcept {
+  c_malloc_heap().free(p);
 }
 
 
