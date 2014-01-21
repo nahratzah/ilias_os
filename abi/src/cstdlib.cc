@@ -191,7 +191,7 @@ abi::semaphore fn_lock::fn_lck_{ 1U };
 
 
 abi::big_heap& c_malloc_heap() noexcept {
-  static abi::big_heap impl{ "" };
+  static abi::big_heap impl{ "abi/malloc" };
   return impl;
 }
 
