@@ -4,6 +4,7 @@ SRCS +=	abi/src/abi_demangle.cc
 SRCS +=	abi/src/abi_dynamic_cast.cc
 SRCS +=	abi/src/abi_eh.cc
 SRCS += abi/src/abi_errno.cc
+SRCS += abi/src/abi_hashcode.cc
 SRCS += abi/src/abi_memory.cc
 SRCS +=	abi/src/abi_ref_cstr.cc
 SRCS +=	abi/src/abi_semaphore.cc
