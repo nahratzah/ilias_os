@@ -20,4 +20,6 @@ constexpr unsigned int log2_up(uintmax_t);
 
 }} /* namespace __cxxabi::ext */
 
+#include <abi/ext/log2-inl.h>
+
 #endif /* _ABI_EXT_LOG2_H_ */
