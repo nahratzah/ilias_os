@@ -153,6 +153,19 @@ auto list<T, Tag>::crend() const noexcept -> const_reverse_iterator {
 }
 
 template<typename T, typename Tag>
+auto list<T, Tag>::iterator_to(pointer p) noexcept -> iterator {
+  if (!p) return end();
+  return iterator{ p };
+}
+
+template<typename T, typename Tag>
+auto list<T, Tag>::iterator_to(const_pointer p) const noexcept ->
+    const_iterator {
+  if (!p) return end();
+  return const_iterator{ p };
+}
+
+template<typename T, typename Tag>
 auto list<T, Tag>::link_after_(pointer e, pointer p) noexcept -> bool {
   if (!e || is_linked(e)) return false;
   const pointer s = p->succ_;

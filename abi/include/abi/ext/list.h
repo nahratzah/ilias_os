@@ -59,15 +59,14 @@ template<typename T, typename Tag> class list {
 
   void swap(list&) noexcept;
   bool empty() const noexcept;
-  size_type size() const noexcept;
 
   static bool is_linked(const_pointer) const noexcept;
   bool link_front(pointer) noexcept;
   bool link_back(pointer) noexcept;
-  static bool unlink(pointer) noexcept;
+  bool unlink(pointer) noexcept;
   bool link_before(pointer, const_iterator) noexcept;
   bool link_after(pointer, const_iterator) noexcept;
-  static bool unlink(const_iterator) noexcept;  // Found via ADL.
+  bool unlink(const_iterator) noexcept;
 
   iterator begin() noexcept;
   iterator end() noexcept;
@@ -81,6 +80,9 @@ template<typename T, typename Tag> class list {
   const_iterator cend() const noexcept;
   const_reverse_iterator crbegin() const noexcept;
   const_reverse_iterator crend() const noexcept;
+
+  iterator iterator_to(pointer) noexcept;
+  const_iterator iterator_to(const_pointer) const noexcept;
 
  private:
   static bool link_after_(pointer, pointer) noexcept;
