@@ -1,9 +1,10 @@
-#include <util/c_string_ptr.h>
-#include <util/string_piece.h>
+#include <abi/ext/c_string_ptr.h>
+#include <abi/ext/string_piece.h>
 #include <stdexcept>
 #include <string>
 
-namespace util {
+namespace __cxxabiv1 {
+namespace ext {
 
 
 c_string_ptr::c_string_ptr(const std::string& s) : c_string_ptr() {
@@ -62,4 +63,4 @@ c_string_ptr::operator std::string() const {
   return std::string(data(), size());
 }
 
-} /* namespace util */
+}} /* namespace __cxxabiv1::ext */

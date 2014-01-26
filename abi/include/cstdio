@@ -1,0 +1,37 @@
+#ifndef _CSTDIO_
+#define _CSTDIO_
+
+#include <cstddef>
+#include <cdecl.h>
+
+#ifdef __cplusplus
+namespace std {
+#endif
+
+_cdecl_begin
+
+int dprintf(int, const char*__restrict, ...) noexcept;
+int fprintf(FILE*__restrict, const char*__restrict, ...) noexcept;
+int printf(const char*__restrict, ...) noexcept;
+int snprintf(char*__restrict, size_t, const char*__restrict, ...) noexcept;
+int sprintf(char*__restrict, const char*__restrict, ...) noexcept;
+int asprintf(char**, const char*__restrict, ...) noexcept;
+
+int vdprintf(int, const char*__restrict, va_list) noexcept;
+int vfprintf(FILE*__restrict, const char*__restrict, va_list) noexcept;
+int vprintf(const char*__restrict, va_list) noexcept;
+int vsnprintf(char*__restrict, size_t, const char*__restrict, va_list)
+    noexcept;
+int vsprintf(char*__restrict, const char*__restrict, va_list) noexcept;
+int vasprintf(char**, const char*__restrict, va_list) noexcept;
+
+_cdecl_end
+
+#ifdef __cplusplus
+} /* namespace std */
+
+using std::printf;
+#endif /* __cplusplus */
+
+
+#endif /* _CSTDIO_ */

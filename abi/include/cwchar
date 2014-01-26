@@ -1,0 +1,20 @@
+#ifndef _CWCHAR_
+#define _CWCHAR_
+
+
+#ifdef __cplusplus
+namespace std {
+#endif
+
+_cdecl_begin
+
+typedef _TYPES(mbstate_t)	mbstate_t;
+
+_cdecl_end
+
+#ifdef __cplusplus
+} /* namespace std */
+#endif
+
+
+#endif /* _CWCHAR_ */

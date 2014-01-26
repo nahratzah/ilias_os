@@ -2,6 +2,7 @@
 #define _TYPEINFO_
 
 #include <abi/abi.h>
+#include <abi/hashcode.h>
 #include <exception>
 
 namespace std {

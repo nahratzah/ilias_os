@@ -21,5 +21,9 @@
 # define noexcept		/* C is always noexcept. */
 #endif
 
+#ifndef __cplusplus
+# define __restrict		restrict
+#endif
+
 
 #endif /* CDECL_H */

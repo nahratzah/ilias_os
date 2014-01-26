@@ -7,6 +7,7 @@ namespace std {
 
 
 typedef _TYPES(size_t)		size_t;
+typedef _TYPES(ssize_t)		ssize_t;
 typedef _TYPES(ptrdiff_t)	ptrdiff_t;
 
 
@@ -14,6 +15,7 @@ typedef _TYPES(ptrdiff_t)	ptrdiff_t;
 
 
 using std::size_t;
+using std::ssize_t;
 using std::ptrdiff_t;
 
 

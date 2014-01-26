@@ -20,6 +20,7 @@ typedef _TYPES(uint64_t)	uint64_t;
 typedef _TYPES(int64_t)		int64_t;
 typedef _TYPES(uintmax_t)	uintmax_t;
 typedef _TYPES(intmax_t)	intmax_t;
+typedef _TYPES(sig_atomic_t)	sig_atomic_t;
 
 typedef uint8_t			uint_least8_t;
 typedef int8_t			int_least8_t;
@@ -58,6 +59,7 @@ using std::uint64_t;
 using std::int64_t;
 using std::uintmax_t;
 using std::intmax_t;
+using std::sig_atomic_t;
 
 using std::uint_least8_t;
 using std::int_least8_t;
@@ -94,6 +96,19 @@ using std::u_int64_t;
 #define INTMAX_C(x)		(x##LL)
 #define UINTMAX_C(x)		(x##ULL)
 
+#define INT8_MIN		SCHAR_MIN
+#define INT8_MAX		SCHAR_MAX
+#define INT16_MIN		SHRT_MIN
+#define INT16_MAX		SHRT_MAX
+#define INT32_MIN		INT_MIN
+#define INT32_MAX		INT_MAX
+#define INT64_MIN		LLONG_MIN
+#define INT64_MAX		LLONG_MAX
+#define UINT8_MAX		UCHAR_MAX
+#define UINT16_MAX		USHRT_MAX
+#define UINT32_MAX		UINT_MAX
+#define UINT64_MAX		ULLONG_MAX
+
 #define INT_FAST8_MIN		SCHAR_MIN
 #define INT_FAST8_MAX		SCHAR_MAX
 #define INT_FAST16_MIN		SHRT_MIN
@@ -122,9 +137,9 @@ using std::u_int64_t;
 #define UINT_LEAST32_MAX	UINT_MAX
 #define UINT_LEAST64_MAX	ULLONG_MAX
 
-#define INTMAX_MIN		LLONG_MIN
-#define INTMAX_MAX		LLONG_MAX
-#define UINTMAX_MAX		ULLONG_MAX
+#define INTMAX_MIN		(-INTMAX_MAX - 1)
+#define INTMAX_MAX		__INTMAX_MAX__
+#define UINTMAX_MAX		__UINTMAX_MAX__
 
 #ifdef __LP64__
 #define INTPTR_MIN		LONG_MIN
@@ -136,13 +151,12 @@ using std::u_int64_t;
 #define UINTPTR_MAX		UINT_MAX
 #endif
 
-#define PTRDIFF_MIN		INTPTR_MIN
-#define PTRDIFF_MAX		INTPTR_MAX
-// XXX #define SIG_ATOMIC_MIN		...
-// XXX #define SIG_ATOMIC_MAX		...
-#define WCHAR_MIN		INT32_MIN
-#define WCHAR_MAX		INT32_MAX
-#define WINT_MIN		INT64_MIN
-#define WINT_MAX		INT64_MAX
+#define PTRDIFF_MIN		(-__PTRDIFF_MAX - 1)
+#define PTRDIFF_MAX		__PTRDIFF_MAX
+#define SIG_ATOMIC_MIN		INT_MIN
+#define SIG_ATOMIC_MAX		INT_MAX
+#define WINT_MIN		__WINT_MIN__
+#define WINT_MAX		__WINT_MAX__
+
 
 #endif /* CSTDINT */

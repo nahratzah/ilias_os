@@ -1,0 +1,44 @@
+#ifndef _CSTRING_
+#define _CSTRING_
+
+#include <cstddef>
+
+#ifdef __cplusplus
+namespace std {
+#endif
+
+_cdecl_begin
+
+size_t strlen(const char*) noexcept;
+int strcmp(const char*, const char*) noexcept;
+int memcmp(const void*, const void*, size_t) noexcept;
+void* memmove(void*, const void*, size_t) noexcept;
+void* memcpy(void*, const void*, size_t) noexcept;
+void* memset(void*, int, size_t) noexcept;
+
+#ifdef __cplusplus
+/* libcxx seems to have some difficulty understanding the location of these. */
+inline namespace __1 {
+using std::strcmp;
+using std::memcmp;
+using std::strlen;
+using std::memmove;
+using std::memcpy;
+using std::memset;
+}
+#endif /* __cplusplus */
+
+_cdecl_end
+
+#ifdef __cplusplus
+} /* namespace std */
+
+using std::strcmp;
+using std::memcmp;
+using std::strlen;
+using std::memmove;
+using std::memcpy;
+using std::memset;
+#endif /* __cplusplus */
+
+#endif /* _CSTRING_ */

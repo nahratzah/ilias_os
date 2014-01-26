@@ -1,6 +1,5 @@
-#include <util/c_string_ptr.h>
-
-namespace util {
+namespace __cxxabiv1 {
+namespace ext {
 
 
 inline constexpr c_string_piece::c_string_piece(const char* s) noexcept : data_{ s }, len_{ s ? strlen(s) : 0U } {}
@@ -34,15 +33,27 @@ inline c_string_piece& c_string_piece::operator=(c_string_piece&& other) noexcep
   other.len_ = 0U;
   return *this;
 }
-inline c_string_piece& c_string_piece::operator+=(size_type l) {
-  if (l > len_) throw std::range_error("string_piece shorter than added index");
+inline c_string_piece& c_string_piece::operator+=(size_type l) noexcept {
+  if (l > len_) l = len_;
   data_ += l;
   len_ -= l;
   return *this;
 }
-inline c_string_piece c_string_piece::operator+(size_type l) const {
+inline c_string_piece c_string_piece::operator+(size_type l) const noexcept {
   c_string_piece clone = *this;
   return clone += l;
+}
+inline c_string_piece& c_string_piece::operator++() noexcept {
+  if (len_) {
+    ++data_;
+    --len_;
+  }
+  return *this;
+}
+inline c_string_piece c_string_piece::operator++(int) noexcept {
+  c_string_piece clone = *this;
+  ++*this;
+  return clone;
 }
 
 inline bool c_string_piece::operator==(const c_string_piece& other) const noexcept {
@@ -60,9 +71,10 @@ inline void c_string_piece::swap(c_string_piece& other) noexcept {
 }
 
 inline void swap(c_string_piece& a, c_string_piece& b) noexcept { a.swap(b); }
-inline c_string_piece c_string_piece::substr(size_type s) const { return *this + s; }
+inline c_string_piece c_string_piece::substr(size_type s) const noexcept { return *this + s; }
+inline ptrdiff_t c_string_piece::operator-(const c_string_piece& o) const noexcept { return data_ - o.data_; }
 
-inline c_string_piece c_string_piece::substr(size_type s, size_type len) const {
+inline c_string_piece c_string_piece::substr(size_type s, size_type len) const noexcept {
   c_string_piece result = *this + s;
   if (result.len_ > len) result.len_ = len;
   return result;
@@ -76,6 +88,7 @@ inline c_string_piece::iterator c_string_piece::begin() const { return data_; }
 inline c_string_piece::iterator c_string_piece::end() const { return begin() + size(); }
 inline c_string_piece::const_iterator c_string_piece::cbegin() const { return begin(); }
 inline c_string_piece::const_iterator c_string_piece::cend() const { return end(); }
+inline ptrdiff_t operator-(const char* a, const c_string_piece& b) noexcept { return a - b.data(); }
 
 
 inline bool c_chord::empty() const noexcept { return size() == 0U; }
@@ -109,4 +122,4 @@ template<typename... T> c_chord chord_cat(T&&... t) {
 }
 
 
-} /* namespace util */
+}} /* namespace __cxxabiv1::ext */

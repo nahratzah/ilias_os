@@ -42,21 +42,29 @@ typedef signed long		_ABI_TYPES(intptr_t);
 typedef unsigned int		_ABI_TYPES(uintptr_t);
 typedef signed int		_ABI_TYPES(intptr_t);
 #endif
-typedef _ABI_TYPES(uintptr_t)	_ABI_TYPES(size_t);
-typedef _ABI_TYPES(intptr_t)	_ABI_TYPES(ptrdiff_t);
+typedef __SIZE_TYPE__		_ABI_TYPES(size_t);
+typedef _ABI_TYPES(intptr_t)	_ABI_TYPES(ssize_t);
+typedef __PTRDIFF_TYPE__	_ABI_TYPES(ptrdiff_t);
+typedef _ABI_TYPES(uintptr_t)	_ABI_TYPES(uptrdiff_t);
 
 /* Wide characters. */
 #ifndef __cplusplus
-typedef _ABI_TYPES(int32_t)	_ABI_TYPES(wchar_t);
+typedef __WCHAR_TYPE__		_ABI_TYPES(wchar_t);
 #else
-static_assert(sizeof(wchar_t) == sizeof(_ABI_TYPES(int32_t)), "compiler and abi disagree on wchar_t");
+static_assert(sizeof(wchar_t) == sizeof(int),
+    "compiler and abi disagree on wchar_t");
 #endif
-typedef _ABI_TYPES(int64_t)	_ABI_TYPES(wint_t);
+typedef __WINT_TYPE__		_ABI_TYPES(wint_t);
 typedef _ABI_TYPES(int32_t)	_ABI_TYPES(wctype_t);
 typedef _ABI_TYPES(int32_t)	_ABI_TYPES(wctrans_t);
 #ifndef __cplusplus
 typedef _ABI_TYPES(uint16_t)	_ABI_TYPES(char16_t);
 typedef _ABI_TYPES(uint32_t)	_ABI_TYPES(char32_t);
+#else
+static_assert(sizeof(uint16_t) == sizeof(char16_t),
+    "compiler and abi disagree on char16_t");
+static_assert(sizeof(uint32_t) == sizeof(char32_t),
+    "compiler and abi disagree on char16_t");
 #endif
 
 /* File offset/size types. */
@@ -64,8 +72,11 @@ typedef _ABI_TYPES(int64_t)	_ABI_TYPES(off_t);
 typedef _ABI_TYPES(int64_t)	_ABI_TYPES(fpos_t);
 
 /* Widest integrals. */
-typedef _ABI_TYPES(uint64_t)	_ABI_TYPES(uintmax_t);
-typedef _ABI_TYPES(int64_t)	_ABI_TYPES(intmax_t);
+typedef __INTMAX_TYPE__		_ABI_TYPES(intmax_t);
+typedef __UINTMAX_TYPE__	_ABI_TYPES(uintmax_t);
+
+/* Atomic (wrt signals) type. */
+typedef int			_ABI_TYPES(sig_atomic_t);
 
 /* Type with greatest alignment restriction. */
 typedef long double		_ABI_TYPES(max_align_t);
@@ -73,8 +84,10 @@ typedef long double		_ABI_TYPES(max_align_t);
 
 /* Verify pointer types. */
 #ifdef __cplusplus
-static_assert(sizeof(_ABI_TYPES(uintptr_t)) == sizeof(void*), "incorrect definition for uintptr_t");
-static_assert(sizeof(_ABI_TYPES(intptr_t)) == sizeof(void*), "incorrect definition for uintptr_t");
+static_assert(sizeof(_ABI_TYPES(uintptr_t)) == sizeof(void*),
+    "incorrect definition for uintptr_t");
+static_assert(sizeof(_ABI_TYPES(intptr_t)) == sizeof(void*),
+    "incorrect definition for uintptr_t");
 #endif
 
 

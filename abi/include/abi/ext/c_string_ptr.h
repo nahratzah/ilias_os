@@ -1,6 +1,7 @@
-#ifndef UTIL_C_STRING_PTR_H
-#define UTIL_C_STRING_PTR_H
+#ifndef _ABI_EXT_C_STRING_PTR_H_
+#define _ABI_EXT_C_STRING_PTR_H_
 
+#include <abi/abi.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdlib>
@@ -9,7 +10,8 @@
 #include <new>
 #include <utility>
 
-namespace util {
+namespace __cxxabiv1 {
+namespace ext {
 
 
 class c_string_piece;
@@ -80,8 +82,8 @@ inline bool operator==(const char* a, const c_string_ptr& b) noexcept;
 inline bool operator!=(const char* a, const c_string_ptr& b) noexcept;
 
 
-} /* namespace util */
+}} /* namespace __cxxabiv1::ext */
 
-#include <util/c_string_ptr-inl.h>
+#include <abi/ext/c_string_ptr-inl.h>
 
-#endif /* UTIL_C_STRING_PTR_H */
+#endif /* _ABI_EXT_C_STRING_PTR_H_ */

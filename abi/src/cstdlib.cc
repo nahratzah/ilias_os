@@ -5,6 +5,7 @@
 #include <abi/panic.h>
 #include <abi/errno.h>
 #include <new>
+#include <cstring>
 
 namespace std {
 
@@ -252,6 +253,19 @@ void* __attribute__((weak)) malloc(size_t sz) noexcept {
 
 void __attribute__((weak)) free(void* p) noexcept {
   c_malloc_heap().free(p);
+}
+
+void* __attribute__((weak)) realloc(void* p, size_t sz) noexcept {
+  size_t oldsz;
+  auto& heap = c_malloc_heap();
+  if (heap.resize(p, sz, &oldsz)) return p;
+  if (sz < oldsz) oldsz = sz;
+
+  void* q = heap.malloc(sz);
+  if (!q) return nullptr;
+  memcpy(q, p, oldsz);
+  heap.free(p);
+  return q;
 }
 
 

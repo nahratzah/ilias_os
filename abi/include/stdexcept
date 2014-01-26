@@ -3,7 +3,7 @@
 
 #include <exception>
 #include <iosfwd>  // Forward decl of std::string.
-#include <util/c_string_ptr.h>
+#include <abi/ext/c_string_ptr.h>
 
 namespace std {
 
@@ -22,7 +22,7 @@ class logic_error
   const char* what() const noexcept override;
 
  private:
-  util::c_string_ptr msg_;
+  abi::ext::c_string_ptr msg_;
 };
 
 class domain_error
@@ -71,7 +71,7 @@ class runtime_error
   const char* what() const noexcept override;
 
  private:
-  util::c_string_ptr msg_;
+  abi::ext::c_string_ptr msg_;
 };
 
 class range_error

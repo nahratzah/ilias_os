@@ -1,11 +1,17 @@
-#include <util/string_piece.h>
+#include <abi/ext/string_piece.h>
 #include <string>
 
+namespace __cxxabiv1 {
 namespace util {
 
 
 c_string_piece::operator std::string() const {
   return std::string(data(), size());
+}
+
+c_string_piece::pointer c_string_piece::find(char c) const noexcept {
+  for (const char& i : *this) if (i == c) return &i;
+  return end();
 }
 
 c_chord& c_chord::operator+=(c_string_piece other) {
@@ -70,4 +76,4 @@ c_chord::operator std::string() const {
 }
 
 
-} /* namespace util */
+}} /* namespace __cxxabiv1::ext */

@@ -1,12 +1,14 @@
-#ifndef UTIL_STRING_PIECE_H
-#define UTIL_STRING_PIECE_H
+#ifndef _ABI_EXT_STRING_PIECE_H_
+#define _ABI_EXT_STRING_PIECE_H_
 
-#include <util/c_string_ptr.h>
+#include <abi/abi.h>
+#include <abi/ext/c_string_ptr.h>
 #include <iosfwd>
 #include <stdexcept>
 #include <vector>
 
-namespace util {
+namespace __cxxabiv1 {
+namespace ext {
 
 
 class c_string_piece {
@@ -35,8 +37,10 @@ class c_string_piece {
 
   inline c_string_piece& operator=(const c_string_piece&) = default;
   inline c_string_piece& operator=(c_string_piece&&) noexcept;
-  inline c_string_piece& operator+=(size_type l);
-  inline c_string_piece operator+(size_type l) const;
+  inline c_string_piece& operator+=(size_type l) noexcept;
+  inline c_string_piece operator+(size_type l) const noexcept;
+  inline c_string_piece& operator++() noexcept;
+  inline c_string_piece operator++(int) noexcept;
 
   inline bool operator==(const c_string_piece&) const noexcept;
   inline bool operator!=(const c_string_piece&) const noexcept;
@@ -44,21 +48,26 @@ class c_string_piece {
   inline void swap(c_string_piece&) noexcept;
   friend inline void swap(c_string_piece&, c_string_piece&) noexcept;
 
-  inline c_string_piece substr(size_type s) const;
-  inline c_string_piece substr(size_type s, size_type len) const;
+  inline c_string_piece substr(size_type s) const noexcept;
+  inline c_string_piece substr(size_type s, size_type len) const noexcept;
 
   inline operator c_string_ptr() const;
   operator std::string() const;
+  inline ptrdiff_t operator-(const c_string_piece&) const noexcept;
 
   inline iterator begin() const;
   inline iterator end() const;
   inline const_iterator cbegin() const;
   inline const_iterator cend() const;
 
+  iterator find(char) const noexcept;
+
  private:
   pointer data_ = nullptr;
   size_type len_ = 0U;
 };
+
+inline ptrdiff_t operator-(const char*, const c_string_piece&) noexcept;
 
 class c_chord {
  private:
@@ -92,8 +101,8 @@ class c_chord {
 template<typename... T> c_chord chord_cat(T&&... t);
 
 
-} /* namespace util */
+}} /* namespace __cxxabiv1::ext */
 
-#include <util/string_piece-inl.h>
+#include <abi/ext/string_piece-inl.h>
 
-#endif /* UTIL_STRING_PIECE_H */
+#endif /* _ABI_EXT_STRING_PIECE_H_ */

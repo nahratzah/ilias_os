@@ -2,6 +2,8 @@
 #define _LIMITS_
 
 #include <climits>
+#include <cstdint>
+#include <abi/ext/log10.h>
 
 namespace std {
 
@@ -109,9 +111,13 @@ template<> class numeric_limits<char> {
   static constexpr char max() noexcept { return CHAR_MAX; }
   static constexpr char lowest() noexcept { return min(); }
 
-  static constexpr int digits = sizeof(char) * CHAR_BIT - (min() < 0 ? 1 : 0);
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+#ifdef __CHAR_UNSIGNED__
+  static constexpr int digits = sizeof(char) * CHAR_BIT;
+#else
+  static constexpr int digits = sizeof(char) * CHAR_BIT - 1;
+#endif
+  static constexpr int digits10 = ::abi::ext::log10(CHAR_MAX) + 1;
+  static constexpr int max_digits10 = 0;
 #ifdef __CHAR_UNSIGNED__
   static constexpr bool is_signed = false;
 #else
@@ -154,8 +160,8 @@ template<> class numeric_limits<signed char> {
   static constexpr signed char lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(signed char) * CHAR_BIT - 1;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(SCHAR_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = true;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -194,8 +200,8 @@ template<> class numeric_limits<unsigned char> {
   static constexpr unsigned char lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(unsigned char) * CHAR_BIT;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(UCHAR_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = false;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -229,14 +235,14 @@ template<> class numeric_limits<unsigned char> {
 template<> class numeric_limits<char16_t> {
  public:
   static constexpr bool is_specialized = true;
-  static constexpr char16_t min() noexcept { return ...; }
-  static constexpr char16_t max() noexcept { return ...; }
+  static constexpr char16_t min() noexcept { return 0; }
+  static constexpr char16_t max() noexcept { return UINT16_MAX; }
   static constexpr char16_t lowest() noexcept { return min(); }
 
-  static constexpr int digits = sizeof(char16_t) * CHAR_BIT - (min() < 0 ? 1 : 0);
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
-  static constexpr bool is_signed = min() < char16_t(0);
+  static constexpr int digits = sizeof(char16_t) * CHAR_BIT;
+  static constexpr int digits10 = ::abi::ext::log10(UINT16_MAX) + 1;
+  static constexpr int max_digits10 = 0;
+  static constexpr bool is_signed = false;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
   static constexpr int radix = 2;
@@ -269,14 +275,14 @@ template<> class numeric_limits<char16_t> {
 template<> class numeric_limits<char32_t> {
  public:
   static constexpr bool is_specialized = true;
-  static constexpr char32_t min() noexcept { return ...; }
-  static constexpr char32_t max() noexcept { return ...; }
+  static constexpr char32_t min() noexcept { return 0; }
+  static constexpr char32_t max() noexcept { return UINT32_MAX; }
   static constexpr char32_t lowest() noexcept { return min(); }
 
-  static constexpr int digits = sizeof(char32_t) * CHAR_BIT - (min() < 0 ? 1 : 0);
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
-  static constexpr bool is_signed = min() < char32_t(0);
+  static constexpr int digits = sizeof(char32_t) * CHAR_BIT;
+  static constexpr int digits10 = ::abi::ext::log10(UINT32_MAX) + 1;
+  static constexpr int max_digits10 = 0;
+  static constexpr bool is_signed = false;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
   static constexpr int radix = 2;
@@ -309,14 +315,22 @@ template<> class numeric_limits<char32_t> {
 template<> class numeric_limits<wchar_t> {
  public:
   static constexpr bool is_specialized = true;
-  static constexpr wchar_t min() noexcept { return ...; }
-  static constexpr wchar_t max() noexcept { return ...; }
+  static constexpr wchar_t min() noexcept { return WCHAR_MIN; }
+  static constexpr wchar_t max() noexcept { return WCHAR_MAX; }
   static constexpr wchar_t lowest() noexcept { return min(); }
 
-  static constexpr int digits = sizeof(wchar_t) * CHAR_BIT - (min() < 0 ? 1 : 0);
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
-  static constexpr bool is_signed = min() < wchar_t(0);
+#ifdef __WCHAR_UNSIGNED__
+  static constexpr int digits = sizeof(wchar_t) * CHAR_BIT;
+#else
+  static constexpr int digits = sizeof(wchar_t) * CHAR_BIT - 1;
+#endif
+  static constexpr int digits10 = ::abi::ext::log10(WCHAR_MAX) + 1;
+  static constexpr int max_digits10 = 0;
+#ifdef __WCHAR_UNSIGNED__
+  static constexpr bool is_signed = false;
+#else
+  static constexpr bool is_signed = true;
+#endif
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
   static constexpr int radix = 2;
@@ -355,8 +369,8 @@ template<> class numeric_limits<short> {
   static constexpr short lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(short) * CHAR_BIT - 1;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(SHRT_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = true;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -395,8 +409,8 @@ template<> class numeric_limits<int> {
   static constexpr int lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(int) * CHAR_BIT - 1;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(INT_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = true;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -435,8 +449,8 @@ template<> class numeric_limits<long> {
   static constexpr long lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(long) * CHAR_BIT - 1;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(LONG_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = true;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -475,8 +489,8 @@ template<> class numeric_limits<long long> {
   static constexpr long long lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(long long) * CHAR_BIT - 1;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(LLONG_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = true;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -516,8 +530,8 @@ template<> class numeric_limits<unsigned short> {
   static constexpr unsigned short lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(unsigned short) * CHAR_BIT;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(USHRT_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = false;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -556,8 +570,8 @@ template<> class numeric_limits<unsigned int> {
   static constexpr unsigned int lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(unsigned int) * CHAR_BIT;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(UINT_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = false;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -596,8 +610,8 @@ template<> class numeric_limits<unsigned long> {
   static constexpr unsigned long lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(unsigned long) * CHAR_BIT;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(ULONG_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = false;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -636,8 +650,8 @@ template<> class numeric_limits<unsigned long long> {
   static constexpr unsigned long long lowest() noexcept { return min(); }
 
   static constexpr int digits = sizeof(unsigned long long) * CHAR_BIT;
-  static constexpr int digits10 = ...;
-  static constexpr int max_digits10 = ...;
+  static constexpr int digits10 = ::abi::ext::log10(ULLONG_MAX) + 1;
+  static constexpr int max_digits10 = 0;
   static constexpr bool is_signed = false;
   static constexpr bool is_integer = true;
   static constexpr bool is_exact = true;
@@ -669,6 +683,7 @@ template<> class numeric_limits<unsigned long long> {
   static constexpr float_round_style round_style = round_toward_zero;
 };
 
+#if 0 // XXX import openlibm
 template<> class numeric_limits<float> {
  public:
   static constexpr bool is_specialized = true;
@@ -696,7 +711,7 @@ template<> class numeric_limits<float> {
   static constexpr bool has_signaling_NaN = ...;
   static constexpr float_denorm_style has_denorm = ...;
   static constexpr bool has_denorm_loss = ...;
-  static constexpr float infinity() noexcept { return ...; }
+  static constexpr float infinity() noexcept { return HUGE_VALF; }
   static constexpr float quiet_NaN() noexcept { return ...; }
   static constexpr float signaling_NaN() noexcept { return ...; }
   static constexpr float denorm_min() noexcept { return ...; }
@@ -736,7 +751,7 @@ template<> class numeric_limits<double> {
   static constexpr bool has_signaling_NaN = ...;
   static constexpr float_denorm_style has_denorm = ...;
   static constexpr bool has_denorm_loss = ...;
-  static constexpr double infinity() noexcept { return ...; }
+  static constexpr double infinity() noexcept { return HUGE_VAL; }
   static constexpr double quiet_NaN() noexcept { return ...; }
   static constexpr double signaling_NaN() noexcept { return ...; }
   static constexpr double denorm_min() noexcept { return ...; }
@@ -776,7 +791,7 @@ template<> class numeric_limits<long double> {
   static constexpr bool has_signaling_NaN = ...;
   static constexpr float_denorm_style has_denorm = ...;
   static constexpr bool has_denorm_loss = ...;
-  static constexpr long double infinity() noexcept { return ...; }
+  static constexpr long double infinity() noexcept { return HUGE_VALL; }
   static constexpr long double quiet_NaN() noexcept { return ...; }
   static constexpr long double signaling_NaN() noexcept { return ...; }
   static constexpr long double denorm_min() noexcept { return ...; }
@@ -789,6 +804,7 @@ template<> class numeric_limits<long double> {
   static constexpr bool tinyness_before = ...;
   static constexpr float_round_style round_style = ...;
 };
+#endif // XXX import openlibm
 
 
 } /* namespace std */

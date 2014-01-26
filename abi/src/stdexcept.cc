@@ -5,11 +5,11 @@ namespace std {
 
 
 logic_error::logic_error(const string& msg)
-: msg_(util::make_c_string_ptr(msg.c_str(), msg.length()))
+: msg_(abi::ext::make_c_string_ptr(msg.c_str(), msg.length()))
 {}
 
 logic_error::logic_error(const char* msg)
-: msg_(util::make_c_string_ptr(msg))
+: msg_(abi::ext::make_c_string_ptr(msg))
 {}
 
 logic_error::logic_error(const logic_error& other) noexcept
@@ -32,11 +32,11 @@ const char* logic_error::what() const noexcept {
 
 
 runtime_error::runtime_error(const string& msg)
-: msg_(util::make_c_string_ptr(msg.c_str(), msg.length()))
+: msg_(abi::ext::make_c_string_ptr(msg.c_str(), msg.length()))
 {}
 
 runtime_error::runtime_error(const char* msg)
-: msg_(util::make_c_string_ptr(msg))
+: msg_(abi::ext::make_c_string_ptr(msg))
 {}
 
 runtime_error::runtime_error(const runtime_error& other) noexcept

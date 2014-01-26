@@ -1,4 +1,5 @@
-namespace util {
+namespace __cxxabiv1 {
+namespace ext {
 
 
 inline c_string_ptr::~c_string_ptr() noexcept { if (data_) std::free(data_); }
@@ -148,4 +149,4 @@ inline bool operator!=(const char* a, const c_string_ptr& b) noexcept {
 }
 
 
-} /* namespace util */
+}} /* namespace __cxxabiv1::ext */
