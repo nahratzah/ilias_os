@@ -123,7 +123,7 @@ void* __dynamic_cast(const void* subject, const __class_type_info* ti_src,
    *   with respect to the complete object;
    *   special negative values are:
    *     -1: no hint
-   *     -2: src is not a public base of dst
+   *     -2: src is not a public base of dst (cross cast)
    *     -3: src is a multiple public base type, but never a virtual type
    *  otherwise, the src type is a unique public nonvirtual base type of dst
    *  at offset src2dst_offset from the origin of dst.
@@ -152,6 +152,8 @@ void* __dynamic_cast(const void* subject, const __class_type_info* ti_src,
     if (_predict_true(md_ti->__has_base(md, maybe, *ti_dst) !=
                       __has_base_no))
       return const_cast<void*>(maybe);
+    /* Direct cast failed, we are now certain this is a cross cast at best. */
+    src2dst_offset = -2;
   }
 
   const __dyn_cast_request request = __dyn_cast_request(subject,
