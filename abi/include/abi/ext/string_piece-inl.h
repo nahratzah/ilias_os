@@ -2,6 +2,12 @@ namespace __cxxabiv1 {
 namespace ext {
 
 
+#if __has_include(<string>)
+inline c_string_piece::operator std::string() const {
+  return std::string(data(), size());
+}
+#endif
+
 inline constexpr c_string_piece::c_string_piece(const char* s) noexcept : data_{ s }, len_{ s ? strlen(s) : 0U } {}
 inline constexpr c_string_piece::c_string_piece(pointer p, size_type l) noexcept : data_{ p }, len_{ l } {}
 inline c_string_piece::c_string_piece(c_string_piece&& other) noexcept

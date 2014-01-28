@@ -1,13 +1,8 @@
 #include <abi/ext/string_piece.h>
-#include <string>
 
 namespace __cxxabiv1 {
-namespace util {
+namespace ext {
 
-
-c_string_piece::operator std::string() const {
-  return std::string(data(), size());
-}
 
 c_string_piece::pointer c_string_piece::find(char c) const noexcept {
   for (const char& i : *this) if (i == c) return &i;
@@ -68,12 +63,14 @@ c_chord::operator c_string_ptr() const {
   return result;
 }
 
+#if __has_include(<string>)
 c_chord::operator std::string() const {
   std::string result;
   result.reserve(size());
   for (const auto& i : data_) result.append(i.data(), i.size());
   return result;
 }
+#endif
 
 
 }} /* namespace __cxxabiv1::ext */

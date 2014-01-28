@@ -3,7 +3,9 @@
 
 #include <abi/abi.h>
 #include <abi/ext/c_string_ptr.h>
-#include <iosfwd>
+#if __has_include(<string>)
+#include <string>
+#endif
 #include <stdexcept>
 #include <vector>
 
@@ -52,7 +54,9 @@ class c_string_piece {
   inline c_string_piece substr(size_type s, size_type len) const noexcept;
 
   inline operator c_string_ptr() const;
-  operator std::string() const;
+#if __has_include(<string>)
+  inline operator std::string() const;
+#endif
   inline ptrdiff_t operator-(const c_string_piece&) const noexcept;
 
   inline iterator begin() const;
@@ -91,7 +95,9 @@ class c_chord {
   inline bool operator!=(const c_chord& other) const noexcept;
 
   operator c_string_ptr() const;
+#if __has_include(<string>)
   operator std::string() const;
+#endif
 
  private:
   data_t data_;
