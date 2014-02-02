@@ -3,11 +3,12 @@
 
 #include <abi/_config.h>
 #include <abi/abi.h>
+#include <abi/ext/heap.h>
 
 namespace __cxxabiv1 {
 
 
-using _config::heap;
+using ext::heap;
 using _config::big_heap;
 
 

@@ -14,8 +14,12 @@ SRCS +=	abi/src/abi_semaphore.cc
 SRCS +=	abi/src/abi_typeinfo.cc
 SRCS += abi/src/cstdlib.cc
 SRCS += abi/src/cstdio.cc
+SRCS += abi/src/cstring.cc
+SRCS += abi/src/cwchar.cc
 SRCS += abi/src/stdexcept.cc
 SRCS += abi/src/new.cc
 SRCS +=	abi/src/typeinfo.cc
 
 SRCS +=	abi/src/exception.cc
+
+.include "test/Makefile.inc"

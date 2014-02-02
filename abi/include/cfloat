@@ -1,0 +1,30 @@
+#ifndef _CFLOAT_
+#define _CFLOAT_
+
+#include <cdecl.h>
+
+namespace std {
+
+_cdecl_begin
+
+#define HUGE_VALF	(__builtin_huge_valf())
+#define HUGE_VAL	(__builtin_huge_val())
+#define HUGE_VALL	(__builtin_huge_vall())
+
+//#define INFINITY	(__builtin_inff())
+//#define DBL_INFINITY	(__builtin_inf())
+//#define LDBL_INFINITY	(__builtin_infl())
+
+// (__builtin_nanf())
+// (__builtin_nan())
+// (__builtin_nanl())
+
+// (__builtin_nansf())
+// (__builtin_nans())
+// (__builtin_nansl())
+
+_cdecl_end
+
+} /* namespace std */
+
+#endif /* _CFLOAT_ */

@@ -25,8 +25,8 @@ template<typename Tag> class list_elem {
  private:
   constexpr list_elem(list_elem*);
 
-  list_elem* succ_ = nullptr;
-  list_elem* pred_ = nullptr;
+  list_elem*mutable succ_ = nullptr;
+  list_elem*mutable pred_ = nullptr;
 };
 
 
@@ -61,11 +61,11 @@ template<typename T, typename Tag> class list {
   bool empty() const noexcept;
 
   static bool is_linked(const_pointer) const noexcept;
-  bool link_front(pointer) noexcept;
-  bool link_back(pointer) noexcept;
-  bool unlink(pointer) noexcept;
-  bool link_before(pointer, const_iterator) noexcept;
-  bool link_after(pointer, const_iterator) noexcept;
+  bool link_front(const_pointer) noexcept;
+  bool link_back(const_pointer) noexcept;
+  bool unlink(const_pointer) noexcept;
+  bool link_before(const_pointer, const_iterator) noexcept;
+  bool link_after(const_pointer, const_iterator) noexcept;
   bool unlink(const_iterator) noexcept;
 
   iterator begin() noexcept;

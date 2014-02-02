@@ -1,8 +1,21 @@
 #ifndef CDECL_H
 #define CDECL_H
 
+#if !defined(__cplusplus)
+# define _namespace_begin(X)	/* C does not have namespaces */
+# define _namespace_end(X)	/* C does not have namespaces */
+#elif defined(_TEST)
+# define _namespace_begin(X)	namespace test_##X {
+# define _namespace_end(X)	}
+#else
+# define _namespace_begin(X)	namespace X {
+# define _namespace_end(X)	}
+#endif
 
-#ifdef __cplusplus
+#if defined(_TEST)
+# define _cdecl_begin	/* don't pollute link namespace */
+# define _cdecl_end	/* don't pollute link namespace */
+#elif defined(__cplusplus)
 # define _cdecl_begin	extern "C" {
 # define _cdecl_end	} /* extern "C" */
 #else

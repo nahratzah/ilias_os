@@ -1,13 +1,18 @@
 #ifndef CSTDDEF
 #define CSTDDEF
 
+#include <cdecl.h>
+
+#if defined(_TEST) && __has_include_next(<cstddef>)
+# include <cstddef>
+#endif
+
 #include <cstddef_misc/null.h>
 #include <cstddef_misc/size_ptrdiff.h>
 #include <cstddef_misc/valist.h>
 
-
-namespace std {
-} /* namespace std */
+_namespace_begin(std)
+_namespace_end(std)
 
 #define offsetof	__builtin_offsetof
 

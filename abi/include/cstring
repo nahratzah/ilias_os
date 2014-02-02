@@ -1,44 +1,113 @@
 #ifndef _CSTRING_
 #define _CSTRING_
 
-#include <cstddef>
+#include <cstddef_misc/null.h>
+#include <cstddef_misc/size_ptrdiff.h>
+#if __has_include(<clocale>)
+# include <locale_misc/locale_t.h>
+#endif
+#include <cdecl.h>
 
-#ifdef __cplusplus
-namespace std {
+#if defined(_TEST) && __has_include_next(<cstring>)
+# include_next <cstring>
 #endif
 
+_namespace_begin(std)
 _cdecl_begin
 
-size_t strlen(const char*) noexcept;
-int strcmp(const char*, const char*) noexcept;
-int memcmp(const void*, const void*, size_t) noexcept;
-void* memmove(void*, const void*, size_t) noexcept;
-void* memcpy(void*, const void*, size_t) noexcept;
-void* memset(void*, int, size_t) noexcept;
+#define EOF		(-1)
 
-#ifdef __cplusplus
-/* libcxx seems to have some difficulty understanding the location of these. */
-inline namespace __1 {
-using std::strcmp;
-using std::memcmp;
-using std::strlen;
-using std::memmove;
-using std::memcpy;
-using std::memset;
-}
-#endif /* __cplusplus */
+void*  memccpy(void*__restrict, const void*__restrict, int, size_t) noexcept;
+void*  memchr(const void*, int, size_t) noexcept;
+void*  memrchr(const void*, int, size_t) noexcept;
+int    memcmp(const void*, const void*, size_t) noexcept;
+void*  memcpy(void*__restrict, const void*__restrict, size_t) noexcept;
+void*  memmove(void*, const void*, size_t) noexcept;
+void*  memset(void*, int, size_t) noexcept;
+char*  stpcpy(char*__restrict, const char*__restrict) noexcept;
+char*  stpncpy(char*__restrict, const char*__restrict) noexcept;
+char*  strcat(char*__restrict, const char*__restrict) noexcept;
+char*  strchr(const char*, int) noexcept;
+int    strcmp(const char*, const char*) noexcept;
+char*  strcpy(char*__restrict, const char*__restrict) noexcept;
+size_t strcspn(const char*, const char*) noexcept;
+char*  strdup(const char*) noexcept;
+size_t strlen(const char*) noexcept;
+size_t strlcat(char*, const char*, size_t) noexcept;
+size_t strlcpy(char*, const char*, size_t) noexcept;
+char*  strncat(char*__restrict, const char*__restrict, size_t) noexcept;
+int    strncmp(const char*, const char*, size_t) noexcept;
+char*  strncpy(char*__restrict, const char*__restrict, size_t) noexcept;
+char*  strndup(const char*, size_t) noexcept;
+size_t strnlen(const char*, size_t) noexcept;
+char*  strpbrk(const char*, const char*) noexcept;
+char*  strrchr(const char*, int) noexcept;
+size_t strspn(const char*, const char*) noexcept;
+char*  strstr(const char*, const char*) noexcept;
+char*  strtok(char*__restrict, const char*__restrict) noexcept;
+char*  strtok_r(char*__restrict, const char*__restrict, char**__restrict)
+         noexcept;
+void   bcopy(const void*, void*, size_t) noexcept;
+
+#if __has_include(<clocale>)
+/* These functions require working locale support. */
+int    strcoll(const char*, const char*) noexcept;
+int    strcoll_l(const char*, const char*, locale_t) noexcept;
+char*  strerror(int) noexcept;
+char*  strerror_l(int, locale_t) noexcept;
+int    strerror_r(int, char*, size_t) noexcept;
+char*  strsignal(int) noexcept;
+size_t strxfrm(char*__restrict, const char*__restrict, size_t) noexcept;
+size_t strxfrm_l(char*__restrict, const char*__restrict, size_t, locale_t)
+         noexcept;
+#endif /* __has_include(<clocale>) */
 
 _cdecl_end
+_namespace_end(std)
 
-#ifdef __cplusplus
-} /* namespace std */
-
-using std::strcmp;
+#if !defined(_TEST) && defined(__cplusplus)
+using std::memccpy;
+using std::memchr;
+using std::memrchr;
 using std::memcmp;
-using std::strlen;
-using std::memmove;
 using std::memcpy;
+using std::memmove;
 using std::memset;
-#endif /* __cplusplus */
+using std::stpcpy;
+using std::stpncpy;
+using std::strcat;
+using std::strchr;
+using std::strcmp;
+using std::strcpy;
+using std::strcspn;
+using std::strdup;
+using std::strlen;
+using std::strlcat;
+using std::strlcpy;
+using std::strncat;
+using std::strncmp;
+using std::strncpy;
+using std::strndup;
+using std::strnlen;
+using std::strpbrk;
+using std::strrchr;
+using std::strspn;
+using std::strstr;
+using std::strtok;
+using std::strtok_r;
+using std::bcopy;
+
+#if __has_include(<clocale>)
+/* These functions require working locale support. */
+using std::strcoll;
+using std::strcoll_l;
+using std::strerror;
+using std::strerror_l;
+using std::strerror_r;
+using std::strsignal;
+using std::strxfrm;
+using std::strxfrm_l;
+#endif /* __has_include(<clocale>) */
+#endif /* !_TEST && __cplusplus */
 
 #endif /* _CSTRING_ */

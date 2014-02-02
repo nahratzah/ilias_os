@@ -1,6 +1,9 @@
 #ifndef _CWCHAR_
 #define _CWCHAR_
 
+#include <abi/abi.h>
+#include <cdecl.h>
+#include <cstddef>
 
 #ifdef __cplusplus
 namespace std {
@@ -8,12 +11,37 @@ namespace std {
 
 _cdecl_begin
 
+#define WEOF			(-1)
+
+#ifndef __cplusplus
+typedef _TYPES(wchar_t)		wchar_t;
+#endif
+typedef _TYPES(wint_t)		wint_t;
 typedef _TYPES(mbstate_t)	mbstate_t;
+
+int wmemcmp(const wchar_t*, const wchar_t*, size_t) noexcept;
+wchar_t* wmemset(wchar_t*, wchar_t, size_t) noexcept;
+wchar_t* wmemcpy(wchar_t*__restrict, const wchar_t*__restrict, size_t)
+    noexcept;
+wchar_t* wmemmove(wchar_t*, const wchar_t*, size_t) noexcept;
+wchar_t* wmemchr(const wchar_t*, wchar_t, size_t) noexcept;
+wchar_t* wmemrchr(const wchar_t*, wchar_t, size_t) noexcept;
+size_t wcslen(const wchar_t*) noexcept;
 
 _cdecl_end
 
 #ifdef __cplusplus
 } /* namespace std */
+
+using std::mbstate_t;
+using std::wint_t;
+using std::wmemcmp;
+using std::wmemset;
+using std::wmemcpy;
+using std::wmemmove;
+using std::wmemchr;
+using std::wmemrchr;
+using std::wcslen;
 #endif
 
 

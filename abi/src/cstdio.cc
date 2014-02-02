@@ -12,6 +12,7 @@ namespace std {
  * printf functions forward to their vprintf counterparts.
  */
 
+#if 0 // XXX: need more environ
 int dprintf(int fd, const char*__restrict fmt, ...) noexcept {
   va_list ap;
 
@@ -38,6 +39,7 @@ int printf(const char*__restrict fmt, ...) noexcept {
   va_end(ap);
   return rv;
 }
+#endif
 
 int snprintf(char*__restrict s, size_t sz, const char*__restrict fmt, ...)
     noexcept {
@@ -68,9 +70,11 @@ int asprintf(char** sptr, const char*__restrict fmt, ...) noexcept {
 }
 
 
+#if 0 // XXX: need more environ
 int vdprintf(int, const char*__restrict, va_list) noexcept;
 int vfprintf(FILE*__restrict, const char*__restrict, va_list) noexcept;
 int vprintf(const char*__restrict, va_list) noexcept;
+#endif
 
 int vsnprintf(char*__restrict s, size_t sz, const char*__restrict fmt,
               va_list ap) noexcept {

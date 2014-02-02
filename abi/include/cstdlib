@@ -4,10 +4,11 @@
 #include <cdecl.h>
 #include <cstddef>
 
-#ifdef __cplusplus
-namespace std {
+#if defined(_TEST) && __has_include_next(<cstdlib>)
+# include <cstdlib>
 #endif
 
+_namespace_begin(std)
 _cdecl_begin
 
 void abort() noexcept __attribute__((__noreturn__));
@@ -21,10 +22,9 @@ void free(void*) noexcept;
 void* realloc(void*, size_t) noexcept;
 
 _cdecl_end
+_namespace_end(std)
 
-#ifdef __cplusplus
-} /* namespace std */
-
+#if !defined(_TEST) && defined(__cplusplus)
 using std::abort;
 using std::atexit;
 using std::at_quick_exit;
@@ -33,6 +33,6 @@ using std::quick_exit;
 using std::malloc;
 using std::free;
 using std::realloc;
-#endif /* __cplusplus */
+#endif /* !_TEST && __cplusplus */
 
 #endif /* _CSTDLIB_ */

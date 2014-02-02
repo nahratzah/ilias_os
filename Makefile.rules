@@ -16,6 +16,15 @@ CXXFLAGS +=		${COMPILER_FLAGS}				\
 CFLAGS +=		${COMPILER_FLAGS}
 LDFLAGS +=		-nostdlib					\
 			-nodefaultlibs
+TEST_COMPILER_FLAGS +=	-integrated-as					\
+			-O3						\
+			-Wno-tautological-compare			\
+			-fno-builtin					\
+			-D_TEST
+TEST_CFLAGS +=		${TEST_COMPILER_FLAGS}
+TEST_CXXFLAGS +=	${TEST_COMPILER_FLAGS}				\
+			-std=c++11
+TEST_LDFLAGS +=		
 
 AS ?= as
 CC ?= clang
@@ -25,20 +34,24 @@ GZIP ?= gzip
 OBJCOPY ?= objcopy
 RM ?= rm
 
-.SUFFIXES: .o32 .o64 .ol .cc .cpp .c .s .S .kernel .kgz .kgzo
-.PHONY: loader clean cleandir
+.SUFFIXES: .testlog .test .o_test .o32 .o64 .ol .cc .cpp .c .s .S .kernel .kgz .kgzo
+.PHONY: loader clean cleandir test
 
 OBJS_32 += ${SRCS:N*.h:R:S/$/.o32/}
 OBJS_64 += ${SRCS:N*.h:R:S/$/.o64/}
 OBJS_32 += ${SRCS_32:N*.h:R:S/$/.o32/}
 OBJS_64 += ${SRCS_64:N*.h:R:S/$/.o64/}
 OBJS_LOADER += ${SRCS_LOADER:N*.h:R:S/$/.ol/}
+OBJS_TEST += ${SRCS:N*.h:R:S/$/.o_test/}
+OBJS_TEST += ${TEST:N*.h:R:S/$/.o_test/}
+BIN_TEST += ${TEST:N*.h:R:S/$/.test/}
+LOG_TEST += ${TEST:N*.h:R:S/$/.testlog/}
 
 clean:
-	${RM} -f ${OBJS_32} ${OBJS_64} ${OBJS_LOADER} ${CLEAN_FILES}
+	${RM} -f ${OBJS_32} ${OBJS_64} ${OBJS_LOADER} ${CLEAN_FILES} ${OBJS_TEST} ${BIN_TEST} ${LOG_TEST}
 
 .ifnmake clean
-. for o in ${OBJS_32} ${OBJS_64} ${OBJS_LOADER}
+. for o in ${OBJS_32} ${OBJS_64} ${OBJS_LOADER} ${OBJS_TEST}
 .  if exists(${o}.d)
 .   include "${o}.d"
 .  elif exists($o)
@@ -47,10 +60,12 @@ clean:
 . endfor
 .endif
 
-DEP_FILES = ${OBJS_32:S/$/.d/} ${OBJS_64:S/$/.d/} ${OBJS_LOADER:S/$/.d/}
+DEP_FILES = ${OBJS_32:S/$/.d/} ${OBJS_64:S/$/.d/} ${OBJS_LOADER:S/$/.d/} ${OBJS_TEST:S/$/.d/}
 
 cleandir: clean
 	${RM} -f ${DEP_FILES}
+
+test: ${LOG_TEST}
 
 
 # Build rules for compilation of loader objects.
@@ -90,3 +105,13 @@ cleandir: clean
 	${GZIP} -9 -c $< > $@
 .kgz.kgzo:
 	${OBJCOPY} --input-target binary --output-target elf32-i386 --binary-architecture i386 $< $@
+
+# Rules for compiling test objects.
+.c.o_test:
+	${CC} ${TEST_CFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+.cc.o_test:
+	${CXX} ${TEST_CXXFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+.test.testlog:
+	./$< > $@ 2>&1
+.o_test.test:
+	${CXX} ${TEST_LDFLAGS} -o $@ $>

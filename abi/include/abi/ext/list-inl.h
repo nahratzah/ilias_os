@@ -52,20 +52,20 @@ auto list<T, Tag>::is_linked(const_pointer p) const noexcept -> bool {
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::link_front(pointer p) noexcept -> bool {
+auto list<T, Tag>::link_front(const_pointer p) noexcept -> bool {
   return link_after_(p, &head_);
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::link_back(pointer p) noexcept -> bool {
+auto list<T, Tag>::link_back(const_pointer p) noexcept -> bool {
   return link_before_(p, &head_);
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::unlink(pointer e) noexcept -> bool {
+auto list<T, Tag>::unlink(const_pointer e) noexcept -> bool {
   if (!is_linked(e)) return false;
-  const pointer s = e->succ_;
-  const pointer p = e->pred_;
+  const const_pointer s = e->succ_;
+  const const_pointer p = e->pred_;
 
   s->pred_ = p;
   p->succ_ = s;
@@ -75,21 +75,20 @@ auto list<T, Tag>::unlink(pointer e) noexcept -> bool {
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::link_before(pointer e, const_iterator pos) noexcept {
+auto list<T, Tag>::link_before(const_pointer e, const_iterator pos) noexcept {
   const list_elem<Tag>* p = &*pos;
   return link_before_(e, const_cast<list_elem<Tag>*>(p));
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::link_after(pointer e, const_iterator pos) noexcept {
+auto list<T, Tag>::link_after(const_pointer e, const_iterator pos) noexcept {
   const list_elem<Tag>* p = &*pos;
   return link_after_(e, const_cast<list_elem<Tag>*>(p));
 }
 
 template<typename T, typename Tag>
 auto list<T, Tag>::unlink(const_iterator pos) noexcept {
-  const list_elem<Tag>* p = &*pos;
-  return unlink(const_cast<list_elem<Tag>*>(p));
+  return unlink(&*pos);
 }
 
 template<typename T, typename Tag>
@@ -166,9 +165,10 @@ auto list<T, Tag>::iterator_to(const_pointer p) const noexcept ->
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::link_after_(pointer e, pointer p) noexcept -> bool {
+auto list<T, Tag>::link_after_(const_pointer e, const_pointer p) noexcept ->
+    bool {
   if (!e || is_linked(e)) return false;
-  const pointer s = p->succ_;
+  const const_pointer s = p->succ_;
 
   p->succ_ = e;
   s->pred_ = e;
@@ -178,7 +178,8 @@ auto list<T, Tag>::link_after_(pointer e, pointer p) noexcept -> bool {
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::link_before_(pointer e, pointer s) noexcept -> bool {
+auto list<T, Tag>::link_before_(const_pointer e, const_pointer s) noexcept ->
+    bool {
   return link_after_(e, s->pred_);
 }
 

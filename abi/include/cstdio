@@ -4,34 +4,54 @@
 #include <cstddef>
 #include <cdecl.h>
 
-#ifdef __cplusplus
-namespace std {
+#if defined(_TEST) && __has_include_next(<cstdio>)
+# include_next <cstdio>
 #endif
 
+_namespace_begin(std)
 _cdecl_begin
 
+#if 0  // XXX need more environ
 int dprintf(int, const char*__restrict, ...) noexcept;
 int fprintf(FILE*__restrict, const char*__restrict, ...) noexcept;
 int printf(const char*__restrict, ...) noexcept;
+#endif
 int snprintf(char*__restrict, size_t, const char*__restrict, ...) noexcept;
 int sprintf(char*__restrict, const char*__restrict, ...) noexcept;
 int asprintf(char**, const char*__restrict, ...) noexcept;
 
+#if 0  // XXX need more environ
 int vdprintf(int, const char*__restrict, va_list) noexcept;
 int vfprintf(FILE*__restrict, const char*__restrict, va_list) noexcept;
 int vprintf(const char*__restrict, va_list) noexcept;
+#endif
 int vsnprintf(char*__restrict, size_t, const char*__restrict, va_list)
     noexcept;
 int vsprintf(char*__restrict, const char*__restrict, va_list) noexcept;
 int vasprintf(char**, const char*__restrict, va_list) noexcept;
 
 _cdecl_end
+_namespace_end(std)
 
-#ifdef __cplusplus
-} /* namespace std */
-
+#if !defined(_TEST) && defined(__cplusplus)
+#if 0  // XXX need more environ
+using std::dprintf;
+using std::fprintf;
 using std::printf;
-#endif /* __cplusplus */
+#endif
+using std::snprintf;
+using std::sprintf;
+using std::asprintf;
+
+#if 0  // XXX need more environ
+using std::vdprintf;
+using std::vfprintf;
+using std::vprintf;
+#endif
+using std::vsnprintf;
+using std::vsprintf;
+using std::vasprintf;
+#endif /* !_TEST && __cplusplus */
 
 
 #endif /* _CSTDIO_ */

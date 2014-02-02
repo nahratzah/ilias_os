@@ -14,68 +14,68 @@
 #include <abi/abi.h>
 
 namespace __cxxabiv1 {
+
+
+namespace ext {
+class heap;  // From abi/ext/heap.h
+} /* namespace __cxxabiv1::ext */
+
+
 namespace _config {
 
 
 /*
- * Struct heap: allocation code.
+ * Heap_malloc: allocate heap memory.
  *
- * Contains member functions:
- * - malloc: allocate heap memory;
- * - free: release memory allocated by malloc.
- *
- * Note that the heap instance must be initialized globally,
- * may not use thread-local storage and must have a trivial
- * destructor.
- *
- * The code paths in this function may not use exceptions
- * (no try-catch, for instance), as it is used by the
- * exception handling code.
- */
-struct heap {
-  constexpr heap(const char* name) : name(name) {}
-  heap(const heap&) = delete;
-  heap& operator=(const heap&) = delete;
-  inline void* malloc(size_t) noexcept;
-  inline void free(void*) noexcept;
-
-  const char* name;
-};
-/*
- * End of struct heap.
- */
-
-
-/*
- * Heap::malloc: allocate heap memory.
- *
- * This function is allowed to fail.
+ * This function is allowed to fail, by returning nullptr.
  * This function must be thread-safe.
+ * If the function returns non-null, the size_t argument must
+ * be changed to reflect the amount of memory allocated.
+ * Memory returned by this function must be aligned to
+ * alignof(max_align_t).
  *
  * The code path used in this function may not use exceptions
  * (no try-catch, for instance).
  */
-inline void* heap::malloc(size_t) noexcept {
+inline void* heap_malloc(size_t*, size_t) noexcept {
   return nullptr;
 }
 /*
- * End of heap::malloc.
+ * End of heap_malloc.
  */
 
 /*
- * Heap::free: release memory previously allocated with malloc.
+ * Heap_free: release memory previously allocated with malloc.
  *
- * This function may never fail.
+ * This function may fail, by returning false.
  * This function must be thread-safe.
  *
  * The code path used in this function may not use exceptions
  * (no try-catch, for instance).
  */
-inline void heap::free(void*) noexcept {
-  return;
+inline bool heap_free(void*, size_t) noexcept {
+  return false;
 }
 /*
- * End of heap::free.
+ * End of heap_free.
+ */
+
+/*
+ * Heap_resize: change allocation size of memory previously allocated
+ * with malloc.
+ *
+ * This function may fail, by returning false.
+ * This function must be thread-safe.
+ * This function shall not move memory.
+ *
+ * The code path used in this function may not use exceptions
+ * (no try-catch, for instance).
+ */
+inline bool heap_resize(void*, size_t) noexcept {
+  return false;
+}
+/*
+ * End of heap_resize.
  */
 
 /*
@@ -133,7 +133,7 @@ inline void panic(const char*, ...) noexcept {
  * - malloc: allocates sz bytes
  * - free: releases storage previously acquired via malloc.
  */
-using big_heap = heap;
+using big_heap = ext::heap;
 /*
  * End of struct big_heap.
  */
