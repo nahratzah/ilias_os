@@ -29,7 +29,7 @@ typedef unsigned short		_ABI_TYPES(uint16_t);
 typedef unsigned int		_ABI_TYPES(uint32_t);
 typedef unsigned long long	_ABI_TYPES(uint64_t);
 
-typedef signed int		_ABI_TYPES(int8_t);
+typedef signed char		_ABI_TYPES(int8_t);
 typedef signed short		_ABI_TYPES(int16_t);
 typedef signed int		_ABI_TYPES(int32_t);
 typedef signed long long	_ABI_TYPES(int64_t);
