@@ -13,3 +13,4 @@
 kernel
 *.test
 *.testlog
+*.ok
