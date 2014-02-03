@@ -1,11 +1,15 @@
 *.ol
 *.o32
 *.o64
+*.o_test
 *.kernel
 *.kgz
 *.kgzo
 *.ol.d
 *.o32.d
 *.o64.d
+*.o_test.d
 *.kgzo.d
 kernel
+*.test
+*.testlog
