@@ -7,6 +7,7 @@ TEST += abi/test/cstring/memchr.cc
 TEST += abi/test/cstring/memrchr.cc
 TEST += abi/test/cstring/memccpy.cc
 TEST += abi/test/cstring/memmove.cc
+TEST += abi/test/cstring/stpcpy.cc
 
 abi/test/abi_ext/reader.test: abi/test/abi_ext/reader.o_test
 abi/test/cstring/memcmp.test: abi/src/cstring.o_test abi/test/cstring/memcmp.o_test
@@ -17,3 +18,4 @@ abi/test/cstring/memchr.test: abi/src/cstring.o_test abi/test/cstring/memchr.o_t
 abi/test/cstring/memrchr.test: abi/src/cstring.o_test abi/test/cstring/memrchr.o_test
 abi/test/cstring/memccpy.test: abi/src/cstring.o_test abi/test/cstring/memccpy.o_test
 abi/test/cstring/memmove.test: abi/src/cstring.o_test abi/test/cstring/memmove.o_test
+abi/test/cstring/stpcpy.test: abi/src/cstring.o_test abi/test/cstring/stpcpy.o_test
