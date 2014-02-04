@@ -1,3 +1,4 @@
+TEST += abi/test/dynamic_cast.cc
 TEST += abi/test/abi_ext/reader.cc
 TEST += abi/test/cstring/memcmp.cc
 TEST += abi/test/cstring/memset.cc
@@ -9,6 +10,7 @@ TEST += abi/test/cstring/memccpy.cc
 TEST += abi/test/cstring/memmove.cc
 TEST += abi/test/cstring/stpcpy.cc
 
+abi/test/dynamic_cast.test: abi/src/abi_dynamic_cast.o_test abi/src/typeinfo.o_test abi/src/abi_typeinfo.o_test abi/test/dynamic_cast.o_test
 abi/test/abi_ext/reader.test: abi/test/abi_ext/reader.o_test
 abi/test/cstring/memcmp.test: abi/src/cstring.o_test abi/test/cstring/memcmp.o_test
 abi/test/cstring/memset.test: abi/src/cstring.o_test abi/test/cstring/memset.o_test
