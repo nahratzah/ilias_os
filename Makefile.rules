@@ -35,8 +35,7 @@ OBJCOPY ?= objcopy
 RM ?= rm
 
 .SUFFIXES: .ok .testlog .test .o_test .o32 .o64 .ol .cc .cpp .c .s .S .kernel .kgz .kgzo
-.PHONY: loader clean cleandir test clean_test testbin retest do_test
-.ORDER: test retest
+.PHONY: loader clean cleandir test clean_test testbin retest do_test check recheck
 
 OBJS_32 += ${SRCS:N*.h:R:S/$/.o32/}
 OBJS_64 += ${SRCS:N*.h:R:S/$/.o64/}
@@ -76,7 +75,12 @@ test: testbin do_test
 
 testbin: ${BIN_TEST}
 
-retest: clean_test test
+retest: clean_test
+	@${MAKE} test
+
+check: test
+
+recheck: retest
 
 
 # Build rules for compilation of loader objects.
@@ -124,6 +128,6 @@ retest: clean_test test
 	${CXX} ${TEST_CXXFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .test.ok:
 	@rm -f $@
-	@./$< > $*.testlog 2>&1 && ( touch $@ && echo "SUCCESS $@" ) || echo "FAIL    $@"
+	@./$< > $*.testlog 2>&1 && ( touch $@ && echo "SUCCESS $*" ) || echo "FAIL    $*"
 .o_test.test:
 	${CXX} ${TEST_LDFLAGS} -o $@ $>
