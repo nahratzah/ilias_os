@@ -1,5 +1,15 @@
 #include <abi/dynamic_cast.h>
+#ifdef _TEST
+# include <cstdio>
+# include <utility>
+#endif
 
+
+template<typename... T> void dprintf(const char* s, T&&... v) noexcept {
+#ifdef _TEST
+  fprintf(stderr, s, std::forward<T>(v)...);
+#endif
+}
 
 namespace __cxxabiv1 {
 
@@ -17,12 +27,16 @@ __dyn_cast_request::__dyn_cast_request(const void* subject,
 
 __dyn_cast_response __dyn_cast_request::leaf(
     const void* v, const __class_type_info& v_ti) const noexcept {
+  dprintf("  SEARCH = %-20s  EVAL: %p : %-20s\n",
+          target_ti_.name(), v, v_ti.name());
   if (v_ti != target_ti_) return __dyn_cast_response();
 
-  __has_base_result subj_is_base = ((!is_cross_cast_ && subject_ != nullptr) ?
+  __has_base_result subj_is_base = ((is_cross_cast_ || subject_ == nullptr) ?
                                     __has_base_no :
                                     v_ti.__has_base(v, subject_, subject_ti_,
                                                     skip_v_base_));
+  dprintf("  LEAF   = (%p : %s)  ->  subj_is_base = %d\n",
+          v, v_ti.name(), int(subj_is_base));
   return __dyn_cast_response(v, subj_is_base);
 }
 
@@ -32,7 +46,7 @@ __dyn_cast_response __dyn_cast_request::resolve(
    * Since we are only invoked for subject is-base-of target,
    * skip searches in subject type.
    */
-  if (is_cross_cast_ && p == subject_ && p_ti == subject_ti_)
+  if (p == subject_ && p_ti == subject_ti_)
     return __dyn_cast_response();
 
   /* Cascade into v. */
@@ -48,8 +62,10 @@ void __dyn_cast_response::merge(__dyn_cast_response r) noexcept {
   }
 
   /* Select match that contains subject, if such a match exists. */
-  if (subj_visited_ && !r.subj_visited_) return;  // *this has better match.
-  if (r.subj_visited_ && !subj_visited_) {  // r has better match.
+  if (subj_visited_ != __has_base_no && r.subj_visited_ == __has_base_no)
+    return;  // *this has better match.
+  if (r.subj_visited_ != __has_base_no && subj_visited_ == __has_base_no) {
+    // r has better match.
     *this = r;
     return;
   }
@@ -114,6 +130,8 @@ inline const __class_type_info* base_type(const void* obj) noexcept {
 void* __dynamic_cast(const void* subject, const __class_type_info* ti_src,
                      const __class_type_info* ti_dst,
                      ptrdiff_t src2dst_offset) noexcept {
+  dprintf("=== %s(%p, \"%s\", \"%s\", %td) ===\n",
+          __func__, subject, ti_src->name(), ti_dst->name(), src2dst_offset);
   /*
    * subject: source address to be adjusted; nonnull, and since
    *   the source object is polymorphic, *(void**)subject is a virtual pointer.
@@ -131,6 +149,7 @@ void* __dynamic_cast(const void* subject, const __class_type_info* ti_src,
   const void*const md = base_addr(subject);
   const __class_type_info*const md_ti = base_type(subject);
   if (!md_ti) return nullptr;  // Cannot search without typeinfo.
+  dprintf("  Most derived type info: %p : %s\n", md_ti, md_ti->name());
 
   /*
    * Observation: if src is a non-virtual base of dst,

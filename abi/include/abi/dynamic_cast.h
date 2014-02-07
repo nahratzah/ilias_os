@@ -46,7 +46,7 @@ class __dyn_cast_response {
   constexpr __dyn_cast_response(const void*, __has_base_result);
 
   inline bool return_now(const __dyn_cast_request&,
-                         const void*) const noexcept;
+                         const void*, const __class_type_info&) const noexcept;
   inline const void* resolution() const noexcept;
   void merge(__dyn_cast_response r) noexcept;
 

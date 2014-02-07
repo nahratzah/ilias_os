@@ -63,7 +63,8 @@ __dyn_cast_response __class_type_info::__dyn_cast_support(
 __dyn_cast_response __si_class_type_info::__dyn_cast_support(
     const void* v, const __dyn_cast_request& request) const noexcept {
   __dyn_cast_response r = request.leaf(v, *this);
-  if (!r.return_now(request, v)) r.merge(request.resolve(v, *__base_type));
+  if (!r.return_now(request, v, *this))
+    r.merge(request.resolve(v, *__base_type));
   return r;
 }
 
@@ -74,13 +75,14 @@ __dyn_cast_response __vmi_class_type_info::__dyn_cast_support(
   const __base_class_type_info*const begin = &__base_info[0];
   const __base_class_type_info*const end = begin + __base_count;
   for (const __base_class_type_info* i = begin;
-       !r.return_now(request, v) && i != end;
+       !r.return_now(request, v, *this) && i != end;
        ++i) {
     const void* v_of_i = reinterpret_cast<const uint8_t*>(v) +
                          __base_class_type_info::get_offset(*i);
     const auto fl = __base_class_type_info::get_flags(*i);
     bool is_public = (fl & __base_class_type_info::__public_mask);
-    if (is_public) r.merge(request.resolve(v_of_i, *i->__base_type));
+    if (is_public)
+      r.merge(request.resolve(v_of_i, *i->__base_type));
   }
 
   return r;

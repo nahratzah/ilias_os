@@ -8,9 +8,11 @@ constexpr __dyn_cast_response::__dyn_cast_response(
 {}
 
 inline bool __dyn_cast_response::return_now(
-    const __dyn_cast_request& req, const void* v) const noexcept {
+    const __dyn_cast_request& req, const void* v,
+    const __class_type_info& v_ti) const noexcept {
   if (!target_) return false;
-  if (target_ == v) return true;  // Type cannot inherit itself.
+  if (target_ == v && v_ti == req.target_ti_)
+    return true;  // Type cannot inherit itself.
 
   /*
    * Stop the search if:
