@@ -5,13 +5,35 @@
 #endif
 
 
+namespace __cxxabiv1 {
+namespace {
+
 template<typename... T> void dprintf(const char* s, T&&... v) noexcept {
 #ifdef _TEST
   fprintf(stderr, s, std::forward<T>(v)...);
 #endif
 }
 
-namespace __cxxabiv1 {
+const char* str(__has_base_result hbr) noexcept {
+  const char* rv;
+
+  switch (hbr) {
+  case __has_base_no:
+    rv = "no";
+    break;
+  case __has_base_non_virtual:
+    rv = "yes (not virtual)";
+    break;
+  case __has_base_virtual:
+    rv = "yes (virtual base)";
+    break;
+  default:
+    rv = "<bad has_base() result>";
+  }
+  return rv;
+}
+
+} /* namespace __cxxabiv1::<unnamed> */
 
 
 __dyn_cast_request::__dyn_cast_request(const void* subject,
@@ -35,8 +57,8 @@ __dyn_cast_response __dyn_cast_request::leaf(
                                     __has_base_no :
                                     v_ti.__has_base(v, subject_, subject_ti_,
                                                     skip_v_base_));
-  dprintf("  LEAF   = (%p : %s)  ->  subj_is_base = %d\n",
-          v, v_ti.name(), int(subj_is_base));
+  dprintf("  LEAF   = (%p : %s)  ->  subj_is_base = %s\n",
+          v, v_ti.name(), str(subj_is_base));
   return __dyn_cast_response(v, subj_is_base);
 }
 
