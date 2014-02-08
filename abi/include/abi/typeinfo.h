@@ -43,6 +43,8 @@ class __fundamental_type_info
 : public std::type_info
 {
  public:
+  inline __fundamental_type_info(const char*) noexcept;
+
   ~__fundamental_type_info() noexcept override;
 };
 

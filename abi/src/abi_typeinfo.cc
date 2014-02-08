@@ -97,6 +97,8 @@ __dyn_cast_response __vmi_class_type_info::__dyn_cast_support(
  *   char16_t, char32_t,
  *   IEEE 754r decimal and half-precision floating point types
  * - X, X*, const X*
+ *
+ * Compiler appears to emit these already..?
  */
 
 
