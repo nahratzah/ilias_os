@@ -23,7 +23,7 @@ inline long __base_class_type_info::get_offset(
 }
 inline long __base_class_type_info::get_flags(
     const __base_class_type_info& bcti) noexcept {
-  return bcti.__offset_flags & ((long(1) << __offset_shift) - long(1));
+  return bcti.__offset_flags & ((1L << __offset_shift) - 1L);
 }
 
 
