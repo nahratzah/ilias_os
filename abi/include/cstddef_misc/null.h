@@ -1,14 +1,18 @@
 #ifndef CSTDDEF_MISC_NULL_H
 #define CSTDDEF_MISC_NULL_H
 
-#define NULL			nullptr
+#ifdef __cplusplus
+# ifndef _TEST
+#   define NULL			nullptr
+# endif
 
-namespace std {
-
-
+_namespace_begin(std)
 using nullptr_t = decltype(nullptr);
-
-
-} /* namespace std */
+_namespace_end(std)
+#else
+# ifndef _TEST
+#   define NULL			__nullptr
+# endif
+#endif
 
 #endif /* CSTDDEF_MISC_NULL_H */
