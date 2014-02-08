@@ -1,3 +1,5 @@
 #include <abi/errno.h>
 
-thread_local int errno = 0;
+namespace __cxxabiv1 {
+thread_local int errno;
+} /* namespace __cxxabiv1 */

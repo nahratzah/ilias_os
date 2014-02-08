@@ -4,7 +4,7 @@
 #include <cdecl.h>
 
 #if defined(_TEST) && __has_include_next(<cstddef>)
-# include <cstddef>
+# include_next <cstddef>
 #endif
 
 #include <cstddef_misc/null.h>
@@ -14,7 +14,9 @@
 _namespace_begin(std)
 _namespace_end(std)
 
-#define offsetof	__builtin_offsetof
+#ifndef _TEST
+# define offsetof	__builtin_offsetof
+#endif
 
 
 #endif /* CSTDDEF */

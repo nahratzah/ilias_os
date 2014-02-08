@@ -1,6 +1,9 @@
 #ifndef CSTDDEF_MISC_NULL_H
 #define CSTDDEF_MISC_NULL_H
 
+#include <abi/abi.h>
+#include <cdecl.h>
+
 #ifdef __cplusplus
 # ifndef _TEST
 #   define NULL			nullptr
