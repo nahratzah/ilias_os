@@ -12,11 +12,15 @@ class __dyn_cast_request;  // Internal to dynamic_cast
 class __dyn_cast_response;  // Internal to dynamic_cast
 
 /* Result type of __class_type_info::__has_base. */
-enum __has_base_result {
+enum class __has_base_result : unsigned char {
   __has_base_no = 0,  // not a base of class
+  __has_base_virtual,  // virtual base of class
   __has_base_non_virtual,  // non-virtual base of class
-  __has_base_virtual  // virtual base of class
 };
+
+using __has_base_result::__has_base_no;
+using __has_base_result::__has_base_virtual;
+using __has_base_result::__has_base_non_virtual;
 
 
 struct __base_class_type_info {
