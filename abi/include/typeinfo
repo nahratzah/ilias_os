@@ -10,7 +10,7 @@ namespace std {
 
 class type_info {
  protected:
-  constexpr type_info(const char* type_name);
+  explicit type_info(const char* type_name);
 
  public:
   virtual ~type_info() noexcept;
@@ -20,6 +20,9 @@ class type_info {
 
   inline _TYPES(size_t) hash_code() const noexcept;
   inline const char* name() const noexcept;
+
+  virtual bool __is_pointer_p() const noexcept;
+  virtual bool __is_function_p() const noexcept;
 
   type_info(const type_info&) = delete;
   type_info& operator=(const type_info&) = delete;

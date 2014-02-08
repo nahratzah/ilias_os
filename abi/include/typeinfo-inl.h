@@ -1,7 +1,7 @@
 namespace std {
 
 
-inline constexpr type_info::type_info(const char* type_name)
+inline type_info::type_info(const char* type_name)
 : __type_name(type_name)
 {}
 

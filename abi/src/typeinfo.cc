@@ -27,4 +27,13 @@ const char* bad_typeid::what() const noexcept {
 }
 
 
+bool type_info::__is_pointer_p() const noexcept {
+  return false;
+}
+
+bool type_info::__is_function_p() const noexcept {
+  return false;
+}
+
+
 } /* namespace std */

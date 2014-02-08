@@ -43,7 +43,7 @@ class __fundamental_type_info
 : public std::type_info
 {
  public:
-  inline __fundamental_type_info(const char*) noexcept;
+  explicit inline __fundamental_type_info(const char*) noexcept;
 
   ~__fundamental_type_info() noexcept override;
 };
@@ -62,6 +62,8 @@ class __function_type_info
 {
  public:
   ~__function_type_info() noexcept override;
+
+  bool __is_function_p() const noexcept override;
 };
 
 /* Enums. */
@@ -145,6 +147,8 @@ class __pbase_type_info
  private:
   unsigned int __flags;
   const std::type_info* __pointee;
+
+  bool __is_pointer_p() const noexcept override;
 
   enum __masks {
     __const_mask = 0x1,

@@ -17,6 +17,15 @@ __pointer_type_info::~__pointer_type_info() noexcept {}
 __pointer_to_member_type_info::~__pointer_to_member_type_info() noexcept {}
 
 
+bool __function_type_info::__is_function_p() const noexcept {
+  return true;
+}
+
+bool __pbase_type_info::__is_pointer_p() const noexcept {
+  return true;
+}
+
+
 __has_base_result __class_type_info::__has_base(
     const void* v, const void* p, const std::type_info& p_ti,
     bool) const noexcept {
