@@ -6,18 +6,27 @@ class base {
   virtual ~base() noexcept;
 
   base* get_base() noexcept { return this; }
+
+ private:
+  int dummy_;
 };
 
 class derived
 : public base {
  public:
   virtual ~derived() noexcept;
+
+ private:
+  int dummy_;
 };
 
 class virtual_derived
 : public virtual base {
  public:
   ~virtual_derived() noexcept;
+
+ private:
+  int dummy_;
 };
 
 class protected_derived
@@ -26,6 +35,9 @@ class protected_derived
   ~protected_derived() noexcept;
 
   using base::get_base;  // Expose.
+
+ private:
+  int dummy_;
 };
 
 class private_derived
@@ -34,6 +46,17 @@ class private_derived
   ~private_derived() noexcept;
 
   using base::get_base;  // Expose.
+
+ private:
+  int dummy_;
+};
+
+class not_derived {
+ public:
+  virtual ~not_derived() noexcept;
+
+ private:
+  int dummy_;
 };
 
 base::~base() noexcept {}
@@ -41,12 +64,16 @@ derived::~derived() noexcept {}
 virtual_derived::~virtual_derived() noexcept {}
 protected_derived::~protected_derived() noexcept {}
 private_derived::~private_derived() noexcept {}
+not_derived::~not_derived() noexcept {}
 
 template<typename Derived> class most_derived_type
 : public Derived
 {
  public:
   virtual ~most_derived_type() noexcept override {}
+
+ private:
+  int dummy_;
 };
 
 
@@ -55,6 +82,9 @@ template<typename T, int I> class ambiguity
 {
  public:
   virtual ~ambiguity() noexcept override {}
+
+ private:
+  int dummy_;
 };
 
 template<typename T> class ambiguous
@@ -75,6 +105,88 @@ template<typename T> class ambiguous
     if (i == 1) return static_cast<ambiguity<T, 1>*>(this);
     return nullptr;
   }
+
+ private:
+  int dummy_;
+};
+
+template<int NBase, int NND> class cross_cast
+: public cross_cast<NBase - 1, NND - 1>,
+  public ambiguity<base, NBase>,
+  public ambiguity<not_derived, NND>
+{
+ public:
+  ~cross_cast() noexcept override {}
+
+  inline base* get_base(int i) noexcept {
+    if (i == NBase - 1) return static_cast<ambiguity<base, NBase>*>(this);
+    return cross_cast<NBase - 1, NND - 1>::get_base(i);
+  }
+
+  inline not_derived* get_nd(int i) noexcept {
+    if (i == NND - 1) return static_cast<ambiguity<not_derived, NND>*>(this);
+    return cross_cast<NBase - 1, NND - 1>::get_nd(i);
+  }
+
+ private:
+  int dummy_;
+};
+
+template<> class cross_cast<0, 0>
+{
+ public:
+  virtual ~cross_cast() noexcept {};
+
+  inline base* get_base(int) noexcept {
+    return nullptr;
+  }
+
+  inline not_derived* get_nd(int) noexcept {
+    return nullptr;
+  }
+
+ private:
+  int dummy_;
+};
+
+template<int NBase> class cross_cast<NBase, 0>
+: public cross_cast<NBase - 1, 0>,
+  public ambiguity<base, NBase>
+{
+ public:
+  ~cross_cast() noexcept override {}
+
+  inline base* get_base(int i) noexcept {
+    if (i == NBase - 1) return static_cast<ambiguity<base, NBase>*>(this);
+    return cross_cast<NBase - 1, 0>::get_base(i);
+  }
+
+  inline not_derived* get_nd(int i) noexcept {
+    return cross_cast<NBase - 1, 0>::get_nd(i);
+  }
+
+ private:
+  int dummy_;
+};
+
+template<int NND> class cross_cast<0, NND>
+: public cross_cast<0, NND - 1>,
+  public ambiguity<not_derived, NND>
+{
+ public:
+  ~cross_cast() noexcept override {}
+
+  inline base* get_base(int i) noexcept {
+    return cross_cast<0, NND - 1>::get_base(i);
+  }
+
+  inline not_derived* get_nd(int i) noexcept {
+    if (i == NND - 1) return static_cast<ambiguity<not_derived, NND>*>(this);
+    return cross_cast<0, NND - 1>::get_nd(i);
+  }
+
+ private:
+  int dummy_;
 };
 
 
@@ -169,10 +281,69 @@ int test_ambiguous() {
   return 0;
 }
 
+int test_cross_cast() {
+  cross_cast<1, 0> t10;
+  for (int bidx = 0; bidx < 1; ++bidx) {
+    fprintf(stderr, "%s: %s (base %d)\n", __func__, "not_derived", bidx);
+    if (!invoke_dyncast<not_derived>(t10.get_base(bidx), nullptr, -2))
+      return 1;
+    if (!invoke_dyncast<not_derived>(t10.get_base(bidx), nullptr, -1))
+      return 1;
+  }
+
+  cross_cast<1, 1> t11;
+  for (int bidx = 0; bidx < 1; ++bidx) {
+    fprintf(stderr, "%s: %s (base %d)\n", __func__, "not_derived", bidx);
+    if (!invoke_dyncast<not_derived>(t11.get_base(bidx), t11.get_nd(0), -2))
+      return 1;
+    if (!invoke_dyncast<not_derived>(t11.get_base(bidx), t11.get_nd(0), -1))
+      return 1;
+  }
+
+  cross_cast<2, 0> t20;
+  for (int bidx = 0; bidx < 2; ++bidx) {
+    fprintf(stderr, "%s: %s (base %d)\n", __func__, "not_derived", bidx);
+    if (!invoke_dyncast<not_derived>(t20.get_base(bidx), nullptr, -2))
+      return 1;
+    if (!invoke_dyncast<not_derived>(t20.get_base(bidx), nullptr, -1))
+      return 1;
+  }
+
+  cross_cast<2, 1> t21;
+  for (int bidx = 0; bidx < 2; ++bidx) {
+    fprintf(stderr, "%s: %s (base %d)\n", __func__, "not_derived", bidx);
+    if (!invoke_dyncast<not_derived>(t21.get_base(bidx), t21.get_nd(0), -2))
+      return 1;
+    if (!invoke_dyncast<not_derived>(t21.get_base(bidx), t21.get_nd(0), -1))
+      return 1;
+  }
+
+  cross_cast<1, 2> t12;
+  for (int bidx = 0; bidx < 1; ++bidx) {
+    fprintf(stderr, "%s: %s (base %d)\n", __func__, "not_derived", bidx);
+    if (!invoke_dyncast<not_derived>(t12.get_base(bidx), nullptr, -2))
+      return 1;
+    if (!invoke_dyncast<not_derived>(t12.get_base(bidx), nullptr, -1))
+      return 1;
+  }
+
+  cross_cast<2, 2> t22;
+  for (int bidx = 0; bidx < 2; ++bidx) {
+    fprintf(stderr, "%s: %s (base %d)\n", __func__, "not_derived", bidx);
+    if (!invoke_dyncast<not_derived>(t22.get_base(bidx), nullptr, -2))
+      return 1;
+    if (!invoke_dyncast<not_derived>(t22.get_base(bidx), nullptr, -1))
+      return 1;
+  }
+
+  return 0;
+}
+
 int main() {
   int err = 0;
   err = (err ? err : test_immediate());
   err = (err ? err : test_intermediate());
   err = (err ? err : test_ambiguous());
+  err = (err ? err : test_cross_cast());
   return err;
 }
