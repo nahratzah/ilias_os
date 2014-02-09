@@ -1,0 +1,9 @@
+[submodule "compiler/llvm"]
+	path = compiler/llvm
+	url = https://github.com/llvm-mirror/llvm
+[submodule "compiler/clang"]
+	path = compiler/clang
+	url = https://github.com/llvm-mirror/clang
+[submodule "compiler/libcxx"]
+	path = compiler/libcxx
+	url = https://github.com/llvm-mirror/libcxx
