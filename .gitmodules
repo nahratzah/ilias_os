@@ -7,3 +7,6 @@
 [submodule "compiler/libcxx"]
 	path = compiler/libcxx
 	url = https://github.com/llvm-mirror/libcxx
+[submodule "compiler/lld"]
+	path = compiler/lld
+	url = https://github.com/llvm-mirror/lld
