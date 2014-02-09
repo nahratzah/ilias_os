@@ -137,9 +137,9 @@ using std::u_int64_t;
 #define UINT_LEAST32_MAX	UINT_MAX
 #define UINT_LEAST64_MAX	ULLONG_MAX
 
-#define INTMAX_MIN		(-INTMAX_MAX - 1)
-#define INTMAX_MAX		__INTMAX_MAX__
-#define UINTMAX_MAX		__UINTMAX_MAX__
+#define INTMAX_MIN		INT64_MIN
+#define INTMAX_MAX		INT64_MAX
+#define UINTMAX_MAX		UINT64_MAX
 
 #ifdef __LP64__
 #define INTPTR_MIN		LONG_MIN
