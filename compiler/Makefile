@@ -23,17 +23,20 @@ clean:
 ${BUILDDIR}:
 	[ -d "${BUILDDIR}" ] || mkdir "${BUILDDIR}"
 
-${BUILDDIR}/llvm: ${BUILDDIR}
+${BUILDDIR}/llvm.done_dir: ${BUILDDIR}
 	[ -d "${BUILDDIR}/llvm" ] || mkdir "${BUILDDIR}/llvm"
+	touch ${BUILDDIR}/llvm.done_dir
 
-${BUILDDIR}/clang: ${BUILDDIR}
+${BUILDDIR}/clang.done_dir: ${BUILDDIR}
 	[ -d "${BUILDDIR}/clang" ] || mkdir "${BUILDDIR}/clang"
+	touch ${BUILDDIR}/clang.done_dir
 
-${BUILDDIR}/libcxx: ${BUILDDIR}
+${BUILDDIR}/libcxx.done_dir: ${BUILDDIR}
 	[ -d "${BUILDDIR}/libcxx" ] || mkdir "${BUILDDIR}/libcxx"
+	touch ${BUILDDIR}/libcxx.done_dir
 
 
-${BUILDDIR}/llvm.done_configure: ${BUILDDIR}/llvm ${BUILDDIR}/libcxx.done_install ${LLVM_ALL_FILES}
+${BUILDDIR}/llvm.done_configure: ${BUILDDIR}/llvm.done_dir ${BUILDDIR}/libcxx.done_install ${LLVM_ALL_FILES}
 	cd "${BUILDDIR}/llvm" &&                                              \
 	  env CC="${CC}" CXX="${CXX}"                                         \
 	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ${LLVM_OPTS} ../../llvm
@@ -48,7 +51,7 @@ ${BUILDDIR}/llvm.done_install: ${BUILDDIR}/llvm.done_build
 	touch "${BUILDDIR}/llvm.done_install"
 
 
-${BUILDDIR}/clang.done_configure: ${BUILDDIR}/clang ${BUILDDIR}/llvm.done_install ${CLANG_ALL_FILES}
+${BUILDDIR}/clang.done_configure: ${BUILDDIR}/clang.done_dir ${BUILDDIR}/llvm.done_install ${CLANG_ALL_FILES}
 	cd "${BUILDDIR}/clang" &&                                             \
 	  env CC="${CC}" CXX="${CXX}"                                         \
 	      "LLVM_CONFIG=../llvm/bin/llvm-config"                           \
@@ -64,7 +67,7 @@ ${BUILDDIR}/clang.done_install: ${BUILDDIR}/clang.done_build
 	touch "${BUILDDIR}/clang.done_install"
 
 
-${BUILDDIR}/libcxx.done_configure: ${BUILDDIR}/libcxx ${LIBCXX_ALL_FILES}
+${BUILDDIR}/libcxx.done_configure: ${BUILDDIR}/libcxx.done_dir ${LIBCXX_ALL_FILES}
 	cd "${BUILDDIR}/libcxx" &&                                            \
 	  env CC="${CC}" CXX="${CXX}"                                         \
 	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ../../libcxx
