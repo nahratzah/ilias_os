@@ -9,30 +9,37 @@ namespace ext {
 
 
 template<typename T, typename Tag> class list;
+template<bool Order, typename Tag> class iterator_order;
 
 
 template<typename Tag> class list_elem {
-  friend template<typename T> list<T, Tag>;
+  template<typename T, typename TTag> friend class list;
+  template<bool Order, typename TTag> class iterator_order;
 
  public:
   constexpr list_elem();
   constexpr list_elem(const list_elem&);
-  constexpr list_elem& operator=(const list_elem&);
+  list_elem& operator=(const list_elem&);
 
  protected:
   ~list_elem() = default;
 
  private:
+  using list_elem_ptr = list_elem*;
+
   constexpr list_elem(list_elem*);
 
-  list_elem*mutable succ_ = nullptr;
-  list_elem*mutable pred_ = nullptr;
+  mutable list_elem_ptr succ_ = nullptr;
+  mutable list_elem_ptr pred_ = nullptr;
 };
+
+
+template<typename Tag> class iterator_order<true, Tag>;
+template<typename Tag> class iterator_order<false, Tag>;
 
 
 template<typename T, typename Tag> class list {
  private:
-  template<bool Order> class iterator_order;
   template<typename IT, typename IE, bool Order> class iterator_tmpl;
 
  public:
@@ -53,6 +60,7 @@ template<typename T, typename Tag> class list {
 
   list() = default;
   list(const list&) = delete;
+  list(list&&) noexcept;
   list& operator=(const list&) = delete;
   list& operator=(list&&) noexcept;
   ~list() = default;
@@ -60,7 +68,7 @@ template<typename T, typename Tag> class list {
   void swap(list&) noexcept;
   bool empty() const noexcept;
 
-  static bool is_linked(const_pointer) const noexcept;
+  static bool is_linked(const_pointer) noexcept;
   bool link_front(const_pointer) noexcept;
   bool link_back(const_pointer) noexcept;
   bool unlink(const_pointer) noexcept;
@@ -85,8 +93,8 @@ template<typename T, typename Tag> class list {
   const_iterator iterator_to(const_pointer) const noexcept;
 
  private:
-  static bool link_after_(pointer, pointer) noexcept;
-  static bool link_before_(pointer, pointer) noexcept;
+  static bool link_after_(const_pointer, const_pointer) noexcept;
+  static bool link_before_(const_pointer, const_pointer) noexcept;
 
   static list_elem<Tag>* pred(list_elem<Tag>*) noexcept;
   static const list_elem<Tag>* pred(const list_elem<Tag>*) noexcept;
@@ -99,11 +107,10 @@ template<typename T, typename Tag> class list {
 };
 
 
-template<typename T, typename Tag>
-template<>
-class list<T, Tag>::iterator_order<true> {
+template<typename Tag>
+class iterator_order<true, Tag> {
  public:
-  using iterator_category = bidirectional_iterator_tag;
+  using iterator_category = std::bidirectional_iterator_tag;
 
  private:
   using elem_t = list_elem<Tag>;
@@ -118,11 +125,10 @@ class list<T, Tag>::iterator_order<true> {
   static const_elem_t* succ(const_elem_t*) noexcept;
 };
 
-template<typename T, typename Tag>
-template<>
-class list<T, Tag>::iterator_order<false> {
+template<typename Tag>
+class iterator_order<false, Tag> {
  public:
-  using iterator_category = bidirectional_iterator_tag;
+  using iterator_category = std::bidirectional_iterator_tag;
 
  private:
   using elem_t = list_elem<Tag>;
@@ -141,7 +147,7 @@ class list<T, Tag>::iterator_order<false> {
 template<typename T, typename Tag>
 template<typename IT, typename IE, bool Order>
 class list<T, Tag>::iterator_tmpl
-: public typename list<T, Tag>::template iterator_order<Order> {
+: public iterator_order<Order, Tag> {
   friend list<T, Tag>;
 
  public:

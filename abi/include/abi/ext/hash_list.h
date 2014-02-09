@@ -3,14 +3,14 @@
 
 #include <abi/abi.h>
 #include <abi/ext/list.h>
-#include <abi/hash_code.h>
+#include <abi/hashcode.h>
 
 namespace __cxxabiv1 {
 namespace ext {
 
 
 template<typename T, size_t Buckets, typename Tag>
-class hash_list {
+class hash_set {
  private:
   using list_t = list<T, Tag>;
   template<typename ListIter> class iterator_tmpl;
@@ -87,13 +87,13 @@ class hash_list {
 };
 
 template<typename T, size_t Buckets, typename Tag>
-class hash_list<T, Buckets, Tag>::bucket {
-  friend hash_list<T, Buckets, Tag>;
-  friend hash_list<T, Buckets, Tag>::const_bucket;
+class hash_set<T, Buckets, Tag>::bucket {
+  friend hash_set<T, Buckets, Tag>;
+  friend hash_set<T, Buckets, Tag>::const_bucket;
 
  public:
-  using iterator = typename hash_list::iterator;
-  using const_iterator = typename hash_list::const_iterator;
+  using iterator = typename hash_set::iterator;
+  using const_iterator = typename hash_set::const_iterator;
 
   bucket() = default;
   bucket(const bucket&) = default;
@@ -105,19 +105,19 @@ class hash_list<T, Buckets, Tag>::bucket {
   const_iterator cend() const noexcept;
 
  private:
-  bucket(hash_list&, bucket_idx) noexcept;
+  bucket(hash_set&, bucket_idx) noexcept;
 
-  hash_list<T, Buckets, Tag>* hl_;
-  hash_list<T, Buckets, Tag>::bucket_idx idx_;
+  hash_set<T, Buckets, Tag>* hl_;
+  hash_set<T, Buckets, Tag>::bucket_idx idx_;
 };
 
 template<typename T, size_t Buckets, typename Tag>
-class hash_list<T, Buckets, Tag>::const_bucket {
-  friend hash_list<T, Buckets, Tag>;
+class hash_set<T, Buckets, Tag>::const_bucket {
+  friend hash_set<T, Buckets, Tag>;
 
  public:
-  using iterator = typename hash_list::const_iterator;
-  using const_iterator = typename hash_list::const_iterator;
+  using iterator = typename hash_set::const_iterator;
+  using const_iterator = typename hash_set::const_iterator;
 
   const_bucket() = default;
   const_bucket(const bucket&) = default;
@@ -130,18 +130,18 @@ class hash_list<T, Buckets, Tag>::const_bucket {
   const_iterator cend() const noexcept;
 
  private:
-  const_bucket(const hash_list&, bucket_idx) noexcept;
+  const_bucket(const hash_set&, bucket_idx) noexcept;
 
-  const hash_list<T, Buckets, Tag>* hl_;
-  hash_list<T, Buckets, Tag>::bucket_idx idx_;
+  const hash_set<T, Buckets, Tag>* hl_;
+  hash_set<T, Buckets, Tag>::bucket_idx idx_;
 };
 
 template<typename T, size_t Buckets, typename Tag>
 template<typename ListIter>
-class hash_list<T, Buckets, Tag>::iterator_tmpl
+class hash_set<T, Buckets, Tag>::iterator_tmpl
 : private ListIter
 {
-  friend hash_list;
+  friend hash_set;
 
  public:
   using typename ListIter::iterator_category;

@@ -9,7 +9,7 @@ namespace ext {
 
 
 /* Check if s is a power-of-2. */
-constexpr is_pow2(uintmax_t);
+constexpr bool is_pow2(uintmax_t);
 
 /* Returns the largest number x, such that 1 << x <= s. */
 constexpr unsigned int log2_down(uintmax_t);

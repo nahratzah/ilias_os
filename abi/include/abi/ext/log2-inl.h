@@ -3,7 +3,7 @@ namespace ext {
 
 
 /* Check if s is a power-of-2. */
-constexpr is_pow2(uintmax_t s) {
+constexpr bool is_pow2(uintmax_t s) {
   return (s & (s - 1U)) == 0U;
 }
 
@@ -27,25 +27,36 @@ constexpr unsigned int log2_up(uintmax_t s) {
   return log2_down(s) + (is_pow2(s) ? 0U : 1U);
 }
 
-static_assert(log2(0x00000000U) ==  0U, "log2 bug");
-static_assert(log2(0x00000001U) ==  0U, "log2 bug");
-static_assert(log2(0x00000002U) ==  1U, "log2 bug");
-static_assert(log2(0x00000003U) ==  1U, "log2 bug");
-static_assert(log2(0x00000004U) ==  2U, "log2 bug");
-static_assert(log2(0x00000005U) ==  2U, "log2 bug");
-static_assert(log2(0x00000006U) ==  2U, "log2 bug");
-static_assert(log2(0x00000007U) ==  2U, "log2 bug");
-static_assert(log2(0x00000008U) ==  3U, "log2 bug");
-static_assert(log2(0x00000009U) ==  3U, "log2 bug");
-static_assert(log2(0x0000000aU) ==  3U, "log2 bug");
-static_assert(log2(0x0000000bU) ==  3U, "log2 bug");
-static_assert(log2(0x0000000cU) ==  3U, "log2 bug");
-static_assert(log2(0x0000000dU) ==  3U, "log2 bug");
-static_assert(log2(0x0000000eU) ==  3U, "log2 bug");
-static_assert(log2(0x0000000fU) ==  3U, "log2 bug");
-static_assert(log2(0xffffffffU) == 31U, "log2 bug");
-static_assert(log2(UINTMAX_MAX) == sizeof(uintmax_t) * CHAR_BIT - 1U,
+static_assert(log2_down(0x00000000U) ==  0U, "log2 bug");
+static_assert(log2_down(0x00000001U) ==  0U, "log2 bug");
+static_assert(log2_down(0x00000002U) ==  1U, "log2 bug");
+static_assert(log2_down(0x00000003U) ==  1U, "log2 bug");
+static_assert(log2_down(0x00000004U) ==  2U, "log2 bug");
+static_assert(log2_down(0x00000005U) ==  2U, "log2 bug");
+static_assert(log2_down(0x00000006U) ==  2U, "log2 bug");
+static_assert(log2_down(0x00000007U) ==  2U, "log2 bug");
+static_assert(log2_down(0x00000008U) ==  3U, "log2 bug");
+static_assert(log2_down(0x00000009U) ==  3U, "log2 bug");
+static_assert(log2_down(0x0000000aU) ==  3U, "log2 bug");
+static_assert(log2_down(0x0000000bU) ==  3U, "log2 bug");
+static_assert(log2_down(0x0000000cU) ==  3U, "log2 bug");
+static_assert(log2_down(0x0000000dU) ==  3U, "log2 bug");
+static_assert(log2_down(0x0000000eU) ==  3U, "log2 bug");
+static_assert(log2_down(0x0000000fU) ==  3U, "log2 bug");
+static_assert(log2_down(0xffffffffU) == 31U, "log2 bug");
+static_assert(log2_down(UINTMAX_MAX) == sizeof(uintmax_t) * CHAR_BIT - 1U,
     "log2 bug at UINTMAX_MAX");
+
+static_assert(log2_up(0x00000001U) ==  0U, "log2 bug");
+static_assert(log2_up(0x00000002U) ==  1U, "log2 bug");
+static_assert(log2_up(0x00000003U) ==  2U, "log2 bug");
+static_assert(log2_up(0x00000004U) ==  2U, "log2 bug");
+static_assert(log2_up(0x00000005U) ==  3U, "log2 bug");
+static_assert(log2_up(0x00000007U) ==  3U, "log2 bug");
+static_assert(log2_up(0x00000008U) ==  3U, "log2 bug");
+static_assert(log2_up(0x00000009U) ==  4U, "log2 bug");
+static_assert(log2_up(0x10000000U) == 31U, "log2 bug");
+static_assert(log2_up(0xffffffffU) == 32U, "log2 bug");
 
 
 }} /* namespace __cxxabi::ext */
