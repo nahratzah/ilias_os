@@ -22,6 +22,7 @@ class heap {
     std::atomic<uintmax_t> resize_bytes_down;  // bytes shrunk by resize()
     std::atomic<uintmax_t> free_bytes;  // bytes freeed by free()
     std::atomic<uintmax_t> malloc_fail;  // count: malloc() returned nullptr
+    std::atomic<uintmax_t> resize_fail;  // count: resize() returned false
 
     stats* chain = nullptr;
 
@@ -36,6 +37,7 @@ class heap {
 
  private:
   void* malloc_result(void*, size_t) noexcept;
+  bool resize_result(bool, void*, size_t, size_t*) noexcept;
 
   stats stats_;
 };

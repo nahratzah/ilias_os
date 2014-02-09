@@ -19,7 +19,7 @@ template<typename Tag> class list_elem {
  public:
   constexpr list_elem();
   constexpr list_elem(const list_elem&);
-  list_elem& operator=(const list_elem&);
+  list_elem& operator=(const list_elem&) noexcept;
 
  protected:
   ~list_elem() = default;
@@ -93,8 +93,8 @@ template<typename T, typename Tag> class list {
   const_iterator iterator_to(const_pointer) const noexcept;
 
  private:
-  static bool link_after_(const_pointer, const_pointer) noexcept;
-  static bool link_before_(const_pointer, const_pointer) noexcept;
+  static bool link_after_(const_pointer, const list_elem<Tag>*) noexcept;
+  static bool link_before_(const_pointer, const list_elem<Tag>*) noexcept;
 
   static list_elem<Tag>* pred(list_elem<Tag>*) noexcept;
   static const list_elem<Tag>* pred(const list_elem<Tag>*) noexcept;
@@ -160,6 +160,9 @@ class list<T, Tag>::iterator_tmpl
   iterator_tmpl() = default;
   iterator_tmpl(const iterator_tmpl&) = default;
   iterator_tmpl& operator=(const iterator_tmpl&) = default;
+
+  template<typename O_IT, typename O_IE, bool O_Order>
+  iterator_tmpl(const iterator_tmpl<O_IT, O_IE, O_Order>& o) noexcept;
 
   template<typename O_IT, typename O_IE, bool O_Order>
   iterator_tmpl& operator=(const iterator_tmpl<O_IT, O_IE, O_Order>& o)

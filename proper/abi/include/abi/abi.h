@@ -72,8 +72,8 @@ typedef _ABI_TYPES(int64_t)	_ABI_TYPES(off_t);
 typedef _ABI_TYPES(int64_t)	_ABI_TYPES(fpos_t);
 
 /* Widest integrals. */
-typedef __INTMAX_TYPE__		_ABI_TYPES(intmax_t);
-typedef __UINTMAX_TYPE__	_ABI_TYPES(uintmax_t);
+typedef _ABI_TYPES(int64_t)	_ABI_TYPES(intmax_t);
+typedef _ABI_TYPES(uint64_t)	_ABI_TYPES(uintmax_t);
 
 /* Atomic (wrt signals) type. */
 typedef int			_ABI_TYPES(sig_atomic_t);
