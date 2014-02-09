@@ -164,7 +164,9 @@ class __pointer_type_info
 : public __pbase_type_info
 {
  public:
-  using __pbase_type_info::__pbase_type_info;
+  inline __pointer_type_info(const char*, unsigned int,
+                             const std::type_info&) noexcept;
+
   ~__pointer_type_info() noexcept override;
 };
 

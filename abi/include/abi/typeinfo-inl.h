@@ -14,6 +14,13 @@ inline __pbase_type_info::__pbase_type_info(const char* type_name,
   __pointee(&pti)
 {}
 
+inline __pointer_type_info::__pointer_type_info(const char* type_name,
+                                                unsigned int flags,
+                                                const std::type_info& pti)
+    noexcept
+: __pbase_type_info(type_name, flags, pti)
+{}
+
 inline __pointer_to_member_type_info::__pointer_to_member_type_info(
   const char* type_name, unsigned int flags, const std::type_info& pti,
   const __class_type_info& ctx) noexcept

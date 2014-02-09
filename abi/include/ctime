@@ -1,0 +1,7 @@
+#ifndef _CTIME_
+#define _CTIME_
+
+#include <cstddef_misc/null.h>
+#include <time_misc/tm.h>
+
+#endif /* _CTIME_ */

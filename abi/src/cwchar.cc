@@ -5,8 +5,8 @@ namespace std {
 
 
 int wmemcmp(const wchar_t* a, const wchar_t* b, size_t len) noexcept {
-  while (--len) {
-    int cmp = (int(*a++) - int(*b++));
+  while (len-- > 0) {
+    auto cmp = wint_t(*a++) - wint_t(*b++);
     if (cmp != 0) return cmp;
   }
   return 0;
@@ -33,14 +33,13 @@ wchar_t* wmemchr(const wchar_t* p, wchar_t c, size_t len) noexcept {
 }
 
 wchar_t* wmemrchr(const wchar_t* p, wchar_t c, size_t len) noexcept {
-  wchar_t* rv = nullptr;
-  for (const wchar_t* i = p; len > 0; ++i, --len)
-    if (*i == c) rv = const_cast<wchar_t*>(i);
-  return rv;
+  for (const wchar_t *i = p + len - 1U; len > 0; --i, --len)
+    if (*i == c) return const_cast<wchar_t*>(i);
+  return nullptr;
 }
 
 size_t wcslen(const wchar_t* s) noexcept {
-  if (!s) return 0;
+  if (_predict_false(!s)) return 0;
   size_t len = 0;
   while (*s++) len++;
   return len;

@@ -4,6 +4,10 @@
 #include <abi/abi.h>
 #include <cdecl.h>
 #include <cstddef>
+#include <cstdio_misc/file.h>
+#include <locale_misc/locale_t.h>
+#include <ctime_misc/tm_fwd.h>
+#include <climits>
 
 #ifdef __cplusplus
 namespace std {
@@ -11,7 +15,7 @@ namespace std {
 
 _cdecl_begin
 
-#define WEOF			(-1)
+#define WEOF			EOF
 
 #ifndef __cplusplus
 typedef _TYPES(wchar_t)		wchar_t;
@@ -19,14 +23,119 @@ typedef _TYPES(wchar_t)		wchar_t;
 typedef _TYPES(wint_t)		wint_t;
 typedef _TYPES(mbstate_t)	mbstate_t;
 
+wint_t btowc(int) noexcept;
+wint_t fgetwc(FILE*) noexcept;
+wchar_t fgetws(wchar_t*__restrict, int, FILE*__restrict) noexcept;
+wint_t fputwc(wchar_t, FILE*) noexcept;
+int fputws(const wchar_t*__restrict, FILE*__restrict) noexcept;
+int fwide(FILE*, int) noexcept;
+int fwprintf(FILE*__restrict, const wchar_t*__restrict, ...) noexcept;
+int fwscanf(FILE*__restrict, const wchar_t*__restrict, ...) noexcept;
+wint_t getwc(FILE*) noexcept;
+wint_t getwchar() noexcept;
+#if 0  // OB XSI
+int iswalnum(wint_t) noexcept;
+int iswalpha(wint_t) noexcept;
+int iswcntrl(wint_t) noexcept;
+int iswctype(wint_t, wctype_t) noexcept;
+int iswdigit(wint_t) noexcept;
+int iswgraph(wint_t) noexcept;
+int iswlower(wint_t) noexcept;
+int iswprint(wint_t) noexcept;
+int iswpunct(wint_t) noexcept;
+int iswspace(wint_t) noexcept;
+int iswupper(wint_t) noexcept;
+int iswxdigit(wint_t) noexcept;
+#endif
+size_t mbrlen(const char*__restrict, size_t, mbstate_t*__restrict) noexcept;
+size_t mbrtowc(wchar_t*__restrict, const char*__restrict, size_t,
+               mbstate_t*__restrict) noexcept;
+int mbsinit(mbstate_t*) noexcept;
+size_t mbsnrtowcs(wchar_t*__restrict, const char**__restrict, size_t, size_t,
+                  mbstate_t*__restrict) noexcept;
+size_t mbsrtowcs(wchar_t*__restrict, const char**__restrict, size_t,
+                 mbstate_t*__restrict) noexcept;
+FILE* open_wmemstream(wchar_t**, size_t*) noexcept;
+wint_t putwc(wchar_t, FILE*) noexcept;
+wint_t putwchar(wchar_t) noexcept;
+int swprintf(wchar_t*__restrict, size_t, const wchar_t*__restrict, ...)
+    noexcept;
+int swscanf(const wchar_t*__restrict, const wchar_t*__restrict, ...)
+    noexcept;
+#if 0  // OB XSI
+wint_t towlower(wint_t) noexcept;
+wint_t towupper(wint_t) noexcept;
+#endif
+wint_t ungetwc(wint_t, FILE*) noexcept;
+int vfwprintf(FILE*__restrict, const wchar_t*__restrict, va_list) noexcept;
+int vfwscanf(FILE*__restrict, const wchar_t*__restrict, va_list) noexcept;
+int vswprintf(const wchar_t*__restrict, size_t, const wchar_t*__restrict,
+              va_list) noexcept;
+int vswscanf(const wchar_t*__restrict, const wchar_t*__restrict, va_list)
+    noexcept;
+int vwprintf(const wchar_t*, va_list) noexcept;
+int vwscanf(const wchar_t*, va_list) noexcept;
+wchar_t* wcpcpy(wchar_t*__restrict, const wchar_t*__restrict) noexcept;
+wchar_t* wcpncpy(wchar_t*__restrict, const wchar_t*__restrict, size_t)
+    noexcept;
+size_t wcrtomb(char*__restrict, wchar_t, mbstate_t*__restrict) noexcept;
+int wcscasecmp(const wchar_t*, const wchar_t*) noexcept;
+int wcscasecmp_l(const wchar_t*, const wchar_t*, locale_t) noexcept;
+wchar_t* wcscat(wchar_t*__restrict, const wchar_t*__restrict) noexcept;
+wchar_t* wcschr(const wchar_t*, wchar_t) noexcept;
+int wcscmp(const wchar_t*, const wchar_t*) noexcept;
+int wcscoll(const wchar_t*, const wchar_t*) noexcept;
+int wcscoll_l(const wchar_t*, const wchar_t*, locale_t) noexcept;
+wchar_t* wcscpy(wchar_t*__restrict, const wchar_t*__restrict) noexcept;
+size_t wcscspn(const wchar_t*, const wchar_t*) noexcept;
+wchar_t* wcsdup(const wchar_t*) noexcept;
+size_t wcsftime(wchar_t*__restrict, size_t, const wchar_t*__restrict,
+                const struct tm*) noexcept;
+size_t wcslen(const wchar_t*) noexcept;
+int wcsncasecmp(const wchar_t*, const wchar_t*, size_t) noexcept;
+int wcsncasecmp_l(const wchar_t*, const wchar_t*, size_t, locale_t) noexcept;
+wchar_t* wcsncat(wchar_t*, const wchar_t*, size_t) noexcept;
+int wcsncmp(const wchar_t*, const wchar_t*, size_t) noexcept;
+wchar_t* wcsncpy(wchar_t*, const wchar_t*, size_t) noexcept;
+size_t wcsnlen(const wchar_t*, size_t) noexcept;
+size_t wcsnrtombs(char*__restrict, const wchar_t**__restrict, size_t, size_t,
+                  mbstate_t*__restrict) noexcept;
+wchar_t* wcspbrk(const wchar_t*, const wchar_t*) noexcept;
+wchar_t* wcsrchr(const wchar_t*, wchar_t) noexcept;
+size_t wcsrtombs(char*__restrict, const wchar_t*__restrict, size_t,
+                 mbstate_t*__restrict) noexcept;
+size_t wcsspn(const wchar_t*, const wchar_t*) noexcept;
+wchar_t* wcsstr(const wchar_t*__restrict, const wchar_t*__restrict) noexcept;
+double wcstod(const wchar_t*__restrict, wchar_t**__restrict) noexcept;
+float wcstof(const wchar_t*__restrict, wchar_t**__restrict) noexcept;
+wchar_t* wcstok(wchar_t*__restrict, const wchar_t*__restrict,
+                wchar_t**__restrict) noexcept;
+long wcstol(const wchar_t*__restrict, wchar_t**__restrict, int) noexcept;
+long double wcstold(const wchar_t*__restrict, wchar_t**__restrict) noexcept;
+long long wcstoll(const wchar_t*__restrict, wchar_t**__restrict, int) noexcept;
+unsigned long wcstoul(const wchar_t*__restrict, wchar_t**__restrict,
+                      int) noexcept;
+unsigned long long wcstoull(const wchar_t*__restrict, wchar_t**__restrict,
+                            int) noexcept;
+int wcswidth(const wchar_t*, size_t) noexcept;
+size_t wcsxfrm(wchar_t*__restrict, const wchar_t*__restrict, size_t) noexcept;
+size_t wcsxfrm_l(wchar_t*__restrict, const wchar_t*__restrict, size_t,
+                 locale_t) noexcept;
+int wctob(wint_t) noexcept;
+#if 0  // OB XSI
+wctype_t wctype(const char*) noexcept;
+#endif
+int wcwidth(wchar_t) noexcept;
+wchar_t* wmemchr(const wchar_t*, wchar_t, size_t) noexcept;
 int wmemcmp(const wchar_t*, const wchar_t*, size_t) noexcept;
-wchar_t* wmemset(wchar_t*, wchar_t, size_t) noexcept;
 wchar_t* wmemcpy(wchar_t*__restrict, const wchar_t*__restrict, size_t)
     noexcept;
 wchar_t* wmemmove(wchar_t*, const wchar_t*, size_t) noexcept;
-wchar_t* wmemchr(const wchar_t*, wchar_t, size_t) noexcept;
 wchar_t* wmemrchr(const wchar_t*, wchar_t, size_t) noexcept;
-size_t wcslen(const wchar_t*) noexcept;
+wchar_t* wmemset(wchar_t*, wchar_t, size_t) noexcept;
+int wprintf(const wchar_t*__restrict, ...) noexcept;
+int wscanf(const wchar_t*__restrict, ...) noexcept;
+
 
 _cdecl_end
 

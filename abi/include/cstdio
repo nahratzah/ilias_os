@@ -3,6 +3,8 @@
 
 #include <cstddef>
 #include <cdecl.h>
+#include <cstdio_misc/eof.h>
+#include <cstdio_misc/file.h>
 
 #if defined(_TEST) && __has_include_next(<cstdio>)
 # include_next <cstdio>
@@ -52,10 +54,6 @@ using std::vsnprintf;
 using std::vsprintf;
 using std::vasprintf;
 #endif /* !_TEST && __cplusplus */
-
-#ifndef _TEST
-# define EOF	(CHAR_MIN - 1)
-#endif
 
 
 #endif /* _CSTDIO_ */

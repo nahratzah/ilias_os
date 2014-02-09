@@ -3,6 +3,7 @@
 
 #include <cstddef_misc/null.h>
 #include <cstddef_misc/size_ptrdiff.h>
+#include <cstdio_misc/eof.h>
 #if __has_include(<clocale>)
 # include <locale_misc/locale_t.h>
 #endif
@@ -14,8 +15,6 @@
 
 _namespace_begin(std)
 _cdecl_begin
-
-#define EOF		(-1)
 
 void*  memccpy(void*__restrict, const void*__restrict, int, size_t) noexcept;
 void*  memchr(const void*, int, size_t) noexcept;
@@ -108,6 +107,14 @@ using std::strsignal;
 using std::strxfrm;
 using std::strxfrm_l;
 #endif /* __has_include(<clocale>) */
+
+/* Re-export some function into std::__1, working around broken libcxx. */
+namespace std {
+inline namespace __1 {
+using ::memset;
+using ::memcpy;
+using ::memmove;
+}} /* namespace std::__1 */
 #endif /* !_TEST && __cplusplus */
 
 #endif /* _CSTRING_ */

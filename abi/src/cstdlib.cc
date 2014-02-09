@@ -3,7 +3,7 @@
 #include <abi/semaphore.h>
 #include <abi/memory.h>
 #include <abi/panic.h>
-#include <abi/errno.h>
+#include <cerrno>
 #include <new>
 #include <cstring>
 
@@ -146,14 +146,14 @@ int push(fn_type fn) noexcept {
   if (fn_stack::push(fn)) return 0;
 
   fn_lock lck;
-  if (!fn_stack::empty()) return _ENOMEM;
+  if (!fn_stack::empty()) return _ABI_ENOMEM;
   for (fn_type* f = &fn_array[0]; f != &fn_array[fn_count]; ++f) {
     if (f->empty()) {
       *f = fn;
       return 0;
     }
   }
-  return _ENOMEM;
+  return _ABI_ENOMEM;
 }
 
 void resolve(bool quick_only) noexcept {
@@ -222,7 +222,7 @@ void exit(int s) noexcept {
 
 int atexit(void (*fn)()) noexcept {
   if (fn == nullptr) {
-    errno = _EINVAL;
+    errno = _ABI_EINVAL;
     return -1;
   }
   int e = push(fn_type(fn, false));
@@ -235,7 +235,7 @@ int atexit(void (*fn)()) noexcept {
 
 int at_quick_exit(void (*fn)()) noexcept {
   if (fn == nullptr) {
-    errno = _EINVAL;
+    errno = _ABI_EINVAL;
     return -1;
   }
   int e = push(fn_type(fn, true));
