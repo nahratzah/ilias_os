@@ -774,7 +774,7 @@ char* strtok(char*__restrict s, const char*__restrict sep) noexcept {
 char* strtok_r(char*__restrict s, const char*__restrict sep,
     char**__restrict last_s) noexcept {
   if (s == nullptr) s = *last_s;
-  if (s == '\0') return nullptr;
+  if (*s == '\0') return nullptr;
 
   s += strspn(s, sep);  // Skip tokens in separators at start of string.
   char* e = s + strcspn(s, sep);  // Search until separators.
