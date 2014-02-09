@@ -1,7 +1,7 @@
 .PHONY: all clean compiler_all
 
-PROPER_OPTS += "CC=${.CURDIR}/compiler/build/install/bin/clang"
-PROPER_OPTS += "CXX=${.CURDIR}/compiler/build/install/bin/clang++"
+PROPER_OPTS += "CC=../compiler/build/install/bin/clang"
+PROPER_OPTS += "CXX=../compiler/build/install/bin/clang++"
 
 all: compiler_all
 	cd proper && ${MAKE} ${PROPER_OPTS} all

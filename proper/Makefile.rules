@@ -37,16 +37,16 @@ RM ?= rm
 .SUFFIXES: .ok .testlog .test .o_test .o32 .o64 .ol .cc .cpp .c .s .S .kernel .kgz .kgzo
 .PHONY: loader clean cleandir test clean_test testbin retest do_test check recheck
 
-OBJS_32 += ${SRCS:N*.h:R:S/$/.o32/}
-OBJS_64 += ${SRCS:N*.h:R:S/$/.o64/}
-OBJS_32 += ${SRCS_32:N*.h:R:S/$/.o32/}
-OBJS_64 += ${SRCS_64:N*.h:R:S/$/.o64/}
-OBJS_LOADER += ${SRCS_LOADER:N*.h:R:S/$/.ol/}
-OBJS_TEST += ${SRCS:N*.h:R:S/$/.o_test/}
-OBJS_TEST += ${TEST:N*.h:R:S/$/.o_test/}
-BIN_TEST += ${TEST:N*.h:R:S/$/.test/}
-LOG_TEST += ${TEST:N*.h:R:S/$/.testlog/}
-OK_TEST += ${TEST:N*.h:R:S/$/.ok/}
+OBJS_32 += $(addsuffix .o32, $(basename ${SRCS}))
+OBJS_64 += $(addsuffix .o64, $(basename ${SRCS}))
+OBJS_32 += $(addsuffix .o32, $(basename ${SRCS_32}))
+OBJS_64 += $(addsuffix .o64, $(basename ${SRCS_64}))
+OBJS_LOADER += $(addsuffix .ol, $(basename ${SRCS_LOADER}))
+OBJS_TEST += $(addsuffix .o_test, $(basename ${SRCS}))
+OBJS_TEST += $(addsuffix .o_test, $(basename ${TEST}))
+BIN_TEST += $(addsuffix .test, $(basename ${TEST}))
+LOG_TEST += $(addsuffix .testlog, $(basename ${TEST}))
+OK_TEST += $(addsuffix .ok, $(basename ${TEST}))
 
 clean_test:
 	${RM} -f ${LOG_TEST} ${OK_TEST}
@@ -54,17 +54,18 @@ clean_test:
 clean: clean_test
 	${RM} -f ${OBJS_32} ${OBJS_64} ${OBJS_LOADER} ${CLEAN_FILES} ${OBJS_TEST} ${BIN_TEST}
 
-.ifnmake clean
-. for o in ${OBJS_32} ${OBJS_64} ${OBJS_LOADER} ${OBJS_TEST}
-.  if exists(${o}.d)
-.   include "${o}.d"
-.  elif exists($o)
-    .PHONY: $o
-.  endif
-. endfor
-.endif
+# .ifnmake clean
+# . for o in ${OBJS_32} ${OBJS_64} ${OBJS_LOADER} ${OBJS_TEST}
+# .  if exists(${o}.d)
+# .   include "${o}.d"
+# .  elif exists($o)
+#     .PHONY: $o
+# .  endif
+# . endfor
+# .endif
 
-DEP_FILES = ${OBJS_32:S/$/.d/} ${OBJS_64:S/$/.d/} ${OBJS_LOADER:S/$/.d/} ${OBJS_TEST:S/$/.d/}
+DEP_FILES = $(addsuffix .d, ${OBJS_32} ${OBJS_64} ${OBJS_LOADER} ${OBJS_TEST})
+include $(wildcard ${DEP_FILES})  # Only include dependancies that already exist.
 
 cleandir: clean
 	${RM} -f ${DEP_FILES}
@@ -128,6 +129,6 @@ recheck: retest
 	${CXX} ${TEST_CXXFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .test.ok:
 	@rm -f $@
-	@./$< > $*.testlog 2>&1 && ( touch $@ && echo "SUCCESS $*" ) || echo "FAIL    $*"
+	@./$< > ${@:.test=.testlog} 2>&1 && ( touch $@ && echo "SUCCESS $@" ) || echo "FAIL    $@"
 .o_test.test:
 	${CXX} ${TEST_LDFLAGS} -o $@ $>

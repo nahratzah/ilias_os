@@ -23,4 +23,4 @@ SRCS +=	abi/src/typeinfo.cc
 SRCS += abi/src/abi_ext_heap.cc
 SRCS +=	abi/src/exception.cc
 
-.include "test/Makefile.inc"
+include abi/test/Makefile.inc

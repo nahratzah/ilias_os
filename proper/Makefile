@@ -4,14 +4,14 @@ OBJS_LOADER += 32.kgzo 64.kgzo
 all: kernel
 
 # Import lists of sources.
-.include "abi/Makefile.inc"
+include abi/Makefile.inc
 #.include "freestanding/Makefile.inc"
 #.include "c_util/Makefile.inc"
 #.include "sys/Makefile.inc"
-.include "contrib/freestanding/libcxx/Makefile.inc"
+include contrib/freestanding/libcxx/Makefile.inc
 
 # Import build rules.
-.include "Makefile.rules"
+include Makefile.rules
 
 32.kernel: ${OBJS_32} i386.ld
 	${LD} -T i386.ld ${LDFLAGS} -o $@ ${OBJS_32}

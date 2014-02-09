@@ -1,8 +1,9 @@
 .PHONY: all llvm clang libcxx
 
-BUILDDIR = ${.CURDIR}/build
-LLVM_ALL_FILES != find llvm -type f | grep -v ' '
-CLANG_ALL_FILES != find clang -type f | grep -v ' '
+BUILDDIR = build
+LIBCXX_ALL_FILES =
+LLVM_ALL_FILES =
+CLANG_ALL_FILES =
 
 INSTALL_PREFIX = "${BUILDDIR}/install"
 CMAKE ?= cmake
@@ -35,7 +36,7 @@ ${BUILDDIR}/libcxx: ${BUILDDIR}
 ${BUILDDIR}/llvm.done_configure: ${BUILDDIR}/llvm ${BUILDDIR}/libcxx.done_install ${LLVM_ALL_FILES}
 	cd "${BUILDDIR}/llvm" &&                                              \
 	  env CC="${CC}" CXX="${CXX}"                                         \
-	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}" ${LLVM_OPTS} ${.CURDIR}/llvm
+	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ${LLVM_OPTS} ../../llvm
 	touch "${BUILDDIR}/llvm.done_configure"
 
 ${BUILDDIR}/llvm.done_build: ${BUILDDIR}/llvm.done_configure
@@ -50,8 +51,8 @@ ${BUILDDIR}/llvm.done_install: ${BUILDDIR}/llvm.done_build
 ${BUILDDIR}/clang.done_configure: ${BUILDDIR}/clang ${BUILDDIR}/llvm.done_install ${CLANG_ALL_FILES}
 	cd "${BUILDDIR}/clang" &&                                             \
 	  env CC="${CC}" CXX="${CXX}"                                         \
-	      "LLVM_CONFIG=${BUILDDIR}/llvm/bin/llvm-config"                  \
-	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}" ${.CURDIR}/clang
+	      "LLVM_CONFIG=../llvm/bin/llvm-config"                           \
+	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ../../clang
 	touch "${BUILDDIR}/clang.done_configure"
 
 ${BUILDDIR}/clang.done_build: ${BUILDDIR}/clang.done_configure
@@ -66,7 +67,7 @@ ${BUILDDIR}/clang.done_install: ${BUILDDIR}/clang.done_build
 ${BUILDDIR}/libcxx.done_configure: ${BUILDDIR}/libcxx ${LIBCXX_ALL_FILES}
 	cd "${BUILDDIR}/libcxx" &&                                            \
 	  env CC="${CC}" CXX="${CXX}"                                         \
-	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX}" ${.CURDIR}/libcxx
+	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ../../libcxx
 	touch "${BUILDDIR}/libcxx.done_configure"
 
 ${BUILDDIR}/libcxx.done_build: ${BUILDDIR}/libcxx.done_configure
