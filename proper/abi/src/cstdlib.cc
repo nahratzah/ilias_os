@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <abi/abi.h>
+#include <abi/linker.h>
 #include <abi/semaphore.h>
 #include <abi/memory.h>
 #include <abi/panic.h>
@@ -183,6 +184,8 @@ void resolve(bool quick_only) noexcept {
       }
     }
   }
+
+  if (!quick_only) abi::__cxa_finalize_0();
 }
 
 
