@@ -10,11 +10,14 @@ namespace ext {
 
 template<typename T, typename Tag> class list;
 template<bool Order, typename Tag> class iterator_order;
+template<typename Tag> class iterator_order<true, Tag>;
+template<typename Tag> class iterator_order<false, Tag>;
 
 
 template<typename Tag> class list_elem {
   template<typename T, typename TTag> friend class list;
-  template<bool Order, typename TTag> class iterator_order;
+  friend class iterator_order<true, Tag>;
+  friend class iterator_order<false, Tag>;
 
  public:
   constexpr list_elem();
@@ -32,10 +35,6 @@ template<typename Tag> class list_elem {
   mutable list_elem_ptr succ_ = nullptr;
   mutable list_elem_ptr pred_ = nullptr;
 };
-
-
-template<typename Tag> class iterator_order<true, Tag>;
-template<typename Tag> class iterator_order<false, Tag>;
 
 
 template<typename T, typename Tag> class list {
@@ -174,6 +173,8 @@ class list<T, Tag>::iterator_tmpl
   iterator_tmpl& operator--() noexcept;
   iterator_tmpl operator++(int) noexcept;
   iterator_tmpl operator--(int) noexcept;
+  bool operator==(const iterator_tmpl&) const noexcept;
+  bool operator!=(const iterator_tmpl&) const noexcept;
 
  private:
   explicit constexpr iterator_tmpl(IE* elem);
