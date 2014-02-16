@@ -107,4 +107,13 @@ template<typename FN, typename... Args> auto semlock::do_unlocked(
   return fn(std::forward<Args>(args)...);
 }
 
+template<typename FN, typename... Args> auto semaphore::execute(
+    FN&& fn, Args&&... args)
+    noexcept(noexcept(fn(std::forward<Args>(args)...))) ->
+    decltype(fn(std::forward<Args>(args)...))
+{
+  semlock lock{ *this };
+  return fn(std::forward<Args>(args)...);
+}
+
 }

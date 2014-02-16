@@ -16,6 +16,10 @@ class semaphore {
   void increment() noexcept;
   void decrement() noexcept;
 
+  template<typename FN, typename... Args> auto execute(FN&& fn, Args&&... args)
+      noexcept(noexcept(fn(std::forward<Args>(args)...))) ->
+      decltype(fn(std::forward<Args>(args)...));
+
  private:
   uint32_t v_ = 0;
 };
