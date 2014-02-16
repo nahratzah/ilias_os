@@ -12,7 +12,7 @@ template<typename Tag> constexpr list_elem<Tag>::list_elem(list_elem* init)
 template<typename Tag> constexpr list_elem<Tag>::list_elem(const list_elem&) {}
 
 template<typename Tag> list_elem<Tag>& list_elem<Tag>::operator=(
-    const list_elem&) {
+    const list_elem&) noexcept {
   return *this;
 }
 
@@ -44,12 +44,14 @@ auto list<T, Tag>::swap(list& o) noexcept -> void {
 
 template<typename T, typename Tag>
 auto list<T, Tag>::empty() const noexcept -> bool {
-  head_.succ_ != &head_;
+  return head_.succ_ != &head_;
 }
 
 template<typename T, typename Tag>
 auto list<T, Tag>::is_linked(const_pointer p) noexcept -> bool {
-  return (p && p->succ_ != nullptr);
+  if (!p) return false;
+  const list_elem<Tag>* p_ = p;
+  return p_->succ_ != nullptr;
 }
 
 template<typename T, typename Tag>
@@ -63,10 +65,11 @@ auto list<T, Tag>::link_back(const_pointer p) noexcept -> bool {
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::unlink(const_pointer e) noexcept -> bool {
-  if (!is_linked(e)) return false;
-  const const_pointer s = e->succ_;
-  const const_pointer p = e->pred_;
+auto list<T, Tag>::unlink(const_pointer e_ptr) noexcept -> bool {
+  if (!is_linked(e_ptr)) return false;
+  const list_elem<Tag>* e = e_ptr;
+  list_elem<Tag>*const s = e->succ_;
+  list_elem<Tag>*const p = e->pred_;
 
   s->pred_ = p;
   p->succ_ = s;
@@ -168,21 +171,22 @@ auto list<T, Tag>::iterator_to(const_pointer p) const noexcept ->
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::link_after_(const_pointer e, const_pointer p) noexcept ->
-    bool {
-  if (!e || is_linked(e)) return false;
-  const const_pointer s = p->succ_;
+auto list<T, Tag>::link_after_(const_pointer e_ptr, const list_elem<Tag>* p)
+    noexcept -> bool {
+  if (!e_ptr || is_linked(e_ptr)) return false;
+  const list_elem<Tag>* e = e_ptr;
+  const list_elem<Tag>* s = p->succ_;
 
-  p->succ_ = e;
-  s->pred_ = e;
-  e->pred_ = p;
-  e->succ_ = s;
+  p->succ_ = const_cast<list_elem<Tag>*>(e);
+  s->pred_ = const_cast<list_elem<Tag>*>(e);
+  e->pred_ = const_cast<list_elem<Tag>*>(p);
+  e->succ_ = const_cast<list_elem<Tag>*>(s);
   return true;
 }
 
 template<typename T, typename Tag>
-auto list<T, Tag>::link_before_(const_pointer e, const_pointer s) noexcept ->
-    bool {
+auto list<T, Tag>::link_before_(const_pointer e, const list_elem<Tag>* s)
+    noexcept -> bool {
   return link_after_(e, s->pred_);
 }
 
@@ -311,6 +315,16 @@ auto list<T, Tag>::iterator_tmpl<IT, IE, Order>::operator--(int) noexcept ->
   iterator_tmpl rv = *this;
   --(*this);
   return rv;
+}
+
+template<typename T, typename Tag>
+template<typename IT, typename IE, bool Order>
+template<typename O_IT, typename O_IE, bool O_Order>
+list<T, Tag>::iterator_tmpl<IT, IE, Order>::iterator_tmpl(
+    const iterator_tmpl<O_IT, O_IE, O_Order>& o) noexcept
+: iterator_tmpl()
+{
+  *this = o;
 }
 
 template<typename T, typename Tag>

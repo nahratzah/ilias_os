@@ -4,6 +4,7 @@
 #include <abi/semaphore.h>
 #include <abi/hashcode.h>
 #include <abi/ext/log2.h>
+#include <new>
 
 namespace __cxxabiv1 {
 namespace ext {
@@ -29,82 +30,122 @@ constexpr size_t fix_size(size_t sz) {
 
 
 constexpr unsigned int n_buckets = 256;
-constexpr unsigned int alloc_sz_log2 = 20;
+constexpr size_t allocsz_bits = 31;
 struct free_tag {};
 struct addr_tag {};
+struct lin_tag {};
 
 struct meta
-: list_elem<addr_tag>
+: list_elem<addr_tag>,
+  list_elem<free_tag>,
+  list_elem<lin_tag>
 {
-  size_t used_ = 0;
-  size_t free_ = 0;
+  size_t used_ : allocsz_bits;
+  bool root_ : 1;
+  size_t free_;
+
+  meta(size_t free, bool root = false) : used_(0), root_(root), free_(free) {}
+  inline void* get_used_ptr() const noexcept;
+  inline void* get_free_ptr() const noexcept;
+  inline void* get_end_ptr() const noexcept;
+  inline unsigned int freelist_slot() const noexcept;
 };
 
 inline size_t hash_code(const meta& m) noexcept {
   using abi::hash_code;
 
-  const void* p = &m;
-  return hash_code(p);
+  return hash_code(m.get_used_ptr());
 }
-
-hash_set<meta, n_buckets, addr_tag> addr;
-list<meta, free_tag> free[alloc_sz_log2];
-
 
 constexpr size_t meta_sz = fix_size(sizeof(meta));
 constexpr size_t min_allocsz = 2U * (size_t(1U) << log2_up(meta_sz));
-constexpr size_t max_allocsz = min_allocsz << alloc_sz_log2;
+constexpr size_t max_allocsz = size_t(1U) << allocsz_bits;
+constexpr unsigned int alloc_sz_log2 = log2_up(max_allocsz / min_allocsz);
+
+hash_set<meta, n_buckets, addr_tag> addr;
+list<meta, free_tag> free[alloc_sz_log2 + 1U];
+list<meta, lin_tag> lin;
+
 
 constexpr unsigned int freelist_slot(size_t sz) {
-  return log2_up(sz / min_allocsz);
+  return (log2_up(sz / min_allocsz) > alloc_sz_log2 ?
+          alloc_sz_log2 :
+          log2_up(sz / min_allocsz));
+}
+
+inline unsigned int meta::freelist_slot() const noexcept {
+  using __cxxabiv1::ext::freelist_slot;
+
+  return freelist_slot(free_);
+}
+
+inline void* meta::get_used_ptr() const noexcept {
+  const void* self = this;
+  const auto addr = reinterpret_cast<uintptr_t>(self) + meta_sz;
+  return reinterpret_cast<void*>(addr);
+}
+
+inline void* meta::get_free_ptr() const noexcept {
+  const void* self = get_used_ptr();
+  const auto addr = reinterpret_cast<uintptr_t>(self) + used_;
+  return reinterpret_cast<void*>(addr);
+}
+
+inline void* meta::get_end_ptr() const noexcept {
+  const void* self = get_free_ptr();
+  const auto addr = reinterpret_cast<uintptr_t>(self) + free_;
+  return reinterpret_cast<void*>(addr);
 }
 
 
 void add_memory(void* p, size_t sz) noexcept {
-  meta* root = static_cast<meta*>(p);
-
-  while (sz >= min_allocsz) {
-    size_t immed = size_t(1) << log2_down(sz);
-    meta* m = static_cast<meta*>(p);
-    new (m) meta();
-
-    m.root = p;
-    m.sz_slot_ = freelist_slot(immed);
-    m.addr_chain_ = free_lists[freelist_slot(immed)];
-    free_lists[freelist_slot(immed)] = m;
-
-    p = reinterpret_cast<uint8_t*>(p) + immed;
-    sz -= immed;
-  }
+  meta* root = new (p) meta(sz - meta_sz, true);
+  free[root->freelist_slot()].link_front(root);
+  addr.link_front(root);
+  lin.link_front(root);
 }
 
 bool ask_for_memory(semlock& lock, size_t sz) noexcept {
   void*const p = lock.do_unlocked([&]() {
-      return heap_malloc(&sz, min_allocsz);
+      return _config::heap_malloc(&sz, min_allocsz);
     });
   if (p) add_memory(p, sz);
   return bool(p);
 }
 
-meta* find_free_meta(semlock& lock, size_t alloc_sz) noexcept {
+meta* alloc_meta(semlock& lock, size_t sz) noexcept {
+  sz = fix_size(sz);
+  const size_t alloc_sz = sz + meta_sz;
   const unsigned int f_start = freelist_slot(alloc_sz);
   if (f_start >= alloc_sz_log2) return nullptr;
 
   do {
-    for (unsigned int i = f_start; i < alloc_sz_log2; ++i) {
-      meta* m = free_lists[i];
-      if (!m) continue;
+    for (unsigned int i = f_start; i <= alloc_sz_log2; ++i) {
+      if (free[i].empty()) continue;
 
-      /* Found available space. */
-      if (!m.is_free_) panic("space on free list is not free: %p", m);
-      /* Take m from freelist. */
-      free_lists[i] = m.free_chain_;
-      m.free_chain_ = nullptr;
-      m.is_free_ = false;
+      meta* m = &*free[i].begin();
+      free[i].unlink(m);
 
+      /*
+       * Create a new meta, in the free space of m.
+       * Since the actual allocation code uses the m pointer,
+       * store the new meta in variable m.
+       */
+      if (m->used_ != 0) {
+        meta* nwm = new (m->get_free_ptr()) meta(m->free_ - meta_sz);
+        m->free_ = 0;
+        free[m->freelist_slot()].link_back(m);
+        addr.link_front(nwm);
+        lin.link_after(nwm, lin.iterator_to(m));
+        m = nwm;
+      }
+
+      m->used_ = sz;
+      m->free_ -= sz;
+      free[m->freelist_slot()].link_front(m);
       return m;
     }
-  } while (ask_for_memory(lock, sz));
+  } while (ask_for_memory(lock, alloc_sz));
   return nullptr;
 }
 
@@ -124,14 +165,89 @@ void* heap::malloc_result(void* rv, size_t sz) noexcept {
   return rv;
 }
 
-void heap::malloc(size_t sz) noexcept {
-  sz = fix_size(sz);
-  alloc_sz = sz + meta_sz;
-
+void* heap::malloc(size_t sz) noexcept {
   semlock lock{ mlock };
 
-  meta* s = find_free_meta(lock, alloc_sz);
+  meta* s = alloc_meta(sz);
   if (s == nullptr) return malloc_result(nullptr, sz);
+  return malloc_result(s->get_used_ptr(), sz);
+}
+
+bool heap::resize_result(bool rv, void* addr, size_t nsz, size_t osz)
+    noexcept {
+  atom_inc(stats_.realloc_calls);
+  if (rv) {
+    if (nsz > osz)
+      atom_inc(stats_.resize_bytes_up, nsz - osz);
+    else if (nsz < osz)
+      atom_inc(stats_.resize_bytes_down, osz - nsz);
+  } else {
+    atom_inc(stats_.resize_fail);
+  }
+  return rv;
+}
+
+bool heap::resize(void* addr, size_t nsz, size_t* osz) noexcept {
+  nsz = fix_size(nsz);
+  mlock lock;
+
+  auto* bucket = addr[hashcode(addr)];
+  for (auto& i : *bucket) {
+    if (i.get_used_ptr() == addr) {
+      *osz = i.used_;
+      if (*osz == nsz) return resize_result(true, addr, nsz, *osz);
+
+      if (nsz < *osz) {
+        free[i.freelist_slot()].unlink(&i);
+        i.free_ += *osz - nsz;
+        i.used_ -= *osz - nsz;
+        free[i.freelist_slot()].link_front(&i);
+        return resize_result(true, addr, nsz, *osz);
+      }
+
+      const auto delta = nsz - *osz;
+      if (i.free_ < delta) return resize_result(false, addr, nsz, *osz);
+      free[i.freelist_slot()].unlink(&i);
+      i.free_ -= delta;
+      i.used_ += delta;
+      free[i.freelist_slot()].link_front(&i);
+      return resize_result(true, addr, nsz, *osz);
+    }
+  }
+
+  panic("heap::resize(%p) -- address not in allocation list", addr);
+}
+
+void heap::free(void* addr) noexcept {
+  mlock lock;
+
+  auto* bucket = addr[hashcode(addr)];
+  for (auto& i : *bucket) {
+    if (i.get_used_ptr() == addr) {
+      atom_inc(stats_.free_bytes, i.used_);
+      free[i.freelist_slot()].unlink(&i);
+      i.free_ -= i.used_;
+      i.used_ = 0;
+      free[i.freelist_slot()].link_front(&i);
+
+      // Merge with pred.
+      if (!i.root_) {
+        auto pred = --lin.iterator_to(&i);
+        if (&i == pred.get_end_addr()) {
+          pred.free_ += meta_sz + i.free_;
+
+          lin.unlink(&i);
+          addr.unlink(&i);
+          free[i.freelist_slot()].unlink(&i);
+        }
+      }
+
+      atom_inc(stats_.free_calls);
+      return;
+    }
+  }
+
+  panic("heap::free(%p) -- address not in allocation list", addr);
 }
 
 

@@ -160,4 +160,5 @@ class hash_set<T, Buckets, Tag>::iterator_tmpl
 
 }} /* namespace __cxxabiv1::ext */
 
+#include <abi/ext/hash_list-inl.h>
 #endif /* _ABI_EXT_HASH_SET_H_ */

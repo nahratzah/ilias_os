@@ -3,7 +3,7 @@ namespace ext {
 
 
 template<typename T, unsigned int Buckets, typename Tag>
-auto hash_set<T, Buckets, Tag>::hash_list() noexcept {
+hash_set<T, Buckets, Tag>::hash_set() noexcept {
   for (bucket_idx i = 0U; i <= Buckets; ++i) buckets_[i] = list_.end();
 }
 
@@ -46,9 +46,10 @@ auto hash_set<T, Buckets, Tag>::unlink(pointer ee) noexcept -> bool {
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::unlink(const_iterator ee) noexcept -> bool {
-  const list_t::const_iterator& e = ee;
+  const typename list_t::const_iterator& e = ee;
   const bucket_idx b = hash(*e);
-  const list_t::iterator s = ++list_t::iterator_to(const_cast<pointer>(&*ee));
+  const typename list_t::iterator s =
+      ++list_t::iterator_to(const_cast<pointer>(&*ee));
 
   if (!unlink(e)) return false;
 
@@ -203,8 +204,8 @@ auto hash_set<T, Buckets, Tag>::crend(bucket_idx b) const noexcept ->
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
-auto hash_set<T, Buckets, Tag>::hashcode_2_bucket(size_t h) noexcept ->
-    bucket_idx {
+constexpr auto hash_set<T, Buckets, Tag>::hashcode_2_bucket(size_t h)
+    noexcept -> bucket_idx {
   return h % Buckets;
 }
 
@@ -244,7 +245,7 @@ auto hash_set<T, Buckets, Tag>::bucket::cend() const noexcept ->
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
-auto hash_set<T, Buckets, Tag>::bucket::bucket(hash_list& hl, bucket_idx idx)
+hash_set<T, Buckets, Tag>::bucket::bucket(hash_set& hl, bucket_idx idx)
     noexcept
 : hl_(&hl),
   idx_(idx)
@@ -276,14 +277,14 @@ auto hash_set<T, Buckets, Tag>::const_bucket::cend() const noexcept ->
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
-auto hash_set<T, Buckets, Tag>::const_bucket::const_bucket(
+hash_set<T, Buckets, Tag>::const_bucket::const_bucket(
     const hash_set& hl, bucket_idx idx) noexcept
 : hl_(&hl),
   idx_(idx)
 {}
 
 template<typename T, unsigned int Buckets, typename Tag>
-auto hash_set<T, Buckets, Tag>::const_bucket::const_bucket(
+hash_set<T, Buckets, Tag>::const_bucket::const_bucket(
     const bucket& sibling) noexcept
 : hl_(sibling.hl_),
   idx_(sibling.idx_)
