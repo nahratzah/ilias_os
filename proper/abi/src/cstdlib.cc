@@ -10,11 +10,15 @@
 
 namespace std {
 
+using abi::semlock;
+
 /* at{_quick_}exit function implementation. */
 namespace {
 
 
 constexpr _TYPES(size_t) fn_count = 256;
+abi::semaphore fn_lock{ 1U };
+
 
 class fn_type {
  public:
@@ -32,33 +36,6 @@ class fn_type {
 };
 
 fn_type fn_array[fn_count];
-
-class fn_lock;
-
-class fn_unlock {
- public:
-  inline fn_unlock(fn_lock&) noexcept;
-  fn_unlock(const fn_unlock&) = delete;
-  fn_unlock& operator=(const fn_unlock&) = delete;
-  inline ~fn_unlock() noexcept;
-
- private:
-  fn_lock& lck_;
-};
-
-class fn_lock {
-  friend fn_unlock;
-
- public:
-  inline fn_lock(abi::semaphore& = fn_lck_) noexcept;
-  fn_lock(const fn_lock&) = delete;
-  fn_lock& operator=(const fn_lock&) = delete;
-  inline ~fn_lock() noexcept;
-
- private:
-  static abi::semaphore fn_lck_;
-  abi::semaphore& s_;
-};
 
 class fn_stack {
  public:
@@ -91,25 +68,6 @@ bool fn_type::empty() const noexcept {
   return !fn_;
 }
 
-inline fn_unlock::fn_unlock(fn_lock& lck) noexcept
-: lck_(lck)
-{
-  lck_.s_.increment();
-}
-
-inline fn_unlock::~fn_unlock() noexcept {
-  lck_.s_.decrement();
-}
-
-inline fn_lock::fn_lock(abi::semaphore& s) noexcept
-: s_(s)
-{
-  s_.decrement();
-}
-inline fn_lock::~fn_lock() noexcept {
-  s_.increment();
-}
-
 inline fn_stack::fn_stack(fn_type fn) noexcept
 : fn_(fn)
 {}
@@ -123,7 +81,7 @@ bool fn_stack::push(fn_type fn) noexcept {
   if (!e) return false;
   new (e) fn_stack(fn);
 
-  fn_lock();
+  semlock lck{ fn_lock };
   e->tail_ = head_;
   head_ = e;
   return true;
@@ -146,7 +104,7 @@ fn_type fn_stack::pop(bool* fail) noexcept {
 int push(fn_type fn) noexcept {
   if (fn_stack::push(fn)) return 0;
 
-  fn_lock lck;
+  semlock lck{ fn_lock };
   if (!fn_stack::empty()) return _ABI_ENOMEM;
   for (fn_type* f = &fn_array[0]; f != &fn_array[fn_count]; ++f) {
     if (f->empty()) {
@@ -162,23 +120,23 @@ void resolve(bool quick_only) noexcept {
   highlander.decrement();  // Only once ever will this be invoked.
 
   bool keep_going = true;
-  fn_lock lck;
+  semlock lck{ fn_lock };
   while (keep_going) {
     keep_going = false;
     bool stop;
     do {
       fn_type fn = fn_stack::pop(&stop);
       if (!stop) {
-        fn_unlock ulck{ lck };
-        fn.resolve(quick_only);
+        lck.do_unlocked([&]() {
+            fn.resolve(quick_only);
+	  });
       }
     } while (!stop);
 
     for (fn_type* f = &fn_array[fn_count - 1U]; f != &fn_array[0] - 1; --f) {
       fn_type fn = *f;
       *f = fn_type();
-      fn_unlock ulck{ lck };
-      if (fn.resolve(quick_only)) {
+      if (lck.do_unlocked([&]() { return fn.resolve(quick_only); })) {
         keep_going = true;
 	break;
       }
@@ -191,7 +149,6 @@ void resolve(bool quick_only) noexcept {
 
 fn_stack* fn_stack::head_ = nullptr;
 ::abi::heap fn_stack::heap{ "abi/atexit" };
-abi::semaphore fn_lock::fn_lck_{ 1U };
 
 
 abi::big_heap& c_malloc_heap() noexcept {

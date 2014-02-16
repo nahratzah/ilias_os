@@ -18,48 +18,7 @@ void atom_dec(std::atomic<uintmax_t>& atom, uintmax_t n = 1) noexcept {
   atom.fetch_sub(n, std::memory_order_relaxed);
 }
 
-class munlock;
-
-class mlock {
-  friend munlock;
-
- public:
-  mlock() noexcept;
-  ~mlock() noexcept;
-
-  mlock(const mlock&) = delete;
-  mlock& operator=(const mlock&) = delete;
-
- private:
-  static semaphore lck_;
-};
-
-class munlock {
- public:
-  munlock() noexcept;
-  ~munlock() noexcept;
-
-  munlock(const munlock&) = delete;
-  munlock& operator=(const munlock&) = delete;
-};
-
-semaphore mlock::lck_{ 1U };
-
-mlock::mlock() noexcept {
-  lck_.decrement();
-}
-
-mlock::~mlock() noexcept {
-  lck_.increment();
-}
-
-munlock::munlock() noexcept {
-  mlock::lck_.increment();
-}
-
-munlock::~munlock() noexcept {
-  mlock::lck_.decrement();
-}
+semaphore mlock{ 1U };
 
 
 /* Round size up to the next multiple of alignof(max_align_t). */
@@ -119,17 +78,15 @@ void add_memory(void* p, size_t sz) noexcept {
   }
 }
 
-bool ask_for_memory(size_t sz) noexcept {
-  void* p;
-  {
-    munlock ulck;
-    p = heap_malloc(&sz, min_allocsz);
-  }
+bool ask_for_memory(semlock& lock, size_t sz) noexcept {
+  void*const p = lock.do_unlocked([&]() {
+      return heap_malloc(&sz, min_allocsz);
+    });
   if (p) add_memory(p, sz);
   return bool(p);
 }
 
-meta* find_free_meta(size_t alloc_sz) noexcept {
+meta* find_free_meta(semlock& lock, size_t alloc_sz) noexcept {
   const unsigned int f_start = freelist_slot(alloc_sz);
   if (f_start >= alloc_sz_log2) return nullptr;
 
@@ -147,7 +104,7 @@ meta* find_free_meta(size_t alloc_sz) noexcept {
 
       return m;
     }
-  } while (ask_for_memory(sz));
+  } while (ask_for_memory(lock, sz));
   return nullptr;
 }
 
@@ -171,9 +128,9 @@ void heap::malloc(size_t sz) noexcept {
   sz = fix_size(sz);
   alloc_sz = sz + meta_sz;
 
-  mlock lock;
+  semlock lock{ mlock };
 
-  meta* s = find_free_meta(alloc_sz);
+  meta* s = find_free_meta(lock, alloc_sz);
   if (s == nullptr) return malloc_result(nullptr, sz);
 }
 
