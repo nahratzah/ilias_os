@@ -168,7 +168,7 @@ void* heap::malloc_result(void* rv, size_t sz) noexcept {
 void* heap::malloc(size_t sz) noexcept {
   semlock lock{ mlock };
 
-  meta* s = alloc_meta(sz);
+  meta* s = alloc_meta(lock, sz);
   if (s == nullptr) return malloc_result(nullptr, sz);
   return malloc_result(s->get_used_ptr(), sz);
 }
@@ -189,7 +189,7 @@ bool heap::resize_result(bool rv, void* addr, size_t nsz, size_t osz)
 
 bool heap::resize(void* addr, size_t nsz, size_t* osz) noexcept {
   nsz = fix_size(nsz);
-  mlock lock;
+  semlock lock{ mlock };
 
   auto* bucket = addr[hashcode(addr)];
   for (auto& i : *bucket) {
@@ -219,7 +219,7 @@ bool heap::resize(void* addr, size_t nsz, size_t* osz) noexcept {
 }
 
 void heap::free(void* addr) noexcept {
-  mlock lock;
+  semlock lock{ mlock };
 
   auto* bucket = addr[hashcode(addr)];
   for (auto& i : *bucket) {
