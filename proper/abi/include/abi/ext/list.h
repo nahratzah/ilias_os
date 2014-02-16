@@ -62,10 +62,11 @@ template<typename T, typename Tag> class list {
   list(list&&) noexcept;
   list& operator=(const list&) = delete;
   list& operator=(list&&) noexcept;
-  ~list() = default;
+  ~list() noexcept;
 
   void swap(list&) noexcept;
   bool empty() const noexcept;
+  void clear() noexcept;
 
   static bool is_linked(const_pointer) noexcept;
   bool link_front(const_pointer) noexcept;
@@ -175,6 +176,13 @@ class list<T, Tag>::iterator_tmpl
   iterator_tmpl operator--(int) noexcept;
   bool operator==(const iterator_tmpl&) const noexcept;
   bool operator!=(const iterator_tmpl&) const noexcept;
+
+  template<typename O_IT, typename O_IE, bool O_Order>
+  bool operator==(const iterator_tmpl<O_IT, O_IE, O_Order>& o)
+      const noexcept;
+  template<typename O_IT, typename O_IE, bool O_Order>
+  bool operator!=(const iterator_tmpl<O_IT, O_IE, O_Order>& o)
+      const noexcept;
 
  private:
   explicit constexpr iterator_tmpl(IE* elem);

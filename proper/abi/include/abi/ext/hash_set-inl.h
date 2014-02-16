@@ -8,6 +8,36 @@ hash_set<T, Buckets, Tag>::hash_set() noexcept {
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
+hash_set<T, Buckets, Tag>::hash_set(hash_set&& o) noexcept
+: hash_set()
+{
+  swap(*this, o);
+}
+
+template<typename T, unsigned int Buckets, typename Tag>
+auto hash_set<T, Buckets, Tag>::operator=(hash_set&& o) noexcept -> hash_set& {
+  clear();
+  swap(*this, o);
+  return *this;
+}
+
+template<typename T, unsigned int Buckets, typename Tag>
+auto swap(hash_set<T, Buckets, Tag>& a, hash_set<T, Buckets, Tag>& b)
+    noexcept -> void {
+  typedef typename hash_set<T, Buckets, Tag>::bucket_idx bucket_idx;
+
+  for (bucket_idx i = 0U; i <= Buckets; ++i) {
+    const auto ai = a.buckets_[i];
+    const auto bi = b.buckets_[i];
+
+    b.buckets_[i] = (ai == a.list_.end() ? b.list_.end() : ai);
+    a.buckets_[i] = (bi == b.list_.end() ? a.list_.end() : bi);
+  }
+
+  swap(a.list_, b.list_);
+}
+
+template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::empty() const noexcept -> bool {
   return list_.empty();
 }
@@ -19,12 +49,30 @@ auto hash_set<T, Buckets, Tag>::empty(bucket_idx b) const noexcept -> bool {
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
-auto hash_set<T, Buckets, Tag>::link_front(pointer e) noexcept -> bool {
-  const bucket_idx b = hash(e);
+auto hash_set<T, Buckets, Tag>::clear() noexcept -> void {
+  list_.clear();
+  for (bucket_idx i = 0U; i <= Buckets; ++i) buckets_[i] = list_.end();
+}
 
-  if (!list_.insert_before(e, buckets_[b])) return false;
-  for (bucket_idx i = 0U; i <= b; ++i)
-    if (buckets_[i] == buckets_[b]) buckets_[i] = e;
+template<typename T, unsigned int Buckets, typename Tag>
+auto hash_set<T, Buckets, Tag>::iterator_to(pointer e) noexcept -> iterator {
+  return list_.iterator_to(e);
+}
+
+template<typename T, unsigned int Buckets, typename Tag>
+auto hash_set<T, Buckets, Tag>::iterator_to(const_pointer e) const noexcept ->
+    const_iterator {
+  return list_.iterator_to(e);
+}
+
+template<typename T, unsigned int Buckets, typename Tag>
+auto hash_set<T, Buckets, Tag>::link_front(pointer e) noexcept -> bool {
+  const bucket_idx b = hash(*e);
+
+  if (!list_.link_before(e, buckets_[b])) return false;
+  for (bucket_idx i = 0U; i < b; ++i)
+    if (buckets_[i] == buckets_[b]) buckets_[i] = iterator_to(e);
+  buckets_[b] = iterator_to(e);
   return true;
 }
 
@@ -32,9 +80,12 @@ template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::link_back(pointer e) noexcept -> bool {
   const bucket_idx b = hash(e);
 
-  if (!list_.insert_before(e, buckets_[b + 1U])) return false;
-  for (bucket_idx i = 0U; i <= b; ++i)
-    if (buckets_[i] == buckets_[b + 1U]) buckets_[i] = e;
+  if (!list_.link_before(e, buckets_[b + 1U])) return false;
+  if (buckets_[b] == list_.end()) {
+    for (bucket_idx i = 0U; i < b; ++i)
+      if (buckets_[i] == buckets_[b + 1U]) buckets_[i] = iterator_to(e);
+    buckets_[b] = iterator_to(e);
+  }
   return true;
 }
 
@@ -45,11 +96,10 @@ auto hash_set<T, Buckets, Tag>::unlink(pointer ee) noexcept -> bool {
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
-auto hash_set<T, Buckets, Tag>::unlink(const_iterator ee) noexcept -> bool {
-  const typename list_t::const_iterator& e = ee;
+auto hash_set<T, Buckets, Tag>::unlink(const_iterator e) noexcept -> bool {
   const bucket_idx b = hash(*e);
-  const typename list_t::iterator s =
-      ++list_t::iterator_to(const_cast<pointer>(&*ee));
+  iterator s = iterator_to(const_cast<pointer>(&*e));
+  ++s;
 
   if (!unlink(e)) return false;
 
@@ -59,44 +109,44 @@ auto hash_set<T, Buckets, Tag>::unlink(const_iterator ee) noexcept -> bool {
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::begin() noexcept -> iterator {
-  return iterator{ list_.begin() };
+  return list_.begin();
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::end() noexcept -> iterator {
-  return iterator{ list_.end() };
+  return list_.end();
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::begin() const noexcept -> const_iterator {
-  return const_iterator{ list_.begin() };
+  return list_.begin();
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::end() const noexcept -> const_iterator {
-  return const_iterator{ list_.end() };
+  return list_.end();
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::rbegin() noexcept -> reverse_iterator {
-  return reverse_iterator{ list_.rbegin() };
+  return list_.rbegin();
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::rend() noexcept -> reverse_iterator {
-  return reverse_iterator{ list_.rend() };
+  return list_.rend();
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::rbegin() const noexcept ->
     const_reverse_iterator {
-  return const_reverse_iterator{ list_.rbegin() };
+  return list_.rbegin();
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::rend() const noexcept ->
     const_reverse_iterator {
-  return const_reverse_iterator{ list_.rend() };
+  return list_.rend();
 }
 
 template<typename T, unsigned int Buckets, typename Tag>
@@ -221,6 +271,17 @@ auto hash_set<T, Buckets, Tag>::hash(const_pointer e) noexcept ->
   return (e ? hash(*e) : 0U);
 }
 
+template<typename T, unsigned int Buckets, typename Tag>
+auto hash_set<T, Buckets, Tag>::get_bucket(bucket_idx idx) noexcept -> bucket {
+  return bucket{ *this, idx };
+}
+
+template<typename T, unsigned int Buckets, typename Tag>
+auto hash_set<T, Buckets, Tag>::get_bucket(bucket_idx idx) const noexcept ->
+    const_bucket {
+  return const_bucket{ *this, idx };
+}
+
 
 template<typename T, unsigned int Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::bucket::begin() const noexcept -> iterator {
@@ -250,6 +311,11 @@ hash_set<T, Buckets, Tag>::bucket::bucket(hash_set& hl, bucket_idx idx)
 : hl_(&hl),
   idx_(idx)
 {}
+
+template<typename T, unsigned int Buckets, typename Tag>
+auto hash_set<T, Buckets, Tag>::bucket::index() const noexcept -> bucket_idx {
+  return idx_;
+}
 
 
 template<typename T, unsigned int Buckets, typename Tag>
@@ -289,6 +355,12 @@ hash_set<T, Buckets, Tag>::const_bucket::const_bucket(
 : hl_(sibling.hl_),
   idx_(sibling.idx_)
 {}
+
+template<typename T, unsigned int Buckets, typename Tag>
+auto hash_set<T, Buckets, Tag>::const_bucket::index() const noexcept ->
+    bucket_idx {
+  return idx_;
+}
 
 
 }} /* namespace __cxxabiv1::ext */

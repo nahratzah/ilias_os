@@ -28,6 +28,11 @@ list<T, Tag>::list(list&& o) noexcept {
 }
 
 template<typename T, typename Tag>
+list<T, Tag>::~list() noexcept {
+  clear();
+}
+
+template<typename T, typename Tag>
 auto list<T, Tag>::operator=(list&& o) noexcept -> list& {
   swap(o);
   return *this;
@@ -46,6 +51,11 @@ auto list<T, Tag>::swap(list& o) noexcept -> void {
 template<typename T, typename Tag>
 auto list<T, Tag>::empty() const noexcept -> bool {
   return head_.succ_ != &head_;
+}
+
+template<typename T, typename Tag>
+auto list<T, Tag>::clear() noexcept -> void {
+  for (auto i = begin(); i != end(); i = begin()) unlink(begin());
 }
 
 template<typename T, typename Tag>
@@ -348,6 +358,24 @@ template<typename T, typename Tag>
 template<typename IT, typename IE, bool Order>
 auto list<T, Tag>::iterator_tmpl<IT, IE, Order>::operator!=(
     const iterator_tmpl& o) const noexcept -> bool {
+  return !(*this == o);
+}
+
+template<typename T, typename Tag>
+template<typename IT, typename IE, bool Order>
+template<typename O_IT, typename O_IE, bool O_Order>
+auto list<T, Tag>::iterator_tmpl<IT, IE, Order>::operator==(
+    const iterator_tmpl<O_IT, O_IE, O_Order>& o) const noexcept -> bool {
+  typedef typename list<T, Tag>::const_iterator impl_t;
+
+  return impl_t(*this) == impl_t(o);
+}
+
+template<typename T, typename Tag>
+template<typename IT, typename IE, bool Order>
+template<typename O_IT, typename O_IE, bool O_Order>
+auto list<T, Tag>::iterator_tmpl<IT, IE, Order>::operator!=(
+    const iterator_tmpl<O_IT, O_IE, O_Order>& o) const noexcept -> bool {
   return !(*this == o);
 }
 

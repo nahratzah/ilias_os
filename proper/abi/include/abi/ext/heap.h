@@ -37,7 +37,7 @@ class heap {
 
  private:
   void* malloc_result(void*, size_t) noexcept;
-  bool resize_result(bool, void*, size_t, size_t*) noexcept;
+  bool resize_result(bool, void*, size_t, size_t) noexcept;
 
   stats stats_;
 };
