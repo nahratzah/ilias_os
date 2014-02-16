@@ -131,4 +131,4 @@ recheck: retest
 	@rm -f $@
 	@./$< > ${@:.test=.testlog} 2>&1 && ( touch $@ && echo "SUCCESS $@" ) || echo "FAIL    $@"
 .o_test.test:
-	${CXX} ${TEST_LDFLAGS} -o $@ $>
+	${CXX} ${TEST_LDFLAGS} -o $@ $^
