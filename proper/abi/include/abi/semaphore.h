@@ -11,17 +11,19 @@ namespace __cxxabiv1 {
 class semaphore {
  public:
   constexpr semaphore() = default;
-  constexpr semaphore(uint32_t v) : v_(v) {};
+  constexpr semaphore(uint32_t v) : a_(v) {};
 
   void increment() noexcept;
   void decrement() noexcept;
+  bool try_decrement() noexcept;
 
   template<typename FN, typename... Args> auto execute(FN&& fn, Args&&... args)
       noexcept(noexcept(fn(std::forward<Args>(args)...))) ->
       decltype(fn(std::forward<Args>(args)...));
 
  private:
-  uint32_t v_ = 0;
+  uint32_t t_ = 0;
+  uint32_t a_ = 0;
 };
 
 class semlock {
