@@ -13,6 +13,9 @@ extern thread_local int errno;
 extern _Thread_local int errno;
 #endif
 
+extern const char*const sys_errlist[];
+extern const int sys_nerr;
+
 _cdecl_end
 _namespace_end(__cxxabiv1)
 

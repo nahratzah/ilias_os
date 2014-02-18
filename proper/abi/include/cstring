@@ -31,6 +31,8 @@ int    strcmp(const char*, const char*) noexcept;
 char*  strcpy(char*__restrict, const char*__restrict) noexcept;
 size_t strcspn(const char*, const char*) noexcept;
 char*  strdup(const char*) noexcept;
+char*  strerror(int) noexcept;
+int    strerror_r(int, char*, size_t) noexcept;
 size_t strlen(const char*) noexcept;
 size_t strlcat(char*, const char*, size_t) noexcept;
 size_t strlcpy(char*, const char*, size_t) noexcept;
@@ -52,9 +54,7 @@ void   bcopy(const void*, void*, size_t) noexcept;
 /* These functions require working locale support. */
 int    strcoll(const char*, const char*) noexcept;
 int    strcoll_l(const char*, const char*, locale_t) noexcept;
-char*  strerror(int) noexcept;
 char*  strerror_l(int, locale_t) noexcept;
-int    strerror_r(int, char*, size_t) noexcept;
 char*  strsignal(int) noexcept;
 size_t strxfrm(char*__restrict, const char*__restrict, size_t) noexcept;
 size_t strxfrm_l(char*__restrict, const char*__restrict, size_t, locale_t)
@@ -80,6 +80,8 @@ using std::strcmp;
 using std::strcpy;
 using std::strcspn;
 using std::strdup;
+using std::strerror;
+using std::strerror_r;
 using std::strlen;
 using std::strlcat;
 using std::strlcpy;
@@ -100,9 +102,7 @@ using std::bcopy;
 /* These functions require working locale support. */
 using std::strcoll;
 using std::strcoll_l;
-using std::strerror;
 using std::strerror_l;
-using std::strerror_r;
 using std::strsignal;
 using std::strxfrm;
 using std::strxfrm_l;

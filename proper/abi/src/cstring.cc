@@ -1,4 +1,5 @@
 #include <abi/ext/reader.h>
+#include <abi/errno.h>
 #include <cstring>
 #include <cstdint>
 #include <cstdlib>
@@ -785,6 +786,29 @@ char* strtok_r(char*__restrict s, const char*__restrict sep,
     *last_s = e + 1;
   }
   return s;
+}
+
+int strerror_r(int errnum, char* buf, size_t buflen) noexcept {
+  using abi::sys_nerr;
+  using abi::sys_errlist;
+
+#if __has_include(<clocale>)
+  ...
+#else /* __has_include(<clocale>) */
+  if (_predict_false(errnum < 0 || errnum >= sys_nerr)) {
+    snprintf(buf, buflen, "Unknown error: %d", errnum);
+    return _ABI_EINVAL;
+  }
+  return (strlcpy(buf, sys_errlist[errnum], buflen) >= buflen ?
+          _ABI_ERANGE :
+          0);
+#endif /* __has_include(<clocale>) ... else */
+}
+
+char* strerror(int errnum) noexcept {
+  thread_local char buf[32];
+  strerror_r(errnum, buf, sizeof(buf) / sizeof(buf[0]));
+  return buf;
 }
 
 
