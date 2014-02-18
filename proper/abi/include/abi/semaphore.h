@@ -2,14 +2,19 @@
 #define _ABI_SEMAPHORE_H_
 
 #include <abi/abi.h>
-#include <utility>
+#include <abi/ext/atomic.h>
+#include <atomic>
 #include <cassert>
+#include <limits>
+#include <utility>
 
 namespace __cxxabiv1 {
 
 
 class semaphore {
  public:
+  using value_type = uint32_t;
+
   constexpr semaphore() = default;
   constexpr semaphore(uint32_t v) : a_(v) {};
 
@@ -22,8 +27,9 @@ class semaphore {
       decltype(fn(std::forward<Args>(args)...));
 
  private:
-  uint32_t t_ = 0;
-  uint32_t a_ = 0;
+  static constexpr uint32_t wnd = std::numeric_limits<uint32_t>::max() / 2U;
+  value_type t_ = 0;
+  value_type a_ = 0;
 };
 
 class semlock {
@@ -37,8 +43,8 @@ class semlock {
   inline semlock(semaphore&, bool) noexcept;
   inline ~semlock() noexcept;
 
-  inline void lock() noexcept;
-  inline void unlock() noexcept;
+  void lock() noexcept;
+  void unlock() noexcept;
   explicit inline operator bool() const noexcept;
   template<typename FN, typename... Args> auto do_locked(FN&& fn,
                                                          Args&&... args)

@@ -1,4 +1,38 @@
+#ifndef _SEM_INLINE
+# define _SEM_INLINE	extern inline
+#endif
+
 namespace __cxxabiv1 {
+
+_SEM_INLINE void semaphore::decrement() noexcept {
+  using abi::ext::pause;
+
+  auto& t = reinterpret_cast<std::atomic<value_type>&>(t_);
+  auto& a = reinterpret_cast<const std::atomic<value_type>&>(a_);
+  static_assert(sizeof(t) == sizeof(t_), "semaphore broken");
+  static_assert(sizeof(a) == sizeof(a_), "semaphore broken");
+
+  const value_type ticket = t.fetch_add(1U, std::memory_order_acquire);
+  while (a.load(std::memory_order_relaxed) - ticket > wnd) pause();
+  std::atomic_thread_fence(std::memory_order_acquire);
+}
+
+_SEM_INLINE bool semaphore::try_decrement() noexcept {
+  auto& t = reinterpret_cast<std::atomic<value_type>&>(t_);
+  auto& a = reinterpret_cast<const std::atomic<value_type>&>(a_);
+  const value_type a_ticket = a.load(std::memory_order_relaxed);
+  value_type t_ticket = t.load(std::memory_order_relaxed);
+  if (a_ticket - t_ticket > wnd) return false;
+  return t.compare_exchange_strong(t_ticket, t_ticket + 1U,
+                                   std::memory_order_acquire,
+                                   std::memory_order_relaxed);
+}
+
+_SEM_INLINE void semaphore::increment() noexcept {
+  auto& a = reinterpret_cast<std::atomic<value_type>&>(a_);
+  a.fetch_add(1U, std::memory_order_release);
+}
+
 
 class semlock::scope_ {
  public:
@@ -15,7 +49,7 @@ class semlock::scope_ {
 };
 
 
-semlock::scope_::scope_(semlock& s, bool l) noexcept
+inline semlock::scope_::scope_(semlock& s, bool l) noexcept
 : s_(s),
   l_(l)
 {
@@ -25,7 +59,7 @@ semlock::scope_::scope_(semlock& s, bool l) noexcept
     s_.unlock();
 }
 
-semlock::scope_::~scope_() noexcept
+inline semlock::scope_::~scope_() noexcept
 {
   if (l_)
     s_.unlock();
@@ -63,7 +97,7 @@ inline semlock::~semlock() noexcept {
   if (locked_) unlock();
 }
 
-inline void semlock::lock() noexcept {
+_SEM_INLINE void semlock::lock() noexcept {
   assert(!locked_);
   assert(sem_);
 
@@ -71,7 +105,7 @@ inline void semlock::lock() noexcept {
   locked_ = true;
 }
 
-inline void semlock::unlock() noexcept {
+_SEM_INLINE void semlock::unlock() noexcept {
   assert(locked_);
   assert(sem_);
 
@@ -116,4 +150,6 @@ template<typename FN, typename... Args> auto semaphore::execute(
   return fn(std::forward<Args>(args)...);
 }
 
-}
+} /* namespace __cxxabiv1 */
+
+#undef _SEM_INLINE
