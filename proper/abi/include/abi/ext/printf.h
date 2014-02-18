@@ -26,7 +26,7 @@ class printf_renderer {
   uintmax_t len_ = 0;
 };
 
-int vxprintf(printf_renderer& r, c_string_piece fmt, va_list& ap) noexcept;
+int vxprintf(printf_renderer& r, c_string_piece fmt, va_list ap) noexcept;
 
 
 }} /* namespace __cxxabiv1::ext */

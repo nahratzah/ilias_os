@@ -1130,7 +1130,7 @@ char printf_renderer::get_thousand_sep() const noexcept {
 }
 
 
-int vxprintf(printf_renderer& renderer, c_string_piece fmt, va_list& ap)
+int vxprintf(printf_renderer& renderer, c_string_piece fmt, va_list ap)
     noexcept {
   int lit_count = 0;
   int argsize = 0;
