@@ -81,28 +81,9 @@ int strcmp(const char* a, const char* b) noexcept {
 }
 
 int memcmp(const void* a, const void* b, size_t len) noexcept {
-  if (len == 0) return 0;  // Readers need at least 1 readable byte.
-  auto ra = reader<DIR_FORWARD, uint8_t>(a, len);
-  auto rb = reader<DIR_FORWARD, uint8_t>(b, len);
-
-  /* Compare in strides of 1 register. */
-  for (;;) {
-    auto va = ra.readN(len);
-    auto vb = rb.readN(len);
-
-    if (va != vb) {
-      /* Difference found in register stride. */
-      while (len-- > 0) {
-        const auto ca = consume_bytes(&va, 1);
-        const auto cb = consume_bytes(&vb, 1);
-        if (ca != cb) return int(ca) - int(cb);
-      }
-      return 0;
-    }
-    if (len < ALIGN) return 0;  // End reached.
-
-    len -= ALIGN;
-  }
+  return abi::ext::memcmp(reinterpret_cast<const uint8_t*>(a),
+                          reinterpret_cast<const uint8_t*>(b),
+                          len);
 }
 
 void* memcpy(void*__restrict dst, const void*__restrict src, size_t len)

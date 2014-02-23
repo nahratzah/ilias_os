@@ -1,15 +1,12 @@
 #include <cwchar>
 #include <cstring>
+#include <abi/ext/reader.h>
 
 namespace std {
 
 
 int wmemcmp(const wchar_t* a, const wchar_t* b, size_t len) noexcept {
-  while (len-- > 0) {
-    auto cmp = wint_t(*a++) - wint_t(*b++);
-    if (cmp != 0) return cmp;
-  }
-  return 0;
+  return abi::ext::memcmp(a, b, len);
 }
 
 wchar_t* wmemset(wchar_t* p, wchar_t v, size_t len) noexcept {
