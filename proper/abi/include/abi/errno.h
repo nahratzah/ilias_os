@@ -4,20 +4,36 @@
 #include <cdecl.h>
 #include <abi/abi.h>
 
-_namespace_begin(__cxxabiv1)
+#ifdef __cplusplus
+namespace __cxxabiv1 {
+#endif
 _cdecl_begin
 
-#ifdef __cplusplus
-extern thread_local int errno;
+#ifdef _TEST
+extern int errno;
 #else
+# ifdef __cplusplus
+extern thread_local int errno;
+# else
 extern _Thread_local int errno;
+# endif
 #endif
+
+_cdecl_end
+
+#ifndef _TEST
+_cdecl_begin
+#endif /* _TEST */
 
 extern const char*const sys_errlist[];
 extern const int sys_nerr;
 
+#ifndef _TEST
 _cdecl_end
-_namespace_end(__cxxabiv1)
+#endif /* _TEST */
+#ifdef __cplusplus
+} /* namespace __cxxabiv1 */
+#endif
 
 #define _ABI_E2BIG			 1
 #define _ABI_EACCES			 2
