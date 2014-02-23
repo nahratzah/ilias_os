@@ -77,5 +77,7 @@ const uint8_t* memfind(const uint8_t* s_haystack, size_t n_haystack,
   return nullptr;
 }
 
+template int memcmp<uint8_t>(const uint8_t*, const uint8_t*, size_t) noexcept;
+
 
 }} /* namespace __cxxabiv1::ext */
