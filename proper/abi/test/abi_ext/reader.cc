@@ -168,7 +168,7 @@ int test_reader_read8() {
   s[N] = '\0';
 
   for (unsigned int i = 0; i < N; ++i) {
-    auto r = reader<DIR_FORWARD>(&s[i]);
+    auto r = reader<DIR_FORWARD, char>(&s[i]);
     for (unsigned int j = i; j < N; ++j) {
       int c = r.read8();
       fprintf(stderr, "Read '%c', expected '%c'%s\n", c, j + BASE,
@@ -193,7 +193,7 @@ int test_reader_readN() {
   };
 
   for (unsigned int off = 0; off < ALIGN; ++off) {
-    auto r = reader<DIR_FORWARD>(&s[off]);
+    auto r = reader<DIR_FORWARD, char>(&s[off]);
     char* v = &s[off];
     tt t;
 
@@ -221,7 +221,7 @@ int test_reader_read8_backwards() {
   s[N] = '\0';
 
   for (int i = N - 1; i >= 0; --i) {
-    auto r = reader<DIR_BACKWARD>(&s[i + 1]);
+    auto r = reader<DIR_BACKWARD, char>(&s[i + 1]);
     for (int j = i; j >= 0; --j) {
       int c = r.read8();
       fprintf(stderr, "Read '%c', expected '%c'%s\n", c, j + BASE,
@@ -246,7 +246,7 @@ int test_reader_readN_backwards() {
   };
 
   for (int off = N - 1; off >= N - ALIGN; --off) {
-    auto r = reader<DIR_BACKWARD>(&s[off + 1]);
+    auto r = reader<DIR_BACKWARD, char>(&s[off + 1]);
     char* v = &s[off + 1 - ALIGN];
     tt t;
 
