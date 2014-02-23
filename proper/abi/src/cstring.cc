@@ -774,7 +774,7 @@ int strerror_r(int errnum, char* buf, size_t buflen) noexcept {
   using abi::sys_nerr;
   using abi::sys_errlist;
 
-#if __has_include(<clocale>)
+#if !defined(_TEST) && __has_include(<clocale>)
   ...
 #else /* __has_include(<clocale>) */
   if (_predict_false(errnum < 0 || errnum >= sys_nerr)) {
