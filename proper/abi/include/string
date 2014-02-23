@@ -67,6 +67,14 @@ template<> struct char_traits<wchar_t> {
   static constexpr char_type to_char_type(int_type) noexcept;
   static constexpr int_type to_int_type(char_type) noexcept;
   static constexpr bool eq_int_type(int_type, int_type) noexcept;
+
+  /* Optional extensions. */
+  static const char_type* rfind(const char_type*, size_t,
+                                const char_type&) noexcept;
+  static const char_type* strfind(const char_type*, size_t,
+                                  const char_type*, size_t) noexcept;
+  static const char_type* strrfind(const char_type*, size_t,
+                                   const char_type*, size_t) noexcept;
 };
 
 template<> struct char_traits<char16_t> {
@@ -90,6 +98,14 @@ template<> struct char_traits<char16_t> {
   static constexpr char_type to_char_type(int_type) noexcept;
   static constexpr int_type to_int_type(char_type) noexcept;
   static constexpr bool eq_int_type(int_type, int_type) noexcept;
+
+  /* Optional extensions. */
+  static const char_type* rfind(const char_type*, size_t,
+                                const char_type&) noexcept;
+  static const char_type* strfind(const char_type*, size_t,
+                                  const char_type*, size_t) noexcept;
+  static const char_type* strrfind(const char_type*, size_t,
+                                   const char_type*, size_t) noexcept;
 };
 
 template<> struct char_traits<char32_t> {
@@ -113,6 +129,14 @@ template<> struct char_traits<char32_t> {
   static constexpr char_type to_char_type(int_type) noexcept;
   static constexpr int_type to_int_type(char_type) noexcept;
   static constexpr bool eq_int_type(int_type, int_type) noexcept;
+
+  /* Optional extensions. */
+  static const char_type* rfind(const char_type*, size_t,
+                                const char_type&) noexcept;
+  static const char_type* strfind(const char_type*, size_t,
+                                  const char_type*, size_t) noexcept;
+  static const char_type* strrfind(const char_type*, size_t,
+                                   const char_type*, size_t) noexcept;
 };
 
 
