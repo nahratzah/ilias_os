@@ -252,6 +252,8 @@ template<typename UInt> class reader<DIR_FORWARD, UInt>
 : public basic_reader {
  public:
   static_assert(sizeof(UInt) <= sizeof(align_t), "Integral type too large.");
+  static_assert(sizeof(align_t) % sizeof(UInt) == 0,
+      "Integral type cannot align");
 
   reader() = default;
   reader(const reader&) = default;
@@ -290,6 +292,8 @@ template<typename UInt> class reader<DIR_BACKWARD, UInt>
 : public basic_reader {
  public:
   static_assert(sizeof(UInt) <= sizeof(align_t), "Integral type too large.");
+  static_assert(sizeof(align_t) % sizeof(UInt) == 0,
+      "Integral type cannot align");
 
   reader() = default;
   reader(const reader&) = default;
@@ -331,13 +335,14 @@ template<typename UInt> int memcmp(const UInt* a, const UInt* b, size_t len)
   auto ra = reader<DIR_FORWARD, UInt>(a, len);
   auto rb = reader<DIR_FORWARD, UInt>(b, len);
 
-  for (;;) {
+  /* Read in strides of register. */
+  while (len >= ALIGN) {
     auto va = ra.readN(len);
     auto vb = ra.readN(len);
 
-    if (va != vb) {
+    if (_predict_false(va != vb)) {
       /* Difference found. */
-      while (len-- > 0) {
+      for (;;) {
         const auto ca = consume_bytes(&va, sizeof(UInt));
         const auto cb = consume_bytes(&vb, sizeof(UInt));
         if (ca != cb)
@@ -345,12 +350,26 @@ template<typename UInt> int memcmp(const UInt* a, const UInt* b, size_t len)
                   int(ca) - int(cb) :
                   (ca < cb ? -1 : 1));
       }
-      return 0;  // Difference is past end-of-memory.
+      /* UNREACHABLE */
     }
-    if (len < ALIGN) return 0;  // End reached.
 
-    len -= ALIGN;
+    len -= ALIGN / sizeof(UInt);
   }
+
+  /* Read in strides of UInt. */
+  while (len > 0) {
+    auto va = ra.read8(len + 1U);
+    auto vb = rb.read8(len + 1U);
+
+    if (_predict_false(va != vb)) {
+      return (sizeof(UInt) < sizeof(int) ?
+              int(va) - int(vb) :
+              (va < vb ? -1 : 1));
+    }
+
+    --len;
+  }
+  return 0;
 }
 
 
