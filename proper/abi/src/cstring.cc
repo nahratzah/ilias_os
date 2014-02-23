@@ -31,9 +31,7 @@ constexpr unsigned char CHAR_ZERO = 0;
 #if __has_include(<clocale>)
 int strcoll(const char*, const char*) noexcept;  // XXX implement: strcmp based on current locale
 int strcoll_l(const char*, const char*, locale_t) noexcept;  // XXX implement: strcmp based on given locale
-char* strerror(int e) noexcept;  // XXX return string for errno e in current locale
 char* strerror_l(int e, locale_t loc) noexcept;  // XXX return string for errno e in given locale
-int strerror_r(int e, char* buf, size_t buflen) noexcept;  // XXX strerror, but with given buffer
 char* strsignal(int sig) noexcept;  // XXX return signal name in current locale
 size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n) noexcept;  // XXX find current locale, invoke strxfrm_l(..., current_locale())
 size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n, locale_t loc) noexcept;  // XXX transform b into a (at most n chars long), such that strcoll_l(b, ..., loc) returns the same result as strcmp(a, ...).  Return length of a, if n was infinite.
@@ -41,7 +39,7 @@ size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n, locale_t lo
 
 
 size_t strlen(const char* s) noexcept {
-  auto r = reader<DIR_FORWARD>(s);
+  auto r = reader<DIR_FORWARD, uint8_t>(s);
 
   align_t v;
   while (r.read8() != CHAR_ZERO);
@@ -49,8 +47,8 @@ size_t strlen(const char* s) noexcept {
 }
 
 int strcmp(const char* a, const char* b) noexcept {
-  auto ra = reader<DIR_FORWARD>(a);
-  auto rb = reader<DIR_FORWARD>(b);
+  auto ra = reader<DIR_FORWARD, uint8_t>(a);
+  auto rb = reader<DIR_FORWARD, uint8_t>(b);
 
   for (;;) {
     bool rza = ra.maybe_contains(CHAR_ZERO);
@@ -84,8 +82,8 @@ int strcmp(const char* a, const char* b) noexcept {
 
 int memcmp(const void* a, const void* b, size_t len) noexcept {
   if (len == 0) return 0;  // Readers need at least 1 readable byte.
-  auto ra = reader<DIR_FORWARD>(a, len);
-  auto rb = reader<DIR_FORWARD>(b, len);
+  auto ra = reader<DIR_FORWARD, uint8_t>(a, len);
+  auto rb = reader<DIR_FORWARD, uint8_t>(b, len);
 
   /* Compare in strides of 1 register. */
   for (;;) {
@@ -111,7 +109,7 @@ void* memcpy(void*__restrict dst, const void*__restrict src, size_t len)
     noexcept {
   if (len == 0) return dst;  // Reader needs at least 1 readable byte.
   void*const orig_dst = dst;
-  auto r = reader<DIR_FORWARD>(src, len);
+  auto r = reader<DIR_FORWARD, uint8_t>(src, len);
 
   /* Read single bytes, until output is aligned to ALIGN. */
   while ((reinterpret_cast<uintptr_t>(dst) & ALIGN_MSK) && len > 0) {
@@ -155,7 +153,8 @@ void* memmove(void* dst, const void* src, size_t len) noexcept {
      * Position starting point at end of copied range.
      */
     dst = reinterpret_cast<uint8_t*>(dst) + len;
-    auto r = reader<DIR_BACKWARD>(reinterpret_cast<const uint8_t*>(src) + len);
+    auto r = reader<DIR_BACKWARD, uint8_t>(
+        reinterpret_cast<const uint8_t*>(src) + len);
 
     /* Read single bytes, until output is aligned to ALIGN. */
     while ((reinterpret_cast<uintptr_t>(dst) & ALIGN_MSK) && len > 0) {
@@ -189,7 +188,7 @@ void* memmove(void* dst, const void* src, size_t len) noexcept {
      * - src and dst don't overlap
      * - src and dst overlap, but dst < src
      */
-    auto r = reader<DIR_FORWARD>(src);
+    auto r = reader<DIR_FORWARD, uint8_t>(src);
 
     /* Read single bytes, until output is aligned to ALIGN. */
     while ((reinterpret_cast<uintptr_t>(dst) & ALIGN_MSK) && len > 0) {
@@ -265,7 +264,7 @@ void* memset(void* p, int c, size_t len) noexcept {
 
 void* memchr(const void* p, int c, size_t len) noexcept {
   if (len == 0) return nullptr;  // Reader needs at least 1 readable byte.
-  auto r = reader<DIR_FORWARD>(p, len);
+  auto r = reader<DIR_FORWARD, uint8_t>(p, len);
 
   while (len > 0) {
     auto rcc = r.read8(len);
@@ -277,8 +276,8 @@ void* memchr(const void* p, int c, size_t len) noexcept {
 
 void* memrchr(const void* p, int c, size_t len) noexcept {
   if (len == 0) return nullptr;  // Reader needs at least 1 readable byte.
-  auto r = reader<DIR_BACKWARD>(reinterpret_cast<const uint8_t*>(p) + len,
-                                len);
+  auto r = reader<DIR_BACKWARD, uint8_t>(
+      reinterpret_cast<const uint8_t*>(p) + len, len);
 
   while (len > 0) {
     auto rcc = r.read8(len);
@@ -291,7 +290,7 @@ void* memrchr(const void* p, int c, size_t len) noexcept {
 void* memccpy(void*__restrict dst, const void*__restrict src, int c,
     size_t len) noexcept {
   if (len == 0) return nullptr;  // Reader needs at least 1 readable byte.
-  auto r = reader<DIR_FORWARD>(src, len);
+  auto r = reader<DIR_FORWARD, uint8_t>(src, len);
 
   /* Read single bytes, until output is aligned to ALIGN. */
   while ((reinterpret_cast<uintptr_t>(dst) & ALIGN_MSK) && len > 0) {
@@ -340,7 +339,7 @@ void* memccpy(void*__restrict dst, const void*__restrict src, int c,
 }
 
 char* stpcpy(char*__restrict dst, const char*__restrict src) noexcept {
-  auto r = reader<DIR_FORWARD>(src);
+  auto r = reader<DIR_FORWARD, uint8_t>(src);
 
   /* Read single bytes, until output is aligned to ALIGN. */
   while ((reinterpret_cast<uintptr_t>(dst) & ALIGN_MSK)) {
@@ -384,7 +383,7 @@ char* stpcpy(char*__restrict dst, const char*__restrict src) noexcept {
 
 char* stpncpy(char*__restrict dst, const char*__restrict src, size_t len)
     noexcept {
-  auto r = reader<DIR_FORWARD>(src, len);
+  auto r = reader<DIR_FORWARD, uint8_t>(src, len);
 
   /* Read single bytes, until output is aligned to ALIGN. */
   while ((reinterpret_cast<uintptr_t>(dst) & ALIGN_MSK) && len > 0) {
@@ -458,7 +457,7 @@ size_t strlcat(char*__restrict dst, const char*__restrict src, size_t len)
 }
 
 char* strchr(const char* s, int c) noexcept {
-  auto r = reader<DIR_FORWARD>(s);
+  auto r = reader<DIR_FORWARD, uint8_t>(s);
 
   /* Get reader aligned. */
   for (unsigned int i = 0; i < r.avail(); ++i) {
@@ -496,7 +495,7 @@ char* strncpy(char*__restrict dst, const char*__restrict src, size_t len)
 }
 
 size_t strlcpy(char* dst, const char* src, size_t len) noexcept {
-  auto r = reader<DIR_FORWARD>(src);
+  auto r = reader<DIR_FORWARD, uint8_t>(src);
   size_t rv = 0;
 
   /* Read single bytes, until output is aligned to ALIGN. */
@@ -559,7 +558,7 @@ size_t strlcpy(char* dst, const char* src, size_t len) noexcept {
 }
 
 size_t strcspn(const char* s, const char* set) noexcept {
-  auto r = reader<DIR_FORWARD>(s);
+  auto r = reader<DIR_FORWARD, uint8_t>(s);
   size_t rv = 0;
 
   for (auto c = r.read8();
@@ -583,8 +582,8 @@ char* strdup(const char* s) noexcept {
 
 int strncmp(const char* a, const char* b, size_t len) noexcept {
   if (len == 0) return 0;  // Readers need at least 1 readable byte.
-  auto ra = reader<DIR_FORWARD>(a, len);
-  auto rb = reader<DIR_FORWARD>(b, len);
+  auto ra = reader<DIR_FORWARD, uint8_t>(a, len);
+  auto rb = reader<DIR_FORWARD, uint8_t>(b, len);
 
   for (;;) {
     bool rza = ra.maybe_contains(CHAR_ZERO);
@@ -634,7 +633,7 @@ char* strndup(const char* s, size_t len) noexcept {
 }
 
 size_t strnlen(const char* s, size_t len) noexcept {
-  auto r = reader<DIR_FORWARD>(s);
+  auto r = reader<DIR_FORWARD, uint8_t>(s);
   const size_t orig_len = len;
 
   /* Read per byte, to align reader. */
@@ -661,7 +660,7 @@ size_t strnlen(const char* s, size_t len) noexcept {
 }
 
 char* strpbrk(const char* s, const char* set) noexcept {
-  auto r = reader<DIR_FORWARD>(s);
+  auto r = reader<DIR_FORWARD, uint8_t>(s);
 
   for (;;) {
     auto c = r.read8();
@@ -671,7 +670,7 @@ char* strpbrk(const char* s, const char* set) noexcept {
 }
 
 char* strrchr(const char* s, int c) noexcept {
-  auto r = reader<DIR_FORWARD>(s);
+  auto r = reader<DIR_FORWARD, uint8_t>(s);
   const char* rv = nullptr;
 
   for (;;) {
@@ -682,7 +681,7 @@ char* strrchr(const char* s, int c) noexcept {
 }
 
 size_t strspn(const char* s, const char* set) noexcept {
-  auto r = reader<DIR_FORWARD>(s);
+  auto r = reader<DIR_FORWARD, uint8_t>(s);
 
   for (auto cc = r.read8();
        cc != CHAR_ZERO && strchr(set, cc);
@@ -698,7 +697,7 @@ char* strstr(const char* haystack, const char* needle) noexcept {
 
   /* Fill histogram, by subtracting needle. */
   {
-    auto r = reader<DIR_FORWARD>(needle);
+    auto r = reader<DIR_FORWARD, uint8_t>(needle);
     for (auto c = r.read8(); c != CHAR_ZERO; c = r.read8()) {
       ++needle_len;
       if (histogram[c]-- == 0) ++nz;
@@ -706,7 +705,7 @@ char* strstr(const char* haystack, const char* needle) noexcept {
   }
 
   /* Pre-read needle_len bytes from haystack. */
-  auto head = reader<DIR_FORWARD>(haystack);
+  auto head = reader<DIR_FORWARD, uint8_t>(haystack);
   auto tail = head;
   while (needle_len > 0) {
     auto c = head.read8();
