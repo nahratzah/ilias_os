@@ -1,0 +1,1943 @@
+#include <allocator>
+#include <iterator>
+#include <cstring>
+#include <utility>
+#include <stdimpl/alloc_base.h>
+#include <stdimpl/char_traits.h>
+
+_namespace_begin(std)
+
+
+template<typename Char> struct char_traits;
+template<typename Char, typename Traits = char_traits<Char>,
+         typename Alloc = allocator<Char>> class basic_string;
+template<typename Char, typename Traits = char_traits<Char>>
+    class basic_string_ref;
+
+template<> struct char_traits<char> {
+  using char_type = char;
+  using int_type = int;
+  using off_type = streamoff;
+  using pos_type = streampos;
+  using state_type = mbstate_t;
+
+  static constexpr bool eq(char_type, char_type) noexcept;
+  static constexpr bool lt(char_type, char_type) noexcept;
+  static size_t length(const char_type*) noexcept;
+  static void assign(char_type&, const char_type&) noexcept;
+  static char_type assign(char_type*, size_t, char_type) noexcept;
+  static int compare(const char_type*, const char_type*, size_t) noexcept;
+  static const char_type* find(const char_type*, size_t,
+                               const char_type&) noexcept;
+  static char_type* move(char_type*, const char_type*, size_t) noexcept;
+  static char_type* copy(char_type*, const char_type*, size_t) noexcept;
+  static constexpr int_type eof() noexcept;
+  static constexpr int_type not_eof() noexcept;
+  static constexpr char_type to_char_type(int_type) noexcept;
+  static constexpr int_type to_int_type(char_type) noexcept;
+  static constexpr bool eq_int_type(int_type, int_type) noexcept;
+
+  /* Optional extensions. */
+  static const char_type* rfind(const char_type*, size_t,
+                                const char_type&) noexcept;
+  static const char_type* strfind(const char_type*, size_t,
+                                  const char_type*, size_t) noexcept;
+  static const char_type* strrfind(const char_type*, size_t,
+                                   const char_type*, size_t) noexcept;
+};
+
+template<> struct char_traits<wchar_t> {
+  using char_type = wchar_t;
+  using int_type = wint_t;
+  using off_type = streamoff;
+  using pos_type = wstreampos;
+  using state_type = mbstate_t;
+
+  static constexpr eq(char_type, char_type) noexcept;
+  static constexpr lt(char_type, char_type) noexcept;
+  static size_t length(const char_type*);
+  static void assign(char_type&, const char_type&) noexcept;
+  static char_type assign(char_type*, size_t, char_type);
+  static int compare(const char_type*, const char_type*, size_t);
+  static const char_type* find(const char_type*, size_t, const char_type&);
+  static char_type* move(char_type*, const char_type*, size_t);
+  static char_type* copy(char_type*, const char_type*, size_t);
+  static constexpr int_type eof() noexcept;
+  static constexpr int_type not_eof() noexcept;
+  static constexpr char_type to_char_type(int_type) noexcept;
+  static constexpr int_type to_int_type(char_type) noexcept;
+  static constexpr bool eq_int_type(int_type, int_type) noexcept;
+};
+
+template<> struct char_traits<char16_t> {
+  using char_type = char16_t;
+  using int_type = uint_least16_t;
+  using off_type = streamoff;
+  using pos_type = u16streampos;
+  using state_type = mbstate_t;
+
+  static constexpr eq(char_type, char_type) noexcept;
+  static constexpr lt(char_type, char_type) noexcept;
+  static size_t length(const char_type*);
+  static void assign(char_type&, const char_type&) noexcept;
+  static char_type assign(char_type*, size_t, char_type);
+  static int compare(const char_type*, const char_type*, size_t);
+  static const char_type* find(const char_type*, size_t, const char_type&);
+  static char_type* move(char_type*, const char_type*, size_t);
+  static char_type* copy(char_type*, const char_type*, size_t);
+  static constexpr int_type eof() noexcept;
+  static constexpr int_type not_eof() noexcept;
+  static constexpr char_type to_char_type(int_type) noexcept;
+  static constexpr int_type to_int_type(char_type) noexcept;
+  static constexpr bool eq_int_type(int_type, int_type) noexcept;
+};
+
+template<> struct char_traits<char32_t> {
+  using char_type = char32_t;
+  using int_type = uint_least32_t;
+  using off_type = streamoff;
+  using pos_type = u32streampos;
+  using state_type = mbstate_t;
+
+  static constexpr eq(char_type, char_type) noexcept;
+  static constexpr lt(char_type, char_type) noexcept;
+  static size_t length(const char_type*);
+  static void assign(char_type&, const char_type&) noexcept;
+  static char_type assign(char_type*, size_t, char_type);
+  static int compare(const char_type*, const char_type*, size_t);
+  static const char_type* find(const char_type*, size_t, const char_type&);
+  static char_type* move(char_type*, const char_type*, size_t);
+  static char_type* copy(char_type*, const char_type*, size_t);
+  static constexpr int_type eof() noexcept;
+  static constexpr int_type not_eof() noexcept;
+  static constexpr char_type to_char_type(int_type) noexcept;
+  static constexpr int_type to_int_type(char_type) noexcept;
+  static constexpr bool eq_int_type(int_type, int_type) noexcept;
+};
+
+
+template<typename Char, typename Traits, typename Alloc> class basic_string
+: public impl::alloc_base<Alloc>
+{
+ public:
+  using allocator_type = typename impl::alloc_base<Alloc>::allocator_type;
+  using char_type = Char;
+  using traits_type = Traits;
+  using value_type = typename traits_type::char_type;
+  using pointer = typename allocator_traits<allocator_type>::pointer;
+  using const_pointer =
+      typename allocator_traits<allocator_type>::const_pointer;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using const_iterator = const_pointer;
+  using iterator = pointer;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using size_type = typename allocator_traits<allocator_type>::size_type;
+  using difference_type =
+      typename allocator_traits<allocator_type>::difference_type;
+  using __identity = basic_string;
+  static constexpr size_type npos = size_type(-1);
+
+  explicit basic_string(const allocator_type& = allocator_type());
+  basic_string(const basic_string&);
+  basic_string(const basic_string&, const allocator_type&);
+  basic_string(const basic_string&, size_type, size_type = npos,
+               const allocator_type& = allocator_type());
+  basic_string(const char_type*, const allocator_type& = allocator_type());
+  basic_string(const char_type*, size_type,
+               const allocator_type& = allocator_type());
+  basic_string(size_type, char_type, const allocator_type& = allocator_type());
+  template<typename InputIter> class basic_string(InputIter, InputIter,
+               const allocator_type& = allocator_type());
+  basic_string(initializer_list<char_type>,
+               const allocator_type& = allocator_type());
+  basic_string(basic_string&&) noexcept;
+  basic_string(basic_string&&, const allocator_type& = allocator_type());
+  basic_string(basic_string_ref<Char, Traits>,
+               const allocator_type& = allocator_type());
+  ~basic_string() noexcept;
+
+  operator basic_string_ref<Char, Traits>() const noexcept;
+
+  basic_string& operator=(const basic_string&);
+  basic_string& operator=(const char_type*);
+  basic_string& operator=(char_type);
+  basic_string& operator=(initializer_list<char_type>);
+  basic_string& operator=(basic_string&&) noexcept;
+  basic_string& operator=(basic_string_ref<Char, Traits>);
+
+  iterator begin() noexcept;
+  iterator end() noexcept;
+  const_iterator begin() const noexcept;
+  const_iterator end() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+
+  reverse_iterator rbegin() noexcept;
+  reverse_iterator rend() noexcept;
+  const_reverse_iterator rbegin() const noexcept;
+  const_reverse_iterator rend() const noexcept;
+  const_reverse_iterator crbegin() const noexcept;
+  const_reverse_iterator crend() const noexcept;
+
+  size_type size() const noexcept;
+  size_type length() const noexcept;
+  size_type max_size() const noexcept;
+  void resize(size_type);
+  void resize(size_type, char_type);
+  size_type capacity() const noexcept;
+  void reserve(size_type = 0);
+  void clear() noexcept;
+  bool empty() const noexcept;
+  void shrink_to_fit();
+
+  reference operator[](size_type) noexcept;
+  const_reference operator[](size_type) const noexcept;
+  reference at(size_type);
+  const_reference at(size_type) const;
+  reference back() noexcept;
+  const_reference back() const noexcept;
+  reference front() noexcept;
+  const_reference front() const noexcept;
+
+  basic_string& operator+=(const basic_string&);
+  basic_string& operator+=(const char_type*);
+  basic_string& operator+=(char_type);
+  basic_string& operator+=(initializer_list<char_type>);
+  basic_string& operator+=(basic_string_ref<Char, Traits>);
+  basic_string& append(const basic_string&);
+  basic_string& append(const basic_string&, size_type, size_type);
+  basic_string& append(const char_type*);
+  basic_string& append(const char_type*, size_type);
+  basic_string& append(size_type, char_type);
+  template<typename InputIter> basic_string& append(InputIter, InputIter);
+  basic_string& append(initializer_list<char_type>);
+  basic_string& append(basic_string_ref<Char, Traits>);
+  void push_back(char_type);
+  basic_string& assign(const basic_string&);
+  basic_string& assign(const basic_string&, size_type, size_type);
+  basic_string& assign(const char_type*);
+  basic_string& assign(const char_type*, size_type);
+  basic_string& assign(size_type, char_type);
+  template<typename InputIter> basic_string& assign(InputIter, InputIter);
+  basic_string& assign(initializer_list<char_type>);
+  basic_string& assign(basic_string_ref<Char, Traits>);
+  basic_string& assign(basic_string&&) noexcept;
+
+  basic_string& insert(size_type, const basic_string&);
+  basic_string& insert(size_type, const basic_string&, size_type, size_type);
+  basic_string& insert(size_type, const char_type*);
+  basic_string& insert(size_type, basic_string_ref<Char, Traits>);
+  basic_string& insert(size_type, const char_type*, size_type);
+  basic_string& insert(size_type, size_type, char_type);
+  iterator insert(const_iterator, size_type, char_type);
+  iterator insert(const_iterator, char_type);
+  template<typename InputIter> iterator insert(const_iterator, InputIter, InputIter);
+  basic_string& insert(const_iterator, initializer_list<char_type>);
+  basic_string& erase(size_type = 0, size_type = npos);
+  iterator erase(const_iterator);
+  iterator erase(const_iterator, const_iterator);
+  basic_string& replace(size_type, size_type, const basic_string&);
+  basic_string& replace(const_iterator, const_iterator, const basic_string&);
+  basic_string& replace(size_type, size_type, const basic_string&, size_type, size_type);
+  basic_string& replace(size_type, size_type, const char_type*);
+  basic_string& replace(const_iterator, const_iterator, const char_type*);
+  basic_string& replace(size_type, size_type, basic_string_ref<Char, Traits>);
+  basic_string& replace(const_iterator, const_iterator, basic_string_ref<Char, Traits>);
+  basic_string& replace(size_type, size_type, const char_type*, size_type);
+  basic_string& replace(const_iterator, const_iterator, const char_type*, size_type);
+  basic_string& replace(size_type, size_type, size_type, char_type);
+  basic_string& replace(const_iterator, const_iterator, size_type, char_type);
+  template<typename InputIter> basic_string& replace(const_iterator, const_iterator, InputIter, InputIter);
+  basic_string& replace(const_iterator, const_iterator, initializer_list<char_type>);
+  void swap(basic_string&);
+  void pop_back() noexcept;
+
+  const char_type* c_str() const noexcept;
+  const char_type* data() const noexcept;
+  size_type copy(char_type*, size_type, size_type = 0) const;
+  size_type find(const basic_string&, size_type = 0) const noexcept;
+  size_type find(const char_type*, size_type = 0) const;
+  size_type find(basic_string_ref<Char, Traits>, size_type = 0) const;
+  size_type find(const char_type*, size_type, size_type) const;
+  size_type find(char_type, size_type = 0) const noexcept;
+  size_type rfind(const basic_string&, size_type = npos) const noexcept;
+  size_type rfind(const char_type*, size_type = npos) const;
+  size_type rfind(basic_string_ref<Char, Traits>, size_type = npos) const;
+  size_type rfind(const char_type*, size_type, size_type) const;
+  size_type rfind(char_type, size_type = npos) const noexcept;
+  size_type find_first_of(const basic_string&, size_type = 0) const noexcept;
+  size_type find_first_of(const char_type*, size_type = 0) const;
+  size_type find_first_of(basic_string_ref<Char, Traits>, size_type = 0) const;
+  size_type find_first_of(const char_type*, size_type, size_type) const;
+  size_type find_first_of(char_type, size_type = 0) const;
+  size_type find_last_of(const basic_string&, size_type = npos) const noexcept;
+  size_type find_last_of(const char_type*, size_type = npos) const;
+  size_type find_last_of(basic_string_ref<Char, Traits>, size_type = npos) const;
+  size_type find_last_of(const char_type*, size_type, size_type) const;
+  size_type find_last_of(char_type, size_type = npos) const;
+  size_type find_first_not_of(const basic_string&, size_type = 0) const noexcept;
+  size_type find_first_not_of(const char_type*, size_type = 0) const;
+  size_type find_first_not_of(basic_string_ref<Char, Traits>, size_type = 0) const;
+  size_type find_first_not_of(const char_type*, size_type, size_type) const;
+  size_type find_first_not_of(char_type, size_type = 0) const;
+  size_type find_last_not_of(const basic_string&, size_type = npos) const noexcept;
+  size_type find_last_not_of(const char_type*, size_type = npos) const;
+  size_type find_last_not_of(basic_string_ref<Char, Traits>, size_type = npos) const;
+  size_type find_last_not_of(const char_type*, size_type, size_type) const;
+  size_type find_last_not_of(char_type, size_type = npos) const;
+  basic_string substr(size_type, size_type = npos) const;
+
+  int compare(const basic_string&) const noexcept;
+  int compare(size_type, size_type, const basic_string&) const;
+  int compare(size_type, size_type, const basic_string&, size_type, size_type) const;
+  int compare(const char_type*) const;
+  int compare(basic_string<Char, Traits>) const;
+  int compare(size_type, size_type, const char_type*) const;
+  int compare(size_type, size_type, basic_string_ref<Char, Traits>) const;
+  int compare(size_type, size_type, const char_type*, size_type) const;
+
+ private:
+  constexpr size_t immed_size = sizeof(pointer) / sizeof(char_type);
+
+  union data_t {
+    pointer s;
+    char_type immed[immed_size];
+  };
+
+  allocator alloc_;
+  size_type len_ = 0;
+  size_type avail_ = sizeof(pointer);
+  data_t data_;
+};
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>&,
+               const basic_string<Char, Traits, Alloc>&) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&&,
+               basic_string<Char, Traits, Alloc>&&) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&&,
+               const basic_string<Char, Traits, Alloc>&) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>&,
+               basic_string<Char, Traits, Alloc>&&) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>&,
+               const typename basic_string<Char, Traits, Alloc>::char_type*) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&&,
+               const typename basic_string<Char, Traits, Alloc>::char_type*) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const typename basic_string<Char, Traits, Alloc>::char_type*,
+               const basic_string<Char, Traits, Alloc>&) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const typename basic_string<Char, Traits, Alloc>::char_type*,
+               basic_string<Char, Traits, Alloc>&&) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>&,
+               typename basic_string<Char, Traits, Alloc>::char_type) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&&,
+               typename basic_string<Char, Traits, Alloc>::char_type) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(typename basic_string<Char, Traits, Alloc>::char_type,
+               const basic_string<Char, Traits, Alloc>&) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(typename basic_string<Char, Traits, Alloc>::char_type,
+               basic_string<Char, Traits, Alloc>&&) ->
+    basic_string<Char, Traits, Alloc>;
+
+// XXX change basic_string_ref to deduce from basic_string.
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>&,
+               basic_string_ref<Char, Traits>) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&&,
+               basic_string_ref<Char, Traits>) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string_ref<Char, Traits>,
+               const basic_string<Char, Traits, Alloc>&) ->
+    basic_string<Char, Traits, Alloc>;
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string_ref<Char, Traits>,
+               basic_string<Char, Traits, Alloc>&&) ->
+    basic_string<Char, Traits, Alloc>;
+
+
+template<typename Char, typename Traits> class basic_string_ref {
+ public:
+  using char_type = Char;
+  using traits_type = Traits;
+  using value_type = typename traits_type::char_type;
+  using pointer = const char_type*;
+  using const_pointer = const char_type*;
+  using reference = const char_type&;
+  using const_reference = const char_type&;
+  using const_iterator = const_pointer;
+  using iterator = pointer;
+  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
+  using reverse_iterator = std::reverse_iterator<iterator>;
+  using size_type = size_t;
+  using difference_type = ptrdiff_t;
+  using __identity = basic_string_ref;
+  static constexpr size_type npos = size_type(-1);
+
+  constexpr basic_string_ref() noexcept = default;
+  constexpr basic_string_ref(const basic_string_ref&) noexcept = default;
+  basic_string_ref& operator=(const basic_string_ref&) noexcept = default;
+  basic_string_ref(const_pointer);
+  constexpr basic_string_ref(const_pointer, size_type);
+
+  constexpr const_iterator begin() const noexcept;
+  constexpr const_iterator end() const noexcept;
+  constexpr const_iterator cbegin() const noexcept;
+  constexpr const_iterator cend() const noexcept;
+
+  constexpr const_reverse_iterator rbegin() const noexcept;
+  constexpr const_reverse_iterator rend() const noexcept;
+  constexpr const_reverse_iterator crbegin() const noexcept;
+  constexpr const_reverse_iterator crend() const noexcept;
+
+  constexpr size_type size() const noexcept;
+  constexpr size_type length() const noexcept;
+  constexpr size_type max_size() const noexcept;
+  constexpr bool empty() const noexcept;
+
+  constexpr const_reference operator[](size_type) const;
+  const_reference at(size_type) const;
+  constexpr const_reference front() const;
+  constexpr const_reference back() const;
+  constexpr const_pointer data() const noexcept;
+
+  void clear() noexcept;
+  void remove_prefix(size_type);
+  void remove_suffix(size_type);
+
+  constexpr basic_string_ref substr(size_type, size_type = npos) const;
+  int compare(basic_string_ref) const noexcept;
+  int compare(const_pointer) const noexcept;
+  bool starts_with(basic_string_ref) const noexcept;
+  bool starts_with(char_type) const noexcept;
+  bool starts_with(const_pointer) const noexcept;
+  bool ends_with(basic_string_ref) const noexcept;
+  bool ends_with(char_type) const noexcept;
+  bool ends_with(const_pointer) const noexcept;
+  size_type find(basic_string_ref) const noexcept;
+  size_type find(char_type) const noexcept;
+  size_type find(const_pointer) const noexcept;
+  size_type rfind(basic_string_ref) const noexcept;
+  size_type rfind(char_type) const noexcept;
+  size_type rfind(const_pointer) const noexcept;
+  size_type find_first_of(basic_string_ref) const noexcept;
+  size_type find_first_of(char_type) const noexcept;
+  size_type find_first_of(const_pointer) const noexcept;
+  size_type find_last_of(basic_string_ref) const noexcept;
+  size_type find_last_of(char_type) const noexcept;
+  size_type find_last_of(const_pointer) const noexcept;
+  size_type find_first_not_of(basic_string_ref) const noexcept;
+  size_type find_first_not_of(char_type) const noexcept;
+  size_type find_first_not_of(const_pointer) const noexcept;
+  size_type find_last_not_of(basic_string_ref) const noexcept;
+  size_type find_last_not_of(char_type) const noexcept;
+  size_type find_last_not_of(const_pointer) const noexcept;
+
+ private:
+  pointer s_ = nullptr;
+  size_type len_ = 0;
+};
+
+template<typename Char, typename Traits> bool operator==(
+    basic_string_ref<Char, Traits>, basic_string_ref<Char, Traits>) noexcept;
+template<typename Char, typename Traits> bool operator!=(
+    basic_string_ref<Char, Traits>, basic_string_ref<Char, Traits>) noexcept;
+template<typename Char, typename Traits> bool operator<(
+    basic_string_ref<Char, Traits>, basic_string_ref<Char, Traits>) noexcept;
+template<typename Char, typename Traits> bool operator>(
+    basic_string_ref<Char, Traits>, basic_string_ref<Char, Traits>) noexcept;
+template<typename Char, typename Traits> bool operator<=(
+    basic_string_ref<Char, Traits>, basic_string_ref<Char, Traits>) noexcept;
+template<typename Char, typename Traits> bool operator>=(
+    basic_string_ref<Char, Traits>, basic_string_ref<Char, Traits>) noexcept;
+
+template<typename Char, typename Traits = char_traits<Char>,
+         typename Allocator = allocator<Char>>
+basic_string<Char, Traits, Allocator> to_string(
+    basic_string_ref<Char, Traits>, const Allocator& = Allocator());
+
+
+using string = basic_string<char>;
+using u16string = basic_string<char16_t>;
+using u32string = basic_string<char32_t>;
+using wstring = basic_string<wchar_t>;
+
+using string_ref = basic_string_ref<char>;
+using u16string_ref = basic_string_ref<char16_t>;
+using u32string_ref = basic_string_ref<char32_t>;
+using wstring_ref = basic_string_ref<wchar_t>;
+
+
+_namespace_end(std)
+
+
+_namespace_begin(std)
+
+
+template<>
+constexpr auto char_traits<char>::eq(char_type a, char_type b) noexcept ->
+    bool {
+  unsigned char a_ = a;
+  unsigned char b_ = b;
+  return a_ == b_;
+}
+
+template<>
+constexpr auto char_traits<char>::lt(char_type a, char_type b) noexcept ->
+    bool {
+  unsigned char a_ = a;
+  unsigned char b_ = b;
+  return a_ < b_;
+}
+
+template<>
+auto char_traits<char>::length(const char_type* s) noexcept -> size_t {
+  return strlen(s);
+}
+
+template<>
+auto char_traits<char>::assign(char_type& a, const char_type& b) noexcept ->
+    void {
+  a = b;
+}
+
+template<>
+auto char_traits<char>::assign(char_type* s, size_t n, const char_type& c)
+    noexcept -> void {
+  memset(s, c, n);
+}
+
+template<>
+auto char_traits<char>::compare(const char_type* a, const char_type* b,
+                                size_t n) noexcept -> int {
+  return memcmp(a, b, n);
+}
+
+template<>
+auto char_traits<char>::find(const char_type* s, size_t n, const char_type& c)
+    noexcept {
+  return static_cast<const char_type*>(memchr(s, c, n));
+}
+
+template<>
+auto char_traits<char>::move(char_type* d, const char_type* s, size_t n)
+    noexcept -> void {
+  memmove(d, s, n);
+}
+
+template<>
+auto char_traits<char>::copy(char_type* d, const char_type* s, size_t n)
+    noexcept -> void {
+  memcpy(d, s, n);
+}
+
+template<>
+constexpr auto char_traits<char>::eof() noexcept -> int_type {
+  return EOF;
+}
+
+template<>
+constexpr auto char_traits<char>::not_eof(int_type c) noexcept -> int_type {
+  return (eq_int_type(c, eof()) ? 0 : c);
+}
+
+template<>
+constexpr auto char_traits<char>::to_char_type(int_type c) noexcept ->
+    char_type {
+  return char_type(c);
+}
+
+template<>
+constexpr auto char_traits<char>::to_int_type(char_type c) noexcept ->
+    int_type {
+  return c;
+}
+
+template<>
+constexpr auto char_traits<char>::eq_int_type(int_type a, int_type b)
+    noexcept -> bool {
+  return a == b;
+}
+
+template<>
+auto char_traits<char>::rfind(const char_type* s, size_t n, const char_type& c)
+    noexcept -> const char_type* {
+  return static_cast<const char_type*>(memrchr(s, c, n));
+}
+
+
+
+
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(const allocator_type& alloc)
+: impl::alloc_base<Alloc>(alloc)
+{
+  data_.immed[0] = 0;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(const basic_string& s)
+: basic_string(s, s.get_allocator())
+{}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(const basic_string& s,
+                                                const allocator_type& alloc)
+: basic_string(basic_string_ref<Char, Traits>(s), alloc)
+{}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(const basic_string& s,
+                                                size_type pos, size_type len,
+                                                const allocator_type& alloc)
+: basic_string(basic_string_ref<Char, Traits>(s).substr(pos, len), alloc)
+{}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(const char_type* s,
+                                                const allocator_type& alloc)
+: basic_string(basic_string_ref(s), alloc)
+{}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(const char_type* s,
+                                                size_type len,
+                                                const allocator_type& alloc)
+: basic_string(basic_string_ref(s, len), alloc)
+{}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(size_type n, char_type c,
+                                                const allocator_type& alloc)
+: basic_string(alloc)
+{
+  reserve(n);
+  len_ = n;
+  char_traits::assign(begin(), n, c);
+  char_traits::assign((*this)[n], char_type());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+template<typename InputIter>
+basic_string<Char, Traits, Alloc>::basic_string(InputIter b, InputIter e,
+                                                const allocator_type& alloc)
+: basic_string(alloc)
+{
+  while (b != e) {
+    push_back(*b);
+    ++b;
+  }
+}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(initializer_list<char_type> il,
+                                                const allocator_type& alloc)
+: basic_string(basic_string_ref<Char, Alloc>(il.begin(), il.size()), alloc)
+{}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(basic_string&& s) noexcept
+: basic_string(s.get_allocator())
+{
+  swap(s);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(basic_string&& s,
+                                                const allocator_type& alloc)
+    noexcept
+: basic_string(alloc)
+{
+  swap(s);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::basic_string(
+    basic_string_ref<Char, Traits> s, const allocator_type& alloc)
+: basic_string()
+{
+  reserve(s.size());
+  len_ = s.size();
+  char_traits::copy(begin(), s.data(), s.size());
+  char_traits::assign((*this)[s.size()], char_type());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::~basic_string() noexcept {
+  if (avail_ > immed_size)
+    this->deallocate_dfl(data_.s, avail_);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+basic_string<Char, Traits, Alloc>::operator basic_string_ref<Char, Traits>()
+    const noexcept {
+  return basic_string_ref<Char, Traits>(data(), size());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator=(const basic_string& s) ->
+    basic_string& {
+  return *this = basic_string_ref<Char, Traits>(s);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator=(const char_type* s) ->
+    basic_string& {
+  return *this = basic_string_ref<Char, Traits>(s);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator=(char_type c) ->
+    basic_string& {
+  reserve(1U);
+  char_traits::assign((*this)[0], c);
+  char_traits::assign((*this)[1], char_type());
+  len_ = 1U;
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator=(
+    initializer_list<char_type> il) -> basic_string& {
+  return *this = basic_string(il, get_allocator());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator=(basic_string&& s) noexcept ->
+    basic_string& {
+  swap(s);
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator=(
+    basic_string_ref<Char, Traits> s) -> basic_string& {
+  reserve(s.size());
+  len_ = s.size();
+  char_traits::copy(begin(), s.data(), s.size());
+  char_traits::assign((*this)[s.size()], char_type());
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::begin() noexcept -> iterator {
+  return (avail_ > immed_size ? data_.s : &data_.immed[0]);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::end() noexcept -> iterator {
+  return begin() + size();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::begin() const noexcept ->
+    const_iterator {
+  return (avail_ > immed_size ? data_.s : &data_.immed[0]);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::end() const noexcept ->
+    const_iterator {
+  return begin() + size();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::cbegin() const noexcept ->
+    const_iterator {
+  return begin();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::cend() const noexcept ->
+    const_iterator {
+  return end();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::rbegin() noexcept -> reverse_iterator {
+  return reverse_iterator(end());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::rend() noexcept -> reverse_iterator {
+  return reverse_iterator(begin());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::rbegin() const noexcept ->
+    const_reverse_iterator {
+  return const_reverse_iterator(end());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::rend() const noexcept ->
+    const_reverse_iterator {
+  return const_reverse_iterator(begin());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::crbegin() const noexcept ->
+    const_reverse_iterator {
+  return rbegin();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::crend() const noexcept ->
+    const_reverse_iterator {
+  return rend();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::size() const noexcept -> size_type {
+  return len_;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::length() const noexcept -> size_type {
+  return size();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::max_size() const noexcept ->
+    size_type {
+  return allocator_traits<allocator_type>::max_size(get_allocator_());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::resize(size_type sz) -> void {
+  resize(sz, char_type());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::resize(size_type sz, char_type c) ->
+    void {
+  if (len_ >= sz) {
+    len_ = sz;
+    return;
+  }
+
+  reserve(sz);
+  char_traits::assign(begin() + len_, sz - len_, c)
+  char_traits::assign((*this)[sz], char_type());
+  len_ = sz;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::capacity() const noexcept ->
+    size_type {
+  return avail_ - 1U;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::reserve(size_type sz) -> void {
+  if (capacity() < sz) {
+    pointer s = this->allocate_dfl(sz + 1U, this);
+
+    char_traits::copy(s, data(), size() + 1U);
+    if (avail_ > immed_size) this->deallocate_dfl(data_.s, avail_);
+    data_.s = s;
+    avail_ = sz + 1U;
+  }
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::clear() noexcept -> void {
+  if (avail_ > immed_size) this->deallocate_dfl(data_.s, avail_);
+  assign(data_.immed[0], char_type());
+  len_ = 0U;
+  avail_ = immed_size;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::empty() const noexcept -> bool {
+  return len_ > 0U;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::shrink_to_fit() -> void {
+  if (avail_ <= immed_size) return;
+
+  if (size() < immed_size) {
+    /* Switch over to storing string in immed. */
+    const auto avail = avail_;
+    const data_t tmp = data_;
+
+    avail_ = immed_size;
+    char_traits::copy(begin(), tmp.s, size() + 1U);
+    this->deallocate_dfl(tmp.s, avail);
+  } else if (avail_ > size() + 1U) {
+    /* Reduce allocated space to minimum. */
+    pointer s;
+    try {
+      s = this->allocate_dfl(size() + 1U, this);
+    } catch (const std::bad_alloc&) {
+      return;
+    }
+
+    char_traits::copy(s, data(), size() + 1U);
+    this->deallocate_dfl(data_.s, avail_);
+    avail_ = size() + 1U;
+    data_.s = s;
+  }
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator[](size_type i) noexcept ->
+    reference {
+  return begin()[i];
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator[](size_type i)
+    const noexcept -> const_reference {
+  return begin()[i];
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::at(size_type i) -> reference {
+  if (i < 0 || i >= len_) throw out_of_range("basic_string::at");
+  return (*this)[i];
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::at(size_type i) const ->
+    const_reference {
+  if (i < 0 || i >= len_) throw out_of_range("basic_string::at");
+  return (*this)[i];
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::back() noexcept -> reference {
+  return *rbegin();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::back() const noexcept ->
+    const_reference {
+  return *rbegin();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::front() noexcept -> reference {
+  return *begin();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::front() const noexcept ->
+    const_reference {
+  return *begin();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator+=(const basic_string& s) ->
+    basic_string& {
+  return *this += basic_string_ref<Char, Traits>(s);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator+=(const char_type* s) ->
+    basic_string& {
+  return *this += basic_string_ref<Char, Traits>(s);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator+=(char_type c) ->
+    basic_string& {
+  reserve(len_ + 1U);
+  char_traits::assign((*this)[len_++], c);
+  char_traits::assign((*this)[len_], char_type());
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::operator+=(
+    initializer_list<char_type> il) -> basic_string& {
+  return *this += basic_string_ref<Char, Traits>(&*il.begin(), il.size());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto auto basic_string<Char, Traits, Alloc>::operator+=(
+    basic_string_ref<Char, Traits> s) -> basic_string& {
+  reserve(len_ + s.size());
+  char_traits::copy(begin() + len_, s.data(), s.size());
+  len_ += s.size();
+  char_traits::assign((*this)[len_], c);
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::append(const basic_string& s) ->
+    basic_string& {
+  return *this += basic_string_ref<Char, Traits>(s);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::append(const basic_string& s,
+                                               size_type pos, size_type len) ->
+    basic_string& {
+  return *this += basic_string_ref<Char, Traits>(s).substr(pos, len);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::append(const char_type* s) ->
+    basic_string& {
+  return *this += basic_string_ref<Char, Traits>(s);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::append(const char_type* s,
+                                               size_type len) ->
+    basic_string& {
+  return *this += basic_string_ref<Char, Traits>(s, len);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::append(size_type n, char_type c) ->
+    basic_string& {
+  reserve(size() + n);
+  char_traits::assign(begin() + size(), n, c);
+  len_ += n;
+  char_traits::assign((*this)[len_], char_type());
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+template<typename InputIter>
+auto basic_string<Char, Traits, Alloc>::append(InputIter b, InputIter e) ->
+    basic_string& {
+  while (b != e) {
+    append(*b);
+    ++b;
+  }
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::append(
+    initializer_list<char_type> il) -> basic_string& {
+  return *this += il;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::append(
+    basic_string_ref<Char, Traits> s) -> basic_string& {
+  return *this += s;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::push_back(char_type c) -> void {
+  *this += c;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::assign(const basic_string& s) ->
+    basic_string& {
+  return assign(basic_string_ref<Char, Traits>(s));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::assign(const basic_string& s,
+                                               size_type pos, size_type len) ->
+    basic_string& {
+  return assign(basic_string_ref<Char, Traits>(s).substr(pos, len));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::assign(const char_type* s) ->
+    basic_string& {
+  return assign(basic_string_ref<Char, Traits>(s));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::assign(const char_type* s,
+                                               size_type len) ->
+    basic_string& {
+  return assign(basic_string_ref<Char, Traits>(s, len));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::assign(size_type n, char_type c) ->
+    basic_string& {
+  reserve(n);
+  char_traits::assign(begin(), n, c);
+  char_traits::assign((*this)[n], char_type());
+  len_ = n;
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+template<typename InputIter>
+auto basic_string<Char, Traits, Alloc>::assign(InputIter b, InputIter e) ->
+    basic_string& {
+  return *this = basic_string(b, e, get_allocator());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::assign(
+    initializer_list<char_type> il) -> basic_string& {
+  return assign(basic_string_ref<Char, Traits>(il.begin(), il.size()));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::assign(
+    basic_string_ref<Char, Traits> s) -> basic_string& {
+  reserve(s.size());
+  char_traits::copy(begin(), s.data(), s.size());
+  char_traits::assign((*this)[s.size()], char_type());
+  len_ = s.size();
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::assign(basic_string&& s) noexcept ->
+    basic_string& {
+  swap(s);
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(size_type pos,
+                                               const basic_string& s) ->
+    basic_string& {
+  return insert(pos, basic_string_ref<Char, Traits>(s));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(
+    size_type pos, const basic_string& s, size_type pos, size_type len) ->
+    basic_string& {
+  return insert(pos, basic_string_ref<Char, Traits>(s).substr(pos, len));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(size_type pos,
+                                               const char_type* s) ->
+    basic_string& {
+  return insert(pos, basic_string_ref<Char, Traits>(s));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(
+    size_type pos, basic_string_ref<Char, Traits> s) -> basic_string& {
+  if (pos > size()) throw out_of_range("basic_string::insert");
+  if (s.size() > max_size() - size())
+    throw length_error("basic_string::insert");
+
+  reserve(size() + s.size());
+  char_traits::move(begin() + pos + s.size(), begin() + pos,
+                    size() + 1U - pos);
+  char_traits::copy(begin() + pos, s.data(), s.size());
+  len_ += s.size();
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(size_type pos,
+                                               const char_type* s,
+                                               size_type len) ->
+    basic_string& {
+  return insert(pos, basic_string_ref<Char, Traits>(s, len));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(size_type pos,
+                                               size_type n, char_type c) ->
+    basic_string& {
+  if (pos > size()) throw out_of_range("basic_string::insert");
+  if (n > max_size() - size()) throw length_error("basic_string::insert");
+
+  reserve(size() + n);
+  char_traits::move(begin() + pos + n, begin() + pos, size() + 1U - pos);
+  char_traits::assign(begin + pos, n, c);
+  len_ += n;
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(const_iterator p,
+                                               size_type n, char_type c) ->
+    iterator {
+  assert(p >= begin() && p <= end());
+
+  reserve(size() + n);
+  char_traits::move(p + n, p, end() - p + 1);
+  char_traits::assign(p, n, c);
+  len_ += n;
+  return begin() + (p - begin());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(const_iterator p,
+                                               char_type c) ->
+    iterator {
+  return insert(p, 1U, c);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+template<typename InputIter>
+auto basic_string<Char, Traits, Alloc>::insert(const_iterator p,
+                                               InputIter b, InputIter e) ->
+    iterator {
+  return insert(p, basic_string(b, e));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(
+    const_iterator p, initializer_list<char_type> il) -> basic_string& {
+  return insert(p, basic_string_ref<Char, Traits>(il.begin(), il.size()));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::erase(size_type pos, size_type len) ->
+    basic_string& {
+  if (pos > size()) throw out_of_range("basic_string::erase");
+
+  len = min(size() - pos, len);
+  size_type pl = pos + len;
+  char_traits::move(begin() + pos, begin() + pl, size() - pl + 1U);
+  len_ -= len;
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::erase(const_iterator p) -> iterator {
+  assert(p >= begin() && p < end());
+
+  char_traits::move(p, p + 1U, size() - (p - begin()) + 1U - 1U);
+  --len_;
+  return begin() + (p - begin());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::erase(const_iterator b,
+                                              const_iterator e) -> iterator {
+  assert(begin() <= b && b <= e && e <= end());
+
+  char_traits::move(b, e, size() - (e - begin()) + 1U);
+  len_ -= (e - b);
+  return begin() + (b - begin());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(size_type pos, size_type len,
+                                                const basic_string& s) -> basic_string& {
+  return replace(pos, len, basic_string_ref<Char, Traits>(s));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(const_iterator b,
+                                                const_iterator e,
+                                                const basic_string& s) ->
+    basic_string& {
+  return replace(b, e, basic_string_ref<Char, Traits>(s));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(size_type pos, size_type len,
+                                                const basic_string& s,
+                                                size_type s_pos,
+                                                size_type s_len) ->
+    basic_string& {
+  return replace(pos, len,
+                 basic_string_ref<Char, Traits>(s).substr(s_pos, s_len));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(size_type pos, size_type len,
+                                                const char_type* s) ->
+    basic_string& {
+  return replace(pos, len, basic_string_ref<Char, Traits>(s));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(const_iterator b,
+                                                const_iterator e,
+                                                const char_type* s) ->
+    basic_string& {
+  return replace(b, e, basic_string_ref<Char, Traits>(s));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(
+    size_type pos, size_type len, basic_string_ref<Char, Traits> s) ->
+    basic_string& {
+  if (pos < 0 || pos > size()) throw out_of_range("basic_string::replace");
+  if (len > size() - pos) len = size() - pos;
+  return replace(begin() + pos, begin() + pos + len, s);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(
+    const_iterator b, const_iterator e, basic_string_ref<Char, Traits> s) ->
+    basic_string& {
+  assert(begin() <= b && b <= e && e <= end());
+  if (max_size() - size() + (e - b) < s.size())
+    throw length_error("basic_string::replace");
+
+  reserve(size() - (e - b) + s.size());
+  char_traits::move(b + s.size(), e, size() - (e - begin()) + 1U);
+  char_traits::copy(b, s.data(), s.size());
+  len_ = len_ - (e - b) + s.size();
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(size_type pos, size_type len,
+                                                const char_type* s,
+                                                size_type s_len) ->
+    basic_string& {
+  return replace(pos, len, basic_string_ref<Char, Traits>(s, s_len));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(const_iterator b,
+                                                const_iterator e,
+                                                const char_type* s,
+                                                size_type s_len) ->
+    basic_string& {
+  return replace(b, e, basic_string_ref<Char, Traits>(s, s_len));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(size_type pos, size_type len,
+                                                size_type n, char_type c) ->
+    basic_string& {
+  if (pos < 0 || pos > size()) throw out_of_range("basic_string::replace");
+  if (len > size() - pos) len = size() - pos;
+  return replace(begin() + pos, begin() + pos + len, n, c);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(const_iterator b,
+                                                const_iterator e,
+                                                size_type n, char_type c) ->
+    basic_string& {
+  assert(begin() <= b && b <= e && e <= end());
+  if (max_size() - size() + (e - b) < s.size())
+    throw length_error("basic_string::replace");
+
+  reserve(size() - (e - b) + s.size());
+  char_traits::move(b + s.size(), e, size() - (e - begin()) + 1U);
+  char_traits::assign(b, n, c);
+  len_ = len_ - (e - b) + s.size();
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+template<typename InputIter>
+auto basic_string<Char, Traits, Alloc>::replace(const_iterator b,
+                                                const_iterator e,
+                                                InputIter ib, InputIter ie) ->
+    basic_string& {
+  return replace(b, e, basic_string(ib, ie));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::replace(
+    const_iterator b, const_iterator e, initializer_list<char_type> il) ->
+    basic_string& {
+  return replace(b, e, basic_string_ref<Char, Traits>(il.begin(), il.size()));
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::swap(basic_string& s) -> void {
+  using std::swap;
+
+  this->impl::alloc_base<Alloc>::swap(
+    static_cast<impl::alloc_base<Alloc>&>(s));
+  swap(len_, s.len_);
+  swap(avail_, s.avail_);
+  swap(data_, s.data_);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::pop_back() noexcept -> void {
+  assert(size() > 0);
+  char_traits::assign((*this)[len_], char_type());
+  --len_;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::c_str() const noexcept ->
+    const char_type* {
+  return data();
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::data() const noexcept ->
+    const char_type* {
+  return (avail_ > immed_size ? data_.s : &data_.immed[0]);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::copy(char_type* s, size_type len,
+                                             size_type pos) const ->
+    size_type {
+  if (pos > size()) throw out_of_range("basic_string::copy");
+
+  if (len > size() - pos) len = size() - pos;
+  char_traits::copy(s, data() + pos, len);
+  return len;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::find(
+    const basic_string& s, size_type pos) const noexcept -> size_type {
+  return find(basic_string_ref<Char, Traits>(s), pos);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::find(
+    const char_type* s, size_type pos) const noexcept -> size_type {
+  return find(basic_string_ref<Char, Traits>(s), pos);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::find(
+    basic_string_ref<Char, Traits> s, size_type pos) const noexcept ->
+    size_type {
+  if (pos >= size()) return npos;
+  auto rv = impl::strfind<traits_type>(begin() + pos, size() - pos,
+                                       s.data(), s.size());
+  return (rv == nullptr ? npos : rv - begin());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::find(const char_type* s, size_type pos,
+                                             size_type n) const -> size_type {
+  return find(basic_string_ref<Char, Traits>(s, n), pos);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::find(char_type c,
+                                             size_type pos) const noexcept ->
+    size_type {
+  if (pos >= size()) return npos;
+  auto rv = char_traits::find(begin() + pos, size() - pos, c);
+  return (rv == nullptr ? npos : rv - begin());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::rfind(const basic_string& s,
+                                              size_type pos) const noexcept ->
+    size_type {
+  return rfind(basic_string_ref<Char, Traits>(s), pos);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::rfind(const char_type* s,
+                                              size_type pos) const noexcept ->
+    size_type {
+  return rfind(basic_string_ref<Char, Traits>(s), pos);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::rfind(basic_string_ref<Char, Traits> s,
+                                              size_type pos) const noexcept ->
+    size_type {
+  if (pos >= size()) pos = size();
+  auto rv = impl::strrfind<traits_type>(data(), size(), s.data(), s.size());
+  return (rv == nullptr ? npos : rv - data());
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::rfind(const char_type* s,
+                                              size_type pos, size_type n)
+    const noexcept -> size_type {
+  return rfind(basic_string_ref<Char, Traits>(s, n), pos);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::rfind(char_type c, size_type pos)
+    const noexcept -> size_type {
+  if (pos >= size()) pos = size();
+  auto rv = impl::rfind<traits_type>(data(), pos, c);
+  return (rv == nullptr ? npos : rv - begin());
+}
+
+
+
+
+
+template<typename Char, typename Traits>
+basic_string_ref<Char, Traits>::basic_string_ref(const_pointer s)
+: basic_string_ref(s, traits_type::length(s))
+{}
+
+template<typename Char, typename Traits>
+constexpr basic_string_ref<Char, Traits>::basic_string_ref(const_pointer s,
+                                                           size_type len)
+: s_(s),
+  len_(len)
+{}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::begin() const noexcept ->
+    const_iterator {
+  return s_;
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::end() const noexcept ->
+    const_iterator {
+  return begin() + len_;
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::cbegin() const noexcept ->
+    const_iterator {
+  return begin();
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::cend() const noexcept ->
+    const_iterator {
+  return end();
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::rbegin() const noexcept ->
+    const_reverse_iterator {
+  return const_reverse_iterator(end());
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::rend() const noexcept ->
+    const_reverse_iterator {
+  return const_reverse_iterator(begin());
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::crbegin() const noexcept ->
+    const_reverse_iterator {
+  return const_reverse_iterator(end());
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::crend() const noexcept ->
+    const_reverse_iterator {
+  return const_reverse_iterator(begin());
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::size() const noexcept ->
+    size_type {
+  return len_;
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::length() const noexcept ->
+    size_type {
+  return size();
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::max_size() const noexcept ->
+    size_type {
+  return SIZE_MAX;
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::empty() const noexcept -> bool {
+  return size() == 0U;
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::operator[](size_type i)
+    const -> const_reference {
+  return begin()[i];
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::at(size_type i) const ->
+    const_reference {
+  if (i < 0 || i >= size()) throw out_of_range("basic_string_ref::at");
+  return (*this)[i];
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::front() const ->
+    const_reference {
+  return begin()[0];
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::back() const ->
+    const_reference {
+  return rbegin()[0];
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::data() const noexcept ->
+    const_pointer {
+  return s_;
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::clear() noexcept -> void {
+  *this = basic_string_ref();
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::remove_prefix(size_type n) -> void {
+  if (n >= size()) throw out_of_range("basic_string_ref::remove_prefix");
+  s_ += n;
+  len_ -= n;
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::remove_suffix(size_type n) -> void {
+  len_ -= (n >= len_ ? len_ : n);
+}
+
+template<typename Char, typename Traits>
+constexpr auto basic_string_ref<Char, Traits>::substr(size_type pos,
+                                                      size_type n)
+    const -> basic_string_ref {
+  if (pos < 0 || pos >= size()) throw out_of_range("basic_string_ref::substr");
+  basic_string_ref copy = *this;
+  copy.s_ += pos;
+  copy.len_ -= pos;
+  if (copy.len_ > n) copy.len_ = n;
+  return copy;
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::compare(basic_string_ref o)
+    const noexcept -> int {
+  constexpr int cmp = traits_type::compare(data(), o.data(),
+                                           min(size(), o.size()));
+  return (cmp != 0 ? cmp :
+          (size() < o.size() ? -1 : (size() > o.size())));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::compare(const_pointer s)
+    const noexcept -> int {
+  return compare(basic_string_ref(s));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::starts_with(
+    basic_string_ref prefix) const noexcept -> bool {
+  return size() >= prefix.size() && substr(0, prefix.size()) == prefix;
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::starts_with(char_type c)
+    const noexcept -> bool {
+  return starts_with(basic_string_ref(&c, 1));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::starts_with(const_pointer s)
+    const noexcept -> bool {
+  return starts_with(basic_string_ref(s));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::ends_with(
+    basic_string_ref suffix) const noexcept -> bool {
+  return size() >= suffix.size() && substr(size() - suffix.size()) == suffix;
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::ends_with(char_type c)
+    const noexcept -> bool {
+  return ends_with(basic_string_ref(&c, 1));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::ends_with(const_pointer s)
+    const noexcept -> bool {
+  return ends_with(basic_string_ref(s));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find(basic_string_ref needle)
+    const noexcept -> size_type {
+  auto rv = impl::strfind<traits_type>(data(), size(),
+                                       needle.data(), needle.size());
+  return (rv == nullptr ? npos : rv - data());
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find(char_type c)
+    const noexcept -> size_type {
+  auto p = char_traits::find(data(), size(), c);
+  return (p == nullptr ? npos : p - begin());
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find(const_pointer s)
+    const noexcept -> size_type {
+  return find(basic_string_ref(s));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::rfind(basic_string_ref needle)
+    const noexcept -> size_type {
+  auto rv = impl::strrfind<traits_type>(data(), size(),
+                                        needle.data(), needle.size());
+  return (rv == nullptr ? npos : rv - data());
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::rfind(char_type c)
+    const noexcept -> size_type {
+  auto p = impl::rfind<traits_type>(data(), size(), c);
+  return (p == nullptr ? npos : p - begin());
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::rfind(const_pointer s)
+    const noexcept -> size_type {
+  return rfind(basic_string_ref(s));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_first_of(basic_string_ref s)
+    const noexcept -> size_type {
+  for (auto i = begin(); i != end(); ++i)
+    if (s.find(*i) != npos) return i - begin();
+  return npos;
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_first_of(char_type c)
+    const noexcept -> size_type {
+  return find_first_of(basic_string_ref(&c, 1));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_first_of(const_pointer s)
+    const noexcept -> size_type {
+  return find_first_of(basic_string_ref(s));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_last_of(basic_string_ref)
+    const noexcept -> size_type {
+  auto i = end();
+  while (i-- != begin())
+    if (s.find(*i) != npos) return i - begin();
+  return npos;
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_last_of(char_type c)
+    const noexcept -> size_type {
+  return find_last_of(basic_string_ref(&c, 1));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_last_of(const_pointer s)
+    const noexcept -> size_type {
+  return find_last_of(basic_string_ref(s));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_first_not_of(basic_string_ref)
+    const noexcept -> size_type {
+  for (auto i = begin(); i != end(); ++i)
+    if (s.find(*i) == npos) return i - begin();
+  return npos;
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_first_not_of(char_type c)
+    const noexcept -> size_type {
+  return find_first_not_of(basic_string_ref(&c, 1));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_first_not_of(const_pointer s)
+    const noexcept -> size_type {
+  return find_first_not_of(basic_string_ref(s));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_last_not_of(basic_string_ref)
+    const noexcept -> size_type {
+  auto i = end();
+  while (i-- != begin())
+    if (s.find(*i) == npos) return i - begin();
+  return npos;
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_last_not_of(char_type c)
+    const noexcept -> size_type {
+  return find_last_not_of(basic_string_ref(&c, 1));
+}
+
+template<typename Char, typename Traits>
+auto basic_string_ref<Char, Traits>::find_last_not_of(const_pointer s)
+    const noexcept -> size_type {
+  return find_last_not_of(basic_string_ref(s));
+}
+
+
+template<typename Char, typename Traits>
+auto operator==(basic_string_ref<Char, Traits> a,
+                basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a.compare(b) == 0U;
+}
+
+template<typename Char, typename Traits>
+auto operator!=(basic_string_ref<Char, Traits> a,
+                basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a.compare(b) != 0U;
+}
+
+template<typename Char, typename Traits>
+auto operator<(basic_string_ref<Char, Traits> a,
+               basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a.compare(b) < 0U;
+}
+
+template<typename Char, typename Traits>
+auto operator>(basic_string_ref<Char, Traits> a,
+               basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a.compare(b) > 0U;
+}
+
+template<typename Char, typename Traits>
+auto operator<=(basic_string_ref<Char, Traits> a,
+                basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a.compare(b) <= 0U;
+}
+
+template<typename Char, typename Traits>
+auto operator>=(basic_string_ref<Char, Traits> a,
+                basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a.compare(b) >= 0U;
+}
+
+template<typename Char, typename Traits>
+auto operator==(basic_string_ref<Char, Traits> a,
+                typename basic_string_ref<Char, Traits>::__identity b)
+    noexcept -> bool {
+  return a == b;
+}
+
+template<typename Char, typename Traits>
+auto operator!=(basic_string_ref<Char, Traits> a,
+                typename basic_string_ref<Char, Traits>::__identity b)
+    noexcept -> bool {
+  return a != b;
+}
+
+template<typename Char, typename Traits>
+auto operator<(basic_string_ref<Char, Traits> a,
+               typename basic_string_ref<Char, Traits>::__identity b)
+    noexcept -> bool {
+  return a < b;
+}
+
+template<typename Char, typename Traits>
+auto operator>(basic_string_ref<Char, Traits> a,
+               typename basic_string_ref<Char, Traits>::__identity b)
+    noexcept -> bool {
+  return a > b;
+}
+
+template<typename Char, typename Traits>
+auto operator<=(basic_string_ref<Char, Traits> a,
+                typename basic_string_ref<Char, Traits>::__identity b)
+    noexcept -> bool {
+  return a <= b;
+}
+
+template<typename Char, typename Traits>
+auto operator>=(basic_string_ref<Char, Traits> a,
+                typename basic_string_ref<Char, Traits>::__identity b)
+    noexcept -> bool {
+  return a >= b;
+}
+
+template<typename Char, typename Traits>
+auto operator==(typename basic_string_ref<Char, Traits>::__identity a,
+                basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a == b;
+}
+
+template<typename Char, typename Traits>
+auto operator!=(typename basic_string_ref<Char, Traits>::__identity a,
+                basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a != b;
+}
+
+template<typename Char, typename Traits>
+auto operator<(typename basic_string_ref<Char, Traits>::__identity a,
+               basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a < b;
+}
+
+template<typename Char, typename Traits>
+auto operator>(typename basic_string_ref<Char, Traits>::__identity a,
+               basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a > b;
+}
+
+template<typename Char, typename Traits>
+auto operator<=(typename basic_string_ref<Char, Traits>::__identity a,
+                basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a <= b;
+}
+
+template<typename Char, typename Traits>
+auto operator>=(typename basic_string_ref<Char, Traits>::__identity a,
+                basic_string_ref<Char, Traits> b) noexcept -> bool {
+  return a >= b;
+}
+
+template<typename Char, typename Traits = char_traits<Char>,
+         typename Allocator = allocator<Char>>
+basic_string<Char, Traits, Allocator> to_string(
+    basic_string_ref<Char, Traits> s, const Allocator& a = Allocator()) {
+  return basic_string(s, a);
+}
+
+
+_namespace_end(std)
