@@ -1,5 +1,6 @@
 #include <abi/ext/reader.h>
 #include <abi/errno.h>
+#include <abi/memory.h>
 #include <cstring>
 #include <cstdint>
 #include <cstdlib>
@@ -204,6 +205,10 @@ void* memmove(void* dst, const void* src, size_t len) noexcept {
 
 void bcopy(const void* src, void* dst, size_t len) noexcept {
   memmove(dst, src, len);
+}
+
+void bzero(void* p, size_t len) noexcept {
+  abi::memzero(p, len);
 }
 
 void* memset(void* p, int c, size_t len) noexcept {

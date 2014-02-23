@@ -49,6 +49,7 @@ char*  strtok(char*__restrict, const char*__restrict) noexcept;
 char*  strtok_r(char*__restrict, const char*__restrict, char**__restrict)
          noexcept;
 void   bcopy(const void*, void*, size_t) noexcept;
+void   bzero(void*, size_t) noexcept;
 
 #if __has_include(<clocale>)
 /* These functions require working locale support. */
