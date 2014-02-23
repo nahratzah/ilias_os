@@ -1,6 +1,7 @@
 #ifndef _ABI_EXT_READER_H_
 #define _ABI_EXT_READER_H_
 
+#include <cdecl.h>
 #include <abi/abi.h>
 #include <cstdint>
 
@@ -377,17 +378,19 @@ template<typename UInt> const UInt* memfind(const UInt* s_haystack,
                                             size_t n_haystack,
                                             const UInt* s_needle,
                                             size_t n_needle) noexcept {
-  for (; n_haystack >= n_needle; s_haystack++, n_haystack--) {
+  for (; n_haystack >= n_needle; ++s_haystack, --n_haystack) {
     if (memcmp(s_haystack, s_needle, n_needle) == 0)
       return s_haystack;
   }
   return nullptr;
 }
 
-template<> const uint8_t* memfind(const uint8_t* s_haystack,
-                                  size_t n_haystack,
-                                  const uint8_t* s_needle,
-                                  size_t n_needle) noexcept {
+/*
+ * Specialize memfind for small integral type.
+ * The function uses a histogram to reduce complexity.
+ */
+const uint8_t* memfind(const uint8_t* s_haystack, size_t n_haystack,
+                       const uint8_t* s_needle, size_t n_needle) noexcept {
   constexpr size_t histogram_sz = UINT8_MAX + 1U;
   ssize_t histogram[histogram_sz];
   unsigned int nz = 0;
@@ -404,7 +407,6 @@ template<> const uint8_t* memfind(const uint8_t* s_haystack,
 
   /* Pre-read n_needle bytes from haystack. */
   auto head = reader<DIR_FORWARD, uint8_t>(s_haystack, n_haystack);
-  auto tail = head;
   for (size_t n = 0; n < n_needle; ++n) {
     switch (histogram[head.read8(n_haystack - n)]++) {
     default:
@@ -419,6 +421,7 @@ template<> const uint8_t* memfind(const uint8_t* s_haystack,
   }
 
   /* Walk window, described by [tail - head) through histogram. */
+  auto tail = reader<DIR_FORWARD, uint8_t>(s_haystack, n_haystack - n_needle);
   for (size_t n = n_needle; n < n_haystack; ++n) {
     if (nz == 0 &&
         memcmp(tail.addr<uint8_t>(), s_needle, n_needle) == 0)
@@ -451,7 +454,32 @@ template<> const uint8_t* memfind(const uint8_t* s_haystack,
     }
   }
 
+  /* Check last input from loop above. */
+  if (nz == 0 &&
+      memcmp(tail.addr<uint8_t>(), s_needle, n_needle) == 0)
+    return tail.addr<uint8_t>();
+
   return nullptr;
+}
+
+/* Use uint8_t memfind specialization for char. */
+const char* memfind(const char* s_haystack, size_t n_haystack,
+                    const char* s_needle, size_t n_needle) noexcept {
+  return reinterpret_cast<const char*>(memfind(
+      reinterpret_cast<const uint8_t*>(s_haystack),
+      n_haystack,
+      reinterpret_cast<const uint8_t*>(s_needle),
+      n_needle));
+}
+
+/* Use uint8_t memfind specialization for signed char. */
+const int8_t* memfind(const int8_t* s_haystack, size_t n_haystack,
+                      const int8_t* s_needle, size_t n_needle) noexcept {
+  return reinterpret_cast<const int8_t*>(memfind(
+      reinterpret_cast<const uint8_t*>(s_haystack),
+      n_haystack,
+      reinterpret_cast<const uint8_t*>(s_needle),
+      n_needle));
 }
 
 
