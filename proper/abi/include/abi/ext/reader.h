@@ -330,6 +330,9 @@ template<typename UInt> class reader<DIR_BACKWARD, UInt>
 };
 
 
+} /* namespace __cxxabiv1::ext::<unnamed> */
+
+
 template<typename UInt> int memcmp(const UInt* a, const UInt* b, size_t len)
     noexcept {
   if (len == 0) return 0;
@@ -389,82 +392,12 @@ template<typename UInt> const UInt* memfind(const UInt* s_haystack,
  * Specialize memfind for small integral type.
  * The function uses a histogram to reduce complexity.
  */
-const uint8_t* memfind(const uint8_t* s_haystack, size_t n_haystack,
-                       const uint8_t* s_needle, size_t n_needle) noexcept {
-  constexpr size_t histogram_sz = UINT8_MAX + 1U;
-  ssize_t histogram[histogram_sz];
-  unsigned int nz = 0;
-
-  if (n_needle == 0) return s_haystack;
-  if (n_haystack < n_needle) return nullptr;
-
-  /* Fill histogram, by subtracting needle. */
-  {
-    auto r = reader<DIR_FORWARD, uint8_t>(s_needle, n_needle);
-    for (size_t n = 0; n < n_needle; ++n)
-      if (histogram[r.read8(n_needle - n)]-- == 0) ++nz;
-  }
-
-  /* Pre-read n_needle bytes from haystack. */
-  auto head = reader<DIR_FORWARD, uint8_t>(s_haystack, n_haystack);
-  for (size_t n = 0; n < n_needle; ++n) {
-    switch (histogram[head.read8(n_haystack - n)]++) {
-    default:
-      break;
-    case 0:
-      ++nz;
-      break;
-    case -1:
-      --nz;
-      break;
-    }
-  }
-
-  /* Walk window, described by [tail - head) through histogram. */
-  auto tail = reader<DIR_FORWARD, uint8_t>(s_haystack, n_haystack - n_needle);
-  for (size_t n = n_needle; n < n_haystack; ++n) {
-    if (nz == 0 &&
-        memcmp(tail.addr<uint8_t>(), s_needle, n_needle) == 0)
-      return tail.addr<uint8_t>();
-
-    const auto head_c = head.read8(n_haystack - n);
-    const auto tail_c = tail.read8(n_haystack - n);
-
-    /* Add head character to histogram. */
-    switch (histogram[head_c]++) {
-      default:
-        break;
-      case 0:
-        ++nz;
-        break;
-      case -1:
-        --nz;
-        break;
-    }
-    /* Remove tail character from histogram. */
-    switch (histogram[tail_c]--) {
-      default:
-        break;
-      case 0:
-        ++nz;
-        break;
-      case 1:
-        --nz;
-        break;
-    }
-  }
-
-  /* Check last input from loop above. */
-  if (nz == 0 &&
-      memcmp(tail.addr<uint8_t>(), s_needle, n_needle) == 0)
-    return tail.addr<uint8_t>();
-
-  return nullptr;
-}
+const uint8_t* memfind(const uint8_t*, size_t,
+                       const uint8_t*, size_t) noexcept;
 
 /* Use uint8_t memfind specialization for char. */
-const char* memfind(const char* s_haystack, size_t n_haystack,
-                    const char* s_needle, size_t n_needle) noexcept {
+inline const char* memfind(const char* s_haystack, size_t n_haystack,
+                           const char* s_needle, size_t n_needle) noexcept {
   return reinterpret_cast<const char*>(memfind(
       reinterpret_cast<const uint8_t*>(s_haystack),
       n_haystack,
@@ -473,8 +406,9 @@ const char* memfind(const char* s_haystack, size_t n_haystack,
 }
 
 /* Use uint8_t memfind specialization for signed char. */
-const int8_t* memfind(const int8_t* s_haystack, size_t n_haystack,
-                      const int8_t* s_needle, size_t n_needle) noexcept {
+inline const int8_t* memfind(const int8_t* s_haystack, size_t n_haystack,
+                             const int8_t* s_needle, size_t n_needle)
+    noexcept {
   return reinterpret_cast<const int8_t*>(memfind(
       reinterpret_cast<const uint8_t*>(s_haystack),
       n_haystack,
@@ -483,6 +417,6 @@ const int8_t* memfind(const int8_t* s_haystack, size_t n_haystack,
 }
 
 
-}}} /* namespace __cxxabiv1::ext::<unnamed> */
+}} /* namespace __cxxabiv1::ext */
 
 #endif /* _ABI_EXT_READER_H_ */

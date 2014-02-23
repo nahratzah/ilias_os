@@ -7,6 +7,7 @@ SRCS += abi/src/abi_errno.cc
 SRCS += abi/src/abi_ext_string_piece.cc
 SRCS += abi/src/abi_ext_c_string_ptr.cc
 SRCS += abi/src/abi_ext_printf.cc
+SRCS += abi/src/abi_ext_reader.cc
 SRCS += abi/src/abi_hashcode.cc
 SRCS += abi/src/abi_linker.cc
 SRCS += abi/src/abi_memory.cc
