@@ -788,7 +788,11 @@ int strerror_r(int errnum, char* buf, size_t buflen) noexcept {
 }
 
 char* strerror(int errnum) noexcept {
+#ifdef _TEST
+  static char buf[32];
+#else
   thread_local char buf[32];
+#endif
   strerror_r(errnum, buf, sizeof(buf) / sizeof(buf[0]));
   return buf;
 }
