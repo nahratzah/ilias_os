@@ -10,6 +10,8 @@ const uint8_t* memfind(const uint8_t* s_haystack, size_t n_haystack,
   ssize_t histogram[histogram_sz];
   unsigned int nz = 0;
 
+  for (auto& i : histogram) i = 0;
+
   if (n_needle == 0) return s_haystack;
   if (n_haystack < n_needle) return nullptr;
 

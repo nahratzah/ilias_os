@@ -676,6 +676,8 @@ char* strstr(const char* haystack, const char* needle) noexcept {
   size_t needle_len = 0;  // Length of needle, for backtracking.
   unsigned int nz = 0;  // # of non-zero histogram entries.
 
+  for (auto& i : histogram) i = 0;
+
   /* Fill histogram, by subtracting needle. */
   {
     auto r = reader<DIR_FORWARD, uint8_t>(needle);
