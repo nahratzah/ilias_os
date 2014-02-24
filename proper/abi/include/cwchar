@@ -5,6 +5,7 @@
 #include <cdecl.h>
 #include <cstddef>
 #include <cstdio_misc/file.h>
+#include <cstdio_misc/mbstate.h>
 #include <locale_misc/locale_t.h>
 #include <ctime_misc/tm_fwd.h>
 #include <climits>
@@ -21,7 +22,6 @@ _cdecl_begin
 typedef _TYPES(wchar_t)		wchar_t;
 #endif
 typedef _TYPES(wint_t)		wint_t;
-typedef _TYPES(mbstate_t)	mbstate_t;
 
 wint_t btowc(int) noexcept;
 wint_t fgetwc(FILE*) noexcept;
