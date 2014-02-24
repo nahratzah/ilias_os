@@ -429,6 +429,39 @@ inline const int8_t* memfind(const int8_t* s_haystack, size_t n_haystack,
       n_needle));
 }
 
+/* Character find. */
+template<typename C> const C* memchr(const C* p, size_t len, C v) noexcept {
+  if (len == 0) return nullptr;
+  auto r = reader<DIR_FORWARD, C>(p, len);
+
+  while (len > 0) {
+    auto rcc = r.read8(len);
+    if (rcc == v) return r.template addr<const C>() - 1;
+    --len;
+  }
+  return nullptr;
+}
+template<typename C> const C* memrchr(const C* p, size_t len, C v) noexcept {
+  if (len == 0) return nullptr;
+  auto r = reader<DIR_BACKWARD, C>(p + len, len);
+
+  while (len > 0) {
+    auto rcc = r.read8(len);
+    if (rcc == v) return r.template addr<const C>();
+    --len;
+  }
+  return nullptr;
+}
+
+/* String length calculation. */
+template<typename C> size_t strlen(const C* s) noexcept {
+  auto r = reader<DIR_FORWARD, C>(s);
+
+  while (r.read8() != C());
+  return r.template addr<C>() - 1 - s;
+}
+
+
 extern template int memcmp<uint8_t>(const uint8_t*, const uint8_t*, size_t)
     noexcept;
 extern template int memcmp<char>(const char*, const char*, size_t)

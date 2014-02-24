@@ -26,8 +26,7 @@ inline auto char_traits<char>::assign(char_type& a, const char_type& b)
 
 inline auto char_traits<char>::assign(char_type* s, size_t n, char_type c)
     noexcept -> char_type* {
-  memset(s, c, n);
-  return s;
+  return static_cast<char_type*>(memset(s, c, n));
 }
 
 inline auto char_traits<char>::compare(const char_type* a, const char_type* b,
@@ -43,14 +42,12 @@ inline auto char_traits<char>::find(const char_type* s, size_t n,
 
 inline auto char_traits<char>::move(char_type* d, const char_type* s, size_t n)
     noexcept -> char_type* {
-  memmove(d, s, n);
-  return d;
+  return static_cast<char_type*>(memmove(d, s, n));
 }
 
 inline auto char_traits<char>::copy(char_type* d, const char_type* s, size_t n)
     noexcept -> char_type* {
-  memcpy(d, s, n);
-  return d;
+  return static_cast<char_type*>(memcpy(d, s, n));
 }
 
 inline constexpr auto char_traits<char>::eof() noexcept -> int_type {
@@ -82,6 +79,208 @@ inline auto char_traits<char>::rfind(const char_type* s, size_t n,
     noexcept -> const char_type* {
   return static_cast<const char_type*>(memrchr(s, c, n));
 }
+
+
+
+
+
+inline constexpr auto char_traits<wchar_t>::eq(char_type a, char_type b)
+    noexcept -> bool {
+  return a == b;
+}
+
+inline constexpr auto char_traits<wchar_t>::lt(char_type a, char_type b)
+    noexcept -> bool {
+  return a < b;
+}
+
+inline auto char_traits<wchar_t>::length(const wchar_t* s) noexcept -> size_t {
+  return wcslen(s);
+}
+
+inline auto char_traits<wchar_t>::assign(char_type& a, const char_type& b)
+    noexcept -> void {
+  a = b;
+}
+
+inline auto char_traits<wchar_t>::assign(char_type* s, size_t n, char_type c)
+    noexcept -> char_type* {
+  return wmemset(s, c, n);
+}
+
+inline auto char_traits<wchar_t>::compare(const char_type* a,
+                                          const char_type* b,
+                                          size_t n) noexcept -> int {
+  return wmemcmp(a, b, n);
+}
+
+inline auto char_traits<wchar_t>::find(const char_type* s, size_t n,
+                                       const char_type& c)
+    noexcept -> const char_type* {
+  return wmemchr(s, c, n);
+}
+
+inline auto char_traits<wchar_t>::move(char_type* d, const char_type* s,
+                                       size_t n) noexcept -> char_type* {
+  return wmemmove(d, s, n);
+}
+
+inline auto char_traits<wchar_t>::copy(char_type* d, const char_type* s,
+                                       size_t n) noexcept -> char_type* {
+  return wmemcpy(d, s, n);
+}
+
+inline constexpr auto char_traits<wchar_t>::eof() noexcept -> int_type {
+  return WEOF;
+}
+
+inline constexpr auto char_traits<wchar_t>::not_eof(int_type c) noexcept ->
+    int_type {
+  return (eq_int_type(c, eof()) ? 0 : c);
+}
+
+inline constexpr auto char_traits<wchar_t>::to_char_type(int_type c)
+    noexcept -> char_type {
+  return char_type(c);
+}
+
+inline constexpr auto char_traits<wchar_t>::to_int_type(char_type c)
+    noexcept -> int_type {
+  return c;
+}
+
+inline constexpr auto char_traits<wchar_t>::eq_int_type(int_type a, int_type b)
+    noexcept -> bool {
+  return a == b;
+}
+
+inline auto char_traits<wchar_t>::rfind(const char_type* s, size_t n,
+                                        const char_type& c)
+    noexcept -> const char_type* {
+  return wmemrchr(s, c, n);
+}
+
+
+
+
+
+inline constexpr auto char_traits<char16_t>::eq(char_type a, char_type b)
+    noexcept -> bool {
+  return a == b;
+}
+
+inline constexpr auto char_traits<char16_t>::lt(char_type a, char_type b)
+    noexcept -> bool {
+  return a < b;
+}
+
+inline auto char_traits<char16_t>::assign(char_type& a, const char_type& b)
+    noexcept -> void {
+  a = b;
+}
+
+inline auto char_traits<char16_t>::assign(char_type* s, size_t n, char_type c)
+    noexcept -> char_type* {
+  char_type* rv = s;
+  while (n-- > 0) *s++ = c;
+  return rv;
+}
+
+inline auto char_traits<char16_t>::move(char_type* d, const char_type* s,
+                                        size_t n) noexcept -> char_type* {
+  return static_cast<char_type*>(memmove(d, s, sizeof(char_type) * n));
+}
+
+inline auto char_traits<char16_t>::copy(char_type* d, const char_type* s,
+                                        size_t n) noexcept -> char_type* {
+  return static_cast<char_type*>(memcpy(d, s, sizeof(char_type) * n));
+}
+
+inline constexpr auto char_traits<char16_t>::eof() noexcept -> int_type {
+  return char_type(-1);
+}
+
+inline constexpr auto char_traits<char16_t>::not_eof(int_type c) noexcept ->
+    int_type {
+  return (eq_int_type(c, eof()) ? 0 : c);
+}
+
+inline constexpr auto char_traits<char16_t>::to_char_type(int_type c)
+    noexcept -> char_type {
+  return char_type(c);
+}
+
+inline constexpr auto char_traits<char16_t>::to_int_type(char_type c)
+    noexcept -> int_type {
+  return c;
+}
+
+inline constexpr auto char_traits<char16_t>::eq_int_type(
+    int_type a, int_type b) noexcept -> bool {
+  return a == b;
+}
+
+
+
+
+
+inline constexpr auto char_traits<char32_t>::eq(char_type a, char_type b)
+    noexcept -> bool {
+  return a == b;
+}
+
+inline constexpr auto char_traits<char32_t>::lt(char_type a, char_type b)
+    noexcept -> bool {
+  return a < b;
+}
+
+inline auto char_traits<char32_t>::assign(char_type& a, const char_type& b)
+    noexcept -> void {
+  a = b;
+}
+
+inline auto char_traits<char32_t>::assign(char_type* s, size_t n, char_type c)
+    noexcept -> char_type* {
+  char_type* rv = s;
+  while (n-- > 0) *s++ = c;
+  return rv;
+}
+
+inline auto char_traits<char32_t>::move(char_type* d, const char_type* s,
+                                        size_t n) noexcept -> char_type* {
+  return static_cast<char_type*>(memmove(d, s, sizeof(char_type) * n));
+}
+
+inline auto char_traits<char32_t>::copy(char_type* d, const char_type* s,
+                                        size_t n) noexcept -> char_type* {
+  return static_cast<char_type*>(memcpy(d, s, sizeof(char_type) * n));
+}
+
+inline constexpr auto char_traits<char32_t>::eof() noexcept -> int_type {
+  return char_type(-1);
+}
+
+inline constexpr auto char_traits<char32_t>::not_eof(int_type c) noexcept ->
+    int_type {
+  return (eq_int_type(c, eof()) ? 0 : c);
+}
+
+inline constexpr auto char_traits<char32_t>::to_char_type(int_type c)
+    noexcept -> char_type {
+  return char_type(c);
+}
+
+inline constexpr auto char_traits<char32_t>::to_int_type(char_type c)
+    noexcept -> int_type {
+  return c;
+}
+
+inline constexpr auto char_traits<char32_t>::eq_int_type(
+    int_type a, int_type b) noexcept -> bool {
+  return a == b;
+}
+
+
 
 
 

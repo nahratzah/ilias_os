@@ -40,11 +40,7 @@ size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n, locale_t lo
 
 
 size_t strlen(const char* s) noexcept {
-  auto r = reader<DIR_FORWARD, uint8_t>(s);
-
-  align_t v;
-  while (r.read8() != CHAR_ZERO);
-  return r.addr<char>() - 1 - s;
+  return abi::ext::strlen(s);
 }
 
 int strcmp(const char* a, const char* b) noexcept {
@@ -249,28 +245,13 @@ void* memset(void* p, int c, size_t len) noexcept {
 }
 
 void* memchr(const void* p, int c, size_t len) noexcept {
-  if (len == 0) return nullptr;  // Reader needs at least 1 readable byte.
-  auto r = reader<DIR_FORWARD, uint8_t>(p, len);
-
-  while (len > 0) {
-    auto rcc = r.read8(len);
-    if (rcc == c) return const_cast<uint8_t*>(r.addr<uint8_t>() - 1);
-    --len;
-  }
-  return nullptr;
+  return const_cast<char*>(abi::ext::memchr(static_cast<const char*>(p), len,
+                                            char(c)));
 }
 
 void* memrchr(const void* p, int c, size_t len) noexcept {
-  if (len == 0) return nullptr;  // Reader needs at least 1 readable byte.
-  auto r = reader<DIR_BACKWARD, uint8_t>(
-      reinterpret_cast<const uint8_t*>(p) + len, len);
-
-  while (len > 0) {
-    auto rcc = r.read8(len);
-    if (rcc == c) return const_cast<void*>(r.addr<void>());
-    --len;
-  }
-  return nullptr;
+  return const_cast<char*>(abi::ext::memrchr(static_cast<const char*>(p), len,
+                                             char(c)));
 }
 
 void* memccpy(void*__restrict dst, const void*__restrict src, int c,

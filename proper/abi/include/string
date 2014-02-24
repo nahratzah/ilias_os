@@ -70,13 +70,14 @@ template<> struct char_traits<wchar_t> {
 
   static constexpr bool eq(char_type, char_type) noexcept;
   static constexpr bool lt(char_type, char_type) noexcept;
-  static size_t length(const char_type*);
+  static size_t length(const char_type*) noexcept;
   static void assign(char_type&, const char_type&) noexcept;
-  static char_type* assign(char_type*, size_t, char_type);
-  static int compare(const char_type*, const char_type*, size_t);
-  static const char_type* find(const char_type*, size_t, const char_type&);
-  static char_type* move(char_type*, const char_type*, size_t);
-  static char_type* copy(char_type*, const char_type*, size_t);
+  static char_type* assign(char_type*, size_t, char_type) noexcept;
+  static int compare(const char_type*, const char_type*, size_t) noexcept;
+  static const char_type* find(const char_type*, size_t, const char_type&)
+      noexcept;
+  static char_type* move(char_type*, const char_type*, size_t) noexcept;
+  static char_type* copy(char_type*, const char_type*, size_t) noexcept;
   static constexpr int_type eof() noexcept;
   static constexpr int_type not_eof(int_type) noexcept;
   static constexpr char_type to_char_type(int_type) noexcept;
@@ -111,13 +112,14 @@ template<> struct char_traits<char16_t> {
 
   static constexpr bool eq(char_type, char_type) noexcept;
   static constexpr bool lt(char_type, char_type) noexcept;
-  static size_t length(const char_type*);
+  static size_t length(const char_type*) noexcept;
   static void assign(char_type&, const char_type&) noexcept;
-  static char_type* assign(char_type*, size_t, char_type);
-  static int compare(const char_type*, const char_type*, size_t);
-  static const char_type* find(const char_type*, size_t, const char_type&);
-  static char_type* move(char_type*, const char_type*, size_t);
-  static char_type* copy(char_type*, const char_type*, size_t);
+  static char_type* assign(char_type*, size_t, char_type) noexcept;
+  static int compare(const char_type*, const char_type*, size_t) noexcept;
+  static const char_type* find(const char_type*, size_t, const char_type&)
+      noexcept;
+  static char_type* move(char_type*, const char_type*, size_t) noexcept;
+  static char_type* copy(char_type*, const char_type*, size_t) noexcept;
   static constexpr int_type eof() noexcept;
   static constexpr int_type not_eof(int_type) noexcept;
   static constexpr char_type to_char_type(int_type) noexcept;
@@ -152,13 +154,14 @@ template<> struct char_traits<char32_t> {
 
   static constexpr bool eq(char_type, char_type) noexcept;
   static constexpr bool lt(char_type, char_type) noexcept;
-  static size_t length(const char_type*);
+  static size_t length(const char_type*) noexcept;
   static void assign(char_type&, const char_type&) noexcept;
-  static char_type* assign(char_type*, size_t, char_type);
-  static int compare(const char_type*, const char_type*, size_t);
-  static const char_type* find(const char_type*, size_t, const char_type&);
-  static char_type* move(char_type*, const char_type*, size_t);
-  static char_type* copy(char_type*, const char_type*, size_t);
+  static char_type* assign(char_type*, size_t, char_type) noexcept;
+  static int compare(const char_type*, const char_type*, size_t) noexcept;
+  static const char_type* find(const char_type*, size_t, const char_type&)
+      noexcept;
+  static char_type* move(char_type*, const char_type*, size_t) noexcept;
+  static char_type* copy(char_type*, const char_type*, size_t) noexcept;
   static constexpr int_type eof() noexcept;
   static constexpr int_type not_eof(int_type) noexcept;
   static constexpr char_type to_char_type(int_type) noexcept;

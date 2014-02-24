@@ -5,6 +5,51 @@
 _namespace_begin(std)
 
 
+auto char_traits<char16_t>::length(const char_type* s) noexcept -> size_t {
+  return abi::ext::strlen(s);
+}
+
+auto char_traits<char16_t>::compare(const char_type* a, const char_type* b,
+                                    size_t n) noexcept -> int {
+  return abi::ext::memcmp(a, b, n);
+}
+
+auto char_traits<char16_t>::find(const char_type* s, size_t n,
+                                 const char_type& c)
+    noexcept -> const char_type* {
+  return abi::ext::memchr(s, n, c);
+}
+
+auto char_traits<char16_t>::rfind(const char_type* s, size_t n,
+                                  const char_type& c)
+    noexcept -> const char_type* {
+  return abi::ext::memrchr(s, n, c);
+}
+
+
+auto char_traits<char32_t>::length(const char_type* s) noexcept -> size_t {
+  return abi::ext::strlen(s);
+}
+
+auto char_traits<char32_t>::compare(const char_type* a,
+                                    const char_type* b,
+                                    size_t n) noexcept -> int {
+  return abi::ext::memcmp(a, b, n);
+}
+
+auto char_traits<char32_t>::find(const char_type* s, size_t n,
+                                 const char_type& c)
+    noexcept -> const char_type* {
+  return abi::ext::memchr(s, n, c);
+}
+
+auto char_traits<char32_t>::rfind(const char_type* s, size_t n,
+                                  const char_type& c)
+    noexcept -> const char_type* {
+  return abi::ext::memrchr(s, n, c);
+}
+
+
 auto char_traits<char>::strfind(const char_type* haystack,
                                 size_t n_haystack,
                                 const char_type* needle,
