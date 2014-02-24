@@ -80,6 +80,12 @@ const uint8_t* memfind(const uint8_t* s_haystack, size_t n_haystack,
 }
 
 template int memcmp<uint8_t>(const uint8_t*, const uint8_t*, size_t) noexcept;
+template int memcmp<char>(const char*, const char*, size_t) noexcept;
+template int memcmp<wchar_t>(const wchar_t*, const wchar_t*, size_t) noexcept;
+template int memcmp<char16_t>(const char16_t*, const char16_t*, size_t)
+    noexcept;
+template int memcmp<char32_t>(const char32_t*, const char32_t*, size_t)
+    noexcept;
 
 
 }} /* namespace __cxxabiv1::ext */
