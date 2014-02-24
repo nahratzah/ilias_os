@@ -9,7 +9,7 @@ template<>
 auto char_traits<char>::strfind(const char_type* haystack,
                                 size_t n_haystack,
                                 const char_type* needle,
-                                size_type n_needle)
+                                size_t n_needle)
     noexcept -> const char_type* {
   return abi::ext::memfind(haystack, n_haystack, needle, n_needle);
 }
@@ -18,7 +18,7 @@ template<>
 auto char_traits<wchar_t>::strfind(const char_type* haystack,
                                    size_t n_haystack,
                                    const char_type* needle,
-                                   size_type n_needle)
+                                   size_t n_needle)
     noexcept -> const char_type* {
   return abi::ext::memfind(haystack, n_haystack, needle, n_needle);
 }
@@ -27,7 +27,7 @@ template<>
 auto char_traits<char16_t>::strfind(const char_type* haystack,
                                     size_t n_haystack,
                                     const char_type* needle,
-                                    size_type n_needle)
+                                    size_t n_needle)
     noexcept -> const char_type* {
   return abi::ext::memfind(haystack, n_haystack, needle, n_needle);
 }
@@ -36,7 +36,7 @@ template<>
 auto char_traits<char32_t>::strfind(const char_type* haystack,
                                     size_t n_haystack,
                                     const char_type* needle,
-                                    size_type n_needle)
+                                    size_t n_needle)
     noexcept -> const char_type* {
   return abi::ext::memfind(haystack, n_haystack, needle, n_needle);
 }
@@ -46,7 +46,7 @@ template<>
 auto char_traits<char>::strrfind(const char_type* haystack,
                                  size_t n_haystack,
                                  const char_type* needle,
-                                 size_type n_needle)
+                                 size_t n_needle)
     noexcept -> const char_type* {
   return abi::ext::memrfind(haystack, n_haystack, needle, n_needle);
 }
@@ -55,7 +55,7 @@ template<>
 auto char_traits<wchar_t>::strrfind(const char_type* haystack,
                                     size_t n_haystack,
                                     const char_type* needle,
-                                    size_type n_needle)
+                                    size_t n_needle)
     noexcept -> const char_type* {
   return abi::ext::memrfind(haystack, n_haystack, needle, n_needle);
 }
@@ -64,7 +64,7 @@ template<>
 auto char_traits<char16_t>::strrfind(const char_type* haystack,
                                      size_t n_haystack,
                                      const char_type* needle,
-                                     size_type n_needle)
+                                     size_t n_needle)
     noexcept -> const char_type* {
   return abi::ext::memrfind(haystack, n_haystack, needle, n_needle);
 }
@@ -73,7 +73,7 @@ template<>
 auto char_traits<char32_t>::strrfind(const char_type* haystack,
                                      size_t n_haystack,
                                      const char_type* needle,
-                                     size_type n_needle)
+                                     size_t n_needle)
     noexcept -> const char_type* {
   return abi::ext::memrfind(haystack, n_haystack, needle, n_needle);
 }
