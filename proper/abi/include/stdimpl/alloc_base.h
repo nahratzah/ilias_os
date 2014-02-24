@@ -2,11 +2,12 @@
 #define _STDIMPL_ALLOC_BASE_H_
 
 #include <cdecl.h>
+#include <memory>
 
 _namespace_begin(std)
 namespace impl {
 
-template<typename Alloc, size_t SZ = sizeof(Alloc) class alloc_base {
+template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
  public:
   using allocator_type = Alloc;
 
@@ -31,19 +32,21 @@ template<typename Alloc, size_t SZ = sizeof(Alloc) class alloc_base {
     return alloc_;
   }
 
-  allocator_traits<allocator_type>::pointer allocate_(
-      allocator_traits<allocator_type>::size_type n, void* hint = nullptr) {
+  typename allocator_traits<allocator_type>::pointer allocate_(
+      typename allocator_traits<allocator_type>::size_type n,
+      void* hint = nullptr) {
     return allocator_traits<allocator_type>::allocate(get_allocator_(),
                                                       n, hint);
   }
 
-  void deallocate_(allocator_traits<allocator_type>::pointer p,
-                   allocator_traits<allocator_type>::size_type n) {
+  void deallocate_(typename allocator_traits<allocator_type>::pointer p,
+                   typename allocator_traits<allocator_type>::size_type n) {
     allocator_traits<allocator_type>::deallocate(get_allocator_(), p, n);
   }
 
-  allocator_traits<allocator_type>::pointer allocate_dfl(
-      allocator_traits<allocator_type>::size_type n, void* hint = nullptr) {
+  typename allocator_traits<allocator_type>::pointer allocate_dfl(
+      typename allocator_traits<allocator_type>::size_type n,
+      void* hint = nullptr) {
     auto p = allocate_(n, hint);
     auto i = p;
 
@@ -57,8 +60,8 @@ template<typename Alloc, size_t SZ = sizeof(Alloc) class alloc_base {
     }
   }
 
-  void deallocate_dfl(allocator_traits<allocator_type>::pointer p,
-                      allocator_traits<allocator_type>::size_type n) {
+  void deallocate_dfl(typename allocator_traits<allocator_type>::pointer p,
+                      typename allocator_traits<allocator_type>::size_type n) {
     auto i = p + n;
     while (i-- != p)
       allocator_traits<allocator_type>::destroy(get_allocator_(), i);
@@ -99,19 +102,21 @@ template<typename Alloc> class alloc_base<Alloc, 0U>
     return static_cast<const allocator_type&>(*this);
   }
 
-  allocator_traits<allocator_type>::pointer allocate_(
-      allocator_traits<allocator_type>::size_type n, void* hint = nullptr) {
+  typename allocator_traits<allocator_type>::pointer allocate_(
+      typename allocator_traits<allocator_type>::size_type n,
+      void* hint = nullptr) {
     return allocator_traits<allocator_type>::allocate(get_allocator_(),
                                                       n, hint);
   }
 
-  void deallocate_(allocator_traits<allocator_type>::pointer p,
-                   allocator_traits<allocator_type>::size_type n) {
+  void deallocate_(typename allocator_traits<allocator_type>::pointer p,
+                   typename allocator_traits<allocator_type>::size_type n) {
     allocator_traits<allocator_type>::deallocate(get_allocator_(), p, n);
   }
 
-  allocator_traits<allocator_type>::pointer allocate_dfl(
-      allocator_traits<allocator_type>::size_type n, void* hint = nullptr) {
+  typename allocator_traits<allocator_type>::pointer allocate_dfl(
+      typename allocator_traits<allocator_type>::size_type n,
+      void* hint = nullptr) {
     auto p = allocate_(n, hint);
     auto i = p;
 
@@ -125,8 +130,8 @@ template<typename Alloc> class alloc_base<Alloc, 0U>
     }
   }
 
-  void deallocate_dfl(allocator_traits<allocator_type>::pointer p,
-                      allocator_traits<allocator_type>::size_type n) {
+  void deallocate_dfl(typename allocator_traits<allocator_type>::pointer p,
+                      typename allocator_traits<allocator_type>::size_type n) {
     auto i = p + n;
     while (i-- != p)
       allocator_traits<allocator_type>::destroy(get_allocator_(), i);
