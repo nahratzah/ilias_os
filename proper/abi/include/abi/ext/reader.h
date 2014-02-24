@@ -388,6 +388,19 @@ template<typename UInt> const UInt* memfind(const UInt* s_haystack,
   return nullptr;
 }
 
+template<typename UInt> const UInt* memrfind(const UInt* s_haystack,
+                                             size_t n_haystack,
+                                             const UInt* s_needle,
+                                             size_t n_needle) noexcept {
+  if (n_haystack < n_needle) return nullptr;
+  const UInt* s = s_haystack + n_haystack - n_needle + 1;
+  while (s-- != s_haystack) {
+    if (memcmp(s, s_needle, n_needle) == 0)
+      return s;
+  }
+  return nullptr;
+}
+
 /*
  * Specialize memfind for small integral type.
  * The function uses a histogram to reduce complexity.
