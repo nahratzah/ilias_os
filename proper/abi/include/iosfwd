@@ -1,0 +1,38 @@
+#ifndef _IOSFWD_H_
+#define _IOSFWD_H_
+
+#include <cdecl.h>
+#include <cstdint>
+#include <cstdio_misc/mbstate.h>
+
+_namespace_begin(std)
+
+
+using streamoff = _TYPES(off_t);
+
+template<typename T> class allocator;
+template<typename Char> struct char_traits;
+template<> struct char_traits<char>;
+template<> struct char_traits<wchar_t>;
+template<> struct char_traits<char16_t>;
+template<> struct char_traits<char32_t>;
+
+template<typename State> class fpos;
+
+template<typename Char, typename CharTraits = char_traits<Char>,
+         typename Alloc = allocator<Char>> class basic_string;
+
+using string = basic_string<char>;
+using wstring = basic_string<wchar_t>;
+using u16string = basic_string<char16_t>;
+using u32string = basic_string<char32_t>;
+
+using streampos = fpos<mbstate_t>;
+using wstreampos = fpos<mbstate_t>;
+using u16streampos = fpos<mbstate_t>;
+using u32streampos = fpos<mbstate_t>;
+
+
+_namespace_end(std)
+
+#endif /* _IOSFWD_H_ */
