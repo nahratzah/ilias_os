@@ -592,6 +592,11 @@ using u16string_ref = basic_string_ref<char16_t>;
 using u32string_ref = basic_string_ref<char32_t>;
 using wstring_ref = basic_string_ref<wchar_t>;
 
+extern template basic_string<char>;
+extern template basic_string<wchar_t>;
+extern template basic_string<char16_t>;
+extern template basic_string<char32_t>;
+
 
 _namespace_end(std)
 

@@ -434,4 +434,10 @@ auto char_traits<char32_t>::strrcspn(const char_type* h, size_t hlen,
 }
 
 
+template basic_string<char>;
+template basic_string<wchar_t>;
+template basic_string<char16_t>;
+template basic_string<char32_t>;
+
+
 _namespace_end(std)
