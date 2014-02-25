@@ -112,7 +112,7 @@ enum printf_len {
 struct printf_spec {
   int fieldwidth = -1;
   int precision = -1;
-  short argidx = -1;
+  short argidx = -1;  // -1 means do-not-print
   printf_flags pff = 0;
   unsigned char base : 7;
   bool uppercase : 1;
