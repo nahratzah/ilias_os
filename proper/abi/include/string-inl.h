@@ -1,3 +1,5 @@
+#pragma GCC system_header
+
 _namespace_begin(std)
 
 
@@ -349,7 +351,7 @@ basic_string<Char, Traits, Alloc>::basic_string(InputIter b, InputIter e,
 template<typename Char, typename Traits, typename Alloc>
 basic_string<Char, Traits, Alloc>::basic_string(initializer_list<char_type> il,
                                                 const allocator_type& alloc)
-: basic_string(basic_string_ref<Char, Alloc>(il.begin(), il.size()), alloc)
+: basic_string(basic_string_ref<Char, Traits>(il.begin(), il.size()), alloc)
 {}
 
 template<typename Char, typename Traits, typename Alloc>
@@ -867,8 +869,8 @@ auto basic_string<Char, Traits, Alloc>::insert(const_iterator p,
   assert(p >= begin() && p <= end());
 
   reserve(size() + n);
-  traits_type::move(p + n, p, end() - p);
-  traits_type::assign(p, n, c);
+  traits_type::move(begin() + (p - begin()) + n, p, end() - p);
+  traits_type::assign(begin() + (p - begin()), n, c);
   len_ += n;
   return begin() + (p - begin());
 }
@@ -891,7 +893,20 @@ auto basic_string<Char, Traits, Alloc>::insert(const_iterator p,
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::insert(
     const_iterator p, initializer_list<char_type> il) -> basic_string& {
-  return insert(p, basic_string_ref<Char, Traits>(il.begin(), il.size()));
+  insert(p, basic_string_ref<Char, Traits>(il.begin(), il.size()));
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto basic_string<Char, Traits, Alloc>::insert(
+    const_iterator p, basic_string_ref<Char, Traits> s) -> iterator {
+  assert(p >= begin() && p <= end());
+
+  reserve(size() + s.size());
+  traits_type::move(begin() + (p - begin()) + s.size(), p, end() - p);
+  traits_type::copy(begin() + (p - begin()), s.data(), s.size());
+  len_ += s.size();
+  return begin() + (p - begin());
 }
 
 template<typename Char, typename Traits, typename Alloc>
@@ -910,7 +925,7 @@ template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::erase(const_iterator p) -> iterator {
   assert(p >= begin() && p < end());
 
-  traits_type::move(p, p + 1U, end() - (p + 1U));
+  traits_type::move(begin() + (p - begin()), p + 1U, end() - (p + 1U));
   --len_;
   return begin() + (p - begin());
 }
@@ -920,7 +935,7 @@ auto basic_string<Char, Traits, Alloc>::erase(const_iterator b,
                                               const_iterator e) -> iterator {
   assert(begin() <= b && b <= e && e <= end());
 
-  traits_type::move(b, e, end() - e);
+  traits_type::move(begin() + (b - begin()), e, end() - e);
   len_ -= (e - b);
   return begin() + (b - begin());
 }
@@ -982,8 +997,8 @@ auto basic_string<Char, Traits, Alloc>::replace(
     throw length_error("basic_string::replace");
 
   reserve(size() - (e - b) + s.size());
-  traits_type::move(b + s.size(), e, end() - e);
-  traits_type::copy(b, s.data(), s.size());
+  traits_type::move(begin() + (b - begin()) + s.size(), e, end() - e);
+  traits_type::copy(begin() + (b - begin()), s.data(), s.size());
   len_ = len_ - (e - b) + s.size();
   return *this;
 }
@@ -1024,8 +1039,8 @@ auto basic_string<Char, Traits, Alloc>::replace(const_iterator b,
     throw length_error("basic_string::replace");
 
   reserve(size() - (e - b) + n);
-  traits_type::move(b + n, e, end() - e);
-  traits_type::assign(b, n, c);
+  traits_type::move(begin() + (b - begin()) + n, e, end() - e);
+  traits_type::assign(begin() + (b - begin()), n, c);
   len_ = len_ - (e - b) + n;
   return *this;
 }
@@ -1050,7 +1065,7 @@ template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::swap(basic_string& s) -> void {
   using std::swap;
 
-  this->impl::alloc_base<Alloc>::swap(
+  this->impl::alloc_base<Alloc>::swap_(
     static_cast<impl::alloc_base<Alloc>&>(s));
   swap(len_, s.len_);
   swap(avail_, s.avail_);
@@ -1623,7 +1638,7 @@ template<typename Char, typename Traits>
 auto basic_string_ref<Char, Traits>::find_first_of(basic_string_ref s)
     const noexcept -> size_type {
   auto p = impl::strcspn<traits_type>(data(), size(), s.data(), s.size());
-  return (p = nullptr ? npos : p - begin());
+  return (p == nullptr ? npos : p - begin());
 }
 
 template<typename Char, typename Traits>
@@ -1661,14 +1676,14 @@ template<typename Char, typename Traits>
 auto basic_string_ref<Char, Traits>::find_first_not_of(basic_string_ref s)
     const noexcept -> size_type {
   auto p = impl::strspn<traits_type>(data(), size(), s.data(), s.size());
-  return (p = nullptr ? npos : p - begin());
+  return (p == nullptr ? npos : p - begin());
 }
 
 template<typename Char, typename Traits>
 auto basic_string_ref<Char, Traits>::find_first_not_of(char_type c)
     const noexcept -> size_type {
   auto p = impl::spn<traits_type>(data(), size(), c);
-  return (p = nullptr ? npos : p - begin());
+  return (p == nullptr ? npos : p - begin());
 }
 
 template<typename Char, typename Traits>
@@ -1681,14 +1696,14 @@ template<typename Char, typename Traits>
 auto basic_string_ref<Char, Traits>::find_last_not_of(basic_string_ref s)
     const noexcept -> size_type {
   auto p = impl::strrspn<traits_type>(data(), size(), s.data(), s.size());
-  return (p = nullptr ? npos : p - begin());
+  return (p == nullptr ? npos : p - begin());
 }
 
 template<typename Char, typename Traits>
 auto basic_string_ref<Char, Traits>::find_last_not_of(char_type c)
     const noexcept -> size_type {
   auto p = impl::rspn<traits_type>(data(), size(), c);
-  return (p = nullptr ? npos : p - begin());
+  return (p == nullptr ? npos : p - begin());
 }
 
 template<typename Char, typename Traits>
@@ -1819,26 +1834,26 @@ basic_string<Char, Traits, Allocator> to_string(
 }
 
 
-namespace literals {
-namespace string_literals {
-
-
-inline string operator""(const char* s, size_t l) {
-  return string(s, l);
-}
-
-inline wstring operator""(const wchar_t* s, size_t l) {
-  return wstring(s, l);
-}
-
-inline u16string operator""(const char16_t* s, size_t l) {
-  return u16string(s, l);
-}
-
-inline u32string operator""(const char32_t* s, size_t l) {
-  return u32string(s, l);
-}
-
-
-}} /* namespace std::literals::string_literals */
 _namespace_end(std)
+inline namespace literals {
+inline namespace string_literals {
+
+
+inline std::string operator"" s(const char* s, size_t l) {
+  return std::string(s, l);
+}
+
+inline std::wstring operator"" s(const wchar_t* s, size_t l) {
+  return std::wstring(s, l);
+}
+
+inline std::u16string operator"" s(const char16_t* s, size_t l) {
+  return std::u16string(s, l);
+}
+
+inline std::u32string operator"" s(const char32_t* s, size_t l) {
+  return std::u32string(s, l);
+}
+
+
+}} /* namespace literals::string_literals */

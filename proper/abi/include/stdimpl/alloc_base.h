@@ -7,6 +7,20 @@
 _namespace_begin(std)
 namespace impl {
 
+template<typename Alloc, bool Propagate =
+         allocator_traits<Alloc>::propagate_on_container_swap::value>
+struct alloc_swap {
+  static inline void do_alloc_swap(Alloc& a, Alloc& b)
+      noexcept(noexcept(swap(a, b))) {
+    swap(a, b);
+  }
+};
+
+template<typename Alloc>
+struct alloc_swap<Alloc, false> {
+  static inline void do_alloc_swap(Alloc& a, Alloc& b) noexcept {}
+};
+
 template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
  public:
   using allocator_type = Alloc;
@@ -52,10 +66,11 @@ template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
 
     try {
       for (auto e = p + n; i != e; ++i)
-        allocator_traits<allocator_type>::construct(i);
+        allocator_traits<allocator_type>::construct(get_allocator_(), i);
       return p;
     } catch (...) {
-      while (i-- != p) allocator_traits<allocator_type>::destroy(i);
+      while (i-- != p)
+        allocator_traits<allocator_type>::destroy(get_allocator_(), i);
       throw;
     }
   }
@@ -66,6 +81,14 @@ template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
     while (i-- != p)
       allocator_traits<allocator_type>::destroy(get_allocator_(), i);
     deallocate_(p, n);
+  }
+
+  void swap_(alloc_base& o)
+      noexcept(noexcept(alloc_swap<allocator_type>::do_alloc_swap(
+        declval<allocator_type&>(), declval<allocator_type&>())))
+  {
+    alloc_swap<allocator_type>::do_alloc_swap(get_allocator_(),
+                                              o.get_allocator_());
   }
 
  private:
@@ -122,10 +145,11 @@ template<typename Alloc> class alloc_base<Alloc, 0U>
 
     try {
       for (auto e = p + n; i != e; ++i)
-        allocator_traits<allocator_type>::construct(i);
+        allocator_traits<allocator_type>::construct(get_allocator_(), i);
       return p;
     } catch (...) {
-      while (i-- != p) allocator_traits<allocator_type>::destroy(i);
+      while (i-- != p)
+        allocator_traits<allocator_type>::destroy(get_allocator_(), i);
       throw;
     }
   }
@@ -136,6 +160,14 @@ template<typename Alloc> class alloc_base<Alloc, 0U>
     while (i-- != p)
       allocator_traits<allocator_type>::destroy(get_allocator_(), i);
     deallocate_(p, n);
+  }
+
+  void swap_(alloc_base& o)
+      noexcept(noexcept(alloc_swap<allocator_type>::do_alloc_swap(
+        declval<allocator_type&>(), declval<allocator_type&>())))
+  {
+    alloc_swap<allocator_type>::do_alloc_swap(get_allocator_(),
+                                              o.get_allocator_());
   }
 };
 
