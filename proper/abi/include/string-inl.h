@@ -1819,4 +1819,26 @@ basic_string<Char, Traits, Allocator> to_string(
 }
 
 
+namespace literals {
+namespace string_literals {
+
+
+inline string operator""(const char* s, size_t l) {
+  return string(s, l);
+}
+
+inline wstring operator""(const wchar_t* s, size_t l) {
+  return wstring(s, l);
+}
+
+inline u16string operator""(const char16_t* s, size_t l) {
+  return u16string(s, l);
+}
+
+inline u32string operator""(const char32_t* s, size_t l) {
+  return u32string(s, l);
+}
+
+
+}} /* namespace std::literals::string_literals */
 _namespace_end(std)

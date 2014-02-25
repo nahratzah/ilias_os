@@ -598,6 +598,19 @@ extern template basic_string<char16_t>;
 extern template basic_string<char32_t>;
 
 
+namespace literals {
+namespace string_literals {
+
+
+inline string operator""(const char*, size_t);
+inline wstring operator""(const wchar_t*, size_t);
+inline u16string operator""(const char16_t*, size_t);
+inline u32string operator""(const char32_t*, size_t);
+
+
+}} /* namespace std::literals::string_literals */
+
+
 _namespace_end(std)
 
 #include <string-inl.h>
