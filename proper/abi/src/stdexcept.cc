@@ -57,13 +57,32 @@ const char* runtime_error::what() const noexcept {
 }
 
 
+domain_error::domain_error(const string& msg) : logic_error(msg) {}
+domain_error::domain_error(const char* msg) : logic_error(msg) {}
 domain_error::~domain_error() noexcept {}
+
+invalid_argument::invalid_argument(const string& msg) : logic_error(msg) {}
+invalid_argument::invalid_argument(const char* msg) : logic_error(msg) {}
 invalid_argument::~invalid_argument() noexcept {}
+
+length_error::length_error(const string& msg) : logic_error(msg) {}
+length_error::length_error(const char* msg) : logic_error(msg) {}
 length_error::~length_error() noexcept {}
+
+out_of_range::out_of_range(const string& msg) : logic_error(msg) {}
+out_of_range::out_of_range(const char* msg) : logic_error(msg) {}
 out_of_range::~out_of_range() noexcept {}
 
+range_error::range_error(const string& msg) : runtime_error(msg) {}
+range_error::range_error(const char* msg) : runtime_error(msg) {}
 range_error::~range_error() noexcept {}
+
+overflow_error::overflow_error(const string& msg) : runtime_error(msg) {}
+overflow_error::overflow_error(const char* msg) : runtime_error(msg) {}
 overflow_error::~overflow_error() noexcept {}
+
+underflow_error::underflow_error(const string& msg) : runtime_error(msg) {}
+underflow_error::underflow_error(const char* msg) : runtime_error(msg) {}
 underflow_error::~underflow_error() noexcept {}
 
 

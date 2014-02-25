@@ -28,32 +28,32 @@ class logic_error
 class domain_error
 : public logic_error {
  public:
-  explicit domain_error(const string& msg) : logic_error(msg) {}
-  explicit domain_error(const char* msg) : logic_error(msg) {}
+  explicit domain_error(const string&);
+  explicit domain_error(const char*);
 
   ~domain_error() noexcept override;
 };
 class invalid_argument
 : public logic_error {
  public:
-  explicit invalid_argument(const string& msg) : logic_error(msg) {}
-  explicit invalid_argument(const char* msg) : logic_error(msg) {}
+  explicit invalid_argument(const string&);
+  explicit invalid_argument(const char*);
 
   ~invalid_argument() noexcept override;
 };
 class length_error
 : public logic_error {
  public:
-  explicit length_error(const string& msg) : logic_error(msg) {}
-  explicit length_error(const char* msg) : logic_error(msg) {}
+  explicit length_error(const string&);
+  explicit length_error(const char*);
 
   ~length_error() noexcept override;
 };
 class out_of_range
 : public logic_error {
  public:
-  explicit out_of_range(const string& msg) : logic_error(msg) {}
-  explicit out_of_range(const char* msg) : logic_error(msg) {}
+  explicit out_of_range(const string&);
+  explicit out_of_range(const char*);
 
   ~out_of_range() noexcept override;
 };
@@ -77,24 +77,24 @@ class runtime_error
 class range_error
 : public runtime_error {
  public:
-  explicit range_error(const string& msg) : runtime_error(msg) {}
-  explicit range_error(const char* msg) : runtime_error(msg) {}
+  explicit range_error(const string&);
+  explicit range_error(const char*);
 
   ~range_error() noexcept override;
 };
 class overflow_error
 : public runtime_error {
  public:
-  explicit overflow_error(const string& msg) : runtime_error(msg) {}
-  explicit overflow_error(const char* msg) : runtime_error(msg) {}
+  explicit overflow_error(const string&);
+  explicit overflow_error(const char*);
 
   ~overflow_error() noexcept override;
 };
 class underflow_error
 : public runtime_error {
  public:
-  explicit underflow_error(const string& msg) : runtime_error(msg) {}
-  explicit underflow_error(const char* msg) : runtime_error(msg) {}
+  explicit underflow_error(const string&);
+  explicit underflow_error(const char*);
 
   ~underflow_error() noexcept override;
 };
