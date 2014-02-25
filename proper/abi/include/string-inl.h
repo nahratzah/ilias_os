@@ -1073,8 +1073,8 @@ auto basic_string<Char, Traits, Alloc>::swap(basic_string& s) -> void {
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::pop_back() noexcept -> void {
   assert(size() > 0);
-  traits_type::assign((*this)[len_], char_type());
   --len_;
+  traits_type::assign((*this)[len_], char_type());
 }
 
 template<typename Char, typename Traits, typename Alloc>
