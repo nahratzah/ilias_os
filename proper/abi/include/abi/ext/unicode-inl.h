@@ -212,4 +212,50 @@ inline bool unicode_conv_out<wchar_t>::is_clear() const noexcept {
 inline void unicode_conv_out<wchar_t>::reset() noexcept {}
 
 
+template<typename COut, typename CIn>
+template<typename CB>
+auto unicode_conv<COut, CIn>::operator()(CIn c, CB& cb)
+    noexcept(noexcept(std::declval<CB>()(std::declval<const COut>()))) ->
+    int {
+  auto intermediate = [&](wchar_t c)
+        noexcept(noexcept(std::declval<CB>()(std::declval<const COut>()))) ->
+        int {
+      return out_(c, cb);
+    };
+
+  return in_(c, intermediate);
+}
+
+template<typename COut, typename CIn>
+auto unicode_conv<COut, CIn>::is_clear() const noexcept -> bool {
+  return in_.is_clear() && out_.is_clear();
+}
+
+template<typename COut, typename CIn>
+auto unicode_conv<COut, CIn>::reset() noexcept -> void {
+  in_.reset();
+  out_.reset();
+}
+
+
+template<typename C>
+template<typename CB>
+auto unicode_conv<C, C>::operator()(C c, CB& cb)
+    noexcept(noexcept(std::declval<CB>()(std::declval<const C>()))) ->
+    int {
+  int err = in_(c, [](wchar_t) noexcept -> int { return 0; });
+  return (err ? err : in_(c, cb));
+}
+
+template<typename C>
+auto unicode_conv<C, C>::is_clear() const noexcept -> bool {
+  return in_.is_clear();
+}
+
+template<typename C>
+auto unicode_conv<C, C>::reset() noexcept -> void {
+  in_.reset();
+}
+
+
 }}} /* namespace __cxxabiv1::ext::<unnamed> */

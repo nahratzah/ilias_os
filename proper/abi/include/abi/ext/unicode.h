@@ -133,6 +133,30 @@ template<> class unicode_conv_out<wchar_t> {
 };
 
 
+template<typename COut, typename CIn> class unicode_conv {
+ public:
+  template<typename CB> int operator()(CIn, CB&)
+      noexcept(noexcept(std::declval<CB>()(std::declval<const COut>())));
+  bool is_clear() const noexcept;
+  void reset() noexcept;
+
+ private:
+  unicode_conv_in<CIn> in_;
+  unicode_conv_out<COut> out_;
+};
+
+template<typename C> class unicode_conv<C, C> {
+ public:
+  template<typename CB> int operator()(C, CB&)
+      noexcept(noexcept(std::declval<CB>()(std::declval<const C>())));
+  bool is_clear() const noexcept;
+  void reset() noexcept;
+
+ private:
+  unicode_conv_in<C> in_;  // For validation.
+};
+
+
 }}} /* namespace __cxxabiv1::ext::<unnamed> */
 
 #include <abi/ext/unicode-inl.h>

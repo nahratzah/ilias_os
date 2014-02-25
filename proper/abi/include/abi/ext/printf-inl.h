@@ -28,53 +28,32 @@ auto printf_renderer<Char, Traits>::get_neg_sign() const noexcept -> Char {
   return '-';
 }
 
-namespace {
-
-/* Helper for printf_renderer::append, with mismatching traits_type. */
-template<typename C, typename T1, typename T2> int render_impl(
-    printf_renderer<C, T1>& renderer, std::basic_string_ref<C, T2> s)
-    noexcept {
-  return renderer.append(std::basic_string_ref<C, T1>(s.data(), s.size()));
-}
-
-/* Helper for printf_renderer::append, with mismatching char_type. */
-template<typename C1, typename T1, typename C2, typename T2> int render_impl(
-    printf_renderer<C1, T1>& renderer, std::basic_string_ref<C2, T2> s)
-    noexcept {
-  constexpr unsigned int N = 16;
-  unicode_conv_in<C2> conv_in;
-  unicode_conv_out<C1> conv_out;
-  C1 buf[N];
-  unsigned int n;
-
-  const auto out_fn = [&](wchar_t cc) {
-      int err = 0;
-      if (n == N) {
-        err = renderer.append(std::basic_string_ref<C1, T1>(&buf[0], N));
-        n = 0;
-      }
-      buf[n++] = cc;
-      return err;
-    };
-  const auto in_fn = [&](wchar_t cc) {
-      return conv_out(cc, out_fn);
-    };
-
-  for (const auto& ic : s) {
-    int err = conv_in(ic, in_fn);
-    if (err) return err;
-  }
-  if (!conv_out.is_clear() || !conv_in.is_clear()) return _ABI_EILSEQ;
-  return renderer.append(std::basic_string_ref<C1, T1>(&buf[0], n));
-}
-
-} /* namespace __cxxabiv1::ext::<unnamed> */
-
 template<typename Char, typename Traits>
 template<typename C, typename T>
 auto printf_renderer<Char, Traits>::append(std::basic_string_ref<C, T> s)
     noexcept -> int {
-  return render_impl(*this, s);
+  constexpr unsigned int N = 16;
+  Char buf[N];
+  unsigned int n;
+
+  const auto fn = [&](wchar_t c) noexcept -> int {
+      int err = 0;
+      if (n == N) {
+        append(std::basic_string_ref<Char, Traits>(&buf[0], N));
+        n = 0;
+      }
+      buf[n++] = c;
+      return err;
+    };
+
+  unicode_conv<Char, C> conv;
+
+  for (const auto& c : s) {
+    int err = conv(c, fn);
+    if (err) return err;
+  }
+  if (!conv.is_clear()) return _ABI_EILSEQ;
+  return append(std::basic_string_ref<Char, Traits>(&buf[0], n));
 }
 
 
