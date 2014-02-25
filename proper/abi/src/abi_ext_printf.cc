@@ -98,5 +98,14 @@ template int printf_renderer<char32_t>::append(
 template int printf_renderer<char32_t>::append(
     std::basic_string_ref<char16_t>) noexcept;
 
+template int printf_arg::apply(printf_renderer<char>&,
+                               printf_spec) const noexcept;
+template int printf_arg::apply(printf_renderer<wchar_t>&,
+                               printf_spec) const noexcept;
+template int printf_arg::apply(printf_renderer<char16_t>&,
+                               printf_spec) const noexcept;
+template int printf_arg::apply(printf_renderer<char32_t>&,
+                               printf_spec) const noexcept;
+
 
 }} /* namespace __cxxabiv1::ext */

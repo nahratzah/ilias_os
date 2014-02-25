@@ -1432,5 +1432,14 @@ extern template int parse_num_spec(std::basic_string_ref<char16_t>&,
 extern template int parse_num_spec(std::basic_string_ref<char32_t>&,
                                    int*, bool*, bool*) noexcept;
 
+extern template int printf_arg::apply(printf_renderer<char>&,
+                                      printf_spec) const noexcept;
+extern template int printf_arg::apply(printf_renderer<wchar_t>&,
+                                      printf_spec) const noexcept;
+extern template int printf_arg::apply(printf_renderer<char16_t>&,
+                                      printf_spec) const noexcept;
+extern template int printf_arg::apply(printf_renderer<char32_t>&,
+                                      printf_spec) const noexcept;
+
 
 }} /* namespace __cxxabiv1::ext */
