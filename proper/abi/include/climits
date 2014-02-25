@@ -51,4 +51,6 @@
 #define SSIZE_MAX	INT_MAX
 #endif
 
+#define NL_ARGMAX	32
+
 #endif /* _CLIMITS_ */

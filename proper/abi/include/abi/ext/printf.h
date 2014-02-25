@@ -14,9 +14,6 @@ namespace __cxxabiv1 {
 namespace ext {
 
 
-#define NL_ARGMAX	128	// XXX find correct header file
-
-
 template<typename Char, typename Traits = std::char_traits<Char>>
 class printf_renderer {
  public:
