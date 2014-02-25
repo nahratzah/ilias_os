@@ -17,8 +17,6 @@ _namespace_begin(std)
 _cdecl_begin
 
 void*  memccpy(void*__restrict, const void*__restrict, int, size_t) noexcept;
-void*  memchr(const void*, int, size_t) noexcept;
-void*  memrchr(const void*, int, size_t) noexcept;
 int    memcmp(const void*, const void*, size_t) noexcept;
 void*  memcpy(void*__restrict, const void*__restrict, size_t) noexcept;
 void*  memmove(void*, const void*, size_t) noexcept;
@@ -26,7 +24,6 @@ void*  memset(void*, int, size_t) noexcept;
 char*  stpcpy(char*__restrict, const char*__restrict) noexcept;
 char*  stpncpy(char*__restrict, const char*__restrict) noexcept;
 char*  strcat(char*__restrict, const char*__restrict) noexcept;
-char*  strchr(const char*, int) noexcept;
 int    strcmp(const char*, const char*) noexcept;
 char*  strcpy(char*__restrict, const char*__restrict) noexcept;
 size_t strcspn(const char*, const char*) noexcept;
@@ -41,15 +38,58 @@ int    strncmp(const char*, const char*, size_t) noexcept;
 char*  strncpy(char*__restrict, const char*__restrict, size_t) noexcept;
 char*  strndup(const char*, size_t) noexcept;
 size_t strnlen(const char*, size_t) noexcept;
-char*  strpbrk(const char*, const char*) noexcept;
-char*  strrchr(const char*, int) noexcept;
 size_t strspn(const char*, const char*) noexcept;
-char*  strstr(const char*, const char*) noexcept;
 char*  strtok(char*__restrict, const char*__restrict) noexcept;
 char*  strtok_r(char*__restrict, const char*__restrict, char**__restrict)
          noexcept;
 void   bcopy(const void*, void*, size_t) noexcept;
 void   bzero(void*, size_t) noexcept;
+
+#ifdef __cplusplus
+# define __cpp_const const
+#else
+# define __cpp_const /**/
+#endif /* __cplusplus ... else */
+
+__cpp_const char* strchr(const char*, int) noexcept;
+__cpp_const char* strpbrk(const char*, const char*) noexcept;
+__cpp_const char* strrchr(const char*, int) noexcept;
+__cpp_const char* strstr(const char*, const char*) noexcept;
+__cpp_const void* memchr(const void*, int, size_t) noexcept;
+__cpp_const void* memrchr(const void*, int, size_t) noexcept;
+
+#ifdef __cplusplus
+_cdecl_end
+
+inline char* strchr(char* s_, int c) noexcept {
+  const char* s = s_;
+  return const_cast<char*>(strchr(s, c));
+}
+inline char* strpbrk(char* s_, const char* c) noexcept {
+  const char* s = s_;
+  return const_cast<char*>(strpbrk(s, c));
+}
+inline char* strrchr(char* s_, int c) noexcept {
+  const char* s = s_;
+  return const_cast<char*>(strrchr(s, c));
+}
+inline char* strstr(char* s_, const char* c) noexcept {
+  const char* s = s_;
+  return const_cast<char*>(strstr(s, c));
+}
+inline void* memchr(void* p_, int c, size_t n) noexcept {
+  const void* p = p_;
+  return const_cast<void*>(memchr(p, c, n));
+}
+inline void* memrchr(void* p_, int c, size_t n) noexcept {
+  const void* p = p_;
+  return const_cast<void*>(memrchr(p, c, n));
+}
+
+_cdecl_begin
+#endif
+
+#undef __cpp_const
 
 #if __has_include(<clocale>)
 /* These functions require working locale support. */

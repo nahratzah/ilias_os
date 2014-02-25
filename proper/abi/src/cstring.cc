@@ -1,3 +1,5 @@
+#define _COMPILING_CSTRING
+
 #include <abi/ext/reader.h>
 #include <abi/errno.h>
 #include <abi/memory.h>
@@ -244,14 +246,12 @@ void* memset(void* p, int c, size_t len) noexcept {
   return p;
 }
 
-void* memchr(const void* p, int c, size_t len) noexcept {
-  return const_cast<char*>(abi::ext::memchr(static_cast<const char*>(p), len,
-                                            char(c)));
+const void* memchr(const void* p, int c, size_t len) noexcept {
+  return abi::ext::memchr(static_cast<const char*>(p), len, char(c));
 }
 
-void* memrchr(const void* p, int c, size_t len) noexcept {
-  return const_cast<char*>(abi::ext::memrchr(static_cast<const char*>(p), len,
-                                             char(c)));
+const void* memrchr(const void* p, int c, size_t len) noexcept {
+  return abi::ext::memrchr(static_cast<const char*>(p), len, char(c));
 }
 
 void* memccpy(void*__restrict dst, const void*__restrict src, int c,
@@ -423,13 +423,13 @@ size_t strlcat(char*__restrict dst, const char*__restrict src, size_t len)
   return dst_len + strlcpy(dst + dst_len, src, len - dst_len);
 }
 
-char* strchr(const char* s, int c) noexcept {
+const char* strchr(const char* s, int c) noexcept {
   auto r = reader<DIR_FORWARD, uint8_t>(s);
 
   /* Get reader aligned. */
   for (unsigned int i = 0; i < r.avail(); ++i) {
     auto rcc = r.read8();
-    if (rcc == c) return const_cast<char*>(r.addr<char>() - 1);
+    if (rcc == c) return r.addr<char>() - 1;
     if (rcc == CHAR_ZERO) return nullptr;
   }
 
@@ -443,7 +443,7 @@ char* strchr(const char* s, int c) noexcept {
     const char* addr = r.addr<char>() - ALIGN;
     for (unsigned int i = 0; i < ALIGN; ++i) {
       auto rcc = consume_bytes(&rc, 1U);
-      if (rcc == c) return const_cast<char*>(addr + i);
+      if (rcc == c) return addr + i;
       if (rcc == CHAR_ZERO) return nullptr;
     }
   }
@@ -626,24 +626,24 @@ size_t strnlen(const char* s, size_t len) noexcept {
   }
 }
 
-char* strpbrk(const char* s, const char* set) noexcept {
+const char* strpbrk(const char* s, const char* set) noexcept {
   auto r = reader<DIR_FORWARD, uint8_t>(s);
 
   for (;;) {
     auto c = r.read8();
     if (c == CHAR_ZERO) return nullptr;
-    if (strchr(set, c)) return const_cast<char*>(r.addr<char>() - 1);
+    if (strchr(set, c)) return r.addr<char>() - 1;
   }
 }
 
-char* strrchr(const char* s, int c) noexcept {
+const char* strrchr(const char* s, int c) noexcept {
   auto r = reader<DIR_FORWARD, uint8_t>(s);
   const char* rv = nullptr;
 
   for (;;) {
     auto cc = r.read8();
     if (cc == c) rv = r.addr<char>() - 1;
-    if (cc == CHAR_ZERO) return const_cast<char*>(rv);
+    if (cc == CHAR_ZERO) return rv;
   }
 }
 
@@ -656,7 +656,7 @@ size_t strspn(const char* s, const char* set) noexcept {
   return r.addr<char>() - 1 - s;
 }
 
-char* strstr(const char* haystack, const char* needle) noexcept {
+const char* strstr(const char* haystack, const char* needle) noexcept {
   constexpr size_t histogram_sz = UINT8_MAX + 1U;
   ssize_t histogram[histogram_sz];
   size_t needle_len = 0;  // Length of needle, for backtracking.
@@ -699,7 +699,7 @@ char* strstr(const char* haystack, const char* needle) noexcept {
     if (nz == 0 &&
         memcmp(tail.addr<void>(), needle,
                head.addr<uint8_t>() - tail.addr<uint8_t>()) == 0)
-      return const_cast<char*>(tail.addr<char>());
+      return tail.addr<char>();
 
     const auto head_c = head.read8();
     if (head_c == CHAR_ZERO) return nullptr;
