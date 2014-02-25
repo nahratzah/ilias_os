@@ -12,6 +12,7 @@ class bad_alloc
 : public exception
 {
  public:
+  bad_alloc() noexcept;
   ~bad_alloc() noexcept override;
   const char* what() const noexcept override;
 };
@@ -20,6 +21,7 @@ class bad_array_new_length
 : public exception
 {
  public:
+  bad_array_new_length() noexcept;
   ~bad_array_new_length() noexcept override;
   const char* what() const noexcept override;
 };
