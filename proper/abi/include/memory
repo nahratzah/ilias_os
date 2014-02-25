@@ -10,6 +10,7 @@
 
 _namespace_begin(std)
 
+
 template<typename T> T* addressof(T&) noexcept;
 
 template<typename T> class allocator;
