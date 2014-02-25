@@ -5,6 +5,7 @@ COMPILER_FLAGS +=	-ffreestanding					\
 			-O3						\
 			-D_KERNEL=1					\
 			-Wno-tautological-compare			\
+			-Wno-c++1y-extensions				\
 			-ftls-model=initial-exec
 
 CFLAGS_32 +=		-target i386
@@ -20,6 +21,7 @@ LDFLAGS +=		-nostdlib					\
 TEST_COMPILER_FLAGS +=	-integrated-as					\
 			-O3						\
 			-Wno-tautological-compare			\
+			-Wno-c++1y-extensions				\
 			-fno-builtin					\
 			-D_TEST						\
 			-ftls-model=initial-exec
