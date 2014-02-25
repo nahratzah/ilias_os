@@ -332,7 +332,6 @@ basic_string<Char, Traits, Alloc>::basic_string(size_type n, char_type c,
   reserve(n);
   len_ = n;
   traits_type::assign(begin(), n, c);
-  traits_type::assign((*this)[n], char_type());
 }
 
 template<typename Char, typename Traits, typename Alloc>
@@ -377,7 +376,6 @@ basic_string<Char, Traits, Alloc>::basic_string(
   reserve(s.size());
   len_ = s.size();
   traits_type::copy(begin(), s.data(), s.size());
-  traits_type::assign((*this)[s.size()], char_type());
 }
 
 template<typename Char, typename Traits, typename Alloc>
@@ -409,7 +407,6 @@ auto basic_string<Char, Traits, Alloc>::operator=(char_type c) ->
     basic_string& {
   reserve(1U);
   traits_type::assign((*this)[0], c);
-  traits_type::assign((*this)[1], char_type());
   len_ = 1U;
   return *this;
 }
@@ -433,7 +430,6 @@ auto basic_string<Char, Traits, Alloc>::operator=(
   reserve(s.size());
   len_ = s.size();
   traits_type::copy(begin(), s.data(), s.size());
-  traits_type::assign((*this)[s.size()], char_type());
   return *this;
 }
 
@@ -538,7 +534,6 @@ auto basic_string<Char, Traits, Alloc>::resize(size_type sz, char_type c) ->
 
   reserve(sz);
   traits_type::assign(begin() + len_, sz - len_, c);
-  traits_type::assign((*this)[sz], char_type());
   len_ = sz;
 }
 
@@ -550,10 +545,10 @@ auto basic_string<Char, Traits, Alloc>::capacity() const noexcept ->
 
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::reserve(size_type sz) -> void {
-  if (capacity() < sz) {
+  if (capacity() <= sz) {
     pointer s = this->allocate_dfl(sz + 1U, this);
 
-    traits_type::copy(s, data(), size() + 1U);
+    traits_type::copy(s, data(), size());
     if (avail_ > immed_size) this->deallocate_dfl(data_.s, avail_);
     data_.s = s;
     avail_ = sz + 1U;
@@ -562,10 +557,7 @@ auto basic_string<Char, Traits, Alloc>::reserve(size_type sz) -> void {
 
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::clear() noexcept -> void {
-  if (avail_ > immed_size) this->deallocate_dfl(data_.s, avail_);
-  assign(data_.immed[0], char_type());
   len_ = 0U;
-  avail_ = immed_size;
 }
 
 template<typename Char, typename Traits, typename Alloc>
@@ -583,7 +575,7 @@ auto basic_string<Char, Traits, Alloc>::shrink_to_fit() -> void {
     const data_t tmp = data_;
 
     avail_ = immed_size;
-    traits_type::copy(begin(), tmp.s, size() + 1U);
+    traits_type::copy(begin(), tmp.s, size());
     this->deallocate_dfl(tmp.s, avail);
   } else if (avail_ > size() + 1U) {
     /* Reduce allocated space to minimum. */
@@ -594,7 +586,7 @@ auto basic_string<Char, Traits, Alloc>::shrink_to_fit() -> void {
       return;
     }
 
-    traits_type::copy(s, data(), size() + 1U);
+    traits_type::copy(s, data(), size());
     this->deallocate_dfl(data_.s, avail_);
     avail_ = size() + 1U;
     data_.s = s;
@@ -665,7 +657,6 @@ auto basic_string<Char, Traits, Alloc>::operator+=(char_type c) ->
     basic_string& {
   reserve(len_ + 1U);
   traits_type::assign((*this)[len_++], c);
-  traits_type::assign((*this)[len_], char_type());
   return *this;
 }
 
@@ -681,7 +672,6 @@ auto basic_string<Char, Traits, Alloc>::operator+=(
   reserve(len_ + s.size());
   traits_type::copy(begin() + len_, s.data(), s.size());
   len_ += s.size();
-  traits_type::assign((*this)[len_], char_type());
   return *this;
 }
 
@@ -717,7 +707,6 @@ auto basic_string<Char, Traits, Alloc>::append(size_type n, char_type c) ->
   reserve(size() + n);
   traits_type::assign(begin() + size(), n, c);
   len_ += n;
-  traits_type::assign((*this)[len_], char_type());
   return *this;
 }
 
@@ -780,7 +769,6 @@ auto basic_string<Char, Traits, Alloc>::assign(size_type n, char_type c) ->
     basic_string& {
   reserve(n);
   traits_type::assign(begin(), n, c);
-  traits_type::assign((*this)[n], char_type());
   len_ = n;
   return *this;
 }
@@ -803,7 +791,6 @@ auto basic_string<Char, Traits, Alloc>::assign(
     basic_string_ref<Char, Traits> s) -> basic_string& {
   reserve(s.size());
   traits_type::copy(begin(), s.data(), s.size());
-  traits_type::assign((*this)[s.size()], char_type());
   len_ = s.size();
   return *this;
 }
@@ -845,7 +832,7 @@ auto basic_string<Char, Traits, Alloc>::insert(
 
   reserve(size() + s.size());
   traits_type::move(begin() + pos + s.size(), begin() + pos,
-                    size() + 1U - pos);
+                    size() - pos);
   traits_type::copy(begin() + pos, s.data(), s.size());
   len_ += s.size();
   return *this;
@@ -867,7 +854,7 @@ auto basic_string<Char, Traits, Alloc>::insert(size_type pos,
   if (n > max_size() - size()) throw length_error("basic_string::insert");
 
   reserve(size() + n);
-  traits_type::move(begin() + pos + n, begin() + pos, size() + 1U - pos);
+  traits_type::move(begin() + pos + n, begin() + pos, size() - pos);
   traits_type::assign(begin() + pos, n, c);
   len_ += n;
   return *this;
@@ -880,7 +867,7 @@ auto basic_string<Char, Traits, Alloc>::insert(const_iterator p,
   assert(p >= begin() && p <= end());
 
   reserve(size() + n);
-  traits_type::move(p + n, p, end() - p + 1);
+  traits_type::move(p + n, p, end() - p);
   traits_type::assign(p, n, c);
   len_ += n;
   return begin() + (p - begin());
@@ -914,7 +901,7 @@ auto basic_string<Char, Traits, Alloc>::erase(size_type pos, size_type len) ->
 
   len = min(size() - pos, len);
   size_type pl = pos + len;
-  traits_type::move(begin() + pos, begin() + pl, size() - pl + 1U);
+  traits_type::move(begin() + pos, begin() + pl, size() - pl);
   len_ -= len;
   return *this;
 }
@@ -923,7 +910,7 @@ template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::erase(const_iterator p) -> iterator {
   assert(p >= begin() && p < end());
 
-  traits_type::move(p, p + 1U, size() - (p - begin()) + 1U - 1U);
+  traits_type::move(p, p + 1U, end() - (p + 1U));
   --len_;
   return begin() + (p - begin());
 }
@@ -933,7 +920,7 @@ auto basic_string<Char, Traits, Alloc>::erase(const_iterator b,
                                               const_iterator e) -> iterator {
   assert(begin() <= b && b <= e && e <= end());
 
-  traits_type::move(b, e, size() - (e - begin()) + 1U);
+  traits_type::move(b, e, end() - e);
   len_ -= (e - b);
   return begin() + (b - begin());
 }
@@ -995,7 +982,7 @@ auto basic_string<Char, Traits, Alloc>::replace(
     throw length_error("basic_string::replace");
 
   reserve(size() - (e - b) + s.size());
-  traits_type::move(b + s.size(), e, size() - (e - begin()) + 1U);
+  traits_type::move(b + s.size(), e, end() - e);
   traits_type::copy(b, s.data(), s.size());
   len_ = len_ - (e - b) + s.size();
   return *this;
@@ -1036,10 +1023,10 @@ auto basic_string<Char, Traits, Alloc>::replace(const_iterator b,
   if (max_size() - size() + (e - b) < 1)
     throw length_error("basic_string::replace");
 
-  reserve(size() - (e - b) + 1);
-  traits_type::move(b + 1, e, size() - (e - begin()) + 1U);
+  reserve(size() - (e - b) + n);
+  traits_type::move(b + n, e, end() - e);
   traits_type::assign(b, n, c);
-  len_ = len_ - (e - b) + 1;
+  len_ = len_ - (e - b) + n;
   return *this;
 }
 
@@ -1073,13 +1060,13 @@ auto basic_string<Char, Traits, Alloc>::swap(basic_string& s) -> void {
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::pop_back() noexcept -> void {
   assert(size() > 0);
-  --len_;
-  traits_type::assign((*this)[len_], char_type());
+  if (size() > 0) --len_;
 }
 
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::c_str() const noexcept ->
     const char_type* {
+  traits_type::assign(const_cast<char_type&>(*end()), char_type());
   return data();
 }
 
