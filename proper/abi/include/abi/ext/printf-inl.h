@@ -30,52 +30,42 @@ auto printf_renderer<Char, Traits>::get_neg_sign() const noexcept -> Char {
 
 namespace {
 
-template<typename WC, typename T1, typename T2>
-int render_impl(printf_renderer<WC, T1>& renderer,
-                std::basic_string_ref<char, T2> s) noexcept {
-  constexpr unsigned int N = 64;
-  WC buf[N];
-
-  while (!s.empty()) {
-    auto n = std::min(N, s.size());
-    for (unsigned int i = 0; i < n; ++i) buf[i] = s[i];
-    int err = renderer.append(std::basic_string_ref<WC, T1>(buf, n));
-    if (err != 0) return err;
-    s = s.substr(n);
-  }
-  return 0;
+/* Helper for printf_renderer::append, with mismatching traits_type. */
+template<typename C, typename T1, typename T2> int render_impl(
+    printf_renderer<C, T1>& renderer, std::basic_string_ref<C, T2> s)
+    noexcept {
+  return renderer.append(std::basic_string_ref<C, T1>(s.data(), s.size()));
 }
 
-template<typename T1, typename T2>
-int render_impl(printf_renderer<char, T1>& renderer,
-                std::basic_string_ref<wchar_t, T2> s) noexcept {
-  constexpr unsigned int N = 64;
-  char buf[N];
+/* Helper for printf_renderer::append, with mismatching char_type. */
+template<typename C1, typename T1, typename C2, typename T2> int render_impl(
+    printf_renderer<C1, T1>& renderer, std::basic_string_ref<C2, T2> s)
+    noexcept {
+  constexpr unsigned int N = 16;
+  unicode_conv_in<C2> conv_in;
+  unicode_conv_out<C1> conv_out;
+  C1 buf[N];
+  unsigned int n;
 
-  while (!s.empty()) {
-    int err;
-    if (s[0] > 127) {
-      unsigned int i = 0;
-      wchar_t c = s[0];
-      buf[N - ++i] = (0x80 | (c & 0x3f));
-      c /= 0x40;
-      int bits_avail = 5;
-      while ((1 << bits_avail) <= c) {
-        buf[N - ++i] = (0x80 | (c & 0x3f));
-        --bits_avail;
+  const auto out_fn = [&](wchar_t cc) {
+      int err = 0;
+      if (n == N) {
+        err = renderer.append(std::basic_string_ref<C1, T1>(&buf[0], N));
+        n = 0;
       }
-      buf[N - ++i] = ((0xffU - ((2U << bits_avail) - 1U)) | c);
-      err = renderer.append(std::basic_string_ref<char, T1>(&buf[N - i], i));
-      s = s.substr(1);
-    } else {
-      unsigned int i;
-      for (i = 0; i < std::min(N, s.size()) && s[i] <= 127; ++i) buf[i] = s[i];
-      err = renderer.append(std::basic_string_ref<char, T1>(buf, i));
-      s = s.substr(i);
-    }
+      buf[n++] = cc;
+      return err;
+    };
+  const auto in_fn = [&](wchar_t cc) {
+      return conv_out(cc, out_fn);
+    };
+
+  for (const auto& ic : s) {
+    int err = conv_in(ic, in_fn);
     if (err) return err;
   }
-  return 0;
+  if (!conv_out.is_clear() || !conv_in.is_clear()) return _ABI_EILSEQ;
+  return renderer.append(std::basic_string_ref<C1, T1>(&buf[0], n));
 }
 
 } /* namespace __cxxabiv1::ext::<unnamed> */

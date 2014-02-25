@@ -3,6 +3,7 @@
 
 #include <abi/abi.h>
 #include <abi/panic.h>
+#include <abi/ext/unicode.h>
 #include <cstdarg>
 #include <cerrno>
 #include <cstdarg>
