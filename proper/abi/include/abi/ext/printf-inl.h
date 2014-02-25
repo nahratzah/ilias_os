@@ -162,11 +162,12 @@ template<> struct render<PFT_CHAR> {
   template<typename Char, typename Traits> int operator()(
       printf_renderer<Char, Traits>&, char, printf_spec) const noexcept;
 };
-#if 0 // XXX implement
 template<> struct render<PFT_WINT_T> {
   using type = wint_t;
+
+  template<typename Char, typename Traits> int operator()(
+      printf_renderer<Char, Traits>&, wint_t, printf_spec) const noexcept;
 };
-#endif
 
 /* Floating point types. */
 #if 0 // XXX implement
@@ -811,14 +812,37 @@ int render<PFT_CHAR>::operator()(printf_renderer<Char, Traits>& renderer,
                                  char c_arg, printf_spec spec) const noexcept {
   int pad_len = (spec.fieldwidth > 1 ? spec.fieldwidth - 1 : 0);
   int error;
-  Char c = c_arg;
+  char c = c_arg;
 
   /* Print spaces to the left, unless left justifying output. */
   if (!(spec.pff & PFF_LEFT_JUSTIFY) &&
       (error = render_spaces(renderer, pad_len))) return error;
 
   /* Print character. */
-  if ((error = renderer.append(std::basic_string_ref<Char, Traits>(&c, 1))))
+  if ((error = renderer.append(std::basic_string_ref<char>(&c, 1))))
+    return error;
+
+  /* Print spaces to the left, iff left justifying output. */
+  if ((spec.pff & PFF_LEFT_JUSTIFY) &&
+      (error = render_spaces(renderer, pad_len))) return error;
+
+  return 0;
+}
+
+template<typename Char, typename Traits>
+int render<PFT_WINT_T>::operator()(printf_renderer<Char, Traits>& renderer,
+                                 wint_t c_arg, printf_spec spec)
+    const noexcept {
+  int pad_len = (spec.fieldwidth > 1 ? spec.fieldwidth - 1 : 0);
+  int error;
+  wchar_t c = c_arg;
+
+  /* Print spaces to the left, unless left justifying output. */
+  if (!(spec.pff & PFF_LEFT_JUSTIFY) &&
+      (error = render_spaces(renderer, pad_len))) return error;
+
+  /* Print character. */
+  if ((error = renderer.append(std::basic_string_ref<wchar_t>(&c, 1))))
     return error;
 
   /* Print spaces to the left, iff left justifying output. */
