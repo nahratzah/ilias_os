@@ -55,17 +55,30 @@ extern template class printf_renderer<char16_t>;
 extern template class printf_renderer<char32_t>;
 
 extern template int vxprintf(printf_renderer<char>&,
-                             std::basic_string_ref<char>,
+                             typename printf_renderer<char>::string_type,
                              va_list) noexcept;
 extern template int vxprintf(printf_renderer<wchar_t>&,
-                             std::basic_string_ref<wchar_t>,
+                             typename printf_renderer<wchar_t>::string_type,
                              va_list) noexcept;
 extern template int vxprintf(printf_renderer<char16_t>&,
-                             std::basic_string_ref<char16_t>,
+                             typename printf_renderer<char16_t>::string_type,
                              va_list) noexcept;
 extern template int vxprintf(printf_renderer<char32_t>&,
-                             std::basic_string_ref<char32_t>,
+                             typename printf_renderer<char32_t>::string_type,
                              va_list) noexcept;
+
+extern template int vxprintf(printf_renderer<char>&,
+                             typename printf_renderer<char>::string_type,
+                             ...) noexcept;
+extern template int vxprintf(printf_renderer<wchar_t>&,
+                             typename printf_renderer<wchar_t>::string_type,
+                             ...) noexcept;
+extern template int vxprintf(printf_renderer<char16_t>&,
+                             typename printf_renderer<char16_t>::string_type,
+                             ...) noexcept;
+extern template int vxprintf(printf_renderer<char32_t>&,
+                             typename printf_renderer<char32_t>::string_type,
+                             ...) noexcept;
 
 
 }} /* namespace __cxxabiv1::ext */

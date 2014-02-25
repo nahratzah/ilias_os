@@ -22,13 +22,81 @@ template class printf_renderer<char16_t>;
 template class printf_renderer<char32_t>;
 
 template int vxprintf(printf_renderer<char>&,
-                      std::basic_string_ref<char>, va_list) noexcept;
+                      typename printf_renderer<char>::string_type,
+                      va_list) noexcept;
 template int vxprintf(printf_renderer<wchar_t>&,
-                      std::basic_string_ref<wchar_t>, va_list) noexcept;
+                      typename printf_renderer<wchar_t>::string_type,
+                      va_list) noexcept;
 template int vxprintf(printf_renderer<char16_t>&,
-                      std::basic_string_ref<char16_t>, va_list) noexcept;
+                      typename printf_renderer<char16_t>::string_type,
+                      va_list) noexcept;
 template int vxprintf(printf_renderer<char32_t>&,
-                      std::basic_string_ref<char32_t>, va_list) noexcept;
+                      typename printf_renderer<char32_t>::string_type,
+                      va_list) noexcept;
+
+template int vxprintf(printf_renderer<char>&,
+                      typename printf_renderer<char>::string_type,
+                      ...) noexcept;
+template int vxprintf(printf_renderer<wchar_t>&,
+                      typename printf_renderer<wchar_t>::string_type,
+                      ...) noexcept;
+template int vxprintf(printf_renderer<char16_t>&,
+                      typename printf_renderer<char16_t>::string_type,
+                      ...) noexcept;
+template int vxprintf(printf_renderer<char32_t>&,
+                      typename printf_renderer<char32_t>::string_type,
+                      ...) noexcept;
+
+template int deduce_printf_spec(std::basic_string_ref<char>&,
+                                printf_spec*, printf_type*) noexcept;
+template int deduce_printf_spec(std::basic_string_ref<wchar_t>&,
+                                printf_spec*, printf_type*) noexcept;
+template int deduce_printf_spec(std::basic_string_ref<char16_t>&,
+                                printf_spec*, printf_type*) noexcept;
+template int deduce_printf_spec(std::basic_string_ref<char32_t>&,
+                                printf_spec*, printf_type*) noexcept;
+
+template int parse_num(std::basic_string_ref<char>&) noexcept;
+template int parse_num(std::basic_string_ref<wchar_t>&) noexcept;
+template int parse_num(std::basic_string_ref<char16_t>&) noexcept;
+template int parse_num(std::basic_string_ref<char32_t>&) noexcept;
+
+template int parse_num_spec(std::basic_string_ref<char>&,
+                            int*, bool*, bool*) noexcept;
+template int parse_num_spec(std::basic_string_ref<wchar_t>&,
+                            int*, bool*, bool*) noexcept;
+template int parse_num_spec(std::basic_string_ref<char16_t>&,
+                            int*, bool*, bool*) noexcept;
+template int parse_num_spec(std::basic_string_ref<char32_t>&,
+                            int*, bool*, bool*) noexcept;
+
+template int printf_renderer<char>::append(
+    std::basic_string_ref<wchar_t>) noexcept;
+template int printf_renderer<char>::append(
+    std::basic_string_ref<char16_t>) noexcept;
+template int printf_renderer<char>::append(
+    std::basic_string_ref<char32_t>) noexcept;
+
+template int printf_renderer<wchar_t>::append(
+    std::basic_string_ref<char>) noexcept;
+template int printf_renderer<wchar_t>::append(
+    std::basic_string_ref<char16_t>) noexcept;
+template int printf_renderer<wchar_t>::append(
+    std::basic_string_ref<char32_t>) noexcept;
+
+template int printf_renderer<char16_t>::append(
+    std::basic_string_ref<char>) noexcept;
+template int printf_renderer<char16_t>::append(
+    std::basic_string_ref<wchar_t>) noexcept;
+template int printf_renderer<char16_t>::append(
+    std::basic_string_ref<char32_t>) noexcept;
+
+template int printf_renderer<char32_t>::append(
+    std::basic_string_ref<char>) noexcept;
+template int printf_renderer<char32_t>::append(
+    std::basic_string_ref<wchar_t>) noexcept;
+template int printf_renderer<char32_t>::append(
+    std::basic_string_ref<char16_t>) noexcept;
 
 
 }} /* namespace __cxxabiv1::ext */
