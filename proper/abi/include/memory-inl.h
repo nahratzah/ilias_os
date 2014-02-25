@@ -31,12 +31,12 @@ template<typename T>
 auto allocator<T>::allocate(size_type n,
                             allocator<void>::const_pointer hint) -> pointer {
   if (n >= max_size()) throw std::bad_alloc();
-  return ::operator new(n * sizeof(value_type));
+  return static_cast<pointer>(::operator new(n * sizeof(value_type)));
 }
 
 template<typename T>
 auto allocator<T>::deallocate(pointer p, size_type n) -> void {
-  ::operator delete(p, n * sizeof(value_type));
+  ::operator delete(p);
 }
 
 template<typename T>
@@ -89,6 +89,14 @@ template<typename T>
 void allocator_traits<Alloc>::destroy(Alloc& alloc, T* p)
     noexcept(noexcept(impl::alloc_traits<Alloc>::destroy(alloc, p))) {
   impl::alloc_traits<Alloc>::destroy(alloc, p);
+}
+
+template<typename Alloc>
+auto allocator_traits<Alloc>::max_size(const Alloc& a)
+    noexcept(noexcept(impl::alloc_traits<Alloc>::max_size(a))) ->
+    size_type
+{
+  return impl::alloc_traits<Alloc>::max_size(a);
 }
 
 

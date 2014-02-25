@@ -11,8 +11,50 @@ template<typename T> class pointer_traits;  // See <memory>
 namespace impl {
 
 
+struct alloc_traits_construct_yes {};
+struct alloc_traits_construct_no {};
+
+template<typename Alloc, typename T, typename... Args>
+struct alloc_traits_construct_choice {
+ private:
+  template<typename RV = decltype(declval<Alloc&>().construct(declval<T*>(),
+                                              declval<Args>()...),
+                                  alloc_traits_construct_yes())>
+  static RV fn();
+  static alloc_traits_construct_no fn(...);
+
+ public:
+  using type = decltype(fn());
+};
+
+template<typename Choice> struct alloc_traits_construct;
+
+template<>
+struct alloc_traits_construct<alloc_traits_construct_yes> {
+  template<typename Alloc, typename T, typename... Args>
+  static void construct(Alloc& a, T* p, Args&&... args)
+      noexcept(noexcept(a.construct(p, std::forward<Args>(args)...))) {
+    a.construct(p, std::forward<Args>(args)...);
+  }
+};
+
+template<>
+struct alloc_traits_construct<alloc_traits_construct_no> {
+  template<typename Alloc, typename T, typename... Args>
+  static void construct(Alloc& a, T* p, Args&&... args)
+      noexcept(noexcept(::new(p) T(std::forward<Args>(args)...))) {
+    ::new(static_cast<void*>(p)) T(std::forward<Args>(args)...);
+  }
+};
+
+
 template<typename Alloc> struct alloc_traits {
  private:
+  /* Use alloc_traits_construct above. */
+  template<typename T, typename... Args> using construct_impl =
+      alloc_traits_construct<
+        typename alloc_traits_construct_choice<Alloc, T, Args...>::type>;
+
   /* Reference type selector. */
   template<typename A> static auto select_reference_(A = declval<Alloc>()) ->
       typename A::reference;
@@ -117,10 +159,11 @@ template<typename Alloc> struct alloc_traits {
 
  public:
   /* Select allocate method. */
-  template<typename A>
-  static auto allocate(Alloc& a, size_type n, const_void_pointer hint,
-                       A& = declval<Alloc>()) ->
-      decltype(declval<A>().allocate(n, hint)) {
+  template<typename A = decltype(
+      declval<Alloc&>().allocate(declval<size_type>(),
+                                 declval<const_void_pointer>()))>
+  static auto allocate(Alloc& a, size_type n, const_void_pointer hint) ->
+      A {
     return a.allocate(n, hint);
   }
 
@@ -134,30 +177,39 @@ template<typename Alloc> struct alloc_traits {
   /* Select construct method. */
   template<typename T, typename... Args>
   static auto construct(Alloc& a, T* p, Args&&... args)
-      noexcept(noexcept(a.construct(p, std::forward<Args>(args)...))) ->
-      decltype(a.construct(p, std::forward<Args>(args)...)) {
-    return a.construct(p, std::forward<Args>(args)...);
-  }
-
-  template<typename T, typename... Args>
-  static void construct(Alloc& a, T* p, Args&&... args)
-      noexcept(noexcept(::new (static_cast<void*>(p))
-                              T(std::forward<Args>(args)...))) {
-    ::new (static_cast<void*>(p)) T(std::forward<Args>(args)...);
+      noexcept(noexcept(construct_impl<T, Args...>::construct(
+        a, p, std::forward<Args>(args)...))) ->
+      void {
+    return construct_impl<T, Args...>::construct(
+	a, p, std::forward<Args>(args)...);
   }
 
   /* Select destroy method. */
-  template<typename T>
-  static auto destroy(Alloc& a, T* p)
+  template<typename T, typename F>
+  static auto destroy(Alloc& a, T* p,
+      F = std::declval<decltype(a.destroy(p))>())
       noexcept(noexcept(a.destroy(p))) ->
       decltype(a.destroy(p)) {
     return a.destroy(p);
   }
 
   template<typename T>
-  static void destroy(Alloc& a, T* p)
+  static void destroy(Alloc& a, T* p, ...)
       noexcept(noexcept(p->~T())) {
     p->~T();
+  }
+
+  /* Select max_size method. */
+  template<typename F>
+  static auto max_size(const Alloc& a,
+      F = std::declval<decltype(a.max_size())>())
+      noexcept(noexcept(a.max_size())) ->
+      decltype(a.max_size()) {
+    return a.max_size();
+  }
+
+  static constexpr auto max_size(const Alloc&, ...) noexcept -> size_type {
+    return numeric_limits<size_type>::max();
   }
 };
 

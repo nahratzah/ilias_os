@@ -119,6 +119,9 @@ template<typename Alloc> struct allocator_traits {
 
   template<typename T> static void destroy(Alloc& alloc, T* p)
       noexcept(noexcept(impl::alloc_traits<Alloc>::destroy(alloc, p)));
+
+  static size_type max_size(const Alloc& a)
+      noexcept(noexcept(impl::alloc_traits<Alloc>::max_size(a)));
 };
 
 
