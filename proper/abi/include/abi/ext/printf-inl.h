@@ -238,7 +238,7 @@ class printf_arg {
  public:
   template<typename Char, typename Traits> int apply(
       printf_renderer<Char, Traits>&, printf_spec) const noexcept;
-  int read(va_list&) noexcept;
+  template<typename T> int read(T&) noexcept;
   int assign_type(printf_type) noexcept;
   int as_int(int*) const noexcept;
 
@@ -1034,7 +1034,8 @@ int printf_arg::apply(printf_renderer<Char, Traits>& renderer,
   return error;
 }
 
-int printf_arg::read(va_list& ap) noexcept {
+template<typename T>
+int printf_arg::read(T& ap) noexcept {
   int error = 0;
 
   switch (pft_) {
