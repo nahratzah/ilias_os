@@ -1271,8 +1271,8 @@ int vxprintf(printf_renderer<Char, Traits>& renderer,
              std::basic_string_ref<Char, Traits> fmt, va_list ap) noexcept {
   int lit_count = 0;
   int argsize = 0;
-  std::basic_string_ref<Char, Traits> lit[NL_ARGMAX];
   std::basic_string_ref<Char, Traits> tail;
+  std::basic_string_ref<Char, Traits> lit[NL_ARGMAX];
   printf_arg va[NL_ARGMAX];
   printf_spec specs[NL_ARGMAX];
 
