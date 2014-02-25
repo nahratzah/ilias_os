@@ -1,5 +1,3 @@
-#define _COMPILING_CSTRING
-
 #include <abi/ext/reader.h>
 #include <abi/errno.h>
 #include <abi/memory.h>
