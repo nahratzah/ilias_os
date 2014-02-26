@@ -14,6 +14,7 @@ SRCS += abi/src/abi_memory.cc
 SRCS +=	abi/src/abi_ref_cstr.cc
 SRCS +=	abi/src/abi_semaphore.cc
 SRCS +=	abi/src/abi_typeinfo.cc
+SRCS += abi/src/atomic.cc
 SRCS += abi/src/cstdlib.cc
 SRCS += abi/src/cstdio.cc
 SRCS += abi/src/cstring.cc
