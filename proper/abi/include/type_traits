@@ -1,0 +1,176 @@
+#ifndef _TYPE_TRAITS_H_
+#define _TYPE_TRAITS_H_
+
+#include <cdecl.h>
+#include <abi/abi.h>
+#include <abi/ext/log2.h>
+#include <cstddef_misc/size_ptrdiff.h>
+#include <stdimpl/combine_align.h>
+
+_namespace_begin(std)
+
+
+template<typename T, T v> struct integral_constant {
+  using value_type = T;
+  static constexpr value_type value = v;
+  using type = integral_constant<T, v>;
+
+  constexpr operator value_type() const { return value; }
+  constexpr value_type operator()() const { return value; }
+};
+
+using true_type = integral_constant<bool, true>;
+using false_type = integral_constant<bool, false>;
+
+template<typename T> struct is_void;
+template<typename T> struct is_null_pointer;
+template<typename T> struct is_integral;
+template<typename T> struct is_floating_point;
+template<typename T> struct is_array;
+template<typename T> struct is_pointer;
+template<typename T> struct is_lvalue_reference;
+template<typename T> struct is_rvalue_reference;
+template<typename T> struct is_member_object_pointer;
+template<typename T> struct is_member_function_pointer;
+template<typename T> struct is_enum;
+template<typename T> struct is_union;
+template<typename T> struct is_class;
+template<typename T> struct is_function;
+
+template<typename T> struct is_reference;
+template<typename T> struct is_arithmetic;
+template<typename T> struct is_fundamental;
+template<typename T> struct is_object;
+template<typename T> struct is_scalar;
+template<typename T> struct is_compound;
+template<typename T> struct is_member_pointer;
+
+template<typename T> struct is_const;
+template<typename T> struct is_volatile;
+template<typename T> struct is_trivial;
+template<typename T> struct is_trivially_copyable;
+template<typename T> struct is_standard_layout;
+template<typename T> struct is_pod;
+template<typename T> struct is_literal_type;
+template<typename T> struct is_empty;
+template<typename T> struct is_polymorphic;
+template<typename T> struct is_abstract;
+
+template<typename T> struct is_signed;
+template<typename T> struct is_unsigned;
+
+template<typename T, typename... Args> struct is_constructible;
+template<typename T> struct is_default_constructible;
+template<typename T> struct is_copy_constructible;
+template<typename T> struct is_move_constructible;
+
+template<typename T, typename U> struct is_assignable;
+template<typename T> struct is_copy_assignable;
+template<typename T> struct is_move_assignable;
+template<typename T> struct is_destructible;
+
+template<typename T, typename... Args> struct is_trivially_constructible;
+template<typename T> struct is_trivially_default_constructible;
+template<typename T> struct is_trivially_copy_constructible;
+template<typename T> struct is_trivially_move_constructible;
+
+template<typename T, typename... Args> struct is_trivially_assignable;
+template<typename T> struct is_trivially_copy_assignable;
+template<typename T> struct is_trivially_move_assignable;
+template<typename T> struct is_trivially_destructible;
+
+template<typename T, typename... Args> struct is_nothrow_constructible;
+template<typename T> struct is_nothrow_default_constructible;
+template<typename T> struct is_nothrow_copy_constructible;
+template<typename T> struct is_nothrow_move_constructible;
+
+template<typename T, typename... Args> struct is_nothrow_assignable;
+template<typename T> struct is_nothrow_copy_assignable;
+template<typename T> struct is_nothrow_move_assignable;
+template<typename T> struct is_nothrow_destructible;
+template<typename T> struct has_virtual_destructor;
+
+template<typename T> struct alignment_of;
+template<typename T> struct rank;
+template<typename T, unsigned I = 0> struct extent;
+
+template<typename T, typename U> struct is_same;
+template<typename Base, typename Derived> struct is_base_of;
+template<typename From, typename To> struct is_convertible;
+
+template<typename T> struct remove_const;
+template<typename T> struct remove_volatile;
+template<typename T> struct remove_cv;
+template<typename T> struct add_const;
+template<typename T> struct add_volatile;
+template<typename T> struct add_cv;
+
+template<typename T> using remove_const_t = typename remove_const<T>::type;
+template<typename T> using remove_volatile_t =
+    typename remove_volatile<T>::type;
+template<typename T> using remove_cv_t = typename remove_cv<T>::type;
+template<typename T> using add_const_t = typename add_const<T>::type;
+template<typename T> using add_volatile_t = typename add_volatile<T>::type;
+template<typename T> using add_cv_t = typename add_cv<T>::type;
+
+template<typename T> struct remove_reference;
+template<typename T> struct add_lvalue_reference;
+template<typename T> struct add_rvalue_reference;
+
+template<typename T> using remove_reference_t =
+    typename remove_reference<T>::type;
+template<typename T> using add_lvalue_reference_t =
+    typename add_lvalue_reference<T>::type;
+template<typename T> using add_rvalue_reference_t =
+    typename add_rvalue_reference<T>::type;
+
+template<typename T> struct make_signed;
+template<typename T> struct make_unsigned;
+
+template<typename T> using make_signed_t = typename make_signed<T>::type;
+template<typename T> using make_unsigned_t = typename make_unsigned<T>::type;
+
+template<typename T> struct remove_extent;
+template<typename T> struct remove_all_extents;
+
+template<typename T> using remove_extent_t = typename remove_extent<T>::type;
+template<typename T> using remove_all_extents_t =
+    typename remove_all_extents<T>::type;
+
+template<typename T> struct remove_pointer;
+template<typename T> struct add_pointer;
+
+template<typename T> using remove_pointer_t = typename remove_pointer<T>::type;
+template<typename T> using add_pointer_t = typename add_pointer<T>::type;
+
+template<size_t Len, size_t Align = 
+         (size_t(1) << abi::ext::log2_down(Len) < alignof(abi::max_align_t) ?
+          size_t(1) << abi::ext::log2_down(Len) : alignof(abi::max_align_t)) >
+    struct aligned_storage;
+template<size_t Len, typename... Types> struct aligned_union;
+template<typename T> struct decay;
+template<bool, typename T = void> struct enable_if;
+template<bool, typename T, typename F> struct conditional;
+template<typename... T> struct common_type;
+template<typename T> struct underlying_type;
+template<typename T> class result_of;  // Not defined (specialized below).
+template<typename F, typename... ArgTypes> class result_of<F(ArgTypes...)>;
+
+template<size_t Len, size_t Align = alignof(abi::max_align_t)>
+    using aligned_storage_t = typename aligned_storage<Len, Align>::type;
+template<size_t Len, typename... Types> using aligned_union_t =
+    typename aligned_union<Len, Types...>::type;
+template<typename T> using decay_t = typename decay<T>::type;
+template<bool B, typename T = void> using enable_if_t =
+    typename enable_if<B, T>::type;
+template<bool B, typename T, typename F> using conditional_t =
+    typename conditional<B, T, F>::type;
+template<typename... T> using common_type_t = typename common_type<T...>::type;
+template<typename T> using result_of_t = typename result_of<T>::type;
+
+
+_namespace_end(std)
+
+#include <type_traits-inl.h>
+
+#endif /* _TYPE_TRAITS_H_ */

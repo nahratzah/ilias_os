@@ -19,7 +19,8 @@ class __dyn_cast_request {
   friend __dyn_cast_response;
 
  public:
-  __dyn_cast_request(const void*, const std::type_info&, const std::type_info&,
+  __dyn_cast_request(const void*, const _namespace(std)::type_info&,
+                     const _namespace(std)::type_info&,
                      ptrdiff_t = -1) noexcept;
   __dyn_cast_request(const __dyn_cast_request&) = default;
   __dyn_cast_request& operator=(const __dyn_cast_request&) = default;
@@ -31,8 +32,8 @@ class __dyn_cast_request {
 
  private:
   const void* subject_;
-  const std::type_info& subject_ti_;
-  const std::type_info& target_ti_;
+  const _namespace(std)::type_info& subject_ti_;
+  const _namespace(std)::type_info& target_ti_;
   bool is_cross_cast_ = false;
   bool skip_v_base_ = false;  // Skip virtual bases in __has_base()
 };

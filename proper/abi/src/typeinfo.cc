@@ -1,6 +1,6 @@
 #include <typeinfo>
 
-namespace std {
+_namespace_begin(std)
 
 
 /*
@@ -38,4 +38,4 @@ bool type_info::__is_function_p() const noexcept {
 }
 
 
-} /* namespace std */
+_namespace_end(std)

@@ -18,7 +18,7 @@ struct alloc_swap {
 
 template<typename Alloc>
 struct alloc_swap<Alloc, false> {
-  static inline void do_alloc_swap(Alloc& a, Alloc& b) noexcept {}
+  static inline void do_alloc_swap(Alloc&, Alloc&) noexcept {}
 };
 
 template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
@@ -85,7 +85,7 @@ template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
 
   void swap_(alloc_base& o)
       noexcept(noexcept(alloc_swap<allocator_type>::do_alloc_swap(
-        declval<allocator_type&>(), declval<allocator_type&>())))
+        get_allocator_(), o.get_allocator_())))
   {
     alloc_swap<allocator_type>::do_alloc_swap(get_allocator_(),
                                               o.get_allocator_());
@@ -164,7 +164,7 @@ template<typename Alloc> class alloc_base<Alloc, 0U>
 
   void swap_(alloc_base& o)
       noexcept(noexcept(alloc_swap<allocator_type>::do_alloc_swap(
-        declval<allocator_type&>(), declval<allocator_type&>())))
+        get_allocator_(), o.get_allocator_())))
   {
     alloc_swap<allocator_type>::do_alloc_swap(get_allocator_(),
                                               o.get_allocator_());

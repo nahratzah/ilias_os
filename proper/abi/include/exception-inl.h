@@ -1,4 +1,4 @@
-namespace std {
+_namespace_begin(std)
 
 
 constexpr exception_ptr::exception_ptr(nullptr_t) noexcept {}
@@ -70,12 +70,12 @@ template<typename T> struct add_nested<T, true> {
     combined& operator=(const combined&) = default;
     ~combined() = default;
 
-    combined(T&& t) : T(std::forward<T>(t)) {}
+    combined(T&& t) : T(forward<T>(t)) {}
   };
 
  public:
   combined create(T&& t) {
-    return combined(std::forward<T>(t));
+    return combined(forward<T>(t));
   }
 };
 
@@ -93,7 +93,7 @@ template<typename T> void throw_with_nested(T&& t) {
   using U = typename remove_reference<T>::type;
   using impl = add_nested<U, is_base_of<nested_exception, U>::value>;
 
-  throw impl::create(std::forward<T>(t));
+  throw impl::create(forward<T>(t));
 }
 
 template<typename E> void rethrow_if_nested(const E& e) {
@@ -102,4 +102,4 @@ template<typename E> void rethrow_if_nested(const E& e) {
 }
 
 
-} /* namespace std */
+_namespace_end(std)

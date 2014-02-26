@@ -1,0 +1,154 @@
+#ifndef _UTILITY_H_
+#define _UTILITY_H_
+
+#include <cdecl.h>
+#include <type_traits>
+#include <stdimpl/utility_get.h>
+#include <stdimpl/utility_mkpair.h>
+#include <stdimpl/utility_seq.h>
+
+_namespace_begin(std)
+namespace rel_ops {
+
+
+template<typename T> bool operator!=(const T& a, const T& b)
+    noexcept(noexcept(!(a == b)));
+template<typename T> bool operator>(const T& a, const T& b)
+    noexcept(noexcept(b < a));
+template<typename T> bool operator<=(const T& a, const T& b)
+    noexcept(noexcept(!(a > b)));
+template<typename T> bool operator>=(const T& a, const T& b)
+    noexcept(noexcept(!(a < b)));
+
+
+} /* namespace std::rel_ops */
+
+
+template<typename T> void swap(T& a, T& b)
+    noexcept(is_nothrow_move_constructible<T>::value &&
+             is_nothrow_move_assignable<T>::value);
+template<typename T, size_t N> void swap(T (&a)[N], T (&b)[N])
+    noexcept(noexcept(swap(*a, *b)));
+
+template<typename T, typename U = T> T exchange(T&, U&&);
+
+template<typename T> constexpr T&& forward(remove_reference_t<T>&) noexcept;
+template<typename T> constexpr T&& forward(remove_reference_t<T>&&) noexcept;
+
+template<typename T> constexpr remove_reference_t<T>&& move(T&& t) noexcept;
+
+template<typename T>
+constexpr conditional_t<!is_nothrow_move_constructible<T>::value &&
+                        is_copy_constructible<T>::value,
+                        const T&, T&&>
+move_if_noexcept(T& x) noexcept;
+
+template<typename T> add_rvalue_reference_t<T> declval() noexcept;
+
+
+template<typename T1, typename T2> struct pair;
+
+template<typename T1, typename T2>
+constexpr bool operator==(const pair<T1, T2>&, const pair<T1, T2>&);
+template<typename T1, typename T2>
+constexpr bool operator<(const pair<T1, T2>&, const pair<T1, T2>&);
+template<typename T1, typename T2>
+constexpr bool operator!=(const pair<T1, T2>&, const pair<T1, T2>&);
+template<typename T1, typename T2>
+constexpr bool operator>(const pair<T1, T2>&, const pair<T1, T2>&);
+template<typename T1, typename T2>
+constexpr bool operator<=(const pair<T1, T2>&, const pair<T1, T2>&);
+template<typename T1, typename T2>
+constexpr bool operator>=(const pair<T1, T2>&, const pair<T1, T2>&);
+
+template<typename T1, typename T2>
+void swap(pair<T1, T2>& x, pair<T1, T2>& y) noexcept(noexcept(x.swap(y)));
+
+template<typename T1, typename T2>
+constexpr auto make_pair(T1&&, T2&&) ->
+    pair<impl::pair_elem_t<T1>, impl::pair_elem_t<T2>>;
+
+
+template<typename T> struct tuple_size;
+template<size_t I, class T> struct tuple_element;
+
+template<typename T1, typename T2> struct tuple_size<std::pair<T1, T2>>;
+template<typename T1, typename T2> struct tuple_element<0, std::pair<T1, T2>>;
+template<typename T1, typename T2> struct tuple_element<1, std::pair<T1, T2>>;
+
+template<size_t I, class T1, class T2>
+constexpr auto get(std::pair<T1, T2>&) noexcept ->
+    typename tuple_element<I, std::pair<T1, T2>>::type&;
+template<size_t I, class T1, class T2>
+constexpr auto get(std::pair<T1, T2>&&) noexcept ->
+    typename tuple_element<I, std::pair<T1, T2>>::type&&;
+template<size_t I, class T1, class T2>
+constexpr auto get(const std::pair<T1, T2>&) noexcept ->
+    const typename tuple_element<I, std::pair<T1, T2>>::type&;
+template<class T1, class T2> T1& get(std::pair<T1, T2>&) noexcept;
+template<class T1, class T2> const T1& get(const std::pair<T1, T2>&) noexcept;
+template<class T1, class T2> T1&& get(std::pair<T1, T2>&&) noexcept;
+template<class T1, class T2> T2& get(std::pair<T1, T2>&) noexcept;
+template<class T1, class T2> const T2& get(const std::pair<T1, T2>&) noexcept;
+template<class T1, class T2> T2&& get(std::pair<T1, T2>&&) noexcept;
+
+
+struct piecewise_construct_t {};
+constexpr piecewise_construct_t piecewise_construct = piecewise_construct_t();
+template<typename...> class tuple;  // See header <tuple>
+
+
+template<typename T, T...> struct integer_sequence;
+template<size_t... I> using index_sequence = integer_sequence<size_t, I...>;
+
+
+template<typename T, T N> using make_integer_sequence =
+    typename impl::extend_sequence<integer_sequence<T>, N>::type;
+template<size_t N> using make_index_sequence =
+    make_integer_sequence<size_t, N>;
+
+template<typename... T> using index_sequence_for =
+    make_index_sequence<sizeof...(T)>;
+
+
+template<typename T1, typename T2> struct pair {
+  using first_type = T1;
+  using second_type = T2;
+
+  first_type first;
+  second_type second;
+
+  pair(const pair&) = default;
+  pair(pair&&) = default;
+  constexpr pair();
+  constexpr pair(const first_type&, const second_type&);
+  template<typename U, typename V> constexpr pair(U&&, V&&);
+  template<typename U, typename V> constexpr pair(const pair<U, V>&);
+  template<typename U, typename V> constexpr pair(pair<U, V>&&);
+  template<typename... Args1, typename... Args2> pair(
+      piecewise_construct_t, tuple<Args1...>, tuple<Args2...>);
+
+  pair& operator=(const pair&) = default;
+  template<typename U, typename V> pair& operator=(const pair<U, V>&);
+  pair& operator=(pair&&)
+      noexcept(is_nothrow_move_assignable<first_type>::value &&
+               is_nothrow_move_assignable<second_type>::value);
+  template<typename U, typename V> pair& operator=(pair<U, V>&&);
+
+  void swap(pair& o)
+      noexcept(noexcept(swap(first, o.first)) &&
+               noexcept(swap(second, o.second)));
+
+ private:
+  template<typename F, typename S, size_t... I, size_t... J>
+  pair(piecewise_construct_t, F&&, S&&,
+       index_sequence<I...>,
+       index_sequence<J...>);
+};
+
+
+_namespace_end(std)
+
+#include <utility-inl.h>
+
+#endif /* _UTILITY_H_ */

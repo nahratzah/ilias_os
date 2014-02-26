@@ -1,4 +1,4 @@
-namespace std {
+_namespace_begin(std)
 
 
 inline type_info::type_info(const char* type_name)
@@ -27,4 +27,4 @@ inline _TYPES(size_t) type_info::hash_code() const noexcept {
 }
 
 
-} /* namespace std */
+_namespace_end(std)

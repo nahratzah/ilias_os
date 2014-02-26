@@ -4,12 +4,15 @@
 #if !defined(__cplusplus)
 # define _namespace_begin(X)	/* C does not have namespaces */
 # define _namespace_end(X)	/* C does not have namespaces */
+# define _namespace(X)		/* C does not have namespaces */
 #elif defined(_TEST)
 # define _namespace_begin(X)	namespace test_##X {
 # define _namespace_end(X)	}
+# define _namespace(X)		test_##X
 #else
 # define _namespace_begin(X)	namespace X {
 # define _namespace_end(X)	}
+# define _namespace(X)		X
 #endif
 
 #if defined(_TEST)
