@@ -1,7 +1,10 @@
 #include <abi/linker.h>
+#include <abi/panic.h>
+#include <abi/ext/atomic.h>
 #include <atomic>
 #include <cassert>
 #include <cstring>
+#include <new>
 
 namespace __cxxabiv1 {
 namespace {
@@ -25,7 +28,8 @@ semaphore rtdt_spl{ 1U };
 
 void *__dso_handle = &__dso_handle;
 
-int __cxa_at_exit(void (*fn)(void*) noexcept, void* arg, void* dso_handle) noexcept {
+int __cxa_atexit(void (*fn)(void*) noexcept, void* arg, void* dso_handle)
+    noexcept {
   rt_dtor v{ fn, arg, dso_handle };
   if (!fn) return 1;
 
@@ -113,6 +117,59 @@ void __cxa_finalize_dso(const void* handle) noexcept {
   /* Execute all todo-queued items. */
   for (rt_dtor* elem = &todo[0]; elem != &todo[todo_len]; ++elem)
     (*elem->fn)(elem->arg);
+}
+
+void __cxa_pure_virtual() noexcept {
+  panic("pure virtual function called");
+  for (;;);
+}
+
+void __cxa_deleted_virtual() noexcept {
+  panic("deleted virtual function called");
+  for (;;);
+}
+
+namespace {
+
+uint8_t* cxa_guard_mark_byte(int64_t* g_) noexcept {
+  return reinterpret_cast<uint8_t*>(g_);
+}
+
+std::atomic<uint8_t>& cxa_guard_mutex(int64_t* g_) noexcept {
+  static_assert(sizeof(std::atomic<uint8_t>) == sizeof(uint8_t),
+      "__cxa_guard_* implementation fails, due to oversized atomic<uint8_t>");
+  return reinterpret_cast<std::atomic<uint8_t>*>(g_)[4];
+}
+
+} /* namespace __cxxabiv1::<unnamed> */
+
+int __cxa_guard_acquire(int64_t* g_) noexcept {
+  auto& lock = cxa_guard_mutex(g_);
+
+  uint8_t lock_zero = 0;
+  while (!lock.compare_exchange_weak(lock_zero, 1,
+                                     std::memory_order_acquire,
+                                     std::memory_order_relaxed)) {
+    lock_zero = 0;
+    abi::ext::pause();
+  }
+
+  auto rv = cxa_guard_mark_byte(g_);
+  if (rv) lock.store(0, std::memory_order_relaxed);
+  return !rv;
+}
+
+void __cxa_guard_release(int64_t* g_) noexcept {
+  *cxa_guard_mark_byte(g_) = 1;
+  cxa_guard_mutex(g_).store(0, std::memory_order_release);
+}
+
+void __cxa_guard_abort(int64_t* g_) noexcept {
+  cxa_guard_mutex(g_).store(0, std::memory_order_release);
+}
+
+void __cxa_throw_bad_array_new_length() {
+  throw std::bad_array_new_length();
 }
 
 } /* namespace __cxxabiv1 */

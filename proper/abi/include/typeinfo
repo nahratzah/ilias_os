@@ -1,11 +1,12 @@
 #ifndef _TYPEINFO_
 #define _TYPEINFO_
 
+#include <cdecl.h>
 #include <abi/abi.h>
 #include <abi/hashcode.h>
 #include <exception>
 
-namespace std {
+_namespace_begin(std)
 
 
 class type_info {
@@ -36,6 +37,7 @@ class bad_cast
 : public exception
 {
  public:
+  bad_cast() noexcept;
   ~bad_cast() noexcept override;
   const char* what() const noexcept override;
 };
@@ -45,12 +47,13 @@ class bad_typeid
 : public exception
 {
  public:
+  bad_typeid() noexcept;
   ~bad_typeid() noexcept override;
   const char* what() const noexcept override;
 };
 
 
-} /* namespace std */
+_namespace_end(std)
 
 #include <typeinfo-inl.h>
 

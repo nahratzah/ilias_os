@@ -1,6 +1,6 @@
 #include <typeinfo>
 
-namespace std {
+_namespace_begin(std)
 
 
 /*
@@ -13,6 +13,7 @@ static_assert(sizeof(type_info) == 2 * sizeof(void*),
 type_info::~type_info() noexcept {}
 
 
+bad_cast::bad_cast() noexcept {}
 bad_cast::~bad_cast() noexcept {}
 
 const char* bad_cast::what() const noexcept {
@@ -20,6 +21,7 @@ const char* bad_cast::what() const noexcept {
 }
 
 
+bad_typeid::bad_typeid() noexcept {}
 bad_typeid::~bad_typeid() noexcept {}
 
 const char* bad_typeid::what() const noexcept {
@@ -36,4 +38,4 @@ bool type_info::__is_function_p() const noexcept {
 }
 
 
-} /* namespace std */
+_namespace_end(std)

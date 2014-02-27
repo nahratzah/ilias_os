@@ -5,10 +5,10 @@ all: kernel
 
 # Import lists of sources.
 include abi/Makefile.inc
-#.include "freestanding/Makefile.inc"
-#.include "c_util/Makefile.inc"
-#.include "sys/Makefile.inc"
-include contrib/freestanding/libcxx/Makefile.inc
+#include "freestanding/Makefile.inc"
+#include "c_util/Makefile.inc"
+#include "sys/Makefile.inc"
+#include contrib/freestanding/libcxx/Makefile.inc
 
 # Import build rules.
 include Makefile.rules
@@ -18,7 +18,7 @@ include Makefile.rules
 64.kernel: ${OBJS_64} amd64.ld
 	${LD} -T amd64.ld ${LDFLAGS} -o $@ ${OBJS_64}
 kernel: ${OBJS_LOADER} loader.ld
-	ld -o $@ -T loader.ld ${OBJS_LOADER}
+	${LD} -o $@ -T loader.ld ${OBJS_LOADER}
 
 32.kgz: 32.kernel
 64.kgz: 64.kernel

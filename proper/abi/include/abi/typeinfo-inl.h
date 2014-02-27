@@ -3,26 +3,27 @@ namespace __cxxabiv1 {
 
 inline __fundamental_type_info::__fundamental_type_info(const char* name)
     noexcept
-: std::type_info(name)
+: _namespace(std)::type_info(name)
 {}
 
-inline __pbase_type_info::__pbase_type_info(const char* type_name,
-                                            unsigned int flags,
-                                            const std::type_info& pti) noexcept
-: std::type_info(type_name),
+inline __pbase_type_info::__pbase_type_info(
+    const char* type_name, unsigned int flags,
+    const _namespace(std)::type_info& pti) noexcept
+: _namespace(std)::type_info(type_name),
   __flags(flags),
   __pointee(&pti)
 {}
 
-inline __pointer_type_info::__pointer_type_info(const char* type_name,
-                                                unsigned int flags,
-                                                const std::type_info& pti)
+inline __pointer_type_info::__pointer_type_info(
+    const char* type_name, unsigned int flags,
+    const _namespace(std)::type_info& pti)
     noexcept
 : __pbase_type_info(type_name, flags, pti)
 {}
 
 inline __pointer_to_member_type_info::__pointer_to_member_type_info(
-  const char* type_name, unsigned int flags, const std::type_info& pti,
+  const char* type_name, unsigned int flags,
+  const _namespace(std)::type_info& pti,
   const __class_type_info& ctx) noexcept
 : __pbase_type_info(type_name, flags, pti),
   __context(&ctx)

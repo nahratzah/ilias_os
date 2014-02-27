@@ -1,3 +1,6 @@
+#ifndef _ABI_EXT_ATOMIC_H_
+#define _ABI_EXT_ATOMIC_H_
+
 namespace __cxxabiv1 {
 namespace ext {
 namespace {
@@ -15,3 +18,5 @@ inline void pause() noexcept {
 }
 
 }}} /* namespace __cxxabiv1::ext::<unnamed> */
+
+#endif /* _ABI_EXT_ATOMIC_H_ */

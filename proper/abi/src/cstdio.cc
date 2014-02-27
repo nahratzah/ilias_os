@@ -79,7 +79,7 @@ int vprintf(const char*__restrict, va_list) noexcept;
 int vsnprintf(char*__restrict s, size_t sz, const char*__restrict fmt,
               va_list ap) noexcept {
   /* Local renderer implementation. */
-  class vsn_renderer : public abi::ext::printf_renderer {
+  class vsn_renderer : public abi::ext::printf_renderer<char> {
    public:
     vsn_renderer(char* out, size_t outsz) noexcept
     : out_(outsz == 0 ? nullptr: out),
@@ -94,7 +94,7 @@ int vsnprintf(char*__restrict s, size_t sz, const char*__restrict fmt,
     char* out_;
     size_t spc_;
 
-    int do_append(abi::ext::c_string_piece sp) noexcept override {
+    int do_append(string_ref sp) noexcept override {
       if (out_) {
         if (sp.size() > spc_) sp = sp.substr(0, spc_);
         memcpy(out_, sp.data(), sp.size());
@@ -123,7 +123,7 @@ int vsnprintf(char*__restrict s, size_t sz, const char*__restrict fmt,
 int vsprintf(char*__restrict s, const char*__restrict fmt, va_list ap)
     noexcept {
   /* Local renderer implementation. */
-  class vs_renderer : public abi::ext::printf_renderer {
+  class vs_renderer : public abi::ext::printf_renderer<char> {
    public:
     explicit vs_renderer(char* out) noexcept
     : out_(out)
@@ -136,7 +136,7 @@ int vsprintf(char*__restrict s, const char*__restrict fmt, va_list ap)
    private:
     char* out_;
 
-    int do_append(abi::ext::c_string_piece sp) noexcept override {
+    int do_append(string_ref sp) noexcept override {
       memcpy(out_, sp.data(), sp.size());
       out_ += sp.size();
       return 0;
@@ -160,7 +160,7 @@ int vsprintf(char*__restrict s, const char*__restrict fmt, va_list ap)
 
 int vasprintf(char** sptr, const char*__restrict fmt, va_list ap) noexcept {
   /* Local renderer implementation. */
-  class vas_renderer : public abi::ext::printf_renderer {
+  class vas_renderer : public abi::ext::printf_renderer<char> {
    public:
     vas_renderer(size_t sz = 64) noexcept
     : s_(nullptr),
@@ -194,7 +194,7 @@ int vasprintf(char** sptr, const char*__restrict fmt, va_list ap) noexcept {
     char* s_end_;  // First unused position of result string.
     size_t s_avail_;  // Bytes available at s_end_.
 
-    int do_append(abi::ext::c_string_piece sp) noexcept override {
+    int do_append(string_ref sp) noexcept override {
       if (s_avail_ < sp.size()) {
         const auto len = (s_end_ - s_);
 

@@ -1,0 +1,78 @@
+#ifndef _ALGORITHM_
+#define _ALGORITHM_
+
+#include <initializer_list>
+
+_namespace_begin(std)
+
+template<typename T>
+auto min(const T& a, const T& b) -> const T& {
+  return (a < b ? a : b);
+}
+
+template<typename T>
+auto max(const T& a, const T& b) -> const T& {
+  return (a > b ? a : b);
+}
+
+template<typename T, typename Comp>
+auto min(const T& a, const T& b, Comp cmp) -> const T& {
+  return (cmp(b, a) ? b : a);
+}
+
+template<typename T, typename Comp>
+auto max(const T& a, const T& b, Comp cmp) -> const T& {
+  return (cmp(a, b) ? b : a);
+}
+
+template<typename T>
+auto min(initializer_list<T> il) -> T {
+  T* ptr = nullptr;
+  for (T& i : il) {
+    if (ptr == nullptr)
+      ptr = &i;
+    else
+      ptr = &min(*ptr, i);
+  }
+  return *ptr;
+}
+
+template<typename T>
+auto max(initializer_list<T> il) -> T {
+  T* ptr = nullptr;
+  for (T& i : il) {
+    if (ptr == nullptr)
+      ptr = &i;
+    else
+      ptr = &max(*ptr, i);
+  }
+  return *ptr;
+}
+
+template<typename T, typename Comp>
+auto min(initializer_list<T> il, Comp cmp) -> T {
+  T* ptr = nullptr;
+  for (T& i : il) {
+    if (ptr == nullptr)
+      ptr = &i;
+    else
+      ptr = &min(*ptr, i, cmp);
+  }
+  return *ptr;
+}
+
+template<typename T, typename Comp>
+auto max(initializer_list<T> il, Comp cmp) -> T {
+  T* ptr = nullptr;
+  for (T& i : il) {
+    if (ptr == nullptr)
+      ptr = &i;
+    else
+      ptr = &max(*ptr, i, cmp);
+  }
+  return *ptr;
+}
+
+_namespace_end(std)
+
+#endif /* _ALGORITHM_ */

@@ -1,17 +1,19 @@
 #ifndef _NEW_
 #define _NEW_
 
+#include <cdecl.h>
 #include <cstddef>
 #include <exception>
 #include <cdecl.h>
 
-namespace std {
+_namespace_begin(std)
 
 
 class bad_alloc
 : public exception
 {
  public:
+  bad_alloc() noexcept;
   ~bad_alloc() noexcept override;
   const char* what() const noexcept override;
 };
@@ -20,6 +22,7 @@ class bad_array_new_length
 : public exception
 {
  public:
+  bad_array_new_length() noexcept;
   ~bad_array_new_length() noexcept override;
   const char* what() const noexcept override;
 };
@@ -38,7 +41,7 @@ void __throw_bad_alloc() __attribute__((__noreturn__));
 _cdecl_end
 
 
-} /* namespace std */
+_namespace_end(std)
 
 
 void* operator new(std::size_t);

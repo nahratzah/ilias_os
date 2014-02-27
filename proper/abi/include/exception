@@ -1,11 +1,12 @@
 #ifndef _EXCEPTION_
 #define _EXCEPTION_
 
+#include <cdecl.h>
 #include <cstddef>
 #include <type_traits>
 #include <utility>
 
-namespace std {
+_namespace_begin(std)
 
 
 class exception_ptr;
@@ -84,7 +85,7 @@ template<typename T> void throw_with_nested(T&&) __attribute__((__noreturn__));
 template<typename E> void rethrow_if_nested(const E&);
 
 
-} /* namespace std */
+_namespace_end(std)
 
 #include <exception-inl.h>
 

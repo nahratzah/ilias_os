@@ -1,7 +1,10 @@
 #include <abi/errno.h>
 
 namespace __cxxabiv1 {
-thread_local int errno;
+
+#ifdef _TEST
+int errno;
+#endif
 
 #define ERR_STR(e)	#e
 const char*const sys_errlist[] = {

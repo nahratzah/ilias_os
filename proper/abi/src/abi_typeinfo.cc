@@ -27,20 +27,20 @@ bool __pbase_type_info::__is_pointer_p() const noexcept {
 
 
 __has_base_result __class_type_info::__has_base(
-    const void* v, const void* p, const std::type_info& p_ti,
+    const void* v, const void* p, const _namespace(std)::type_info& p_ti,
     bool) const noexcept {
   return (p == v && *this == p_ti ? __has_base_non_virtual : __has_base_no);
 }
 
 __has_base_result __si_class_type_info::__has_base(
-    const void* v, const void* p, const std::type_info& p_ti,
+    const void* v, const void* p, const _namespace(std)::type_info& p_ti,
     bool) const noexcept {
   if (p == v && *this == p_ti) return __has_base_non_virtual;
   return __base_type->__has_base(v, p, p_ti);
 }
 
 __has_base_result __vmi_class_type_info::__has_base(
-    const void* v, const void* p, const std::type_info& p_ti,
+    const void* v, const void* p, const _namespace(std)::type_info& p_ti,
     bool skip_virtual) const noexcept {
   if (p == v && *this == p_ti) return __has_base_non_virtual;
 

@@ -1,6 +1,7 @@
 #ifndef _ABI_EXT_READER_H_
 #define _ABI_EXT_READER_H_
 
+#include <cdecl.h>
 #include <abi/abi.h>
 #include <cstdint>
 
@@ -176,112 +177,8 @@ enum direction {
   DIR_BACKWARD
 };
 
-#if 0
-/*
- * Memory reader.
- *
- * Reads bytes (preferable in readN mode, returning align_t)
- * from memory.  Effort is expended to use the largest memory
- * access as possible (width of 1 register).  Because of this,
- * at any time two registers will be held in memory, shifted
- * as appropriate for the current address.
- *
- * Reads are given a hint about how many more bytes are (likely)
- * to be read, allowing the reader to prefetch data into its
- * cache lines.
- */
-class reader {
- public:
-  reader() = default;
-  reader(const reader&) = default;
-  reader& operator=(const reader&) = default;
 
-  inline reader(direction dir, const void* addr) noexcept
-  : addr_(reinterpret_cast<uintptr_t>(addr)),
-    dir_(dir)
-  {
-    const intptr_t delta = (dir_ == DIR_BACKWARD ?
-                            -intptr_t(READ_AHEAD / ALIGN) :
-                            intptr_t(READ_AHEAD / ALIGN));
-    prefetch_r(reinterpret_cast<const align_t*>(addr_) + delta);
-    data_ = *reinterpret_cast<const align_t*>(addr_ & ~ALIGN_MSK);
-  }
-
-  const void* addr() const noexcept {
-    return reinterpret_cast<const void*>(addr_);
-  }
-
-  inline uint8_t read8() noexcept {
-    align_t rv;
-    switch (dir_) {
-    case DIR_FORWARD:
-      rv = rotate_down_addr(data_, addr_ & ALIGN_MSK);
-      ++addr_;
-      update();
-      break;
-    case DIR_BACKWARD:
-      update();
-      --addr_;
-      rv = rotate_down_addr(data_, addr_ & ALIGN_MSK);
-      break;
-    }
-    return consume_bytes(&rv, 1);
-  }
-
-  inline align_t readN() noexcept {
-    align_t p, s;
-    const auto off = addr_ & ALIGN_MSK;
-    const auto off_inv = ~off & ALIGN_MSK;  // off_inv = ALIGN - off;
-    unsigned int merge_off;
-
-    switch (dir_) {
-    case DIR_FORWARD:
-      p = data_;
-      (addr_ &= ~ALIGN_MSK) += ALIGN;  // addr_ += off_inv
-      update();
-      s = data_;
-      addr_ |= off;  // addr_ += off
-      merge_off = (addr_ & ALIGN_MSK);  // off
-      break;
-    case DIR_BACKWARD:
-      s = data_;
-      addr_ &= ~ALIGN_MSK;  // addr_ -= off
-      update();
-      p = data_;
-      (addr_ -= ALIGN) |= off;  // addr_ -= off_inv
-      merge_off = off;
-      break;
-    }
-    return merge_addr(p, s, merge_off);
-  }
-
-  inline bool maybe_contains(uint8_t c) const noexcept {
-    const align_t xordata = (data_ ^ repeat(align_t(c), CHAR_BIT));
-    return collapse(xordata & mask_highaddr_bytes<align_t>(addr_ & ALIGN_MSK),
-                    CHAR_BIT) == 0xffU;
-  }
-
- private:
-  inline void update() noexcept {
-    if ((addr_ & ALIGN_MSK) == 0) {
-      const uintptr_t addr = addr_ - (dir_ == DIR_BACKWARD ? ALIGN : 0U);
-      const intptr_t delta = (dir_ == DIR_BACKWARD ?
-                              -intptr_t(READ_AHEAD / ALIGN) :
-                              intptr_t(READ_AHEAD / ALIGN));
-
-      prefetch_r(reinterpret_cast<const align_t*>(addr) + delta);
-      data_ = *reinterpret_cast<const align_t*>(addr);
-    }
-  }
-
-  align_t data_;  // Value covering addr_.
-  uintptr_t addr_;
-  const direction dir_;
-};
-#endif // 0
-
-
-template<direction Dir> class reader;
+template<direction Dir, typename UInt> class reader;
 
 class basic_reader {
  public:
@@ -336,11 +233,13 @@ class basic_reader {
       break;
     }
 
-    if (len >= READ_AHEAD) prefetch_r(reinterpret_cast<const void*>(preread_addr));
+    if (len >= READ_AHEAD)
+      prefetch_r(reinterpret_cast<const void*>(preread_addr));
     return data_ = *reinterpret_cast<const align_t*>(update_addr);
   }
 
-  template<typename UInt> bool maybe_contains_(UInt c, align_t mask) const noexcept {
+  template<typename UInt> bool maybe_contains_(UInt c, align_t mask)
+      const noexcept {
     auto filter = (data_ ^ repeat(align_t(c), sizeof(c) * CHAR_BIT));
     filter &= mask;
     return collapse(filter, sizeof(c) * CHAR_BIT) == ~UInt(c);
@@ -350,8 +249,13 @@ class basic_reader {
   uintptr_t addr_;  // Current address.
 };
 
-template<> class reader<DIR_FORWARD> : public basic_reader {
+template<typename UInt> class reader<DIR_FORWARD, UInt>
+: public basic_reader {
  public:
+  static_assert(sizeof(UInt) <= sizeof(align_t), "Integral type too large.");
+  static_assert(sizeof(align_t) % sizeof(UInt) == 0,
+      "Integral type cannot align");
+
   reader() = default;
   reader(const reader&) = default;
   reader& operator=(const reader&) = default;
@@ -363,11 +267,11 @@ template<> class reader<DIR_FORWARD> : public basic_reader {
   inline uint8_t read8(uintptr_t len = UINTPTR_MAX) noexcept {
     auto rv = (masked_addr() == 0 ? update(DIR_FORWARD, len) : data_);
     rv = rotate_down_addr(rv, masked_addr());
-    ++addr_;
-    return consume_bytes(&rv, 1U);
+    addr_ += sizeof(UInt);
+    return consume_bytes(&rv, sizeof(UInt));
   }
 
-  template<typename UInt> bool maybe_contains(UInt c) const noexcept {
+  bool maybe_contains(UInt c) const noexcept {
     if (avail() == 0) return false;
     return maybe_contains_(c, mask_highaddr_bytes<align_t>(masked_addr()));
   }
@@ -385,8 +289,13 @@ template<> class reader<DIR_FORWARD> : public basic_reader {
   }
 };
 
-template<> class reader<DIR_BACKWARD> : public basic_reader {
+template<typename UInt> class reader<DIR_BACKWARD, UInt>
+: public basic_reader {
  public:
+  static_assert(sizeof(UInt) <= sizeof(align_t), "Integral type too large.");
+  static_assert(sizeof(align_t) % sizeof(UInt) == 0,
+      "Integral type cannot align");
+
   reader() = default;
   reader(const reader&) = default;
   reader& operator=(const reader&) = default;
@@ -395,14 +304,14 @@ template<> class reader<DIR_BACKWARD> : public basic_reader {
   : basic_reader(reinterpret_cast<uintptr_t>(addr), DIR_BACKWARD, len)
   {}
 
-  inline uint8_t read8(uintptr_t len = UINTPTR_MAX) noexcept {
+  inline UInt read8(uintptr_t len = UINTPTR_MAX) noexcept {
     auto rv = (masked_addr() == 0 ? update(DIR_BACKWARD, len) : data_);
-    --addr_;
+    addr_ -= sizeof(UInt);
     rv = rotate_down_addr(rv, masked_addr());
-    return consume_bytes(&rv, 1U);
+    return consume_bytes(&rv, sizeof(UInt));
   }
 
-  template<typename UInt> bool maybe_contains(UInt c) const noexcept {
+  bool maybe_contains(UInt c) const noexcept {
     if (avail() == 0) return false;
     return this->maybe_contains_(c, mask_lowaddr_bytes<align_t>(masked_addr()));
   }
@@ -421,6 +330,150 @@ template<> class reader<DIR_BACKWARD> : public basic_reader {
 };
 
 
-}}} /* namespace __cxxabiv1::ext::<unnamed> */
+} /* namespace __cxxabiv1::ext::<unnamed> */
+
+
+template<typename UInt> int memcmp(const UInt* a, const UInt* b, size_t len)
+    noexcept {
+  if (len == 0) return 0;
+  auto ra = reader<DIR_FORWARD, UInt>(a, len);
+  auto rb = reader<DIR_FORWARD, UInt>(b, len);
+
+  /* Read in strides of register. */
+  while (len >= ALIGN) {
+    auto va = ra.readN(len);
+    auto vb = ra.readN(len);
+
+    if (_predict_false(va != vb)) {
+      /* Difference found. */
+      for (;;) {
+        const auto ca = consume_bytes(&va, sizeof(UInt));
+        const auto cb = consume_bytes(&vb, sizeof(UInt));
+        if (ca != cb)
+          return (sizeof(UInt) < sizeof(int) ?
+                  int(ca) - int(cb) :
+                  (ca < cb ? -1 : 1));
+      }
+      /* UNREACHABLE */
+    }
+
+    len -= ALIGN / sizeof(UInt);
+  }
+
+  /* Read in strides of UInt. */
+  while (len > 0) {
+    auto va = ra.read8(len + 1U);
+    auto vb = rb.read8(len + 1U);
+
+    if (_predict_false(va != vb)) {
+      return (sizeof(UInt) < sizeof(int) ?
+              int(va) - int(vb) :
+              (va < vb ? -1 : 1));
+    }
+
+    --len;
+  }
+  return 0;
+}
+
+
+template<typename UInt> const UInt* memfind(const UInt* s_haystack,
+                                            size_t n_haystack,
+                                            const UInt* s_needle,
+                                            size_t n_needle) noexcept {
+  for (; n_haystack >= n_needle; ++s_haystack, --n_haystack) {
+    if (memcmp(s_haystack, s_needle, n_needle) == 0)
+      return s_haystack;
+  }
+  return nullptr;
+}
+
+template<typename UInt> const UInt* memrfind(const UInt* s_haystack,
+                                             size_t n_haystack,
+                                             const UInt* s_needle,
+                                             size_t n_needle) noexcept {
+  if (n_haystack < n_needle) return nullptr;
+  const UInt* s = s_haystack + n_haystack - n_needle + 1;
+  while (s-- != s_haystack) {
+    if (memcmp(s, s_needle, n_needle) == 0)
+      return s;
+  }
+  return nullptr;
+}
+
+/*
+ * Specialize memfind for small integral type.
+ * The function uses a histogram to reduce complexity.
+ */
+const uint8_t* memfind(const uint8_t*, size_t,
+                       const uint8_t*, size_t) noexcept;
+
+/* Use uint8_t memfind specialization for char. */
+inline const char* memfind(const char* s_haystack, size_t n_haystack,
+                           const char* s_needle, size_t n_needle) noexcept {
+  return reinterpret_cast<const char*>(memfind(
+      reinterpret_cast<const uint8_t*>(s_haystack),
+      n_haystack,
+      reinterpret_cast<const uint8_t*>(s_needle),
+      n_needle));
+}
+
+/* Use uint8_t memfind specialization for signed char. */
+inline const int8_t* memfind(const int8_t* s_haystack, size_t n_haystack,
+                             const int8_t* s_needle, size_t n_needle)
+    noexcept {
+  return reinterpret_cast<const int8_t*>(memfind(
+      reinterpret_cast<const uint8_t*>(s_haystack),
+      n_haystack,
+      reinterpret_cast<const uint8_t*>(s_needle),
+      n_needle));
+}
+
+/* Character find. */
+template<typename C> const C* memchr(const C* p, size_t len, C v) noexcept {
+  if (len == 0) return nullptr;
+  auto r = reader<DIR_FORWARD, C>(p, len);
+
+  while (len > 0) {
+    auto rcc = r.read8(len);
+    if (rcc == v) return r.template addr<const C>() - 1;
+    --len;
+  }
+  return nullptr;
+}
+template<typename C> const C* memrchr(const C* p, size_t len, C v) noexcept {
+  if (len == 0) return nullptr;
+  auto r = reader<DIR_BACKWARD, C>(p + len, len);
+
+  while (len > 0) {
+    auto rcc = r.read8(len);
+    if (rcc == v) return r.template addr<const C>();
+    --len;
+  }
+  return nullptr;
+}
+
+/* String length calculation. */
+template<typename C> size_t strlen(const C* s) noexcept {
+  auto r = reader<DIR_FORWARD, C>(s);
+
+  while (r.read8() != C());
+  return r.template addr<C>() - 1 - s;
+}
+
+
+extern template int memcmp<uint8_t>(const uint8_t*, const uint8_t*, size_t)
+    noexcept;
+extern template int memcmp<char>(const char*, const char*, size_t)
+    noexcept;
+extern template int memcmp<wchar_t>(const wchar_t*, const wchar_t*, size_t)
+    noexcept;
+extern template int memcmp<char16_t>(const char16_t*, const char16_t*, size_t)
+    noexcept;
+extern template int memcmp<char32_t>(const char32_t*, const char32_t*, size_t)
+    noexcept;
+
+
+}} /* namespace __cxxabiv1::ext */
 
 #endif /* _ABI_EXT_READER_H_ */

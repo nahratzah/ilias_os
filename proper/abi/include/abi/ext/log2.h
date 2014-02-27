@@ -3,6 +3,7 @@
 
 #include <abi/abi.h>
 #include <climits>
+#include <cstdint>
 
 namespace __cxxabiv1 {
 namespace ext {

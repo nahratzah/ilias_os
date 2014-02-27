@@ -10,7 +10,7 @@ namespace {
 
 template<typename... T> void dprintf(const char* s, T&&... v) noexcept {
 #ifdef _TEST
-  fprintf(stderr, s, std::forward<T>(v)...);
+  fprintf(stderr, s, _namespace(std)::forward<T>(v)...);
 #endif
 }
 
@@ -36,10 +36,9 @@ const char* str(__has_base_result hbr) noexcept {
 } /* namespace __cxxabiv1::<unnamed> */
 
 
-__dyn_cast_request::__dyn_cast_request(const void* subject,
-                                       const std::type_info& subject_ti,
-                                       const std::type_info& target_ti,
-				       ptrdiff_t s2d_off) noexcept
+__dyn_cast_request::__dyn_cast_request(
+    const void* subject, const _namespace(std)::type_info& subject_ti,
+    const _namespace(std)::type_info& target_ti, ptrdiff_t s2d_off) noexcept
 : subject_(subject),
   subject_ti_(subject_ti),
   target_ti_(target_ti),
@@ -113,9 +112,9 @@ namespace {
 
 struct vtt;
 
-inline const std::type_info* vtt_2_ti(const vtt* v) noexcept {
+inline const _namespace(std)::type_info* vtt_2_ti(const vtt* v) noexcept {
   const void*const* entry = reinterpret_cast<const void*const*&>(v) - 1;
-  return static_cast<const std::type_info*>(*entry);
+  return static_cast<const _namespace(std)::type_info*>(*entry);
 }
 
 inline ptrdiff_t vtt_2_off(const vtt* v) noexcept {

@@ -1,5 +1,4 @@
 #include <abi/ext/c_string_ptr.h>
-#include <abi/ext/string_piece.h>
 #include <stdexcept>
 #include <string>
 
@@ -47,7 +46,7 @@ c_string_ptr& c_string_ptr::operator=(const c_string_ptr& other) {
   return *this;
 }
 
-c_string_ptr& c_string_ptr::operator+=(c_string_piece sp) {
+c_string_ptr& c_string_ptr::operator+=(_namespace(std)::string_ref sp) {
   append(sp.data(), sp.size());
   return *this;
 }

@@ -40,7 +40,7 @@ struct __base_class_type_info {
 
 /* Builtin types. */
 class __fundamental_type_info
-: public std::type_info
+: public _namespace(std)::type_info
 {
  public:
   explicit inline __fundamental_type_info(const char*) noexcept;
@@ -50,7 +50,7 @@ class __fundamental_type_info
 
 /* Arrays. */
 class __array_type_info
-: public std::type_info
+: public _namespace(std)::type_info
 {
  public:
   ~__array_type_info() noexcept override;
@@ -58,7 +58,7 @@ class __array_type_info
 
 /* Functions. */
 class __function_type_info
-: public std::type_info
+: public _namespace(std)::type_info
 {
  public:
   ~__function_type_info() noexcept override;
@@ -68,7 +68,7 @@ class __function_type_info
 
 /* Enums. */
 class __enum_type_info
-: public std::type_info
+: public _namespace(std)::type_info
 {
  public:
   ~__enum_type_info() noexcept override;
@@ -77,13 +77,13 @@ class __enum_type_info
 
 /* Classes without a base class. */
 class __class_type_info
-: public std::type_info
+: public _namespace(std)::type_info
 {
  public:
   ~__class_type_info() noexcept override;
 
   virtual __has_base_result __has_base(const void*, const void*,
-                                       const std::type_info&,
+                                       const _namespace(std)::type_info&,
                                        bool = false) const noexcept;
   virtual __dyn_cast_response __dyn_cast_support(const void*,
                                                  const __dyn_cast_request&)
@@ -98,7 +98,7 @@ class __si_class_type_info
   ~__si_class_type_info() noexcept override;
 
   __has_base_result __has_base(const void*, const void*,
-                               const std::type_info&,
+                               const _namespace(std)::type_info&,
                                bool) const noexcept override;
   __dyn_cast_response __dyn_cast_support(const void*,
                                          const __dyn_cast_request&)
@@ -121,7 +121,7 @@ class __vmi_class_type_info
   ~__vmi_class_type_info() noexcept override;
 
   __has_base_result __has_base(const void*, const void*,
-                               const std::type_info&,
+                               const _namespace(std)::type_info&,
                                bool) const noexcept override;
   __dyn_cast_response __dyn_cast_support(const void*,
                                          const __dyn_cast_request&)
@@ -136,17 +136,17 @@ class __vmi_class_type_info
 
 /* Pointer (basic implementation). */
 class __pbase_type_info
-: public std::type_info
+: public _namespace(std)::type_info
 {
  public:
   inline __pbase_type_info(const char*, unsigned int,
-                           const std::type_info&) noexcept;
+                           const _namespace(std)::type_info&) noexcept;
 
   ~__pbase_type_info() noexcept override;
 
  private:
   unsigned int __flags;
-  const std::type_info* __pointee;
+  const _namespace(std)::type_info* __pointee;
 
   bool __is_pointer_p() const noexcept override;
 
@@ -165,7 +165,7 @@ class __pointer_type_info
 {
  public:
   inline __pointer_type_info(const char*, unsigned int,
-                             const std::type_info&) noexcept;
+                             const _namespace(std)::type_info&) noexcept;
 
   ~__pointer_type_info() noexcept override;
 };
@@ -176,7 +176,7 @@ class __pointer_to_member_type_info
 {
  public:
   inline __pointer_to_member_type_info(const char*, unsigned int,
-                                       const std::type_info&,
+                                       const _namespace(std)::type_info&,
                                        const __class_type_info&) noexcept;
 
   ~__pointer_to_member_type_info() noexcept override;

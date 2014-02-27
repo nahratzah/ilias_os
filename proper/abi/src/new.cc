@@ -8,6 +8,7 @@ namespace std {
 
 const nothrow_t nothrow{};
 
+bad_alloc::bad_alloc() noexcept {}
 bad_alloc::~bad_alloc() noexcept {}
 
 const char* bad_alloc::what() const noexcept {
@@ -15,6 +16,7 @@ const char* bad_alloc::what() const noexcept {
 }
 
 
+bad_array_new_length::bad_array_new_length() noexcept {}
 bad_array_new_length::~bad_array_new_length() noexcept {}
 
 const char* bad_array_new_length::what() const noexcept {
@@ -127,6 +129,10 @@ void __attribute__((weak)) operator delete[](
   if (p) no_throw_array_heap().free(p);
 }
 
+_namespace_begin(std)
+
 void __throw_bad_alloc() {
   throw std::bad_alloc();
 }
+
+_namespace_end(std)

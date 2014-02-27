@@ -1,0 +1,14 @@
+#ifndef _CSTDBOOL_
+#define _CSTDBOOL_
+
+#ifndef __cplusplus
+typedef int Bool;
+#define true	(1)
+#define false	(0)
+#else
+using Bool = bool;
+#endif
+
+#define __bool_true_false_are_defined 1
+
+#endif /* _CSTDBOOL_ */
