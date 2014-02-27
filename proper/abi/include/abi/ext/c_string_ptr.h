@@ -1,6 +1,7 @@
 #ifndef _ABI_EXT_C_STRING_PTR_H_
 #define _ABI_EXT_C_STRING_PTR_H_
 
+#include <cdecl.h>
 #include <abi/abi.h>
 #include <cassert>
 #include <cstddef>
@@ -13,8 +14,6 @@
 namespace __cxxabiv1 {
 namespace ext {
 
-
-class c_string_piece;
 
 class c_string_ptr {
  public:
@@ -49,7 +48,7 @@ class c_string_ptr {
   inline c_string_ptr& operator=(c_string_ptr&&) noexcept;
 
   inline c_string_ptr& operator+=(const c_string_ptr&);
-  c_string_ptr& operator+=(c_string_piece);
+  c_string_ptr& operator+=(_namespace(std)::string_ref);
   inline c_string_ptr& operator+=(const char*);
   inline void append(const c_string_ptr&);
   inline void append(const char*);

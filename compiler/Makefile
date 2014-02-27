@@ -1,9 +1,6 @@
 .PHONY: all llvm clang libcxx
 
 BUILDDIR = build
-LIBCXX_ALL_FILES =
-LLVM_ALL_FILES =
-CLANG_ALL_FILES =
 
 INSTALL_PREFIX = "${BUILDDIR}/install"
 CMAKE ?= cmake
@@ -15,28 +12,44 @@ LLVM_OPTS += -DLLVM_ENABLE_LIBCXX:BOOL=ON
 CC ?= cc
 CXX ?= c++
 
-all: llvm clang
+all: llvm clang binutils
 
 clean:
 	${RM} -rf "${BUILDDIR}"
 
-${BUILDDIR}:
-	[ -d "${BUILDDIR}" ] || mkdir "${BUILDDIR}"
-
-${BUILDDIR}/llvm.done_dir: ${BUILDDIR}
-	[ -d "${BUILDDIR}/llvm" ] || mkdir "${BUILDDIR}/llvm"
+${BUILDDIR}/llvm.done_dir:
+	[ -d "${BUILDDIR}/llvm" ] || mkdir -p "${BUILDDIR}/llvm"
 	touch ${BUILDDIR}/llvm.done_dir
 
-${BUILDDIR}/clang.done_dir: ${BUILDDIR}
-	[ -d "${BUILDDIR}/clang" ] || mkdir "${BUILDDIR}/clang"
+${BUILDDIR}/clang.done_dir:
+	[ -d "${BUILDDIR}/clang" ] || mkdir -p "${BUILDDIR}/clang"
 	touch ${BUILDDIR}/clang.done_dir
 
-${BUILDDIR}/libcxx.done_dir: ${BUILDDIR}
-	[ -d "${BUILDDIR}/libcxx" ] || mkdir "${BUILDDIR}/libcxx"
+${BUILDDIR}/libcxx.done_dir:
+	[ -d "${BUILDDIR}/libcxx" ] || mkdir -p "${BUILDDIR}/libcxx"
 	touch ${BUILDDIR}/libcxx.done_dir
 
+${BUILDDIR}/binutils.done_dir:
+	[ -d "${BUILDDIR}/binutils" ] || mkdir -p "${BUILDDIR}/binutils"
+	touch ${BUILDDIR}/binutils.done_dir
 
-${BUILDDIR}/llvm.done_configure: ${BUILDDIR}/llvm.done_dir ${BUILDDIR}/libcxx.done_install ${LLVM_ALL_FILES}
+
+${BUILDDIR}/binutils.done_configure: ${BUILDDIR}/binutils.done_dir
+	cd "${BUILDDIR}/binutils" &&                                          \
+	  env CC="${CC}" CXX="${CXX}"                                         \
+	    ../../binutils/configure --prefix="$(abspath ${INSTALL_PREFIX})" --disable-werror --enable-ld=yes --with-gnu-ld --disable-nls --target=amd64-unknown-linux
+	touch "${BUILDDIR}/binutils.done_configure"
+
+${BUILDDIR}/binutils.done_build: ${BUILDDIR}/binutils.done_configure
+	cd "${BUILDDIR}/binutils" && ${MAKE}
+	touch "${BUILDDIR}/binutils.done_build"
+
+${BUILDDIR}/binutils.done_install: ${BUILDDIR}/binutils.done_build
+	cd "${BUILDDIR}/binutils" && ${MAKE} install
+	touch "${BUILDDIR}/binutils.done_install"
+
+
+${BUILDDIR}/llvm.done_configure: ${BUILDDIR}/llvm.done_dir ${BUILDDIR}/libcxx.done_install
 	cd "${BUILDDIR}/llvm" &&                                              \
 	  env CC="${CC}" CXX="${CXX}"                                         \
 	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ${LLVM_OPTS} ../../llvm
@@ -51,7 +64,7 @@ ${BUILDDIR}/llvm.done_install: ${BUILDDIR}/llvm.done_build
 	touch "${BUILDDIR}/llvm.done_install"
 
 
-${BUILDDIR}/clang.done_configure: ${BUILDDIR}/clang.done_dir ${BUILDDIR}/llvm.done_install ${CLANG_ALL_FILES}
+${BUILDDIR}/clang.done_configure: ${BUILDDIR}/clang.done_dir ${BUILDDIR}/llvm.done_install
 	cd "${BUILDDIR}/clang" &&                                             \
 	  env CC="${CC}" CXX="${CXX}"                                         \
 	      "LLVM_CONFIG=../llvm/bin/llvm-config"                           \
@@ -85,3 +98,4 @@ ${BUILDDIR}/libcxx.done_install: ${BUILDDIR}/libcxx.done_build
 libcxx: ${BUILDDIR}/libcxx.done_install
 llvm: ${BUILDDIR}/llvm.done_install
 clang: ${BUILDDIR}/clang.done_install
+binutils: ${BUILDDIR}/binutils.done_install

@@ -21,11 +21,18 @@ template<typename State> class fpos;
 
 template<typename Char, typename CharTraits = char_traits<Char>,
          typename Alloc = allocator<Char>> class basic_string;
+template<typename Char, typename Traits = char_traits<Char>>
+    class basic_string_ref;
 
 using string = basic_string<char>;
 using wstring = basic_string<wchar_t>;
 using u16string = basic_string<char16_t>;
 using u32string = basic_string<char32_t>;
+
+using string_ref = basic_string_ref<char>;
+using u16string_ref = basic_string_ref<char16_t>;
+using u32string_ref = basic_string_ref<char32_t>;
+using wstring_ref = basic_string_ref<wchar_t>;
 
 using streampos = fpos<mbstate_t>;
 using wstreampos = fpos<mbstate_t>;

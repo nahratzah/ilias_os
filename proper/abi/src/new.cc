@@ -129,6 +129,10 @@ void __attribute__((weak)) operator delete[](
   if (p) no_throw_array_heap().free(p);
 }
 
+_namespace_begin(std)
+
 void __throw_bad_alloc() {
   throw std::bad_alloc();
 }
+
+_namespace_end(std)

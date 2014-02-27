@@ -18,9 +18,6 @@
 _namespace_begin(std)
 
 
-template<typename Char, typename Traits = char_traits<Char>>
-    class basic_string_ref;
-
 template<> struct char_traits<char> {
   using char_type = char;
   using int_type = int;
@@ -589,11 +586,6 @@ template<typename Char, typename Traits = char_traits<Char>,
 basic_string<Char, Traits, Allocator> to_string(
     basic_string_ref<Char, Traits>, const Allocator& = Allocator());
 
-
-using string_ref = basic_string_ref<char>;
-using u16string_ref = basic_string_ref<char16_t>;
-using u32string_ref = basic_string_ref<char32_t>;
-using wstring_ref = basic_string_ref<wchar_t>;
 
 extern template class basic_string<char>;
 extern template class basic_string<wchar_t>;

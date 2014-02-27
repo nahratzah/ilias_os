@@ -10,3 +10,6 @@
 [submodule "compiler/lld"]
 	path = compiler/lld
 	url = https://github.com/llvm-mirror/lld
+[submodule "compiler/binutils"]
+	path = compiler/binutils
+	url = git://sourceware.org/git/binutils-gdb.git
