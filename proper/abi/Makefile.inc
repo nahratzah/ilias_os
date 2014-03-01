@@ -21,6 +21,7 @@ SRCS += abi/src/cwchar.cc
 SRCS += abi/src/stdexcept.cc
 SRCS += abi/src/new.cc
 SRCS += abi/src/string.cc
+SRCS += abi/src/system_error.cc
 SRCS +=	abi/src/typeinfo.cc
 
 SRCS += abi/src/abi_ext_heap.cc

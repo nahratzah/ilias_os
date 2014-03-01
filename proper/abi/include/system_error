@@ -1,0 +1,225 @@
+#ifndef _SYSTEM_ERROR_
+#define _SYSTEM_ERROR_
+
+#include <type_traits>
+#include <abi/errno.h>
+#include <iosfwd>
+#include <hash-fwd.h>
+#include <stdexcept>
+
+_namespace_begin(std)
+
+
+class error_category;
+class error_code;
+class error_condition;
+class system_error;
+
+const error_category& generic_category() noexcept;
+const error_category& system_category() noexcept;
+
+template<typename T> struct is_error_code_enum : public false_type {};
+template<typename T> struct is_error_condition_enum : public false_type {};
+
+enum class errc {
+  address_family_not_supported       = _ABI_EAFNOSUPPORT,
+  address_in_use                     = _ABI_EADDRINUSE,
+  address_not_available              = _ABI_EADDRNOTAVAIL,
+  already_connected                  = _ABI_EISCONN,
+  argument_list_too_long             = _ABI_E2BIG,
+  argument_out_of_domain             = _ABI_EDOM,
+  bad_address                        = _ABI_EFAULT,
+  bad_file_descriptor                = _ABI_EBADF,
+  bad_message                        = _ABI_EBADMSG,
+  broken_pipe                        = _ABI_EPIPE,
+  connection_aborted                 = _ABI_ECONNABORTED,
+  connection_already_in_progress     = _ABI_EALREADY,
+  connection_refused                 = _ABI_ECONNREFUSED,
+  connection_reset                   = _ABI_ECONNRESET,
+  cross_device_link                  = _ABI_EXDEV,
+  destination_address_required       = _ABI_EDESTADDRREQ,
+  device_or_resource_busy            = _ABI_EBUSY,
+  directory_not_empty                = _ABI_ENOTEMPTY,
+  executable_format_error            = _ABI_ENOEXEC,
+  file_exists                        = _ABI_EEXIST,
+  file_too_large                     = _ABI_EFBIG,
+  filename_too_long                  = _ABI_ENAMETOOLONG,
+  function_not_supported             = _ABI_ENOSYS,
+  host_unreachable                   = _ABI_EHOSTUNREACH,
+  identifier_removed                 = _ABI_EIDRM,
+  illegal_byte_sequence              = _ABI_EILSEQ,
+  inappropriate_io_control_operation = _ABI_ENOTTY,
+  interrupted                        = _ABI_EINTR,
+  invalid_argument                   = _ABI_EINVAL,
+  invalid_seek                       = _ABI_ESPIPE,
+  io_error                           = _ABI_EIO,
+  is_a_directory                     = _ABI_EISDIR,
+  message_size                       = _ABI_EMSGSIZE,
+  network_down                       = _ABI_ENETDOWN,
+  network_reset                      = _ABI_ENETRESET,
+  network_unreachable                = _ABI_ENETUNREACH,
+  no_buffer_space                    = _ABI_ENOBUFS,
+  no_child_process                   = _ABI_ECHILD,
+  no_link                            = _ABI_ENOLINK,
+  no_lock_available                  = _ABI_ENOLCK,
+  no_message_available               = _ABI_ENODATA,
+  no_message                         = _ABI_ENOMSG,
+  no_protocol_option                 = _ABI_ENOPROTOOPT,
+  no_space_on_device                 = _ABI_ENOSPC,
+  no_stream_resources                = _ABI_ENOSR,
+  no_such_device_or_address          = _ABI_ENXIO,
+  no_such_device                     = _ABI_ENODEV,
+  no_such_file_or_directory          = _ABI_ENOENT,
+  no_such_process                    = _ABI_ESRCH,
+  not_a_directory                    = _ABI_ENOTDIR,
+  not_a_socket                       = _ABI_ENOTSOCK,
+  not_a_stream                       = _ABI_ENOSTR,
+  not_connected                      = _ABI_ENOTCONN,
+  not_enough_memory                  = _ABI_ENOMEM,
+  not_supported                      = _ABI_ENOTSUP,
+  operation_canceled                 = _ABI_ECANCELED,
+  operation_in_progress              = _ABI_EINPROGRESS,
+  operation_not_permitted            = _ABI_EPERM,
+  operation_not_supported            = _ABI_EOPNOTSUPP,
+  operation_would_block              = _ABI_EWOULDBLOCK,
+  ownerdead                          = _ABI_EOWNERDEAD,
+  permission_denied                  = _ABI_EACCES,
+  protocol_error                     = _ABI_EPROTO,
+  protocol_not_supported             = _ABI_EPROTONOSUPPORT,
+  read_only_file_system              = _ABI_EROFS,
+  resource_deadlock_would_occur      = _ABI_EDEADLK,
+  resource_unavailable_try_again     = _ABI_EAGAIN,
+  result_out_of_range                = _ABI_ERANGE,
+  state_not_recoverable              = _ABI_ENOTRECOVERABLE,
+  stream_timeout                     = _ABI_ETIME,
+  text_file_busy                     = _ABI_ETXTBSY,
+  timed_out                          = _ABI_ETIMEDOUT,
+  too_many_files_open_in_system      = _ABI_ENFILE,
+  too_many_files_open                = _ABI_EMFILE,
+  too_many_links                     = _ABI_EMLINK,
+  too_many_symbolic_link_levels      = _ABI_ELOOP,
+  value_too_large                    = _ABI_EOVERFLOW,
+  wrong_protocol_type                = _ABI_EPROTOTYPE,
+};
+
+template<> struct is_error_condition_enum<errc> : true_type {};
+
+error_code make_error_code(errc) noexcept;
+error_condition make_error_condition(errc) noexcept;
+
+bool operator==(const error_code&, const error_code&) noexcept;
+bool operator==(const error_code&, const error_condition&) noexcept;
+bool operator==(const error_condition&, const error_code&) noexcept;
+bool operator==(const error_condition&, const error_condition&) noexcept;
+bool operator!=(const error_code&, const error_code&) noexcept;
+bool operator!=(const error_code&, const error_condition&) noexcept;
+bool operator!=(const error_condition&, const error_code&) noexcept;
+bool operator!=(const error_condition&, const error_condition&) noexcept;
+
+template<> struct hash<error_code>;  // XXX
+
+
+class error_category {
+ public:
+  constexpr error_category() noexcept;
+  virtual ~error_category() noexcept;
+  error_category(const error_category&) = delete;
+  error_category& operator=(const error_category&) = delete;
+  virtual const char* name() const noexcept = 0;
+  virtual error_condition default_error_condition(int) const noexcept;
+  virtual bool equivalent(int, const error_condition&) const noexcept;
+  virtual bool equivalent(const error_code&, int) const noexcept;
+  virtual string message(int) const = 0;
+
+  bool operator==(const error_category&) const noexcept;
+  bool operator!=(const error_category&) const noexcept;
+  bool operator<(const error_category&) const noexcept;
+};
+
+
+class error_code {
+ private:
+  struct _enable_tag {};
+
+ public:
+  error_code() noexcept;
+  error_code(int, const error_category&) noexcept;
+  template<class ErrorCodeEnum> error_code(
+      ErrorCodeEnum e,
+      enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, _enable_tag> =
+        _enable_tag()) noexcept;
+
+  void assign(int, const error_category&) noexcept;
+  template<typename ErrorCodeEnum> auto operator=(ErrorCodeEnum e) noexcept ->
+      enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, error_code&>;
+  void clear() noexcept;
+
+  int value() const noexcept;
+  const error_category& category() const noexcept;
+  error_condition default_error_condition() const noexcept;
+  string message() const;
+  explicit operator bool() const noexcept;
+
+ private:
+  int val_;
+  const error_category* cat_;
+};
+
+bool operator<(const error_code&, const error_code&) noexcept;
+
+
+class error_condition {
+ private:
+  struct _enable_tag {};
+
+ public:
+  error_condition() noexcept;
+  error_condition(int, const error_category&) noexcept;
+  template<class ErrorCodeEnum> error_condition(
+      ErrorCodeEnum e,
+      enable_if_t<is_error_condition_enum<ErrorCodeEnum>::value, _enable_tag> =
+        _enable_tag()) noexcept;
+
+  void assign(int, const error_category&) noexcept;
+  template<typename ErrorCodeEnum> auto operator=(ErrorCodeEnum e) noexcept ->
+      enable_if_t<is_error_condition_enum<ErrorCodeEnum>::value,
+                  error_condition&>;
+  void clear() noexcept;
+
+  int value() const noexcept;
+  const error_category& category() const noexcept;
+  string message() const;
+  explicit operator bool() const noexcept;
+
+ private:
+  int val_;
+  const error_category* cat_;
+};
+
+bool operator<(const error_condition&, const error_condition&) noexcept;
+
+
+class system_error : public runtime_error {
+ public:
+  system_error(error_code, const string&);
+  system_error(error_code, const string_ref&);
+  system_error(error_code, const char*);
+  system_error(error_code);
+  system_error(int, const error_category&, const string&);
+  system_error(int, const error_category&, const string_ref&);
+  system_error(int, const error_category&, const char*);
+  system_error(int, const error_category&);
+  ~system_error() noexcept override;
+
+  const error_code& code() const noexcept;
+
+ private:
+  error_code ec_;
+};
+
+
+_namespace_end(std)
+
+#include <system_error-inl.h>
+
+#endif /* _SYSTEM_ERROR_ */

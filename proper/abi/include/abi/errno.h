@@ -117,4 +117,6 @@ _cdecl_end
 #define _ABI_EWOULDBLOCK		80
 #define _ABI_EXDEV			81
 
+#define _ABI_EPOSIXENDSHERE		82
+
 #endif /* _ABI_ERRNO_H_ */
