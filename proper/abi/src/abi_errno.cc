@@ -4,6 +4,8 @@ namespace __cxxabiv1 {
 
 #ifdef _TEST
 int errno;
+#else
+thread_local int errno;
 #endif
 
 #define ERR_STR(e)	#e

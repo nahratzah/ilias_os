@@ -15,7 +15,7 @@ _namespace_end(std)
 /*
  * We won't pollute the global namespace with errno, in the testing case.
  */
-using std::errno;
+using _namespace(std)::errno;
 #endif
 
 #ifndef _TEST

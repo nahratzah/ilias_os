@@ -13,9 +13,9 @@ _cdecl_begin
 extern int errno;
 #else
 # ifdef __cplusplus
-thread_local int errno;
+extern thread_local int errno;
 # else
-_Thread_local int errno;
+extern _Thread_local int errno;
 # endif
 #endif
 
