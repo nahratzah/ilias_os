@@ -129,21 +129,39 @@ void __cxa_deleted_virtual() noexcept {
   for (;;);
 }
 
+
+struct __cxa_guard {
+  struct impl_t {
+    uint8_t mark;  // Must by byte 0.
+    std::atomic<uint8_t> mtx;
+  };
+
+  union data_t {
+    uint64_t _unused;
+    impl_t impl;
+  };
+
+  data_t data;
+};
+
+static_assert(offsetof(__cxa_guard, data.impl.mark) == 0,
+              "mark byte must be first byte in __cxa_guard");
+static_assert(sizeof(__cxa_guard) == 8,
+              "__cxa_guard is 8 bytes (source: itanium abi)");
+
 namespace {
 
-uint8_t* cxa_guard_mark_byte(int64_t* g_) noexcept {
-  return reinterpret_cast<uint8_t*>(g_);
+uint8_t* cxa_guard_mark_byte(__cxa_guard* g_) noexcept {
+  return &g_->data.impl.mark;
 }
 
-std::atomic<uint8_t>& cxa_guard_mutex(int64_t* g_) noexcept {
-  static_assert(sizeof(std::atomic<uint8_t>) == sizeof(uint8_t),
-      "__cxa_guard_* implementation fails, due to oversized atomic<uint8_t>");
-  return reinterpret_cast<std::atomic<uint8_t>*>(g_)[4];
+std::atomic<uint8_t>& cxa_guard_mutex(__cxa_guard* g_) noexcept {
+  return g_->data.impl.mtx;
 }
 
 } /* namespace __cxxabiv1::<unnamed> */
 
-int __cxa_guard_acquire(int64_t* g_) noexcept {
+int __cxa_guard_acquire(__cxa_guard* g_) noexcept {
   auto& lock = cxa_guard_mutex(g_);
 
   uint8_t lock_zero = 0;
@@ -159,12 +177,12 @@ int __cxa_guard_acquire(int64_t* g_) noexcept {
   return !rv;
 }
 
-void __cxa_guard_release(int64_t* g_) noexcept {
+void __cxa_guard_release(__cxa_guard* g_) noexcept {
   *cxa_guard_mark_byte(g_) = 1;
   cxa_guard_mutex(g_).store(0, std::memory_order_release);
 }
 
-void __cxa_guard_abort(int64_t* g_) noexcept {
+void __cxa_guard_abort(__cxa_guard* g_) noexcept {
   cxa_guard_mutex(g_).store(0, std::memory_order_release);
 }
 
