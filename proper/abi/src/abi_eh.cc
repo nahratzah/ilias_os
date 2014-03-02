@@ -236,5 +236,45 @@ void __cxa_bad_typeid() {
   throw std::bad_typeid();
 }
 
+_Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action actions,
+                                         uint64_t exceptionClass,
+                                         _Unwind_Exception* exceptionObject,
+                                         _Unwind_Context* context) noexcept {
+  panic("TODO: implement %s()", __func__);  // XXX implement
+  for (;;);
+}
+
+void _Unwind_Resume(_Unwind_Exception *exception_object) noexcept {
+  panic("TODO: implement %s()", __func__);  // XXX implement
+  for (;;);
+}
+
+void* __cxa_begin_catch(void* exc_addr) noexcept {
+  panic("TODO: implement %s()", __func__);  // XXX implement
+  for (;;);
+
+  __cxa_exception* exc = exc2hdr(exc_addr);
+  ++exc->handlerCount;
+  --__cxa_get_globals()->uncaughtExceptions;
+}
+
+void* __cxa_end_catch(void* exc_addr) noexcept {
+  panic("TODO: implement %s()", __func__);  // XXX implement
+  for (;;);
+
+  __cxa_exception* exc = exc2hdr(exc_addr);
+  --exc->handlerCount;
+}
+
+void __cxa_rethrow() noexcept {
+  panic("TODO: implement %s()", __func__);  // XXX implement
+  for (;;);
+}
+
+_Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *exception_object) noexcept {
+  panic("TODO: implement %s()", __func__);  // XXX implement
+  for (;;);
+}
+
 
 } /* namespace __cxxabiv1 */

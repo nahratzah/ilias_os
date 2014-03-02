@@ -102,7 +102,7 @@ struct _Unwind_Context;
  * _URC_FATAL_PHASE_2_ERROR
  * _URC_FATAL_PHASE_1_ERROR
  */
-_Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *exception_object);
+_Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *exception_object) noexcept;
 
 
 typedef _Unwind_Reason_Code(*_Unwind_Stop_Fn)(int version,
@@ -118,33 +118,38 @@ typedef _Unwind_Reason_Code(*_Unwind_Stop_Fn)(int version,
  */
 _Unwind_Reason_Code _Unwind_ForcedUnwind(
     Struct _Unwind_Exception *exception_object, _Unwind_Stop_Fn stop,
-    void *stop_parameter);
+    void *stop_parameter) noexcept;
 
 
 /*
  * Called by landing pad (i.e. from generated code).
  */
-void _Unwind_Resume(Struct _Unwind_Exception *exception_object);
+void _Unwind_Resume(Struct _Unwind_Exception *exception_object) noexcept;
 
 
 /* Deletes exception_object. */
-void _Unwind_DeleteException(struct _Unwind_Exception *exception_object);
+void _Unwind_DeleteException(struct _Unwind_Exception *exception_object) noexcept;
 
 
 /* Extract/modify register in context. */
-uint64_t _Unwind_GetGR(Struct _Unwind_Context *context, int index);
-void _Unwind_SetGR(Struct _Unwind_Context *context, int index, uint64_t new_value);
+uint64_t _Unwind_GetGR(Struct _Unwind_Context *context, int index) noexcept;
+void _Unwind_SetGR(Struct _Unwind_Context *context, int index, uint64_t new_value) noexcept;
 
 /* Return the Instruction Pointer of the context. */
-uint64_t _Unwind_GetIP(Struct _Unwind_Context *context);
+uint64_t _Unwind_GetIP(Struct _Unwind_Context *context) noexcept;
 
 /* Returns the language specific data address from the context. */
-uint64_t _Unwind_GetLanguageSpecificData(struct _Unwind_Context *context);
+uint64_t _Unwind_GetLanguageSpecificData(struct _Unwind_Context *context) noexcept;
 
-/* Returns the start of the procedure/code fragment described by current unwind descriptor block. */
-uint64_t _Unwind_GetRegionStart(struct _Unwind_Context *context);
+/*
+ * Returns the start of the procedure/code fragment described by current
+ * unwind descriptor block.
+ */
+uint64_t _Unwind_GetRegionStart(struct _Unwind_Context *context) noexcept;
 
-_Unwind_Reason_Code (*__personality_routine)(int version, _Unwind_Action actions, uint64_t exceptionClass, Struct _Unwind_Exception *exceptionObject, Struct _Unwind_Context *context);
+_Unwind_Reason_Code __gxx_personality_v0(int, _Unwind_Action, uint64_t,
+                                         Struct _Unwind_Exception*,
+                                         Struct _Unwind_Context*) noexcept;
 
 
 /*
@@ -210,6 +215,10 @@ void* __cxa_current_primary_exception() noexcept;
 
 void __cxa_bad_cast() __attribute__((__noreturn__));
 void __cxa_bad_typeid() __attribute__((__noreturn__));
+
+void* __cxa_begin_catch(void*) noexcept;
+void* __cxa_end_catch(void*) noexcept;
+void __cxa_rethrow() noexcept;
 
 
 #undef Struct
