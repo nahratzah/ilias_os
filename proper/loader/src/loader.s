@@ -9,6 +9,7 @@
 .long -(MAGIC + FLAGS)				# Multiboot checksum.
 
 loader:
+	# Use bootloader provided stack for additional initialization.
 	push	%ebx
 	push	%eax
 	call	bss_zero

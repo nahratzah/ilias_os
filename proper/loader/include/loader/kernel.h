@@ -17,6 +17,14 @@ class kernel {
     len{ len }
   {}
 
+  kernel(const void* start, std::uint32_t* len) noexcept
+  : kernel(len != nullptr ? start : nullptr,
+           len != nullptr ? *len : 0U)
+  {}
+
+  bool present() const noexcept { return start != nullptr && len > 0; }
+  explicit operator bool() const noexcept { return present(); }
+
   static const kernel i386;
   static const kernel amd64;
 
