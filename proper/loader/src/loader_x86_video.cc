@@ -1,5 +1,7 @@
 #include <loader/x86_video.h>
 #include <cstdint>
+#include <cstdarg>
+#include <abi/ext/printf.h>
 
 namespace loader {
 namespace {
@@ -30,6 +32,23 @@ void bios_put_char(char ch) noexcept {
 
 void bios_put_str(std::string_ref s) noexcept {
   for (auto c : s) bios_put_char(c);
+}
+
+void bios_printf(std::string_ref fmt, ...) noexcept {
+  class renderer_impl : public abi::ext::printf_renderer<char> {
+   public:
+    int do_append(std::string_ref s) noexcept override {
+      bios_put_str(s);
+      return 0;
+    }
+  };
+
+  renderer_impl impl;
+  va_list ap;
+
+  va_start(ap, fmt);
+  abi::ext::vxprintf(impl, fmt, ap);
+  va_end(ap);
 }
 
 

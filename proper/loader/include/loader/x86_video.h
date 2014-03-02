@@ -7,6 +7,7 @@ namespace loader {
 
 void bios_put_char(char) noexcept;
 void bios_put_str(std::string_ref) noexcept;
+void bios_printf(std::string_ref, ...) noexcept;
 
 } /* namespace loader */
 
