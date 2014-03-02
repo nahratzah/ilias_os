@@ -36,7 +36,8 @@ void loader_constructors() noexcept {
   bios_put_str("Running constructors...\n");
   ctor_dtor* i = &start_ctors;
   while (i != &end_ctors) {
-    if (*i == nullptr || *i == static_cast<ctor_dtor*>(-1)) continue;
+    if (*i == nullptr || *i == reinterpret_cast<void*>(uintptr_t(-1)))
+      continue;
     (*i++)();
   }
   bios_put_str("Done running constructors...\n");
@@ -48,7 +49,8 @@ void loader_destructors() noexcept {
   bios_put_str("Running destructors...\n");
   ctor_dtor* i = &end_dtors;
   while (i-- != &start_dtors) {
-    if (*i == nullptr || *i == static_cast<ctor_dtor*>(-1)) continue;
+    if (*i == nullptr || *i == reinterpret_cast<void*>(uintptr_t(-1)))
+      continue;
     (*i)();
   }
   bios_put_str("Done running destructors\n");
