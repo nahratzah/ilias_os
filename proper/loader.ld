@@ -48,6 +48,8 @@ SECTIONS
 		*(.bss*)
 		*(.gnu.linkonce.b*)
 
+		ebss = .;
+
 		/* Stack used during loading of external kernels. */
 		. = ALIGN(0x1000);
 		boot_stack_begin = .;
@@ -59,8 +61,6 @@ SECTIONS
 		heap_start = .;
 		. += 0x40000;		/* Allocate 256k for heap. */
 		heap_end = .;
-
-		ebss = .;
 	}
 
 	.eh_frame ALIGN(0x1000):

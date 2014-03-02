@@ -12,6 +12,9 @@
  */
 
 #include <abi/abi.h>
+#ifdef _LOADER
+# include <loader/abi.h>
+#endif
 
 namespace __cxxabiv1 {
 
@@ -37,8 +40,12 @@ namespace _config {
  * The code path used in this function may not use exceptions
  * (no try-catch, for instance).
  */
-inline void* heap_malloc(size_t*, size_t) noexcept {
+inline void* heap_malloc(size_t* sz, size_t min_sz) noexcept {
+#ifdef _LOADER
+  return loader::heap_malloc(sz, min_sz);
+#else
   return nullptr;
+#endif
 }
 /*
  * End of heap_malloc.
@@ -53,29 +60,15 @@ inline void* heap_malloc(size_t*, size_t) noexcept {
  * The code path used in this function may not use exceptions
  * (no try-catch, for instance).
  */
-inline bool heap_free(void*, size_t) noexcept {
+inline bool heap_free(void* p, size_t sz) noexcept {
+#ifdef _LOADER
+  return loader::heap_free(p, sz);
+#else
   return false;
+#endif
 }
 /*
  * End of heap_free.
- */
-
-/*
- * Heap_resize: change allocation size of memory previously allocated
- * with malloc.
- *
- * This function may fail, by returning false.
- * This function must be thread-safe.
- * This function shall not move memory.
- *
- * The code path used in this function may not use exceptions
- * (no try-catch, for instance).
- */
-inline bool heap_resize(void*, size_t) noexcept {
-  return false;
-}
-/*
- * End of heap_resize.
  */
 
 /*

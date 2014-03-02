@@ -14,22 +14,40 @@ SECTIONS
 	.text ALIGN(0x1000):
 	{
 		*(.text)
+		*(.gnu.linkonce.t*)
 	}
 
 	.rodata ALIGN(0x1000):
 	{
 		*(.rodata*)
+
+		. = ALIGN(0x4);
+		start_ctors = .;
+		*(SORT(.ctors*))
+		end_ctors = .;
+
+		start_dtors = .;
+		*(SORT(.dtors*))
+		end_dtors = .;
+
+		*(.gnu.linkonce.r*)
 	}
 
 	.data ALIGN(0x1000):
 	{
 		*(.data)
+		*(.gnu.linkonce.d*)
 	}
 
 	.bss ALIGN(0x1000):
 	{
+		sbss = .;
+
 		*(COMMON)
 		*(.bss)
+		*(.gnu.linkonce.b*)
+
+		ebss = .;
 	}
 
 	.eh_frame ALIGN(0x1000):

@@ -1,9 +1,11 @@
 .PHONY: all
 
-OBJS_LOADER += 32.kgzo 64.kgzo
+OBJS_LOADER += 32.kgzo
+#OBJS_LOADER += 64.kgzo
 all: kernel
 
 # Import lists of sources.
+include loader/Makefile.inc
 include abi/Makefile.inc
 #include "freestanding/Makefile.inc"
 #include "c_util/Makefile.inc"
