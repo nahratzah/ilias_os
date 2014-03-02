@@ -41,5 +41,9 @@
 # define __restrict		restrict
 #endif
 
+#if defined(_SINGLE_THREADED)
+# define thread_local		/* No thread local variables. */
+#endif
+
 
 #endif /* CDECL_H */

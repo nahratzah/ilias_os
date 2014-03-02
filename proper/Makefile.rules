@@ -2,11 +2,18 @@ COMPILER_FLAGS +=	-ffreestanding					\
 			-nostdinc					\
 			-fno-stack-protector				\
 			-integrated-as					\
-			-O3						\
 			-D_KERNEL=1					\
 			-Wno-tautological-compare			\
 			-Wno-c++1y-extensions				\
 			-ftls-model=initial-exec
+
+# Disable TLS for now, since clang has a code generation bug.
+COMPILER_FLAGS +=	-D_SINGLE_THREADED=1
+
+KERNEL_FLAGS +=		-O3
+# Loader is always single threaded.
+LOADER_FLAGS +=		-Os						\
+			-D_SINGLE_THREADED=1
 
 CFLAGS_32 +=		-target i386
 CFLAGS_64 +=		-target amd64					\
@@ -23,7 +30,8 @@ TEST_COMPILER_FLAGS +=	-integrated-as					\
 			-Wno-tautological-compare			\
 			-Wno-c++1y-extensions				\
 			-fno-builtin					\
-			-D_TEST						\
+			-D_TEST=1					\
+			-D_SINGLE_THREADED=1				\
 			-ftls-model=initial-exec
 TEST_CFLAGS +=		${TEST_COMPILER_FLAGS}
 TEST_CXXFLAGS +=	${TEST_COMPILER_FLAGS}				\
@@ -90,37 +98,37 @@ recheck: retest
 
 # Build rules for compilation of loader objects.
 .cc.ol:
-	${CXX} ${CFLAGS_32} ${CFLAGS_LOADER} ${CXXFLAGS} ${INCLUDES} ${INCLUDES_LOADER} -MD -MP -MF $@.d -o $@ -c $<
+	${CXX} ${CFLAGS_32} ${CFLAGS_LOADER} ${CXXFLAGS} ${LOADER_FLAGS} ${INCLUDES} ${INCLUDES_LOADER} -MD -MP -MF $@.d -o $@ -c $<
 .cpp.ol:
-	${CXX} ${CFLAGS_32} ${CFLAGS_LOADER} ${CXXFLAGS} ${INCLUDES} ${INCLUDES_LOADER} -MD -MP -MF $@.d -o $@ -c $<
+	${CXX} ${CFLAGS_32} ${CFLAGS_LOADER} ${CXXFLAGS} ${LOADER_FLAGS} ${INCLUDES} ${INCLUDES_LOADER} -MD -MP -MF $@.d -o $@ -c $<
 .c.ol:
-	${CC} ${CFLAGS_32} ${CFLAGS_LOADER} ${CFLAGS} ${INCLUDES} ${INCLUDES_LOADER} -MD -MP -MF $@.d -o $@ -c $<
+	${CC} ${CFLAGS_32} ${CFLAGS_LOADER} ${CFLAGS} ${LOADER_FLAGS} ${INCLUDES} ${INCLUDES_LOADER} -MD -MP -MF $@.d -o $@ -c $<
 .s.ol:
-	${CC} ${CFLAGS_32} ${CFLAGS_LOADER} ${CFLAGS} ${INCLUDES} ${INCLUDES_LOADER} -o $@ -c $<
+	${CC} ${CFLAGS_32} ${CFLAGS_LOADER} ${CFLAGS} ${LOADER_FLAGS} ${INCLUDES} ${INCLUDES_LOADER} -o $@ -c $<
 .S.ol:
-	${CC} ${CFLAGS_32} ${CFLAGS_LOADER} ${CFLAGS} ${INCLUDES} ${INCLUDES_LOADER} -MD -MP -MF $@.d -o $@ -c $<
+	${CC} ${CFLAGS_32} ${CFLAGS_LOADER} ${CFLAGS} ${LOADER_FLAGS} ${INCLUDES} ${INCLUDES_LOADER} -MD -MP -MF $@.d -o $@ -c $<
 
 # Rules for compiling 32/64-bit objects (the actual kernel).
 .cc.o32:
-	${CXX} ${CFLAGS_32} ${CXXFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+	${CXX} ${CFLAGS_32} ${CXXFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .cc.o64:
-	${CXX} ${CFLAGS_64} ${CXXFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+	${CXX} ${CFLAGS_64} ${CXXFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .cpp.o32:
-	${CXX} ${CFLAGS_32} ${CXXFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+	${CXX} ${CFLAGS_32} ${CXXFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .cpp.o64:
-	${CXX} ${CFLAGS_64} ${CXXFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+	${CXX} ${CFLAGS_64} ${CXXFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .c.o32:
-	${CC} ${CFLAGS_32} ${CFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+	${CC} ${CFLAGS_32} ${CFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .c.o64:
-	${CC} ${CFLAGS_64} ${CFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+	${CC} ${CFLAGS_64} ${CFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .s.o32:
-	${CC} ${CFLAGS_32} ${CFLAGS} ${INCLUDES} -o $@ -c $<
+	${CC} ${CFLAGS_32} ${CFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -o $@ -c $<
 .s.o64:
-	${CC} ${CFLAGS_64} ${CFLAGS} ${INCLUDES} -o $@ -c $<
+	${CC} ${CFLAGS_64} ${CFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -o $@ -c $<
 .S.o32:
-	${CC} ${CFLAGS_32} ${CFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+	${CC} ${CFLAGS_32} ${CFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .S.o64:
-	${CC} ${CFLAGS_64} ${CFLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
+	${CC} ${CFLAGS_64} ${CFLAGS} ${KERNEL_FLAGS} ${INCLUDES} -MD -MP -MF $@.d -o $@ -c $<
 .kernel.kgz:
 	${GZIP} -9 -c $< > $@
 .kgz.kgzo:
