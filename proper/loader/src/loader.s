@@ -27,6 +27,7 @@ loader:
 
 	call	__cxa_finalize_0
 	call	loader_destructors
+	call	loader_print_endmsg
 
 	# Ensure we don't do anything if loader_setup returns for some reason.
 halt:

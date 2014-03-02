@@ -33,15 +33,24 @@ using ctor_dtor = void (*)();  /* Global constructor/destructor. */
 void loader_constructors() noexcept {
   extern ctor_dtor start_ctors, end_ctors;  /* Provided by linker. */
 
+  bios_put_str("Running constructors...\n");
   ctor_dtor* i = &start_ctors;
   while (i != &end_ctors) (*i++)();
+  bios_put_str("Done running constructors...\n");
 }
 
 void loader_destructors() noexcept {
   extern ctor_dtor start_dtors, end_dtors;  /* Provided by linker. */
 
+  bios_put_str("Running destructors...\n");
   ctor_dtor* i = &end_dtors;
   while (i-- != &start_dtors) (*i)();
+  bios_put_str("Done running destructors\n");
+}
+
+void loader_print_endmsg() noexcept {
+  bios_put_str("Loader has finished.  Will attempt to halt the system,\n"
+               "                      or spin indefinately");
 }
 
 _cdecl_end
