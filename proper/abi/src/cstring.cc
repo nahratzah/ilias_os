@@ -730,11 +730,7 @@ const char* strstr(const char* haystack, const char* needle) noexcept {
 }
 
 char* strtok(char*__restrict s, const char*__restrict sep) noexcept {
-#ifdef _TEST
-  static char* last_s;
-#else
-  thread_local char* last_s;
-#endif
+  static thread_local char* last_s;
   return strtok_r(s, sep, &last_s);
 }
 
