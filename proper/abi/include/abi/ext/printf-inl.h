@@ -1266,97 +1266,82 @@ int deduce_printf_spec(std::basic_string_ref<Char, Traits>& sp,
 }
 
 
-template<typename Char, typename Traits>
-int vxprintf(printf_renderer<Char, Traits>& renderer,
-             std::basic_string_ref<Char, Traits> fmt, va_list ap) noexcept {
+struct vxprintf_locals_base {
   int lit_count = 0;
   int argsize = 0;
-  std::basic_string_ref<Char, Traits> tail;
-  std::basic_string_ref<Char, Traits> lit[NL_ARGMAX];
   printf_arg va[NL_ARGMAX];
   printf_spec specs[NL_ARGMAX];
 
-  /* Parse fmt, gathering types and collecting specs. */
-  {
-    std::basic_string_ref<Char, Traits> p = fmt;
+  int resolve_fieldwidth() noexcept;
 
-    while (find_percent(&p, fmt = p)) {
-      if (lit_count >= NL_ARGMAX) return EINVAL;
-      lit[lit_count] = fmt.substr(0, p.begin() - fmt.begin());
-      printf_spec* spec = &specs[lit_count];
+ protected:
+  ~vxprintf_locals_base() noexcept {}
+};
 
-      p = p.substr(1);
-      if (p[0] != '%') {
-        printf_type type;
-        int error = deduce_printf_spec(p, spec, &type);
-        if (error) return error;
+template<typename Char, typename Traits = std::char_traits<Char>>
+struct vxprintf_locals : vxprintf_locals_base {
+  std::basic_string_ref<Char, Traits> tail;
+  std::basic_string_ref<Char, Traits> lit[NL_ARGMAX];
 
-        /* Process fieldwidth from argument list. */
-        if (spec->pff & PFF_FIELDWIDTH_IS_ARGIDX) {
-          if (spec->fieldwidth == -1) spec->fieldwidth = argsize++;
-          if (spec->fieldwidth >= NL_ARGMAX) return EINVAL;
-          if (argsize <= spec->fieldwidth) argsize = spec->fieldwidth + 1U;
-          if ((error = va[spec->fieldwidth].assign_type(PFT_INT)))
-            return error;
-        }
+  vxprintf_locals() noexcept {}
+  ~vxprintf_locals() noexcept {}
 
-        /* Process precision from argument list. */
-        if (spec->pff & PFF_PRECISION_IS_ARGIDX) {
-          if (spec->precision == -1) spec->precision = argsize++;
-          if (spec->precision >= NL_ARGMAX) return EINVAL;
-          if (argsize <= spec->precision) argsize = spec->precision + 1U;
-          if ((error = va[spec->precision].assign_type(PFT_INT)))
-            return error;
-        }
+  int parse_fmt(std::basic_string_ref<Char, Traits>) noexcept;
+  int render(printf_renderer<Char, Traits>& renderer) noexcept;
+};
 
-        /* Process the argument itself list. */
-        if (spec->argidx == -1) spec->argidx = argsize++;
-        if (argsize <= spec->argidx) argsize = spec->argidx + 1U;
-        if (spec->argidx >= NL_ARGMAX) return EINVAL;
+template<typename Char, typename Traits>
+int vxprintf_locals<Char, Traits>::parse_fmt(
+    std::basic_string_ref<Char, Traits> fmt) noexcept {
+  std::basic_string_ref<Char, Traits> p = fmt;
 
-        /* Save the type information. */
-        if ((error = va[spec->argidx].assign_type(type))) return error;
-      }
+  while (find_percent(&p, fmt = p)) {
+    if (lit_count >= NL_ARGMAX) return EINVAL;
+    lit[lit_count] = fmt.substr(0, p.begin() - fmt.begin());
+    printf_spec* spec = &specs[lit_count];
 
-      ++lit_count;
-    }
-    tail = fmt;
-  }
-
-  /* Read all va_list arguments. */
-  {
-    printf_arg*const b = &va[0];
-    printf_arg*const e = b + argsize;
-    for (printf_arg* i = b; i != e; ++i) {
-      int error = i->read(ap);
+    p = p.substr(1);
+    if (p[0] != '%') {
+      printf_type type;
+      int error = deduce_printf_spec(p, spec, &type);
       if (error) return error;
-    }
-  }
 
-  /* Resolve all fieldwidth, precision. */
-  {
-    printf_spec*const b = &specs[0];
-    printf_spec*const e = b + lit_count;
-    for (printf_spec* i = b; i != e; ++i) {
-      if (i->pff & PFF_FIELDWIDTH_IS_ARGIDX) {
-        int v;
-        int error = va[i->fieldwidth].as_int(&v);
-        i->fieldwidth = v;
-        if (error) return error;
+      /* Process fieldwidth from argument list. */
+      if (spec->pff & PFF_FIELDWIDTH_IS_ARGIDX) {
+        if (spec->fieldwidth == -1) spec->fieldwidth = argsize++;
+        if (spec->fieldwidth >= NL_ARGMAX) return EINVAL;
+        if (argsize <= spec->fieldwidth) argsize = spec->fieldwidth + 1U;
+        if ((error = va[spec->fieldwidth].assign_type(PFT_INT)))
+          return error;
       }
 
-      if (i->pff & PFF_PRECISION_IS_ARGIDX) {
-        int v;
-        int error = va[i->precision].as_int(&v);
-        i->precision = v;
-        if (error) return error;
+      /* Process precision from argument list. */
+      if (spec->pff & PFF_PRECISION_IS_ARGIDX) {
+        if (spec->precision == -1) spec->precision = argsize++;
+        if (spec->precision >= NL_ARGMAX) return EINVAL;
+        if (argsize <= spec->precision) argsize = spec->precision + 1U;
+        if ((error = va[spec->precision].assign_type(PFT_INT)))
+          return error;
       }
 
-      i->pff &= ~(PFF_FIELDWIDTH_IS_ARGIDX | PFF_PRECISION_IS_ARGIDX);
-    }
-  }
+      /* Process the argument itself list. */
+      if (spec->argidx == -1) spec->argidx = argsize++;
+      if (argsize <= spec->argidx) argsize = spec->argidx + 1U;
+      if (spec->argidx >= NL_ARGMAX) return EINVAL;
 
-  /* Start rendering loop. */
+      /* Save the type information. */
+      if ((error = va[spec->argidx].assign_type(type))) return error;
+    }
+
+    ++lit_count;
+  }
+  tail = fmt;
+  return 0;
+}
+
+template<typename Char, typename Traits>
+int vxprintf_locals<Char, Traits>::render(
+    printf_renderer<Char, Traits>& renderer) noexcept {
   for (int i = 0; i < lit_count; ++i) {
     int error;
     /* Carbon copy literal data to renderer. */
@@ -1368,6 +1353,32 @@ int vxprintf(printf_renderer<Char, Traits>& renderer,
 
   /* Verbatim copy of tail in format string. */
   return renderer.append(tail);
+}
+
+
+template<typename Char, typename Traits>
+int vxprintf(printf_renderer<Char, Traits>& renderer,
+             std::basic_string_ref<Char, Traits> fmt, va_list ap) noexcept {
+  vxprintf_locals<Char, Traits> locals;
+  int error;
+
+  /* Parse fmt, gathering types and collecting specs. */
+  if ((error = locals.parse_fmt(fmt))) return error;
+
+  /* Read all va_list arguments. */
+  {
+    printf_arg*const b = &locals.va[0];
+    printf_arg*const e = b + locals.argsize;
+    for (printf_arg* i = b; i != e; ++i) {
+      if ((error = i->read(ap))) return error;
+    }
+  }
+
+  /* Resolve all fieldwidth, precision. */
+  if ((error = locals.resolve_fieldwidth())) return error;
+
+  /* Start rendering loop. */
+  return locals.render(renderer);
 }
 
 template<typename Char, typename Traits>
@@ -1440,6 +1451,11 @@ extern template int printf_arg::apply(printf_renderer<char16_t>&,
                                       printf_spec) const noexcept;
 extern template int printf_arg::apply(printf_renderer<char32_t>&,
                                       printf_spec) const noexcept;
+
+extern template struct vxprintf_locals<char>;
+extern template struct vxprintf_locals<char16_t>;
+extern template struct vxprintf_locals<char32_t>;
+extern template struct vxprintf_locals<wchar_t>;
 
 
 }} /* namespace __cxxabiv1::ext */

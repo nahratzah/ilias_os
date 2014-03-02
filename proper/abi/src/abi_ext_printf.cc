@@ -107,5 +107,34 @@ template int printf_arg::apply(printf_renderer<char16_t>&,
 template int printf_arg::apply(printf_renderer<char32_t>&,
                                printf_spec) const noexcept;
 
+template struct vxprintf_locals<char>;
+template struct vxprintf_locals<char16_t>;
+template struct vxprintf_locals<char32_t>;
+template struct vxprintf_locals<wchar_t>;
+
+
+int vxprintf_locals_base::resolve_fieldwidth() noexcept {
+  printf_spec*const b = &specs[0];
+  printf_spec*const e = b + lit_count;
+  for (printf_spec* i = b; i != e; ++i) {
+    if (i->pff & PFF_FIELDWIDTH_IS_ARGIDX) {
+      int v;
+      int error = va[i->fieldwidth].as_int(&v);
+      i->fieldwidth = v;
+      if (error) return error;
+    }
+
+    if (i->pff & PFF_PRECISION_IS_ARGIDX) {
+      int v;
+      int error = va[i->precision].as_int(&v);
+      i->precision = v;
+      if (error) return error;
+    }
+
+    i->pff &= ~(PFF_FIELDWIDTH_IS_ARGIDX | PFF_PRECISION_IS_ARGIDX);
+  }
+  return 0;
+}
+
 
 }} /* namespace __cxxabiv1::ext */
