@@ -584,7 +584,7 @@ auto basic_string<Char, Traits, Alloc>::shrink_to_fit() -> void {
     pointer s;
     try {
       s = this->allocate_dfl(size() + 1U, this);
-    } catch (const std::bad_alloc&) {
+    } catch (const bad_alloc&) {
       return;
     }
 
@@ -1063,7 +1063,7 @@ auto basic_string<Char, Traits, Alloc>::replace(
 
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::swap(basic_string& s) -> void {
-  using std::swap;
+  using _namespace(std)::swap;
 
   this->impl::alloc_base<Alloc>::swap_(
     static_cast<impl::alloc_base<Alloc>&>(s));
@@ -1839,20 +1839,20 @@ inline namespace literals {
 inline namespace string_literals {
 
 
-inline std::string operator"" s(const char* s, size_t l) {
-  return std::string(s, l);
+inline _namespace(std)::string operator"" s(const char* s, size_t l) {
+  return _namespace(std)::string(s, l);
 }
 
-inline std::wstring operator"" s(const wchar_t* s, size_t l) {
-  return std::wstring(s, l);
+inline _namespace(std)::wstring operator"" s(const wchar_t* s, size_t l) {
+  return _namespace(std)::wstring(s, l);
 }
 
-inline std::u16string operator"" s(const char16_t* s, size_t l) {
-  return std::u16string(s, l);
+inline _namespace(std)::u16string operator"" s(const char16_t* s, size_t l) {
+  return _namespace(std)::u16string(s, l);
 }
 
-inline std::u32string operator"" s(const char32_t* s, size_t l) {
-  return std::u32string(s, l);
+inline _namespace(std)::u32string operator"" s(const char32_t* s, size_t l) {
+  return _namespace(std)::u32string(s, l);
 }
 
 

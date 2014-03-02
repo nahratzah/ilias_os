@@ -108,54 +108,54 @@ constexpr auto make_pair(T1&& f, T2&& s) ->
 }
 
 
-template<typename T1, typename T2> struct tuple_size<std::pair<T1, T2>>
+template<typename T1, typename T2> struct tuple_size<pair<T1, T2>>
 : integral_constant<size_t, 2> {};
-template<typename T1, typename T2> struct tuple_element<0, std::pair<T1, T2>>
+template<typename T1, typename T2> struct tuple_element<0, pair<T1, T2>>
 { using type = T1; };
-template<typename T1, typename T2> struct tuple_element<1, std::pair<T1, T2>>
+template<typename T1, typename T2> struct tuple_element<1, pair<T1, T2>>
 { using type = T2; };
 
 template<size_t I, class T1, class T2>
-constexpr auto get(std::pair<T1, T2>& p) noexcept ->
-    typename tuple_element<I, std::pair<T1, T2>>::type& {
+constexpr auto get(pair<T1, T2>& p) noexcept ->
+    typename tuple_element<I, pair<T1, T2>>::type& {
   return impl::pair_getter<I>::get(p);
 }
 
 template<size_t I, class T1, class T2>
-constexpr auto get(std::pair<T1, T2>&& p) noexcept ->
-    typename tuple_element<I, std::pair<T1, T2>>::type&& {
+constexpr auto get(pair<T1, T2>&& p) noexcept ->
+    typename tuple_element<I, pair<T1, T2>>::type&& {
   return impl::pair_getter<I>::get(move(p));
 }
 
 template<size_t I, class T1, class T2>
-constexpr auto get(const std::pair<T1, T2>& p) noexcept ->
-    const typename tuple_element<I, std::pair<T1, T2>>::type& {
+constexpr auto get(const pair<T1, T2>& p) noexcept ->
+    const typename tuple_element<I, pair<T1, T2>>::type& {
   return impl::pair_getter<I>::get(p);
 }
 
-template<class T1, class T2> T1& get(std::pair<T1, T2>& p) noexcept {
+template<class T1, class T2> T1& get(pair<T1, T2>& p) noexcept {
   return get<0>(p);
 }
 
-template<class T1, class T2> const T1& get(const std::pair<T1, T2>& p)
+template<class T1, class T2> const T1& get(const pair<T1, T2>& p)
     noexcept {
   return get<0>(p);
 }
 
-template<class T1, class T2> T1&& get(std::pair<T1, T2>&& p) noexcept {
+template<class T1, class T2> T1&& get(pair<T1, T2>&& p) noexcept {
   return get<0>(move(p));
 }
 
-template<class T1, class T2> T2& get(std::pair<T1, T2>& p) noexcept {
+template<class T1, class T2> T2& get(pair<T1, T2>& p) noexcept {
   return get<1>(p);
 }
 
-template<class T1, class T2> const T2& get(const std::pair<T1, T2>& p)
+template<class T1, class T2> const T2& get(const pair<T1, T2>& p)
     noexcept {
   return get<1>(p);
 }
 
-template<class T1, class T2> T2&& get(std::pair<T1, T2>&& p) noexcept {
+template<class T1, class T2> T2&& get(pair<T1, T2>&& p) noexcept {
   return get<1>(move(p));
 }
 

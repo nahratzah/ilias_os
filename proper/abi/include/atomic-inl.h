@@ -368,11 +368,11 @@ _ATOMIC_INLINE void atomic_signal_fence(memory_order mo) noexcept {
   __c11_atomic_signal_fence(mo);
 }
 
-template<typename T> void atomic_init(volatile std::atomic<T>* object,
+template<typename T> void atomic_init(volatile atomic<T>* object,
                                       T desired) noexcept {
   __c11_atomic_init(&object->v_, desired);
 }
-template<typename T> void atomic_init(std::atomic<T>* object,
+template<typename T> void atomic_init(atomic<T>* object,
                                       T desired) noexcept {
   __c11_atomic_init(&object->v_, desired);
 }

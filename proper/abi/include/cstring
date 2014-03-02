@@ -148,14 +148,6 @@ using std::strsignal;
 using std::strxfrm;
 using std::strxfrm_l;
 #endif /* __has_include(<clocale>) */
-
-/* Re-export some function into std::__1, working around broken libcxx. */
-namespace std {
-inline namespace __1 {
-using ::memset;
-using ::memcpy;
-using ::memmove;
-}} /* namespace std::__1 */
 #endif /* !_TEST && __cplusplus */
 
 #endif /* _CSTRING_ */

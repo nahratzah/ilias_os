@@ -202,8 +202,9 @@ template<typename Char, typename Traits, typename Alloc> class basic_string
   using const_reference = const value_type&;
   using const_iterator = const_pointer;
   using iterator = pointer;
-  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator =
+      _namespace(std)::reverse_iterator<const_iterator>;
+  using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
   using size_type = typename allocator_traits<allocator_type>::size_type;
   using difference_type =
       typename allocator_traits<allocator_type>::difference_type;
@@ -497,8 +498,9 @@ template<typename Char, typename Traits> class basic_string_ref {
   using const_reference = const char_type&;
   using const_iterator = const_pointer;
   using iterator = pointer;
-  using const_reverse_iterator = std::reverse_iterator<const_iterator>;
-  using reverse_iterator = std::reverse_iterator<iterator>;
+  using const_reverse_iterator =
+      _namespace(std)::reverse_iterator<const_iterator>;
+  using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
   using size_type = size_t;
   using difference_type = ptrdiff_t;
   using __identity = basic_string_ref;
@@ -600,10 +602,10 @@ inline namespace literals {
 inline namespace string_literals {
 
 
-inline std::string operator"" s(const char*, size_t);
-inline std::wstring operator"" s(const wchar_t*, size_t);
-inline std::u16string operator"" s(const char16_t*, size_t);
-inline std::u32string operator"" s(const char32_t*, size_t);
+inline _namespace(std)::string operator"" s(const char*, size_t);
+inline _namespace(std)::wstring operator"" s(const wchar_t*, size_t);
+inline _namespace(std)::u16string operator"" s(const char16_t*, size_t);
+inline _namespace(std)::u32string operator"" s(const char32_t*, size_t);
 
 
 }} /* namespace literals::string_literals */

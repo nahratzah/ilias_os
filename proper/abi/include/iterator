@@ -65,12 +65,12 @@ class reverse_iterator
   reverse_iterator& operator=(const reverse_iterator&) = default;
 
   explicit reverse_iterator(iterator_type)
-      noexcept(std::is_nothrow_copy_constructible<iterator_type>::value);
+      noexcept(is_nothrow_copy_constructible<iterator_type>::value);
   template<typename U> reverse_iterator(const reverse_iterator<U>&);
   template<typename U> reverse_iterator& operator=(const reverse_iterator<U>&);
 
   iterator_type base() const
-      noexcept(std::is_nothrow_copy_constructible<iterator_type>::value);
+      noexcept(is_nothrow_copy_constructible<iterator_type>::value);
   reference operator*() const;
   pointer operator->() const;
   auto operator[](difference_type) const
@@ -93,7 +93,7 @@ class reverse_iterator
 
 template<typename Iterator>
 reverse_iterator<Iterator>::reverse_iterator(iterator_type i)
-  noexcept(std::is_nothrow_copy_constructible<iterator_type>::value)
+  noexcept(is_nothrow_copy_constructible<iterator_type>::value)
 : i_(i)
 {}
 
@@ -113,7 +113,7 @@ auto reverse_iterator<Iterator>::operator=(const reverse_iterator<U>& o) ->
 
 template<typename Iterator>
 auto reverse_iterator<Iterator>::base() const
-    noexcept(std::is_nothrow_copy_constructible<iterator_type>::value) ->
+    noexcept(is_nothrow_copy_constructible<iterator_type>::value) ->
     iterator_type
 {
   return i_;

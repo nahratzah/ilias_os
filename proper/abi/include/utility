@@ -72,25 +72,25 @@ constexpr auto make_pair(T1&&, T2&&) ->
 template<typename T> struct tuple_size;
 template<size_t I, class T> struct tuple_element;
 
-template<typename T1, typename T2> struct tuple_size<std::pair<T1, T2>>;
-template<typename T1, typename T2> struct tuple_element<0, std::pair<T1, T2>>;
-template<typename T1, typename T2> struct tuple_element<1, std::pair<T1, T2>>;
+template<typename T1, typename T2> struct tuple_size<pair<T1, T2>>;
+template<typename T1, typename T2> struct tuple_element<0, pair<T1, T2>>;
+template<typename T1, typename T2> struct tuple_element<1, pair<T1, T2>>;
 
 template<size_t I, class T1, class T2>
-constexpr auto get(std::pair<T1, T2>&) noexcept ->
-    typename tuple_element<I, std::pair<T1, T2>>::type&;
+constexpr auto get(pair<T1, T2>&) noexcept ->
+    typename tuple_element<I, pair<T1, T2>>::type&;
 template<size_t I, class T1, class T2>
-constexpr auto get(std::pair<T1, T2>&&) noexcept ->
-    typename tuple_element<I, std::pair<T1, T2>>::type&&;
+constexpr auto get(pair<T1, T2>&&) noexcept ->
+    typename tuple_element<I, pair<T1, T2>>::type&&;
 template<size_t I, class T1, class T2>
-constexpr auto get(const std::pair<T1, T2>&) noexcept ->
-    const typename tuple_element<I, std::pair<T1, T2>>::type&;
-template<class T1, class T2> T1& get(std::pair<T1, T2>&) noexcept;
-template<class T1, class T2> const T1& get(const std::pair<T1, T2>&) noexcept;
-template<class T1, class T2> T1&& get(std::pair<T1, T2>&&) noexcept;
-template<class T1, class T2> T2& get(std::pair<T1, T2>&) noexcept;
-template<class T1, class T2> const T2& get(const std::pair<T1, T2>&) noexcept;
-template<class T1, class T2> T2&& get(std::pair<T1, T2>&&) noexcept;
+constexpr auto get(const pair<T1, T2>&) noexcept ->
+    const typename tuple_element<I, pair<T1, T2>>::type&;
+template<class T1, class T2> T1& get(pair<T1, T2>&) noexcept;
+template<class T1, class T2> const T1& get(const pair<T1, T2>&) noexcept;
+template<class T1, class T2> T1&& get(pair<T1, T2>&&) noexcept;
+template<class T1, class T2> T2& get(pair<T1, T2>&) noexcept;
+template<class T1, class T2> const T2& get(const pair<T1, T2>&) noexcept;
+template<class T1, class T2> T2&& get(pair<T1, T2>&&) noexcept;
 
 
 struct piecewise_construct_t {};

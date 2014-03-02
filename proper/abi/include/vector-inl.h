@@ -319,7 +319,7 @@ auto vector<T, Alloc>::operator=(const vector& o) -> vector& {
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator=(vector&& o) -> vector& {
   reserve(o.size());
-  copy_impl::assign(*this, std::move(o));
+  copy_impl::assign(*this, move(o));
   return *this;
 }
 
@@ -460,7 +460,7 @@ auto vector<T, Alloc>::reserve(size_type rsv) -> void {
     try {
       temp.heap_ = this->allocate_(new_sz);
       temp.avail_ = new_sz;
-    } catch (const std::bad_alloc&) {
+    } catch (const bad_alloc&) {
       if (new_sz == rsv) throw;
       new_sz = rsv;
       temp.heap_ = this->allocate_(new_sz);

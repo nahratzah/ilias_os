@@ -52,7 +52,7 @@ template<typename T> class allocator {
 
   template<typename U, typename... Args> void construct(U* p, Args&&... args)
       noexcept(noexcept(::new (static_cast<void*>(p))
-                              U(std::forward<Args>(args)...)));
+                              U(forward<Args>(args)...)));
 
   template<typename U> void destroy(U* p)
       noexcept(noexcept(p->~U()));
@@ -120,7 +120,7 @@ template<typename Alloc> struct allocator_traits {
   template<typename T, typename... Args> static void construct(
       Alloc& alloc, T* p, Args&&... args)
       noexcept(noexcept(impl::alloc_traits<Alloc>::construct(
-          alloc, p, std::forward<Args>(args)...)));
+          alloc, p, forward<Args>(args)...)));
 
   template<typename T> static void destroy(Alloc& alloc, T* p)
       noexcept(noexcept(impl::alloc_traits<Alloc>::destroy(alloc, p)));

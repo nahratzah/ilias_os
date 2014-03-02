@@ -30,7 +30,7 @@ auto allocator<T>::address(const_reference x) const noexcept -> const_pointer {
 template<typename T>
 auto allocator<T>::allocate(size_type n,
                             allocator<void>::const_pointer hint) -> pointer {
-  if (n >= max_size()) throw std::bad_alloc();
+  if (n >= max_size()) throw bad_alloc();
   return static_cast<pointer>(::operator new(n * sizeof(value_type)));
 }
 
@@ -41,16 +41,16 @@ auto allocator<T>::deallocate(pointer p, size_type n) -> void {
 
 template<typename T>
 auto allocator<T>::max_size() const noexcept -> size_type {
-  return std::numeric_limits<size_t>::max() / sizeof(value_type);
+  return numeric_limits<size_t>::max() / sizeof(value_type);
 }
 
 template<typename T>
 template<typename U, typename... Args>
 auto allocator<T>::construct(U* p, Args&&... args)
     noexcept(noexcept(::new (static_cast<void*>(p))
-                            U(std::forward<Args>(args)...))) ->
+                            U(forward<Args>(args)...))) ->
     void {
-  ::new (static_cast<void*>(p)) U(std::forward<Args>(args)...);
+  ::new (static_cast<void*>(p)) U(forward<Args>(args)...);
 }
 
 template<typename T>
@@ -91,8 +91,8 @@ template<typename T, typename... Args>
 void allocator_traits<Alloc>::construct(
     Alloc& alloc, T* p, Args&&... args)
     noexcept(noexcept(impl::alloc_traits<Alloc>::construct(
-        alloc, p, std::forward<Args>(args)...))) {
-  impl::alloc_traits<Alloc>::construct(alloc, p, std::forward<Args>(args)...);
+        alloc, p, forward<Args>(args)...))) {
+  impl::alloc_traits<Alloc>::construct(alloc, p, forward<Args>(args)...);
 }
 
 template<typename Alloc>

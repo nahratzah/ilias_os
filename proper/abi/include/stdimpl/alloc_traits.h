@@ -33,8 +33,8 @@ template<>
 struct alloc_traits_construct<alloc_traits_construct_yes> {
   template<typename Alloc, typename T, typename... Args>
   static void construct(Alloc& a, T* p, Args&&... args)
-      noexcept(noexcept(a.construct(p, std::forward<Args>(args)...))) {
-    a.construct(p, std::forward<Args>(args)...);
+      noexcept(noexcept(a.construct(p, forward<Args>(args)...))) {
+    a.construct(p, forward<Args>(args)...);
   }
 };
 
@@ -42,8 +42,8 @@ template<>
 struct alloc_traits_construct<alloc_traits_construct_no> {
   template<typename Alloc, typename T, typename... Args>
   static void construct(Alloc& a, T* p, Args&&... args)
-      noexcept(noexcept(::new(p) T(std::forward<Args>(args)...))) {
-    ::new(static_cast<void*>(p)) T(std::forward<Args>(args)...);
+      noexcept(noexcept(::new(p) T(forward<Args>(args)...))) {
+    ::new(static_cast<void*>(p)) T(forward<Args>(args)...);
   }
 };
 
@@ -151,7 +151,7 @@ template<typename Alloc> struct alloc_traits {
            template<typename, typename...> class AllocImpl,
            typename U, typename... Args>
       static auto select_rebind_(const AllocImpl<U, Args...>& =
-                                 std::declval<Alloc>()) ->
+                                 declval<Alloc>()) ->
           AllocImpl<T, Args...>;
 
  public:
@@ -178,16 +178,16 @@ template<typename Alloc> struct alloc_traits {
   template<typename T, typename... Args>
   static auto construct(Alloc& a, T* p, Args&&... args)
       noexcept(noexcept(construct_impl<T, Args...>::construct(
-        a, p, std::forward<Args>(args)...))) ->
+        a, p, forward<Args>(args)...))) ->
       void {
     return construct_impl<T, Args...>::construct(
-	a, p, std::forward<Args>(args)...);
+	a, p, forward<Args>(args)...);
   }
 
   /* Select destroy method. */
   template<typename T, typename F>
   static auto destroy(Alloc& a, T* p,
-      F = std::declval<decltype(a.destroy(p))>())
+      F = declval<decltype(a.destroy(p))>())
       noexcept(noexcept(a.destroy(p))) ->
       decltype(a.destroy(p)) {
     return a.destroy(p);
@@ -202,7 +202,7 @@ template<typename Alloc> struct alloc_traits {
   /* Select max_size method. */
   template<typename F>
   static auto max_size(const Alloc& a,
-      F = std::declval<decltype(a.max_size())>())
+      F = declval<decltype(a.max_size())>())
       noexcept(noexcept(a.max_size())) ->
       decltype(a.max_size()) {
     return a.max_size();

@@ -15,4 +15,8 @@ typedef struct __locale* locale_t;
 
 _namespace_end(std)
 
+#ifdef __cplusplus
+using _namespace(std)::locale_t;
+#endif
+
 #endif /* _LOCALE_MISC_LOCALE_T_H_ */
