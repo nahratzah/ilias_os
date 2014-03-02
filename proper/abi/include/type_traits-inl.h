@@ -168,7 +168,11 @@ template<typename T> struct is_trivially_move_constructible;  // XXX
 template<typename T, typename... Args> struct is_trivially_assignable;  // XXX
 template<typename T> struct is_trivially_copy_assignable;  // XXX
 template<typename T> struct is_trivially_move_assignable;  // XXX
-template<typename T> struct is_trivially_destructible;  // XXX
+
+template<typename T> struct _is_trivially_destructible
+: integral_constant<bool, __has_trivial_destructor(T)> {};
+template<typename T> struct is_trivially_destructible
+: _is_trivially_destructible<remove_cv_t<T>> {};
 
 
 template<typename T, typename... Args> struct _is_nothrow_constructible

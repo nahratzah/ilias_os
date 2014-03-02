@@ -36,6 +36,12 @@ template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
   : alloc_(alloc)
   {}
 
+  alloc_base(const alloc_base& alloc)
+      noexcept(is_nothrow_constructible<
+          allocator_type, decltype(alloc.get_allocator_for_copy_())>())
+  : alloc_(alloc.get_allocator_for_copy_())
+  {}
+
   ~alloc_base() noexcept {}
 
   allocator_type& get_allocator_() noexcept {
@@ -44,6 +50,12 @@ template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
 
   const allocator_type& get_allocator_() const noexcept {
     return alloc_;
+  }
+
+  auto get_allocator_for_copy_() const noexcept ->
+      conditional_t<allocator_traits<allocator_type>::propagate_on_container_copy_assignment::value,
+                    const allocator_type&, allocator_type> {
+    return get_allocator_();
   }
 
   typename allocator_traits<allocator_type>::pointer allocate_(
@@ -115,6 +127,12 @@ template<typename Alloc> class alloc_base<Alloc, 0U>
   : Alloc(alloc)
   {}
 
+  alloc_base(const alloc_base& alloc)
+      noexcept(is_nothrow_constructible<
+          allocator_type, decltype(alloc.get_allocator_for_copy_())>())
+  : Alloc(alloc.get_allocator_for_copy_())
+  {}
+
   ~alloc_base() noexcept {}
 
   allocator_type& get_allocator_() noexcept {
@@ -123,6 +141,12 @@ template<typename Alloc> class alloc_base<Alloc, 0U>
 
   const allocator_type& get_allocator_() const noexcept {
     return static_cast<const allocator_type&>(*this);
+  }
+
+  auto get_allocator_for_copy_() const noexcept ->
+      conditional_t<allocator_traits<allocator_type>::propagate_on_container_copy_assignment::value,
+                    const allocator_type&, allocator_type> {
+    return get_allocator_();
   }
 
   typename allocator_traits<allocator_type>::pointer allocate_(

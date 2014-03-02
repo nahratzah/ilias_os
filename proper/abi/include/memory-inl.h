@@ -62,6 +62,17 @@ auto allocator<T>::destroy(U* p)
 }
 
 
+template<typename T, typename U>
+bool operator==(const allocator<T>&, const allocator<U>&) noexcept {
+  return true;
+}
+
+template<typename T, typename U>
+bool operator!=(const allocator<T>&, const allocator<U>&) noexcept {
+  return false;
+}
+
+
 template<typename Alloc>
 auto allocator_traits<Alloc>::allocate(Alloc& alloc,
                                        size_type n, const_void_pointer hint) ->

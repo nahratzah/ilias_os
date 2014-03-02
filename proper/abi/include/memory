@@ -58,6 +58,11 @@ template<typename T> class allocator {
       noexcept(noexcept(p->~U()));
 };
 
+template<typename T, typename U>
+bool operator==(const allocator<T>&, const allocator<U>&) noexcept;
+template<typename T, typename U>
+bool operator!=(const allocator<T>&, const allocator<U>&) noexcept;
+
 template<typename Ptr> struct pointer_traits {
  private:
   template<typename P> static auto select_difftype_(P = declval<Ptr>()) ->

@@ -22,6 +22,7 @@ template<typename E> class initializer_list {
   constexpr initializer_list(const value_type*, size_type);
 
   inline size_type size() const noexcept;
+  inline bool empty() const noexcept;
   inline const_iterator begin() const noexcept;
   inline const_iterator end() const noexcept;
   inline iterator begin() noexcept;

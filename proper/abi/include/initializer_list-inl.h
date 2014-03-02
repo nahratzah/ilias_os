@@ -39,6 +39,11 @@ inline typename initializer_list<E>::size_type initializer_list<E>::size()
   return sz_;
 }
 
+template<typename E>
+inline bool initializer_list<E>::empty() const noexcept {
+  return sz_ == 0;
+}
+
 
 template<typename E>
 inline typename initializer_list<E>::iterator begin(initializer_list<E>& l)
