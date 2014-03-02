@@ -15,7 +15,7 @@ SECTIONS
 	{
 		loader/src/loader.ol(.text*)
 		*(.text*)
-		*(.gnu.linkonce.t*)
+		*(.gnu.linkonce.t.*)
 	}
 
 	.rodata ALIGN(0x1000):
@@ -31,13 +31,25 @@ SECTIONS
 		*(SORT(.dtors*))
 		end_dtors = .;
 
-		*(.gnu.linkonce.r*)
+		*(.gnu.linkonce.r.*)
 	}
 
 	.data ALIGN(0x1000):
 	{
 		*(.data*)
-		*(.gnu.linkonce.d*)
+		*(.gnu.linkonce.d.*)
+	}
+
+	.tdata ALIGN(0x1000):
+	{
+		*(.tdata*)
+		*(.gnu.linkonce.td.*)
+	}
+
+	.tbss ALIGN(0x1000):
+	{
+		*(.tbss*)
+		*(.gnu.linkonce.tb.*)
 	}
 
 	.bss ALIGN(0x1000):
@@ -46,7 +58,7 @@ SECTIONS
 
 		*(COMMON*)
 		*(.bss*)
-		*(.gnu.linkonce.b*)
+		*(.gnu.linkonce.b.*)
 
 		ebss = .;
 
@@ -66,6 +78,16 @@ SECTIONS
 	.eh_frame ALIGN(0x1000):
 	{
 		*(.eh_frame*)
+	}
+
+	.gcc_except_table ALIGN(0x1000):
+	{
+		*(.gcc_except_table*)
+	}
+
+	.dynamic ALIGN(0x1000):
+	{
+		*(.dynamic)
 	}
 
 	kernel_end = .;

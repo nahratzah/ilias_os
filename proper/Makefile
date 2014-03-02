@@ -1,6 +1,6 @@
 .PHONY: all
 
-OBJS_LOADER += 32.kgzo
+#OBJS_LOADER += 32.kgzo
 #OBJS_LOADER += 64.kgzo
 all: kernel
 
