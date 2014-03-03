@@ -15,6 +15,7 @@
 .global loader
 .type loader, @function
 loader:
+	mov	boot_stack_init, %ebp		# Initialize stack base.
 	mov	boot_stack_init, %esp		# Initialize stack pointer.
 
 	push	%ebx
