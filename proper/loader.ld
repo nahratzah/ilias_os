@@ -36,6 +36,17 @@ SECTIONS
 		*(.gnu.linkonce.r.*)
 	}
 
+	.eh_frame ALIGN(0x1000):
+	{
+		*(.eh_frame)
+		*(.eh_frame*)
+	}
+
+	.gcc_except_table ALIGN(0x1000):
+	{
+		*(.gcc_except_table*)
+	}
+
 	.data ALIGN(0x1000):
 	{
 		*(.data*)
@@ -46,17 +57,6 @@ SECTIONS
 	{
 		*(.tdata*)
 		*(.gnu.linkonce.td.*)
-	}
-
-	.eh_frame ALIGN(0x1000):
-	{
-		*(.eh_frame)
-		*(.eh_frame*)
-	}
-
-	.gcc_except_table ALIGN(0x1000):
-	{
-		*(.gcc_except_table*)
 	}
 
 	.dynamic ALIGN(0x1000):
