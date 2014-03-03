@@ -3,6 +3,7 @@
 PROPER_OPTS += "CC=../compiler/build/install/bin/clang"
 PROPER_OPTS += "CXX=../compiler/build/install/bin/clang++"
 PROPER_OPTS += "LD=../compiler/build/install/bin/amd64-unknown-linux-ld"
+PROPER_OPTS += "OBJCOPY=../compiler/build/install/bin/amd64-unknown-linux-objcopy"
 
 all: compiler_all
 	cd proper && ${MAKE} ${PROPER_OPTS} all
