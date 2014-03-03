@@ -1,6 +1,7 @@
 #ifndef _STRING_
 #define _STRING_
 
+#include <cdecl.h>
 #include <cstring>
 #include <cwchar>
 #include <algorithm>

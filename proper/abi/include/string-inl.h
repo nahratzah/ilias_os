@@ -609,14 +609,16 @@ auto basic_string<Char, Traits, Alloc>::operator[](size_type i)
 
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::at(size_type i) -> reference {
-  if (i < 0 || i >= len_) throw out_of_range("basic_string::at");
+  if (_predict_false(i < 0 || i >= len_))
+    throw out_of_range("basic_string::at");
   return (*this)[i];
 }
 
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::at(size_type i) const ->
     const_reference {
-  if (i < 0 || i >= len_) throw out_of_range("basic_string::at");
+  if (_predict_false(i < 0 || i >= len_))
+    throw out_of_range("basic_string::at");
   return (*this)[i];
 }
 
@@ -828,8 +830,9 @@ auto basic_string<Char, Traits, Alloc>::insert(size_type pos,
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::insert(
     size_type pos, basic_string_ref<Char, Traits> s) -> basic_string& {
-  if (pos > size()) throw out_of_range("basic_string::insert");
-  if (s.size() > max_size() - size())
+  if (_predict_false(pos > size()))
+    throw out_of_range("basic_string::insert");
+  if (_predict_false(s.size() > max_size() - size()))
     throw length_error("basic_string::insert");
 
   reserve(size() + s.size());
@@ -852,8 +855,10 @@ template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::insert(size_type pos,
                                                size_type n, char_type c) ->
     basic_string& {
-  if (pos > size()) throw out_of_range("basic_string::insert");
-  if (n > max_size() - size()) throw length_error("basic_string::insert");
+  if (_predict_false(pos > size()))
+    throw out_of_range("basic_string::insert");
+  if (_predict_false(n > max_size() - size()))
+    throw length_error("basic_string::insert");
 
   reserve(size() + n);
   traits_type::move(begin() + pos + n, begin() + pos, size() - pos);
@@ -912,7 +917,8 @@ auto basic_string<Char, Traits, Alloc>::insert(
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::erase(size_type pos, size_type len) ->
     basic_string& {
-  if (pos > size()) throw out_of_range("basic_string::erase");
+  if (_predict_false(pos > size()))
+    throw out_of_range("basic_string::erase");
 
   len = min(size() - pos, len);
   size_type pl = pos + len;
@@ -983,7 +989,8 @@ template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::replace(
     size_type pos, size_type len, basic_string_ref<Char, Traits> s) ->
     basic_string& {
-  if (pos < 0 || pos > size()) throw out_of_range("basic_string::replace");
+  if (_predict_false(pos < 0 || pos > size()))
+    throw out_of_range("basic_string::replace");
   if (len > size() - pos) len = size() - pos;
   return replace(begin() + pos, begin() + pos + len, s);
 }
@@ -993,7 +1000,7 @@ auto basic_string<Char, Traits, Alloc>::replace(
     const_iterator b, const_iterator e, basic_string_ref<Char, Traits> s) ->
     basic_string& {
   assert(begin() <= b && b <= e && e <= end());
-  if (max_size() - size() + (e - b) < s.size())
+  if (_predict_false(max_size() - size() + (e - b) < s.size()))
     throw length_error("basic_string::replace");
 
   reserve(size() - (e - b) + s.size());
@@ -1024,7 +1031,8 @@ template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::replace(size_type pos, size_type len,
                                                 size_type n, char_type c) ->
     basic_string& {
-  if (pos < 0 || pos > size()) throw out_of_range("basic_string::replace");
+  if (_predict_false(pos < 0 || pos > size()))
+    throw out_of_range("basic_string::replace");
   if (len > size() - pos) len = size() - pos;
   return replace(begin() + pos, begin() + pos + len, n, c);
 }
@@ -1035,7 +1043,7 @@ auto basic_string<Char, Traits, Alloc>::replace(const_iterator b,
                                                 size_type n, char_type c) ->
     basic_string& {
   assert(begin() <= b && b <= e && e <= end());
-  if (max_size() - size() + (e - b) < 1)
+  if (_predict_false(max_size() - size() + (e - b) < 1))
     throw length_error("basic_string::replace");
 
   reserve(size() - (e - b) + n);
@@ -1095,7 +1103,8 @@ template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::copy(char_type* s, size_type len,
                                              size_type pos) const ->
     size_type {
-  if (pos > size()) throw out_of_range("basic_string::copy");
+  if (_predict_false(pos > size()))
+    throw out_of_range("basic_string::copy");
 
   if (len > size() - pos) len = size() - pos;
   traits_type::copy(s, data() + pos, len);
@@ -1334,7 +1343,8 @@ auto basic_string<Char, Traits, Alloc>::find_last_not_of(
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::substr(size_type pos, size_type len)
     const -> basic_string {
-  if (pos > size()) throw out_of_range("basic_string::substr");
+  if (_predict_false(pos > size()))
+    throw out_of_range("basic_string::substr");
   if (len > size() - pos) len = size() - pos;
   return basic_string(data() + pos, len, this->get_allocator());
 }
@@ -1357,7 +1367,8 @@ auto basic_string<Char, Traits, Alloc>::compare(size_type pos1, size_type len1,
                                                 const basic_string& s,
                                                 size_type pos2, size_type len2)
     const -> int {
-  if (pos2 > s.size()) throw out_of_range("basic_string::compare");
+  if (_predict_false(pos2 > s.size()))
+    throw out_of_range("basic_string::compare");
   return compare(pos1, len1,
                  basic_string_ref<Char, Traits>(s).substr(pos2, len2));
 }
@@ -1385,7 +1396,8 @@ template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::compare(
     size_type pos, size_type len, basic_string_ref<Char, Traits> s)
     const -> int {
-  if (pos > size()) throw out_of_range("basic_string::compare");
+  if (_predict_false(pos > size()))
+    throw out_of_range("basic_string::compare");
   return basic_string_ref<Char, Traits>(*this).substr(pos, len).compare(s);
 }
 
@@ -1490,7 +1502,8 @@ constexpr auto basic_string_ref<Char, Traits>::operator[](size_type i)
 template<typename Char, typename Traits>
 auto basic_string_ref<Char, Traits>::at(size_type i) const ->
     const_reference {
-  if (i < 0 || i >= size()) throw out_of_range("basic_string_ref::at");
+  if (_predict_false(i < 0 || i >= size()))
+    throw out_of_range("basic_string_ref::at");
   return (*this)[i];
 }
 
@@ -1519,7 +1532,8 @@ auto basic_string_ref<Char, Traits>::clear() noexcept -> void {
 
 template<typename Char, typename Traits>
 auto basic_string_ref<Char, Traits>::remove_prefix(size_type n) -> void {
-  if (n >= size()) throw out_of_range("basic_string_ref::remove_prefix");
+  if (_predict_false(n >= size()))
+    throw out_of_range("basic_string_ref::remove_prefix");
   s_ += n;
   len_ -= n;
 }
@@ -1533,7 +1547,8 @@ template<typename Char, typename Traits>
 constexpr auto basic_string_ref<Char, Traits>::substr(size_type pos,
                                                       size_type n)
     const -> basic_string_ref {
-  if (pos < 0 || pos >= size()) throw out_of_range("basic_string_ref::substr");
+  if (_predict_false(pos < 0 || pos >= size()))
+    throw out_of_range("basic_string_ref::substr");
   basic_string_ref copy = *this;
   copy.s_ += pos;
   copy.len_ -= pos;
