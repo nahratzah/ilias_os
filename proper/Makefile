@@ -16,11 +16,11 @@ include abi/Makefile.inc
 include Makefile.rules
 
 32.kernel: ${OBJS_32} i386.ld
-	${LD} -T i386.ld ${LDFLAGS} -o $@ ${OBJS_32}
+	${LD} -z max-page-size=0x1000 -T i386.ld ${LDFLAGS} -o $@ ${OBJS_32}
 64.kernel: ${OBJS_64} amd64.ld
-	${LD} -T amd64.ld ${LDFLAGS} -o $@ ${OBJS_64}
+	${LD} -z max-page-size=0x1000 -T amd64.ld ${LDFLAGS} -o $@ ${OBJS_64}
 kernel: ${OBJS_LOADER} loader.ld
-	${LD} -o $@ -T loader.ld ${OBJS_LOADER}
+	${LD} -z max-page-size=0x1000 -o $@ -T loader.ld ${OBJS_LOADER}
 
 32.kgz: 32.kernel
 64.kgz: 64.kernel

@@ -1,7 +1,7 @@
 OUTPUT_FORMAT(elf32-i386)
 OUTPUT_ARCH(i386)
 
-KERNEL_VMA = 0x100000;
+KERNEL_VMA = 1M;
 
 ENTRY(loader)
 
@@ -13,14 +13,9 @@ SECTIONS
 
 	.text ALIGN(0x1000):
 	{
-		loader/src/loader.ol(.text*)
+		loader/src/loader.ol(*)
 		*(.text*)
 		*(.gnu.linkonce.t.*)
-	}
-
-	/* Put the stack between two read-only sections. */
-	.stack_bss ALIGN(0x1000):
-	{
 	}
 
 	.rodata ALIGN(0x1000):
@@ -29,13 +24,13 @@ SECTIONS
 
 		. = ALIGN(0x4);
 		start_ctors = .;
-		*(SORT(.init_array*))
+		/* *(SORT(.init_array*)) */
 		*(SORT(.ctors*))
 		end_ctors = .;
 
 		start_dtors = .;
 		*(SORT(.dtors*))
-		*(SORT(.fini_array*))
+		/* *(SORT(.fini_array*)) */
 		end_dtors = .;
 
 		*(.gnu.linkonce.r.*)

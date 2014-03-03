@@ -5,7 +5,8 @@ COMPILER_FLAGS +=	-ffreestanding					\
 			-D_KERNEL=1					\
 			-Wno-tautological-compare			\
 			-Wno-c++1y-extensions				\
-			-ftls-model=initial-exec
+			-ftls-model=initial-exec			\
+			-mno-sse -mno-sse2 -mno-sse3 -mno-3dnow -mno-mmx -mno-avx -msoft-float
 
 # Disable TLS for now, since clang has a code generation bug.
 COMPILER_FLAGS +=	-D_SINGLE_THREADED=1
@@ -15,8 +16,8 @@ KERNEL_FLAGS +=		-O3
 LOADER_FLAGS +=		-Os						\
 			-D_SINGLE_THREADED=1
 
-CFLAGS_32 +=		-target i386
-CFLAGS_64 +=		-target amd64					\
+CFLAGS_32 +=		-target i386-elf
+CFLAGS_64 +=		-target amd64-elf				\
 			-mcmodel=large					\
 			-mno-red-zone
 

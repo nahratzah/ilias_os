@@ -1,15 +1,22 @@
-.global loader
-
 # Multiboot header.
-.set MAGIC,	0x1BADB002			# Magic for multiboot header.
-.set FLAGS,	0x3				# Multiboot flags.
-.align 4
-.long MAGIC					# Multiboot header starts here.
-.long FLAGS
-.long -(MAGIC + FLAGS)				# Multiboot checksum.
+.set ALIGN, 1<<0		# Align loaded modules on page boundaries.
+.set MEMINFO, 1<<1		# Provide memory map.
+.set FLAGS, ALIGN | MEMINFO	# Multiboot flags.
+.set MAGIC, 0x1BADB002		# Magic for multiboot header.
+.set CHECKSUM, -(MAGIC + FLAGS)	# Checksum of the above.
 
+.section .multiboot
+.align 4
+.long MAGIC			# Multiboot header starts here.
+.long FLAGS
+.long CHECKSUM			# Multiboot checksum.
+
+.section .text
+.global loader
+.type loader, @function
 loader:
-	# Use bootloader provided stack for additional initialization.
+	mov	boot_stack_init, %esp		# Initialize stack pointer.
+
 	push	%ebx
 	push	%eax
 	call	bss_zero
@@ -18,8 +25,6 @@ loader:
 
 	mov	%eax, mb_magic			# Save magic.
 	mov	%ebx, mb_data			# Save multiboot data pointer.
-
-	mov	boot_stack_init, %esp		# Initialize stack pointer.
 
 	call	loader_constructors
 
@@ -32,5 +37,7 @@ loader:
 
 	# Ensure we don't do anything if loader_setup returns for some reason.
 halt:
-	hlt
+	# hlt
 	jmp halt
+
+.size loader, . - loader
