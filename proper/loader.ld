@@ -48,10 +48,21 @@ SECTIONS
 		*(.gnu.linkonce.td.*)
 	}
 
-	.tbss ALIGN(0x1000):
+	.eh_frame ALIGN(0x1000):
 	{
-		*(.tbss*)
-		*(.gnu.linkonce.tb.*)
+		*(.eh_frame)
+		*(.eh_frame*)
+	}
+
+	.gcc_except_table ALIGN(0x1000):
+	{
+		*(.gcc_except_table*)
+	}
+
+	.dynamic ALIGN(0x1000):
+	{
+		*(.dynamic)
+		*(.dynamic*)
 	}
 
 	.bss ALIGN(0x1000):
@@ -65,8 +76,8 @@ SECTIONS
 
 		sbss = .;
 
-		*(COMMON*)
 		*(.bss*)
+		*(COMMON*)
 		*(.gnu.linkonce.b.*)
 
 		ebss = .;
@@ -77,19 +88,10 @@ SECTIONS
 		heap_end = .;
 	}
 
-	.eh_frame ALIGN(0x1000):
+	.tbss ALIGN(0x1000):
 	{
-		*(.eh_frame*)
-	}
-
-	.gcc_except_table ALIGN(0x1000):
-	{
-		*(.gcc_except_table*)
-	}
-
-	.dynamic ALIGN(0x1000):
-	{
-		*(.dynamic)
+		*(.tbss*)
+		*(.gnu.linkonce.tb.*)
 	}
 
 	kernel_end = .;
