@@ -26,7 +26,17 @@ ABI_SRCS += abi/src/string.cc
 ABI_SRCS += abi/src/system_error.cc
 ABI_SRCS += abi/src/typeinfo.cc
 
+SRCS_32 += abi/i386/divdi3.s
+SRCS_32 += abi/i386/moddi3.s
+SRCS_32 += abi/i386/udivdi3.s
+SRCS_32 += abi/i386/umoddi3.s
+
 SRCS += ${ABI_SRCS}
 SRCS_LOADER += ${ABI_SRCS}
+
+SRCS_LOADER += abi/i386/divdi3.s
+SRCS_LOADER += abi/i386/moddi3.s
+SRCS_LOADER += abi/i386/udivdi3.s
+SRCS_LOADER += abi/i386/umoddi3.s
 
 include abi/test/Makefile.inc
