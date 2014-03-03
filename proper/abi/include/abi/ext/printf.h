@@ -37,9 +37,7 @@ class printf_renderer {
 };
 
 template<typename Char, typename Traits = std::char_traits<Char>>
-int vxprintf(printf_renderer<Char, Traits>&,
-             typename printf_renderer<Char, Traits>::string_type,
-             va_list) noexcept;
+struct vxprintf_locals;
 
 template<typename Char, typename Traits = std::char_traits<Char>>
 int vxprintf(printf_renderer<Char, Traits>&,
@@ -50,19 +48,6 @@ extern template class printf_renderer<char>;
 extern template class printf_renderer<wchar_t>;
 extern template class printf_renderer<char16_t>;
 extern template class printf_renderer<char32_t>;
-
-extern template int vxprintf(printf_renderer<char>&,
-                             typename printf_renderer<char>::string_type,
-                             va_list) noexcept;
-extern template int vxprintf(printf_renderer<wchar_t>&,
-                             typename printf_renderer<wchar_t>::string_type,
-                             va_list) noexcept;
-extern template int vxprintf(printf_renderer<char16_t>&,
-                             typename printf_renderer<char16_t>::string_type,
-                             va_list) noexcept;
-extern template int vxprintf(printf_renderer<char32_t>&,
-                             typename printf_renderer<char32_t>::string_type,
-                             va_list) noexcept;
 
 extern template int vxprintf(printf_renderer<char>&,
                              typename printf_renderer<char>::string_type,

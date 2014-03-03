@@ -111,7 +111,14 @@ int vsnprintf(char*__restrict s, size_t sz, const char*__restrict fmt,
 
   /* Rendering stage. */
   vsn_renderer renderer{ s, sz };
-  int error = abi::ext::vxprintf(renderer, fmt, ap);
+  int error = 0;
+  {
+    abi::ext::vxprintf_locals<char> locals;
+    if (!error) error = locals.parse_fmt(fmt);
+    if (!error) error = locals.load_arguments(ap);
+    if (!error) error = locals.resolve_fieldwidth();
+    if (!error) error = locals.render(renderer);
+  }
 
   if (error) {
     errno = error;
@@ -149,7 +156,14 @@ int vsprintf(char*__restrict s, const char*__restrict fmt, va_list ap)
 
   /* Rendering stage. */
   vs_renderer renderer{ s };
-  int error = abi::ext::vxprintf(renderer, fmt, ap);
+  int error = 0;
+  {
+    abi::ext::vxprintf_locals<char> locals;
+    if (!error) error = locals.parse_fmt(fmt);
+    if (!error) error = locals.load_arguments(ap);
+    if (!error) error = locals.resolve_fieldwidth();
+    if (!error) error = locals.render(renderer);
+  }
 
   if (error) {
     errno = error;
@@ -227,7 +241,14 @@ int vasprintf(char** sptr, const char*__restrict fmt, va_list ap) noexcept {
   /* Rendering stage. */
   vas_renderer renderer;
   if (!renderer) return ENOMEM;
-  int error = abi::ext::vxprintf(renderer, fmt, ap);
+  int error = 0;
+  {
+    abi::ext::vxprintf_locals<char> locals;
+    if (!error) error = locals.parse_fmt(fmt);
+    if (!error) error = locals.load_arguments(ap);
+    if (!error) error = locals.resolve_fieldwidth();
+    if (!error) error = locals.render(renderer);
+  }
 
   if (error) {
     *sptr = nullptr;  // Not required, but safe.

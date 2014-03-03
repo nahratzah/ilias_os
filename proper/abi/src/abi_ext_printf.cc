@@ -23,19 +23,6 @@ template class printf_renderer<char32_t>;
 
 template int vxprintf(printf_renderer<char>&,
                       typename printf_renderer<char>::string_type,
-                      va_list) noexcept;
-template int vxprintf(printf_renderer<wchar_t>&,
-                      typename printf_renderer<wchar_t>::string_type,
-                      va_list) noexcept;
-template int vxprintf(printf_renderer<char16_t>&,
-                      typename printf_renderer<char16_t>::string_type,
-                      va_list) noexcept;
-template int vxprintf(printf_renderer<char32_t>&,
-                      typename printf_renderer<char32_t>::string_type,
-                      va_list) noexcept;
-
-template int vxprintf(printf_renderer<char>&,
-                      typename printf_renderer<char>::string_type,
                       ...) noexcept;
 template int vxprintf(printf_renderer<wchar_t>&,
                       typename printf_renderer<wchar_t>::string_type,
@@ -133,6 +120,15 @@ int vxprintf_locals_base::resolve_fieldwidth() noexcept {
 
     i->pff &= ~(PFF_FIELDWIDTH_IS_ARGIDX | PFF_PRECISION_IS_ARGIDX);
   }
+  return 0;
+}
+
+int vxprintf_locals_base::load_arguments(va_list ap) noexcept {
+  int error;
+  printf_arg*const b = &va[0];
+  printf_arg*const e = b + argsize;
+  for (printf_arg* i = b; i != e; ++i)
+    if ((error = i->read(ap))) return error;
   return 0;
 }
 

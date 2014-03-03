@@ -45,9 +45,20 @@ void bios_printf(std::string_ref fmt, ...) noexcept {
 
   renderer_impl impl;
   va_list ap;
+  int error;
+  abi::ext::vxprintf_locals<char> locals;
 
   va_start(ap, fmt);
-  abi::ext::vxprintf(impl, fmt, ap);
+
+  /* Parse fmt, gathering types and collecting specs. */
+  if (!error) error = locals.parse_fmt(fmt);
+  /* Read all va_list arguments. */
+  if (!error) error = locals.load_arguments(ap);
+  /* Resolve all fieldwidth, precision. */
+  if (!error) error = locals.resolve_fieldwidth();
+  /* Start rendering loop. */
+  if (!error) error = locals.render(impl);
+
   va_end(ap);
 }
 

@@ -1267,22 +1267,27 @@ int deduce_printf_spec(std::basic_string_ref<Char, Traits>& sp,
 
 
 struct vxprintf_locals_base {
+ protected:
   int lit_count = 0;
   int argsize = 0;
   printf_arg va[NL_ARGMAX];
   printf_spec specs[NL_ARGMAX];
 
+ public:
   int resolve_fieldwidth() noexcept;
+  int load_arguments(va_list) noexcept;
 
  protected:
   ~vxprintf_locals_base() noexcept {}
 };
 
-template<typename Char, typename Traits = std::char_traits<Char>>
+template<typename Char, typename Traits>
 struct vxprintf_locals : vxprintf_locals_base {
+ protected:
   std::basic_string_ref<Char, Traits> tail;
   std::basic_string_ref<Char, Traits> lit[NL_ARGMAX];
 
+ public:
   vxprintf_locals() noexcept {}
   ~vxprintf_locals() noexcept {}
 
@@ -1357,39 +1362,25 @@ int vxprintf_locals<Char, Traits>::render(
 
 
 template<typename Char, typename Traits>
-int vxprintf(printf_renderer<Char, Traits>& renderer,
-             std::basic_string_ref<Char, Traits> fmt, va_list ap) noexcept {
-  vxprintf_locals<Char, Traits> locals;
-  int error;
-
-  /* Parse fmt, gathering types and collecting specs. */
-  if ((error = locals.parse_fmt(fmt))) return error;
-
-  /* Read all va_list arguments. */
-  {
-    printf_arg*const b = &locals.va[0];
-    printf_arg*const e = b + locals.argsize;
-    for (printf_arg* i = b; i != e; ++i) {
-      if ((error = i->read(ap))) return error;
-    }
-  }
-
-  /* Resolve all fieldwidth, precision. */
-  if ((error = locals.resolve_fieldwidth())) return error;
-
-  /* Start rendering loop. */
-  return locals.render(renderer);
-}
-
-template<typename Char, typename Traits>
 int vxprintf(printf_renderer<Char, Traits>& r,
              typename printf_renderer<Char, Traits>::string_type fmt,
              ...) noexcept {
+  vxprintf_locals<Char, Traits> locals;
+  int error;
   va_list ap;
   va_start(ap, fmt);
-  int err = vxprintf(r, fmt, ap);
+
+  /* Parse fmt, gathering types and collecting specs. */
+  if (!error) error = locals.parse_fmt(fmt);
+  /* Read all va_list arguments. */
+  if (!error) error = locals.load_arguments(ap);
+  /* Resolve all fieldwidth, precision. */
+  if (!error) error = locals.resolve_fieldwidth();
+  /* Start rendering loop. */
+  if (!error) error = locals.render(r);
+
   va_end(ap);
-  return err;
+  return error;
 }
 
 extern template int printf_renderer<char>::append(
