@@ -100,6 +100,8 @@ template struct vxprintf_locals<char32_t>;
 template struct vxprintf_locals<wchar_t>;
 
 
+vxprintf_locals_base::vxprintf_locals_base() noexcept {}
+
 int vxprintf_locals_base::resolve_fieldwidth() noexcept {
   printf_spec*const b = &specs[0];
   printf_spec*const e = b + lit_count;

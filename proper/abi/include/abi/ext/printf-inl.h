@@ -1274,11 +1274,12 @@ struct vxprintf_locals_base {
   printf_spec specs[NL_ARGMAX];
 
  public:
+  vxprintf_locals_base() noexcept;
   int resolve_fieldwidth() noexcept;
   int load_arguments(va_list) noexcept;
 
  protected:
-  ~vxprintf_locals_base() noexcept {}
+  ~vxprintf_locals_base() = default;
 };
 
 template<typename Char, typename Traits>
@@ -1289,7 +1290,7 @@ struct vxprintf_locals : vxprintf_locals_base {
 
  public:
   vxprintf_locals() noexcept {}
-  ~vxprintf_locals() noexcept {}
+  ~vxprintf_locals() = default;
 
   int parse_fmt(std::basic_string_ref<Char, Traits>) noexcept;
   int render(printf_renderer<Char, Traits>& renderer) noexcept;
