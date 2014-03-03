@@ -38,7 +38,7 @@ loader:
 
 	# Ensure we don't do anything if loader_setup returns for some reason.
 halt:
-	# hlt
+	hlt
 	jmp halt
 
 .size loader, . - loader
