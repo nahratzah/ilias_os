@@ -1,6 +1,6 @@
 #include <loader/x86_video.h>
 #include <cstdint>
-#include <cstdarg>
+#include <string>
 #include <abi/ext/printf.h>
 
 namespace loader {
@@ -36,7 +36,7 @@ void bios_put_str(std::string_ref s) noexcept {
   for (auto c : s) bios_put_char(c);
 }
 
-void bios_printf(std::string_ref fmt, ...) noexcept {
+void bios_vprintf(std::string_ref fmt, va_list ap) noexcept {
   class renderer_impl : public abi::ext::printf_renderer<char> {
    public:
     int do_append(std::string_ref s) noexcept override {
@@ -46,11 +46,8 @@ void bios_printf(std::string_ref fmt, ...) noexcept {
   };
 
   renderer_impl impl;
-  va_list ap;
   int error;
   abi::ext::vxprintf_locals<char> locals;
-
-  va_start(ap, fmt);
 
   /* Parse fmt, gathering types and collecting specs. */
   if (!error) error = locals.parse_fmt(fmt);
@@ -60,7 +57,13 @@ void bios_printf(std::string_ref fmt, ...) noexcept {
   if (!error) error = locals.resolve_fieldwidth();
   /* Start rendering loop. */
   if (!error) error = locals.render(impl);
+}
 
+void bios_printf(std::string_ref fmt, ...) noexcept {
+  va_list ap;
+
+  va_start(ap, fmt);
+  bios_vprintf(fmt, ap);
   va_end(ap);
 }
 
