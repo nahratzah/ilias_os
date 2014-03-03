@@ -19,14 +19,8 @@ SECTIONS
 	}
 
 	/* Put the stack between two read-only sections. */
-	.bss ALIGN(0x1000):
+	.stack_bss ALIGN(0x1000):
 	{
-		/* Stack used during loading of external kernels. */
-		. = ALIGN(0x1000);
-		boot_stack_begin = .;
-		. += 0x10000;		/* Allocate 64k for stack. */
-		boot_stack_end = .;
-		boot_stack_init = .;	/* Initialize stack pointer at this address (stack grows down). */
 	}
 
 	.rodata ALIGN(0x1000):
@@ -67,6 +61,13 @@ SECTIONS
 
 	.bss ALIGN(0x1000):
 	{
+		/* Stack used during loading of external kernels. */
+		. = ALIGN(0x1000);
+		boot_stack_begin = .;
+		. += 0x10000;		/* Allocate 64k for stack. */
+		boot_stack_end = .;
+		boot_stack_init = .;	/* Initialize stack pointer at this address (stack grows down). */
+
 		sbss = .;
 
 		*(COMMON*)
