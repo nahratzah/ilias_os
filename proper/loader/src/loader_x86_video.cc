@@ -10,7 +10,12 @@ namespace {
 const uint8_t gray_on_black = 0x07;
 const uint8_t white_on_blue = 0x1f;
 
-volatile uint8_t*const video_ram = reinterpret_cast<uint8_t*>(0xb8000);
+struct vram_char {
+  char ch;
+  uint8_t color;
+};
+
+vram_char*const video_ram = reinterpret_cast<vram_char*>(0xa0000);
 
 
 } /* namespace loader::<unnamed> */
@@ -19,14 +24,11 @@ volatile uint8_t*const video_ram = reinterpret_cast<uint8_t*>(0xb8000);
 void bios_put_char(char ch) noexcept {
   static uint32_t video_off = 0;
 
-  if (ch == '\n') {
-    do {
-      video_ram[video_off++] = ' ';
-      video_ram[video_off++] = gray_on_black;
-    } while (video_off / 2 % 80);
+  if (ch != '\n') {
+    video_ram[video_off++] = vram_char{ ch, white_on_blue };
   } else {
-    video_ram[video_off++] = static_cast<abi::uint8_t>(ch);
-    video_ram[video_off++] = white_on_blue;
+    while (video_off % 80 != 0)
+      video_ram[video_off++] = vram_char{ ' ', gray_on_black };
   }
 }
 
