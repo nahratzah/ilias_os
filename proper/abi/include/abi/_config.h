@@ -14,6 +14,7 @@
 #include <abi/abi.h>
 #ifdef _LOADER
 # include <loader/abi.h>
+# include <loader/panic.h>
 #endif
 
 namespace __cxxabiv1 {
@@ -40,13 +41,13 @@ namespace _config {
  * The code path used in this function may not use exceptions
  * (no try-catch, for instance).
  */
-inline void* heap_malloc(size_t* sz, size_t min_sz) noexcept {
 #ifdef _LOADER
-  return loader::heap_malloc(sz, min_sz);
+using loader::heap_malloc;
 #else
+inline void* heap_malloc(size_t* sz, size_t min_sz) noexcept {
   return nullptr;
-#endif
 }
+#endif
 /*
  * End of heap_malloc.
  */
@@ -60,13 +61,13 @@ inline void* heap_malloc(size_t* sz, size_t min_sz) noexcept {
  * The code path used in this function may not use exceptions
  * (no try-catch, for instance).
  */
-inline bool heap_free(void* p, size_t sz) noexcept {
 #ifdef _LOADER
-  return loader::heap_free(p, sz);
+using loader::heap_free;
 #else
+inline bool heap_free(void* p, size_t sz) noexcept {
   return false;
-#endif
 }
+#endif
 /*
  * End of heap_free.
  */
@@ -102,16 +103,20 @@ inline void exit(int) noexcept {
 /*
  * Panic: a function that is invoked when the abi gives up.
  *
- * This function is not allowed to return.
+ * This function may not return.
  * This function may not use exceptions.
  *
  * The arguments are a printf-style message.
  *
  * In userspace, you probably want to invoke abi::_config::abort() eventually.
  */
-inline void panic(const char*, ...) noexcept {
+#ifdef _LOADER
+using loader::panic;
+#else
+inline void panic(const char* fmt, ...) noexcept {
   abort();
 }
+#endif
 /*
  * End of panic.
  */
