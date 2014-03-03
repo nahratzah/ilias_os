@@ -1834,6 +1834,149 @@ basic_string<Char, Traits, Allocator> to_string(
 }
 
 
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>& a,
+               const basic_string<Char, Traits, Alloc>& b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv;
+  rv.reserve(a.size() + b.size());
+  rv += a;
+  rv += b;
+  return rv;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&& a,
+               basic_string<Char, Traits, Alloc>&& b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = move(a);
+  rv += move(b);
+  return rv;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&& a,
+               const basic_string<Char, Traits, Alloc>& b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = move(a);
+  a += b;
+  return rv;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>& a,
+               basic_string<Char, Traits, Alloc>&& b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = move(b);
+  rv.insert(rv.begin(), a);
+  return rv;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>& a,
+               const typename basic_string<Char, Traits, Alloc>::char_type* b) ->
+    basic_string<Char, Traits, Alloc> {
+  return a + basic_string_ref<Char, Traits>(b);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&& a,
+               const typename basic_string<Char, Traits, Alloc>::char_type* b) ->
+    basic_string<Char, Traits, Alloc> {
+  return move(a) + basic_string_ref<Char, Traits>(b);
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const typename basic_string<Char, Traits, Alloc>::char_type* a,
+               const basic_string<Char, Traits, Alloc>& b) ->
+    basic_string<Char, Traits, Alloc> {
+  return basic_string_ref<Char, Traits>(a) + b;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const typename basic_string<Char, Traits, Alloc>::char_type* a,
+               basic_string<Char, Traits, Alloc>&& b) ->
+    basic_string<Char, Traits, Alloc> {
+  return basic_string_ref<Char, Traits>(a) + b;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>& a,
+               typename basic_string<Char, Traits, Alloc>::char_type b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = a;
+  a.append(b);
+  return a;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&& a,
+               typename basic_string<Char, Traits, Alloc>::char_type b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = move(a);
+  a.append(b);
+  return a;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(typename basic_string<Char, Traits, Alloc>::char_type a,
+               const basic_string<Char, Traits, Alloc>& b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = b;
+  rv.insert(rv.begin(), a);
+  return rv;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(typename basic_string<Char, Traits, Alloc>::char_type a,
+               basic_string<Char, Traits, Alloc>&& b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = move(b);
+  rv.insert(rv.begin(), a);
+  return rv;
+}
+
+// XXX change basic_string_ref to deduce from basic_string.
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(const basic_string<Char, Traits, Alloc>& a,
+               basic_string_ref<Char, Traits> b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = a;
+  rv.append(b);
+  return rv;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string<Char, Traits, Alloc>&& a,
+               basic_string_ref<Char, Traits> b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = move(a);
+  rv.append(b);
+  return rv;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string_ref<Char, Traits> a,
+               const basic_string<Char, Traits, Alloc>& b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv;
+  rv.reserve(a.size() + b.size());
+  rv.append(a);
+  rv.append(b);
+  return rv;
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator+(basic_string_ref<Char, Traits> a,
+               basic_string<Char, Traits, Alloc>&& b) ->
+    basic_string<Char, Traits, Alloc> {
+  basic_string<Char, Traits, Alloc> rv = move(b);
+  rv.insert(rv.begin(), a);
+  return rv;
+}
+
+
 _namespace_end(std)
 inline namespace literals {
 inline namespace string_literals {
