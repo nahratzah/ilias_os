@@ -24,7 +24,7 @@ static_assert(alignof(vram_char) <= 2, "Video ram character "
 
 
 void bios_put_char(char ch) noexcept {
-  vram_char*const video_ram = reinterpret_cast<vram_char*>(0xa0000);
+  vram_char*const video_ram = reinterpret_cast<vram_char*>(0xb8000);
   static uint32_t video_off = 0;
 
   if (ch != '\n') {
