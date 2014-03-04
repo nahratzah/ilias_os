@@ -6,3 +6,4 @@ SRCS_LOADER += loader/src/loader_kernel.cc
 SRCS_LOADER += loader/src/loader_support.cc
 SRCS_LOADER += loader/src/loader_x86_video.cc
 SRCS_LOADER += loader/src/loader_abi.cc
+SRCS_LOADER += loader/src/loader_panic.cc
