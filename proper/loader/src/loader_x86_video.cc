@@ -15,13 +15,16 @@ struct vram_char {
   uint8_t color;
 };
 
-vram_char*const video_ram = reinterpret_cast<vram_char*>(0xa0000);
+static_assert(sizeof(vram_char) == 2, "Video ram character size must be 2.");
+static_assert(alignof(vram_char) <= 2, "Video ram character "
+                                       "alignment constraint.");
 
 
 } /* namespace loader::<unnamed> */
 
 
 void bios_put_char(char ch) noexcept {
+  vram_char*const video_ram = reinterpret_cast<vram_char*>(0xa0000);
   static uint32_t video_off = 0;
 
   if (ch != '\n') {
