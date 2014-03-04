@@ -1,5 +1,5 @@
 #include <cdecl.h>
-#include <abi/abi.h>
+#include <cstdint>
 #include <abi/memory.h>
 #include <loader/x86_video.h>
 #include <iterator>
@@ -16,10 +16,9 @@ void loader_setup() noexcept {
 }
 
 void bss_zero() noexcept {
-  extern abi::uint8_t sbss, ebss;  /* Provided by linker. */
+  extern uint8_t sbss, ebss;  /* Provided by linker. */
 
-  abi::memzero(&sbss, ebss - sbss);
-  bios_put_str("BSS cleared.\n");
+  abi::memzero(&sbss, &ebss - &sbss);
 }
 
 
