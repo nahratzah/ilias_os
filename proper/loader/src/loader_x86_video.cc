@@ -1,5 +1,6 @@
 #include <loader/x86_video.h>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <abi/ext/printf.h>
 
@@ -10,7 +11,7 @@ namespace {
 const uint8_t gray_on_black = 0x07;
 const uint8_t white_on_blue = 0x1f;
 
-struct vram_char {
+struct alignas(2) vram_char {
   char ch;
   uint8_t color;
 };
@@ -28,6 +29,8 @@ void bios_put_char(char ch) noexcept {
   static uint32_t video_off = 0;
 
   if (ch != '\n') {
+    if (video_off == 80 * 25)
+      memmove(video_ram, video_ram + 80, 24 * 80 * sizeof(vram_char));
     video_ram[video_off++] = vram_char{ ch, white_on_blue };
   } else {
     while (video_off % 80 != 0)
