@@ -15,6 +15,11 @@
 .global loader
 .type loader, @function
 loader:
+	mov	$boot_stack_init, %esp		# Initialize stack pointer.
+	# Reset eflags.
+	push	$0
+	popf
+
 	# Zero bss area.
 	# To prevent losing the mb_magic and mb_data, we borrow some of the
 	# stack of the loader to save them.
@@ -24,8 +29,7 @@ loader:
 	pop	%eax
 	pop	%ebx
 
-	mov	boot_stack_init, %ebp		# Initialize stack base.
-	mov	boot_stack_init, %esp		# Initialize stack pointer.
+	mov	$boot_stack_init, %ebp		# Initialize stack base.
 	push	%ebp
 	push	$0
 
@@ -43,7 +47,7 @@ loader:
 
 	# Ensure we don't do anything if loader_setup returns for some reason.
 halt:
-	# hlt
+	hlt
 	jmp halt
 
 .size loader, . - loader
