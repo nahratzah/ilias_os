@@ -68,12 +68,12 @@ SECTIONS
 	.bss ALIGN(0x1000):
 	{
 		/* Stack used during loading of external kernels. */
-		. = ALIGN(0x1000);
 		boot_stack_begin = .;
 		. += 0x10000;		/* Allocate 64k for stack. */
 		boot_stack_end = .;
 		boot_stack_init = .;	/* Initialize stack pointer at this address (stack grows down). */
 
+		. = ALIGN(0x1000);
 		sbss = .;
 
 		*(.bss*)
