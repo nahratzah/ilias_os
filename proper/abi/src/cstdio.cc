@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cerrno>
 #include <climits>
+#include <system_error>
 #include <abi/ext/printf.h>
 
 namespace std {
@@ -257,6 +258,109 @@ int vasprintf(char** sptr, const char*__restrict fmt, va_list ap) noexcept {
   }
   *sptr = renderer.release();
   return (renderer.length() > INT_MAX ? INT_MAX : renderer.length());
+}
+
+
+namespace {
+
+
+template<typename Char> class renderer
+: public abi::ext::printf_renderer<Char> {
+ public:
+  renderer(basic_string<Char>& str) noexcept : str_(str) {}
+  ~renderer() noexcept override;
+
+  int do_append(basic_string_ref<Char>) noexcept override;
+
+ private:
+  basic_string<Char>& str_;
+};
+
+template<typename Char>
+int renderer<Char>::do_append(basic_string_ref<Char> sp) noexcept {
+  try {
+    str_.append(sp);
+  } catch (const std::length_error&) {
+    return ENOMEM;
+  } catch (const std::bad_alloc&) {
+    return ENOMEM;
+  }
+  return 0;
+}
+
+template<typename Char>
+renderer<Char>::~renderer() noexcept {}
+
+
+} /* namespace std::<unnamed> */
+
+
+string format(string_ref fmt, ...) {
+  string rv;
+  int error;
+  {
+    va_list ap;
+    va_start(ap, fmt);
+    renderer<char> r{ rv };
+    error = abi::ext::vxprintf(r, fmt, ap);
+    va_end(ap);
+  }
+
+  if (_predict_false(error == ENOMEM)) throw std::bad_alloc();
+  if (_predict_false(error != 0)) throw system_error(error, system_category(),
+                                                     "std::format");
+  return rv;
+}
+
+wstring format(wstring_ref fmt, ...) {
+  wstring rv;
+  int error;
+  {
+    va_list ap;
+    va_start(ap, fmt);
+    renderer<wchar_t> r{ rv };
+    error = abi::ext::vxprintf(r, fmt, ap);
+    va_end(ap);
+  }
+
+  if (_predict_false(error == ENOMEM)) throw std::bad_alloc();
+  if (_predict_false(error != 0)) throw system_error(error, system_category(),
+                                                     "std::format");
+  return rv;
+}
+
+u16string format(u16string_ref fmt, ...) {
+  u16string rv;
+  int error;
+  {
+    va_list ap;
+    va_start(ap, fmt);
+    renderer<char16_t> r{ rv };
+    error = abi::ext::vxprintf(r, fmt, ap);
+    va_end(ap);
+  }
+
+  if (_predict_false(error == ENOMEM)) throw std::bad_alloc();
+  if (_predict_false(error != 0)) throw system_error(error, system_category(),
+                                                     "std::format");
+  return rv;
+}
+
+u32string format(u32string_ref fmt, ...) {
+  u32string rv;
+  int error;
+  {
+    va_list ap;
+    va_start(ap, fmt);
+    renderer<char32_t> r{ rv };
+    error = abi::ext::vxprintf(r, fmt, ap);
+    va_end(ap);
+  }
+
+  if (_predict_false(error == ENOMEM)) throw std::bad_alloc();
+  if (_predict_false(error != 0)) throw system_error(error, system_category(),
+                                                     "std::format");
+  return rv;
 }
 
 

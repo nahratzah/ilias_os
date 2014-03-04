@@ -6,6 +6,10 @@
 #include <cstdio_misc/eof.h>
 #include <cstdio_misc/file.h>
 
+#ifdef __cplusplus
+# include <string>
+#endif
+
 #if defined(_TEST) && __has_include_next(<cstdio>)
 # include_next <cstdio>
 #endif
@@ -33,6 +37,14 @@ int vsprintf(char*__restrict, const char*__restrict, va_list) noexcept;
 int vasprintf(char**, const char*__restrict, va_list) noexcept;
 
 _cdecl_end
+
+#ifdef __cplusplus
+string format(string_ref, ...);
+string wformat(wstring_ref, ...);
+string u16format(u16string_ref, ...);
+string u32format(u32string_ref, ...);
+#endif
+
 _namespace_end(std)
 
 #if !defined(_TEST) && defined(__cplusplus)
