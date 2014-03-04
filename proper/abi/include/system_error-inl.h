@@ -139,35 +139,40 @@ inline bool operator<(const error_condition& lhs, const error_condition& rhs)
 }
 
 
-bool operator==(const error_code& lhs, const error_code& rhs) noexcept {
+inline bool operator==(const error_code& lhs, const error_code& rhs) noexcept {
   return lhs.category() == rhs.category() && lhs.value() == rhs.value();
 }
 
-bool operator==(const error_code& lhs, const error_condition& rhs) noexcept {
+inline bool operator==(const error_code& lhs, const error_condition& rhs)
+    noexcept {
   return lhs.category().equivalent(lhs.value(), rhs) ||
          rhs.category().equivalent(lhs, rhs.value());
 }
 
-bool operator==(const error_condition& lhs, const error_code& rhs) noexcept {
+inline bool operator==(const error_condition& lhs, const error_code& rhs)
+    noexcept {
   return rhs.category().equivalent(rhs.value(), lhs) ||
          lhs.category().equivalent(rhs, lhs.value());
 }
 
-bool operator==(const error_condition& lhs, const error_condition& rhs)
+inline bool operator==(const error_condition& lhs, const error_condition& rhs)
     noexcept {
   return lhs.category() == rhs.category() && lhs.value() == rhs.value();
 }
 
-bool operator!=(const error_code& lhs, const error_code& rhs) noexcept {
+inline bool operator!=(const error_code& lhs, const error_code& rhs)
+    noexcept {
   return !(lhs == rhs);
 }
-bool operator!=(const error_code& lhs, const error_condition& rhs) noexcept {
+inline bool operator!=(const error_code& lhs, const error_condition& rhs)
+    noexcept {
   return !(lhs == rhs);
 }
-bool operator!=(const error_condition& lhs, const error_code& rhs) noexcept {
+inline bool operator!=(const error_condition& lhs, const error_code& rhs)
+    noexcept {
   return !(lhs == rhs);
 }
-bool operator!=(const error_condition& lhs, const error_condition& rhs)
+inline bool operator!=(const error_condition& lhs, const error_condition& rhs)
     noexcept {
   return !(lhs == rhs);
 }
