@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <type_traits>
+#include <stdimpl/member_check.h>
 
 _namespace_begin(std)
 
@@ -11,26 +12,30 @@ template<typename T> class pointer_traits;  // See <memory>
 namespace impl {
 
 
-struct alloc_traits_construct_yes {};
-struct alloc_traits_construct_no {};
+using alloc_traits_construct_yes = true_type;
+using alloc_traits_construct_no = false_type;
 
 template<typename Alloc, typename T, typename... Args>
 struct alloc_traits_construct_choice {
  private:
-  template<typename RV = decltype(declval<Alloc&>().construct(declval<T*>(),
-                                              declval<Args>()...),
-                                  alloc_traits_construct_yes())>
-  static RV fn();
-  static alloc_traits_construct_no fn(...);
+  template<typename A, typename RV =
+      decltype(declval<A>().construct(declval<T*>(), declval<Args>()...),
+               true_type())>
+  static RV fn(A = declval<Alloc>());
+  static false_type fn(...);
+
+  using _type = decltype(fn());
 
  public:
-  using type = decltype(fn());
+  using value_type = typename _type::value_type;
+  using type = typename _type::type;
+  static constexpr value_type value = _type::value;
 };
 
-template<typename Choice> struct alloc_traits_construct;
+template<bool Choice> struct alloc_traits_construct;
 
 template<>
-struct alloc_traits_construct<alloc_traits_construct_yes> {
+struct alloc_traits_construct<true> {
   template<typename Alloc, typename T, typename... Args>
   static void construct(Alloc& a, T* p, Args&&... args)
       noexcept(noexcept(a.construct(p, forward<Args>(args)...))) {
@@ -39,7 +44,7 @@ struct alloc_traits_construct<alloc_traits_construct_yes> {
 };
 
 template<>
-struct alloc_traits_construct<alloc_traits_construct_no> {
+struct alloc_traits_construct<false> {
   template<typename Alloc, typename T, typename... Args>
   static void construct(Alloc& a, T* p, Args&&... args)
       noexcept(noexcept(::new(p) T(forward<Args>(args)...))) {
@@ -48,41 +53,32 @@ struct alloc_traits_construct<alloc_traits_construct_no> {
 };
 
 
+_MEMBER_TYPE_CHECK(reference);
+_MEMBER_TYPE_CHECK(const_reference);
+_MEMBER_TYPE_CHECK(pointer);
+_MEMBER_TYPE_CHECK(const_pointer);
+
+
+template<typename T>
+struct alloc_traits_fallback {
+  using value_type = T;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
+};
+
+
 template<typename Alloc> struct alloc_traits {
  private:
   /* Use alloc_traits_construct above. */
   template<typename T, typename... Args> using construct_impl =
       alloc_traits_construct<
-        typename alloc_traits_construct_choice<Alloc, T, Args...>::type>;
-
-  /* Reference type selector. */
-  template<typename A> static auto select_reference_(A = declval<Alloc>()) ->
-      typename A::reference;
-  static auto select_reference_(...) -> typename Alloc::value_type&;
-
-  /* Const reference type selector. */
-  template<typename A>
-      static auto select_const_reference_(A = declval<Alloc>()) ->
-      typename A::const_reference;
-  static auto select_const_reference_(...) ->
-      const typename Alloc::value_type&;
-
-  /* Pointer type selector. */
-  template<typename A>
-      static auto select_pointer_(A = declval<Alloc>()) ->
-      typename A::pointer;
-  static auto select_pointer_(...) -> typename Alloc::value_type*;
-
-  /* Const pointer type selector. */
-  template<typename A>
-      static auto select_const_pointer_(A = declval<Alloc>()) ->
-      typename A::const_pointer;
-  static auto select_const_pointer_(...) ->
-      const typename Alloc::value_type*;
+        alloc_traits_construct_choice<Alloc, T, Args...>::value>;
 
   /* POCCA selector. */
   template<typename A> static auto select_pocca_(A = declval<Alloc>()) ->
-       typename A::propagate_on_container_copy_assignment;
+      typename A::propagate_on_container_copy_assignment;
   static auto select_pocca_(...) ->
       false_type;
 
@@ -99,10 +95,24 @@ template<typename Alloc> struct alloc_traits {
       false_type;
 
  public:
-  using reference = decltype(select_reference_());
-  using const_reference = decltype(select_const_reference_());
-  using pointer = decltype(select_pointer_());
-  using const_pointer = decltype(select_const_pointer_());
+  using fallback = alloc_traits_fallback<typename Alloc::value_type>;
+
+  using reference =
+      typename conditional_t<member_type_check_reference<Alloc>::value,
+                             Alloc,
+                             fallback>::reference;
+  using const_reference =
+      typename conditional_t<member_type_check_const_reference<Alloc>::value,
+                             Alloc,
+                             fallback>::const_reference;
+  using pointer =
+      typename conditional_t<member_type_check_pointer<Alloc>::value,
+                             Alloc,
+                             fallback>::pointer;
+  using const_pointer =
+      typename conditional_t<member_type_check_const_pointer<Alloc>::value,
+                             Alloc,
+                             fallback>::const_pointer;
 
  private:
   /* Void pointer selector. */
@@ -159,11 +169,11 @@ template<typename Alloc> struct alloc_traits {
 
  public:
   /* Select allocate method. */
-  template<typename A = decltype(
-      declval<Alloc&>().allocate(declval<size_type>(),
-                                 declval<const_void_pointer>()))>
-  static auto allocate(Alloc& a, size_type n, const_void_pointer hint) ->
-      A {
+  template<typename A, typename RV = decltype(
+      declval<A&>().allocate(declval<size_type>(),
+                             declval<const_void_pointer>()))>
+  static auto allocate(A& a, size_type n, const_void_pointer hint) ->
+      RV {
     return a.allocate(n, hint);
   }
 
@@ -181,12 +191,12 @@ template<typename Alloc> struct alloc_traits {
         a, p, forward<Args>(args)...))) ->
       void {
     return construct_impl<T, Args...>::construct(
-	a, p, forward<Args>(args)...);
+        a, p, forward<Args>(args)...);
   }
 
   /* Select destroy method. */
-  template<typename T, typename F>
-  static auto destroy(Alloc& a, T* p,
+  template<typename A, typename T, typename F>
+  static auto destroy(A& a, T* p,
       F = declval<decltype(a.destroy(p))>())
       noexcept(noexcept(a.destroy(p))) ->
       decltype(a.destroy(p)) {
