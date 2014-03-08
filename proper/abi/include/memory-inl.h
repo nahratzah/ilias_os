@@ -82,8 +82,9 @@ auto allocator_traits<Alloc>::allocate(Alloc& alloc,
 
 template<typename Alloc>
 auto allocator_traits<Alloc>::deallocate(Alloc& alloc, pointer p, size_type n)
-    noexcept(noexcept(alloc.deallocate(p, n))) -> void {
-  alloc.deallocate(p, n);
+    noexcept(noexcept(impl::alloc_traits<Alloc>::deallocate(alloc, p, n))) ->
+    void {
+  impl::alloc_traits<Alloc>::deallocate(alloc, p, n);
 }
 
 template<typename Alloc>
