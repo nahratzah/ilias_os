@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <type_traits>
+#include <limits>
 #include <stdimpl/member_check.h>
 
 _namespace_begin(std)
@@ -12,51 +13,23 @@ template<typename T> class pointer_traits;  // See <memory>
 namespace impl {
 
 
-using alloc_traits_construct_yes = true_type;
-using alloc_traits_construct_no = false_type;
-
-template<typename Alloc, typename T, typename... Args>
-struct alloc_traits_construct_choice {
- private:
-  template<typename A, typename RV =
-      decltype(declval<A>().construct(declval<T*>(), declval<Args>()...),
-               true_type())>
-  static RV fn(A = declval<Alloc>());
-  static false_type fn(...);
-
-  using _type = decltype(fn());
-
- public:
-  using value_type = typename _type::value_type;
-  using type = typename _type::type;
-  static constexpr value_type value = _type::value;
-};
-
-template<bool Choice> struct alloc_traits_construct;
-
-template<>
-struct alloc_traits_construct<true> {
-  template<typename Alloc, typename T, typename... Args>
-  static void construct(Alloc& a, T* p, Args&&... args)
-      noexcept(noexcept(a.construct(p, forward<Args>(args)...))) {
-    a.construct(p, forward<Args>(args)...);
-  }
-};
-
-template<>
-struct alloc_traits_construct<false> {
-  template<typename Alloc, typename T, typename... Args>
-  static void construct(Alloc& a, T* p, Args&&... args)
-      noexcept(noexcept(::new(p) T(forward<Args>(args)...))) {
-    ::new(static_cast<void*>(p)) T(forward<Args>(args)...);
-  }
-};
-
-
 _MEMBER_TYPE_CHECK(reference);
 _MEMBER_TYPE_CHECK(const_reference);
 _MEMBER_TYPE_CHECK(pointer);
 _MEMBER_TYPE_CHECK(const_pointer);
+_MEMBER_TYPE_CHECK(void_pointer);
+_MEMBER_TYPE_CHECK(const_void_pointer);
+_MEMBER_TYPE_CHECK(difference_type);
+_MEMBER_TYPE_CHECK(size_type);
+
+_MEMBER_TYPE_CHECK(propagate_on_container_move_assignment);
+_MEMBER_TYPE_CHECK(propagate_on_container_copy_assignment);
+_MEMBER_TYPE_CHECK(propagate_on_container_swap);
+
+_MEMBER_FUNCTION_CHECK(construct);
+_MEMBER_FUNCTION_CHECK(destroy);
+_MEMBER_FUNCTION_CHECK(max_size);
+_MEMBER_FUNCTION_CHECK(allocate);
 
 
 template<typename T>
@@ -66,37 +39,32 @@ struct alloc_traits_fallback {
   using const_reference = const value_type&;
   using pointer = value_type*;
   using const_pointer = const value_type*;
+
+  using propagate_on_container_copy_assignment = false_type;
+  using propagate_on_container_move_assignment = false_type;
+  using propagate_on_container_swap = false_type;
+
+  template<typename Pointer> struct ptr_derived {
+    using void_pointer =
+        typename pointer_traits<Pointer>::template rebind<void>;
+    using const_void_pointer =
+        typename pointer_traits<Pointer>::template rebind<const void>;
+    using difference_type =
+        typename pointer_traits<Pointer>::difference_type;
+  };
+
+  template<typename DiffType> struct difftype_derived {
+    using size_type = make_unsigned_t<DiffType>;
+  };
 };
 
 
 template<typename Alloc> struct alloc_traits {
  private:
-  /* Use alloc_traits_construct above. */
-  template<typename T, typename... Args> using construct_impl =
-      alloc_traits_construct<
-        alloc_traits_construct_choice<Alloc, T, Args...>::value>;
-
-  /* POCCA selector. */
-  template<typename A> static auto select_pocca_(A = declval<Alloc>()) ->
-      typename A::propagate_on_container_copy_assignment;
-  static auto select_pocca_(...) ->
-      false_type;
-
-  /* POCMA selector. */
-  template<typename A> static auto select_pocma_(A = declval<Alloc>()) ->
-      typename A::propagate_on_container_move_assignment;
-  static auto select_pocma_(...) ->
-      false_type;
-
-  /* POCS selector. */
-  template<typename A> static auto select_pocs_(A = declval<Alloc>()) ->
-      typename A::propagate_on_container_swap;
-  static auto select_pocs_(...) ->
-      false_type;
+  using value_type = typename Alloc::value_type;
+  using fallback = alloc_traits_fallback<value_type>;
 
  public:
-  using fallback = alloc_traits_fallback<typename Alloc::value_type>;
-
   using reference =
       typename conditional_t<member_type_check_reference<Alloc>::value,
                              Alloc,
@@ -114,43 +82,117 @@ template<typename Alloc> struct alloc_traits {
                              Alloc,
                              fallback>::const_pointer;
 
- private:
-  /* Void pointer selector. */
-  template<typename A> static auto select_vpointer_(A = declval<Alloc>()) ->
-      typename A::void_pointer;
-  static auto select_vpointer_(...) ->
-      const typename pointer_traits<pointer>::template rebind<void>;
+  using void_pointer = typename conditional_t<
+          member_type_check_void_pointer<Alloc>::value,
+          Alloc,
+          typename fallback::template ptr_derived<pointer>>::void_pointer;
+  using const_void_pointer = typename conditional_t<
+          member_type_check_const_void_pointer<Alloc>::value,
+          Alloc,
+          typename fallback::template ptr_derived<pointer>>::
+              const_void_pointer;
+  using difference_type = typename conditional_t<
+          member_type_check_difference_type<Alloc>::value,
+          Alloc,
+          typename fallback::template ptr_derived<pointer>>::difference_type;
 
-  /* Const void pointer selector. */
-  template<typename A> static auto select_cvpointer_(A = declval<Alloc>()) ->
-      typename A::const_void_pointer;
-  static auto select_cvpointer_(...) ->
-      const typename pointer_traits<pointer>::template rebind<const void>;
+  using size_type = typename conditional_t<
+          member_type_check_size_type<Alloc>::value,
+          Alloc,
+          typename fallback::template difftype_derived<difference_type>>::
+              size_type;
 
-  /* Difference type selector. */
-  template<typename A> static auto select_difftype_(A = declval<Alloc>()) ->
-      typename A::difference_type;
-  static auto select_difftype_(...) ->
-      typename pointer_traits<pointer>::difference_type;
+  template<typename T, typename... Args>
+  static auto construct(Alloc& alloc, T* ptr, Args&&... args)
+      noexcept(noexcept(alloc.construct(ptr, forward<Args>(args)...))) ->
+      enable_if_t<
+          member_function_check_construct<Alloc, T*, Args...>::value,
+          void> {
+    alloc.construct(ptr, forward<Args>(args)...);
+  }
 
- public:
-  using void_pointer = decltype(select_vpointer_());
-  using const_void_pointer = decltype(select_cvpointer_());
-  using difference_type = decltype(select_difftype_());
+  template<typename T, typename... Args>
+  static auto construct(Alloc&, T* ptr, Args&&... args)
+      noexcept(noexcept(new (ptr) value_type(forward<Args>(args)...))) ->
+      enable_if_t<
+          !member_function_check_construct<Alloc, T*, Args...>::value,
+          void> {
+    new (ptr) T(forward<Args>(args)...);
+  }
 
- private:
-  /* Size type selector. */
-  template<typename A> static auto select_sizetype_(A = declval<Alloc>()) ->
-      typename A::size_type;
-  static auto select_sizetype_(...) ->
-      typename make_unsigned<difference_type>::type;
+  template<typename T>
+  static auto destroy(Alloc& alloc, T* ptr)
+      noexcept(noexcept(alloc.destroy(ptr))) ->
+      enable_if_t<
+          member_function_check_destroy<Alloc, T*>::value,
+          void> {
+    alloc.destroy(ptr);
+  }
 
- public:
-  using size_type = decltype(select_sizetype_());
+  template<typename T>
+  static auto destroy(Alloc&, T* ptr)
+      noexcept(noexcept(ptr->~value_type())) ->
+      enable_if_t<
+          !member_function_check_destroy<Alloc, T*>::value,
+          void> {
+    ptr->~T();
+  }
 
-  using propagate_on_container_copy_assignment = decltype(select_pocca_());
-  using propagate_on_container_move_assignment = decltype(select_pocma_());
-  using propagate_on_container_swap = decltype(select_pocs_());
+  template<typename... Args>
+  static auto max_size(const Alloc& alloc, Args&&... args)
+      noexcept(noexcept(alloc.max_size(forward<Args>(args)...))) ->
+      enable_if_t<member_function_check_max_size<const Alloc, Args...>::value,
+                  size_type> {
+    return alloc.max_size(forward<Args>(args)...);
+  }
+
+  template<typename... Args>
+  static constexpr auto max_size(const Alloc&, Args&&... args) noexcept ->
+      enable_if_t<!member_function_check_max_size<const Alloc, Args...>::value,
+                  size_type> {
+    return numeric_limits<size_type>::max(forward<Args>(args)...);
+  }
+
+  template<typename Hint>
+  static auto allocate(Alloc& alloc, size_type n, Hint&& hint)
+      noexcept(noexcept(alloc.allocate(n, forward<Hint>(hint)))) ->
+      enable_if_t<
+          member_function_check_allocate<Alloc, size_type, Hint>::value,
+          pointer>
+  {
+    return alloc.allocate(n, forward<Hint>(hint));
+  }
+
+  template<typename Hint>
+  static auto allocate(Alloc& alloc, size_type n, Hint&& hint)
+      noexcept(noexcept(alloc.allocate(n))) ->
+      enable_if_t<
+          !member_function_check_allocate<Alloc, size_type, Hint>::value,
+          pointer>
+  {
+    return alloc.allocate(n);
+  }
+
+  static auto deallocate(Alloc& alloc, value_type* p, size_type n)
+      noexcept(noexcept(alloc.deallocate(p, n))) -> void
+  {
+    alloc.deallocate(p, n);
+  }
+
+  using propagate_on_container_move_assignment = typename conditional_t<
+      member_type_check_propagate_on_container_move_assignment<Alloc>::value,
+      Alloc,
+      fallback>::propagate_on_container_move_assignment;
+  using propagate_on_container_copy_assignment = typename conditional_t<
+      member_type_check_propagate_on_container_copy_assignment<Alloc>::value,
+      Alloc,
+      fallback>::propagate_on_container_copy_assignment;
+  using propagate_on_container_swap = typename conditional_t<
+      member_type_check_propagate_on_container_swap<Alloc>::value,
+      Alloc,
+      fallback>::propagate_on_container_swap;
+
+
 
  private:
   /* Rebind selector. */
@@ -166,61 +208,6 @@ template<typename Alloc> struct alloc_traits {
 
  public:
   template<typename T> using rebind_alloc = decltype(select_rebind_<T>());
-
- public:
-  /* Select allocate method. */
-  template<typename A, typename RV = decltype(
-      declval<A&>().allocate(declval<size_type>(),
-                             declval<const_void_pointer>()))>
-  static auto allocate(A& a, size_type n, const_void_pointer hint) ->
-      RV {
-    return a.allocate(n, hint);
-  }
-
-  template<typename A>
-  static auto allocate(Alloc& a, size_type n, const_void_pointer,
-                       A& = declval<Alloc>(), ...) ->
-      pointer {
-    return a.allocate(n);
-  }
-
-  /* Select construct method. */
-  template<typename T, typename... Args>
-  static auto construct(Alloc& a, T* p, Args&&... args)
-      noexcept(noexcept(construct_impl<T, Args...>::construct(
-        a, p, forward<Args>(args)...))) ->
-      void {
-    return construct_impl<T, Args...>::construct(
-        a, p, forward<Args>(args)...);
-  }
-
-  /* Select destroy method. */
-  template<typename A, typename T, typename F>
-  static auto destroy(A& a, T* p,
-      F = declval<decltype(a.destroy(p))>())
-      noexcept(noexcept(a.destroy(p))) ->
-      decltype(a.destroy(p)) {
-    return a.destroy(p);
-  }
-
-  template<typename T>
-  static void destroy(Alloc& a, T* p, ...)
-      noexcept(noexcept(p->~T())) {
-    p->~T();
-  }
-
-  /* Select max_size method. */
-  template<typename F>
-  static auto max_size(const Alloc& a,
-      F = declval<decltype(a.max_size())>())
-      noexcept(noexcept(a.max_size())) ->
-      decltype(a.max_size()) {
-    return a.max_size();
-  }
-
-  static constexpr auto max_size(const Alloc&, ...) noexcept -> size_type {
-    return numeric_limits<size_type>::max();
-  }
 };
 
 

@@ -40,8 +40,8 @@ class vector : public impl::alloc_base<Alloc> {
   using size_type = typename allocator_traits<allocator_type>::size_type;
   using reference = value_type&;
   using const_reference = const value_type&;
-  using iterator = pointer;
-  using const_iterator = const_pointer;
+  using iterator = value_type*;
+  using const_iterator = const value_type*;
   using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
   using const_reverse_iterator =
       _namespace(std)::reverse_iterator<const_iterator>;
@@ -74,8 +74,8 @@ class vector : public impl::alloc_base<Alloc> {
   reverse_iterator rend() noexcept;
   const_reverse_iterator rbegin() const noexcept;
   const_reverse_iterator rend() const noexcept;
-  const_reverse_iterator rcbegin() const noexcept;
-  const_reverse_iterator rcend() const noexcept;
+  const_reverse_iterator crbegin() const noexcept;
+  const_reverse_iterator crend() const noexcept;
 
   size_type size() const noexcept;
   size_type max_size() const noexcept;

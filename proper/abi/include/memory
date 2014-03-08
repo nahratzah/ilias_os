@@ -7,6 +7,7 @@
 #include <new>
 #include <utility>
 #include <stdimpl/alloc_traits.h>
+#include <stdimpl/pointer_traits.h>
 
 _namespace_begin(std)
 
@@ -74,7 +75,8 @@ template<typename Ptr> struct pointer_traits {
   using element_type = typename pointer::element_type;
   using difference_type = decltype(select_difftype_());
 
-  /* XXX rebind. */
+  template<typename T> using rebind =
+      typename impl::pointer_rebind<T, pointer>::type;
 
   inline pointer pointer_to(element_type& r) { return pointer::pointer_to(r); }
 };

@@ -6,16 +6,16 @@ template<typename Vector>
 struct vector_copy_impl_basics<Vector, true> {
   using vector = Vector;
   using value_type = typename vector::value_type;
-  using reference = typename vector::reference;
-  using const_reference = typename vector::const_reference;
-  using pointer = typename vector::pointer;
-  using const_pointer = typename vector::const_pointer;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
   using size_type = typename vector::size_type;
   using allocator_type = typename vector::allocator_type;
 
   static void copy(vector& a, const_pointer p, size_type n) noexcept {
     assert(a.capacity() >= n);
-    memcpy(a.heap_, p, (a.size_ = n) * sizeof(value_type));
+    memcpy(a.data(), p, (a.size_ = n) * sizeof(value_type));
   }
 
   static void copy_at(pointer dst, const_pointer src, size_type n) noexcept {
@@ -332,7 +332,7 @@ auto vector<T, Alloc>::operator=(initializer_list<value_type> il) -> vector& {
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::begin() noexcept -> iterator {
-  return heap_;
+  return &*heap_;
 }
 
 template<typename T, typename Alloc>
@@ -342,7 +342,7 @@ auto vector<T, Alloc>::end() noexcept -> iterator {
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::begin() const noexcept -> const_iterator {
-  return heap_;
+  return &*heap_;
 }
 
 template<typename T, typename Alloc>
@@ -352,7 +352,7 @@ auto vector<T, Alloc>::end() const noexcept -> const_iterator {
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::cbegin() const noexcept -> const_iterator {
-  return heap_;
+  return &*heap_;
 }
 
 template<typename T, typename Alloc>
@@ -381,12 +381,12 @@ auto vector<T, Alloc>::rend() const noexcept -> const_reverse_iterator {
 }
 
 template<typename T, typename Alloc>
-auto vector<T, Alloc>::rcbegin() const noexcept -> const_reverse_iterator {
+auto vector<T, Alloc>::crbegin() const noexcept -> const_reverse_iterator {
   return const_reverse_iterator(cend());
 }
 
 template<typename T, typename Alloc>
-auto vector<T, Alloc>::rcend() const noexcept -> const_reverse_iterator {
+auto vector<T, Alloc>::crend() const noexcept -> const_reverse_iterator {
   return const_reverse_iterator(cbegin());
 }
 
@@ -527,12 +527,12 @@ auto vector<T, Alloc>::back() const noexcept -> const_reference {
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::data() noexcept -> value_type* {
-  return heap_;
+  return &*heap_;
 }
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::data() const noexcept -> const value_type* {
-  return heap_;
+  return &*heap_;
 }
 
 template<typename T, typename Alloc>
@@ -549,7 +549,7 @@ template<typename T, typename Alloc>
 auto vector<T, Alloc>::push_back(const_reference v) -> void {
   reserve(size() + 1U);
   allocator_traits<allocator_type>::construct(this->get_allocator_(),
-                                              &heap_[size_], v);
+                                              &data()[size_], v);
   ++size_;
 }
 
@@ -557,7 +557,7 @@ template<typename T, typename Alloc>
 auto vector<T, Alloc>::push_back(value_type&& v) -> void {
   reserve(size() + 1U);
   allocator_traits<allocator_type>::construct(this->get_allocator_(),
-                                              &heap_[size_],
+                                              &data()[size_],
                                               move(v));
   ++size_;
 }
@@ -567,7 +567,7 @@ auto vector<T, Alloc>::pop_back() -> void {
   assert(size() > 0);
   if (size() > 0) {
     allocator_traits<allocator_type>::destroy(this->get_allocator_(),
-                                              &heap_[--size_]);
+                                              &data()[--size_]);
   }
 }
 
@@ -677,7 +677,7 @@ auto vector<T, Alloc>::clear() noexcept -> void {
   } else {
     while (size_ > 0) {
       allocator_traits<allocator_type>::destroy(this->get_allocator_(),
-                                                &heap_[--size_]);
+                                                &data()[--size_]);
     }
   }
 }
