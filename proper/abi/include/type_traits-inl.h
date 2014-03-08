@@ -270,10 +270,18 @@ template<typename T> struct add_cv { using type = const volatile T; };
 template<typename T> struct remove_reference { using type = T; };
 template<typename T> struct remove_reference<T&> { using type = T; };
 template<typename T> struct remove_reference<T&&> { using type = T; };
-template<typename T> struct add_lvalue_reference
+
+template<typename T, bool = is_void<T>::value> struct _add_lvalue_ref
 { using type = remove_reference_t<T>&; };
-template<typename T> struct add_rvalue_reference
+template<typename T> struct _add_lvalue_ref<T, true>
+{ using type = remove_reference_t<T>; };
+template<typename T> struct add_lvalue_reference : _add_lvalue_ref<T> {};
+
+template<typename T, bool = is_void<T>::value> struct _add_rvalue_ref
 { using type = remove_reference_t<T>&&; };
+template<typename T> struct _add_rvalue_ref<T, true>
+{ using type = remove_reference_t<T>; };
+template<typename T> struct add_rvalue_reference : _add_rvalue_ref<T> {};
 
 
 template<typename T> struct _make_signed_ll;
@@ -461,6 +469,11 @@ static_assert(extent<int, 1>::value == 0, "std::extent error");
 static_assert(extent<int[2], 1>::value == 0, "std::extent error");
 static_assert(extent<int[2][4], 1>::value == 4, "std::extent error");
 static_assert(extent<int[][4], 1>::value == 4, "std::extent error");
+
+static_assert(is_void<void>::value, "std::is_void error");
+static_assert(is_void<const void>::value, "std::is_void error");
+static_assert(is_void<volatile void>::value, "std::is_void error");
+static_assert(is_void<const volatile void>::value, "std::is_void error");
 
 
 _namespace_end(std)
