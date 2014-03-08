@@ -1,14 +1,10 @@
+#include <loader/amd64.h>
 #include <loader/x86_video.h>
 #include <cstdint>
 #include <utility>
-#include <vector>
 
 namespace loader {
 
-
-struct amd64_image {
-  uintptr_t physbase, virtbase, sz;
-};
 
 struct bios_memmap_line {
   uint64_t base;  /* Start of region. */
@@ -64,8 +60,7 @@ struct bios_memmap_line {
   /* Read the first memory map line from bios. */
   template<typename Fn>
   static bool visit(Fn&& fn)
-      noexcept(noexcept(fn(std::declval<bios_memmap_line>())))
-  {
+      noexcept(noexcept(fn(std::declval<bios_memmap_line>()))) {
     static const abi::uint32_t magic = 0x534d4150;
 
     bios_memmap_line line;
@@ -95,40 +90,24 @@ struct bios_memmap_line {
     } while (contid);
     return true;
   }
+
+  operator memorymap::range() const noexcept {
+    return memorymap::range{ base, len };
+  }
 };
 
-amd64_image image;
-
-std::vector<bios_memmap_line> lines;
-
-void setup_(uintptr_t physbase,
-            uintptr_t virtbase,
-            uintptr_t sz)
-{
+memorymap amd64_memorymap() {
   bios_put_str("Loading memory map");
-  abi::size_t idx = 0;
+  memorymap rv;
   const bool valid = bios_memmap_line::visit(
-    [&idx](bios_memmap_line&& l) {
-      if (l.len > 0 && l.free()) lines.push_back(std::move(l));
+    [&rv](bios_memmap_line l) {
+      if (l.len > 0 && l.free()) rv.push_back(l.align(4096));
       bios_put_char('.');
     });
   if (!valid) throw std::runtime_error("bios map invalid");
 
-  lines.shrink_to_fit();
-}
-
-extern "C" void setup(uintptr_t physbase,
-                      uintptr_t virtbase,
-                      uintptr_t sz) {
-  try {
-    setup_(physbase, virtbase, sz);
-  } catch (const std::exception& e) {
-    loader::bios_put_str("Loader exception: ");
-    loader::bios_put_str(e.what());
-    loader::bios_put_char('\n');
-  } catch (...) {
-    loader::bios_put_str("Loader exception\n");
-  }
+  rv.shrink_to_fit();
+  return rv;
 }
 
 
