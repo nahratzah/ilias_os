@@ -173,7 +173,7 @@ template<typename Alloc> struct alloc_traits {
     return alloc.allocate(n);
   }
 
-  static auto deallocate(Alloc& alloc, value_type* p, size_type n)
+  static auto deallocate(Alloc& alloc, pointer p, size_type n)
       noexcept(noexcept(alloc.deallocate(p, n))) -> void
   {
     alloc.deallocate(p, n);
