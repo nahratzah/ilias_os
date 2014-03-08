@@ -52,8 +52,8 @@ struct vector_copy_impl_basics<Vector, false> {
   using value_type = typename vector::value_type;
   using reference = typename vector::reference;
   using const_reference = typename vector::const_reference;
-  using pointer = typename vector::pointer;
-  using const_pointer = typename vector::const_pointer;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
   using size_type = typename vector::size_type;
   using allocator_type = typename vector::allocator_type;
 
@@ -181,7 +181,7 @@ struct vector<T, Alloc>::copy_impl {
     copy_impl_basics::copy(a, b.begin(), b.size());
   }
 
-  static void copy_at(pointer dst, const_pointer src, size_type n)
+  static void copy_at(value_type* dst, const value_type* src, size_type n)
       noexcept(noexcept(copy_impl_basics::copy_at(dst, src, n))) {
     copy_impl_basics::copy_at(dst, src, n);
   }
@@ -211,12 +211,12 @@ struct vector<T, Alloc>::copy_impl {
     copy_impl_basics::assign(a, il.begin(), il.size());
   }
 
-  static void shift_down(pointer dst, pointer src, size_type n) noexcept(
-      noexcept(noexcept(copy_impl_basics::shift_down(dst, src, n)))) {
+  static void shift_down(value_type* dst, value_type* src, size_type n)
+      noexcept(noexcept(noexcept(copy_impl_basics::shift_down(dst, src, n)))) {
     copy_impl_basics::shift_down(dst, src, n);
   }
 
-  static void shift_up(vector& a, size_type n_up, pointer src, size_type n)
+  static void shift_up(vector& a, size_type n_up, value_type* src, size_type n)
       noexcept(noexcept(copy_impl_basics::shift_up(a, n_up, src, n))) {
     copy_impl_basics::shift_up(a, n_up, src, n);
   }
@@ -408,14 +408,14 @@ auto vector<T, Alloc>::resize(size_type desired) -> void {
     } else {
       while (size_ > desired)
         allocator_traits<allocator_type>::destroy(this->get_allocator_(),
-                                                  &heap_[--size_]);
+                                                  &data()[--size_]);
     }
   } else if (size_ > desired) {
     reserve(desired);
 
     while (size_ < desired) {
       allocator_traits<allocator_type>::construct(this->get_allocator_(),
-                                                  &heap_[size_]);
+                                                  &data()[size_]);
       ++size_;
     }
   }
@@ -429,14 +429,14 @@ auto vector<T, Alloc>::resize(size_type desired, const_reference v) -> void {
     } else {
       while (size_ > desired)
         allocator_traits<allocator_type>::destroy(this->get_allocator_(),
-                                                  &heap_[--size_]);
+                                                  &data()[--size_]);
     }
   } else if (size_ > desired) {
     reserve(desired);
 
     while (size_ < desired) {
       allocator_traits<allocator_type>::construct(this->get_allocator_(),
-                                                  &heap_[size_], v);
+                                                  &data()[size_], v);
       ++size_;
     }
   }
@@ -587,7 +587,7 @@ auto vector<T, Alloc>::insert(const_iterator pos_, const_reference v) ->
     iterator {
   resize(size() + 1U);
   iterator pos = begin() + (pos_ - begin());
-  copy_impl::shift_up(*this, 1U, pos, end() - pos);
+  copy_impl::shift_up(*this, 1U, &*pos, end() - pos);
   *pos = v;
   return pos;
 }

@@ -1,6 +1,7 @@
 #ifndef _LOADER_MEMORYMAP_H_
 #define _LOADER_MEMORYMAP_H_
 
+#include <cdecl.h>
 #include <abi/ext/relptr.h>
 #include <vector>
 
@@ -57,7 +58,18 @@ class memorymap {
   data_t data_;
 };
 
+static_assert(sizeof(memorymap) == 3 * 4,
+              "Memory map may be inconsistent across botted architectures.");
+
 
 } /* namespace loader */
+
+_namespace_begin(std)
+
+extern template class std::vector<
+    loader::memorymap::range,
+    abi::ext::relptr_allocator<loader::memorymap::range>>;
+
+_namespace_end(std)
 
 #endif /* _LOADER_MEMORYMAP_H_ */

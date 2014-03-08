@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <memory>
+#include <type_traits>
 
 _namespace_begin(std)
 namespace impl {
@@ -21,7 +22,8 @@ struct alloc_swap<Alloc, false> {
   static inline void do_alloc_swap(Alloc&, Alloc&) noexcept {}
 };
 
-template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
+template<typename Alloc, bool Empty = is_empty<Alloc>::value>
+class alloc_base {
  public:
   using allocator_type = Alloc;
 
@@ -113,7 +115,7 @@ template<typename Alloc, size_t SZ = sizeof(Alloc)> class alloc_base {
  * Specialization: use empty base optimization to optimize away
  * empty allocator class.
  */
-template<typename Alloc> class alloc_base<Alloc, 0U>
+template<typename Alloc> class alloc_base<Alloc, true>
 : private Alloc {
  public:
   using allocator_type = Alloc;
