@@ -22,12 +22,12 @@ ios_base::failure::failure(string_ref msg, const error_code& ec)
 ios_base::failure::~failure() noexcept {}
 
 
-ios_base::init::init() noexcept {
+ios_base::Init::Init() noexcept {
   // XXX increment a static reference counter,
   // force initialization of std::{w,}c{in,out,err,log}.
 }
 
-ios_base::init::~init() noexcept {
+ios_base::Init::~Init() noexcept {
   // XXX decrement a static reference counter,
   // only allow destruction of std::{w,}c{in,out,err,log}
   // if the counter reaches zero

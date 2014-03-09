@@ -153,7 +153,7 @@ class ios_base {
   static constexpr seekdir cur = seekdir::cur;
   static constexpr seekdir end = seekdir::end;
 
-  class init;
+  class Init;
 
   fmtflags flags() const noexcept;
   fmtflags flags(fmtflags) noexcept;
@@ -231,12 +231,12 @@ class ios_base::failure : public system_error {
   ~failure() noexcept override;
 };
 
-class ios_base::init {
+class ios_base::Init {
  public:
-  init() noexcept;
-  init(const init&) : init() {}
-  init& operator=(const init&) { return *this; }
-  ~init() noexcept;
+  Init() noexcept;
+  Init(const Init&) : Init() {}
+  Init& operator=(const Init&) { return *this; }
+  ~Init() noexcept;
 };
 
 
