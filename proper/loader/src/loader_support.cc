@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <abi/memory.h>
 #include <loader/x86_video.h>
+#include <loader/main.h>
 #include <iterator>
 
 namespace loader {
@@ -12,7 +13,13 @@ uint32_t mb_magic;
 uint32_t mb_data;
 
 void loader_setup() noexcept {
-  bios_put_str("Loader setup...\n");
+  try {
+    main();
+  } catch (const std::exception& e) {
+    bios_printf("loader::main exception: %s\n", e.what());
+  } catch (...) {
+    bios_put_str("unrecognized exception during loader::main\n");
+  }
 }
 
 void bss_zero() noexcept {
