@@ -199,9 +199,6 @@ basic_ios<Char, Traits>::~basic_ios() noexcept {}
 template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::init(
     basic_streambuf<char_type, traits_type>* sb) -> void {
-#if __has_include(<locale>)
-  this->loc_ = locale::classic();
-#endif
   rdbuf_ = sb;
   tie_ = nullptr;
   this->exceptions(goodbit);
