@@ -2,6 +2,7 @@
 #define _IOSFWD_H_
 
 #include <cdecl.h>
+#include <abi/abi.h>
 #include <cstdint>
 #include <cstdio_misc/mbstate.h>
 
@@ -20,7 +21,8 @@ template<> struct char_traits<char32_t>;
 template<typename State> class fpos;
 
 template<typename Char, typename CharTraits = char_traits<Char>,
-         typename Alloc = allocator<Char>> class basic_string;
+         typename Alloc = allocator<Char>>
+    class basic_string;
 template<typename Char, typename Traits = char_traits<Char>>
     class basic_string_ref;
 
@@ -38,6 +40,77 @@ using streampos = fpos<mbstate_t>;
 using wstreampos = fpos<mbstate_t>;
 using u16streampos = fpos<mbstate_t>;
 using u32streampos = fpos<mbstate_t>;
+
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class basic_ios;
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class basic_streambuf;
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class basic_istream;
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class basic_ostream;
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class basic_iostream;
+
+template<typename Char, typename CharTraits = char_traits<Char>,
+         typename Alloc = allocator<Char>>
+    class basic_stringbuf;
+template<typename Char, typename CharTraits = char_traits<Char>,
+         typename Alloc = allocator<Char>>
+    class basic_istringstream;
+template<typename Char, typename CharTraits = char_traits<Char>,
+         typename Alloc = allocator<Char>>
+    class basic_ostringstream;
+template<typename Char, typename CharTraits = char_traits<Char>,
+         typename Alloc = allocator<Char>>
+    class basic_stringstream;
+
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class basic_filebuf;
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class basic_ifstream;
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class basic_ofstream;
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class basic_fstream;
+
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class istreambuf_iterator;
+template<typename Char, typename CharTraits = char_traits<Char>>
+    class ostreambuf_iterator;
+
+using ios = basic_ios<char>;
+using wios = basic_ios<wchar_t>;
+
+using streambuf = basic_streambuf<char>;
+using istream = basic_istream<char>;
+using ostream = basic_ostream<char>;
+using iostream = basic_iostream<char>;
+
+using stringbuf = basic_stringbuf<char>;
+using istringstream = basic_istringstream<char>;
+using ostringstream = basic_ostringstream<char>;
+using stringstream = basic_stringstream<char>;
+
+using filebuf = basic_filebuf<char>;
+using ifstream = basic_ifstream<char>;
+using ofstream = basic_ofstream<char>;
+using fstream = basic_fstream<char>;
+
+using wstreambuf = basic_streambuf<wchar_t>;
+using wistream = basic_istream<wchar_t>;
+using wostream = basic_ostream<wchar_t>;
+using wiostream = basic_iostream<wchar_t>;
+
+using wstringbuf = basic_stringbuf<wchar_t>;
+using wistringstream = basic_istringstream<wchar_t>;
+using wostringstream = basic_ostringstream<wchar_t>;
+using wstringstream = basic_stringstream<wchar_t>;
+
+using wfilebuf = basic_filebuf<wchar_t>;
+using wifstream = basic_ifstream<wchar_t>;
+using wofstream = basic_ofstream<wchar_t>;
+using wfstream = basic_fstream<wchar_t>;
 
 
 _namespace_end(std)

@@ -1,0 +1,360 @@
+#ifndef _IOS_
+#define _IOS_
+
+#include <cdecl.h>
+#include <abi/abi.h>
+#include <iosfwd>
+#include <system_error>
+#include <type_traits>
+#include <utility>
+#include <vector>
+#if __has_include(<locale>)
+# include <locale>
+#endif
+
+_namespace_begin(std)
+
+
+/* streamoff: declared in iosfwd. */
+using streamsize = _TYPES(fpos_t);
+
+class ios_base;
+
+ios_base& boolalpha(ios_base&) noexcept;
+ios_base& noboolalpha(ios_base&) noexcept;
+ios_base& showbase(ios_base&) noexcept;
+ios_base& noshowbase(ios_base&) noexcept;
+ios_base& showpoint(ios_base&) noexcept;
+ios_base& noshowpoint(ios_base&) noexcept;
+ios_base& showpos(ios_base&) noexcept;
+ios_base& noshowpos(ios_base&) noexcept;
+ios_base& skipws(ios_base&) noexcept;
+ios_base& noskipws(ios_base&) noexcept;
+ios_base& uppercase(ios_base&) noexcept;
+ios_base& nouppercase(ios_base&) noexcept;
+ios_base& unitbuf(ios_base&) noexcept;
+ios_base& nounitbuf(ios_base&) noexcept;
+
+ios_base& internal(ios_base&) noexcept;
+ios_base& left(ios_base&) noexcept;
+ios_base& right(ios_base&) noexcept;
+
+ios_base& dec(ios_base&) noexcept;
+ios_base& hex(ios_base&) noexcept;
+ios_base& oct(ios_base&) noexcept;
+
+ios_base& fixed(ios_base&) noexcept;
+ios_base& scientific(ios_base&) noexcept;
+ios_base& hexfloat(ios_base&) noexcept;
+ios_base& defaultfloat(ios_base&) noexcept;
+
+enum class io_errc {
+  stream = 1
+};
+
+template<> struct is_error_code_enum<io_errc> : public true_type {};
+error_code make_error_code(io_errc) noexcept;
+error_condition make_error_condition(io_errc) noexcept;
+const error_category& iostream_category() noexcept;
+
+
+class ios_base {
+  template<typename Char, typename Traits> friend class basic_ios;
+
+ public:
+  class failure;
+
+  enum class fmtflags : _TYPES(uint16_t) {
+    boolalpha   =    0x1,
+    showbase    =    0x2,
+    showpoint   =    0x4,
+    showpos     =    0x8,
+    skipws      =   0x10,
+    unitbuf     =   0x20,
+    uppercase   =   0x40,
+
+    /* basefield */
+    dec         =  0x100,
+    oct         =  0x200,
+    hex         =  0x400,
+
+    /* floatfield */
+    fixed       = 0x0800,
+    scientific  = 0x1000,
+
+    /* adjustfield */
+    left        = 0x2000,
+    right       = 0x4000,
+    internal    = 0x8000,
+  };
+
+  static constexpr fmtflags boolalpha   = fmtflags::boolalpha;
+  static constexpr fmtflags dec         = fmtflags::dec;
+  static constexpr fmtflags fixed       = fmtflags::fixed;
+  static constexpr fmtflags hex         = fmtflags::hex;
+  static constexpr fmtflags internal    = fmtflags::internal;
+  static constexpr fmtflags left        = fmtflags::left;
+  static constexpr fmtflags oct         = fmtflags::oct;
+  static constexpr fmtflags right       = fmtflags::right;
+  static constexpr fmtflags scientific  = fmtflags::scientific;
+  static constexpr fmtflags showbase    = fmtflags::showbase;
+  static constexpr fmtflags showpoint   = fmtflags::showpoint;
+  static constexpr fmtflags showpos     = fmtflags::showpos;
+  static constexpr fmtflags skipws      = fmtflags::skipws;
+  static constexpr fmtflags unitbuf     = fmtflags::unitbuf;
+  static constexpr fmtflags uppercase   = fmtflags::uppercase;
+  static constexpr fmtflags adjustfield = static_cast<fmtflags>(
+      static_cast<typename underlying_type<fmtflags>::type>(left) |
+      static_cast<typename underlying_type<fmtflags>::type>(right) |
+      static_cast<typename underlying_type<fmtflags>::type>(internal));
+  static constexpr fmtflags basefield   = static_cast<fmtflags>(
+      static_cast<typename underlying_type<fmtflags>::type>(dec) |
+      static_cast<typename underlying_type<fmtflags>::type>(oct) |
+      static_cast<typename underlying_type<fmtflags>::type>(hex));
+  static constexpr fmtflags floatfield  = static_cast<fmtflags>(
+      static_cast<typename underlying_type<fmtflags>::type>(scientific) |
+      static_cast<typename underlying_type<fmtflags>::type>(fixed));
+
+  enum class iostate : _TYPES(uint8_t) {
+    goodbit =   0,
+    badbit  = 0x1,
+    eofbit  = 0x2,
+    failbit = 0x4,
+  };
+
+  static constexpr iostate badbit  = iostate::badbit;
+  static constexpr iostate eofbit  = iostate::eofbit;
+  static constexpr iostate failbit = iostate::failbit;
+  static constexpr iostate goodbit = iostate::goodbit;
+
+  enum class openmode : _TYPES(uint8_t) {
+    app    =  0x1,
+    ate    =  0x2,
+    binary =  0x4,
+    in     =  0x8,
+    out    = 0x10,
+    trunc  = 0x20,
+  };
+
+  static constexpr openmode app    = openmode::app;
+  static constexpr openmode ate    = openmode::ate;
+  static constexpr openmode binary = openmode::binary;
+  static constexpr openmode in     = openmode::in;
+  static constexpr openmode out    = openmode::out;
+  static constexpr openmode trunc  = openmode::trunc;
+
+  enum class seekdir {
+    beg,
+    cur,
+    end
+  };
+
+  static constexpr seekdir beg = seekdir::beg;
+  static constexpr seekdir cur = seekdir::cur;
+  static constexpr seekdir end = seekdir::end;
+
+  class init;
+
+  fmtflags flags() const noexcept;
+  fmtflags flags(fmtflags) noexcept;
+  fmtflags setf(fmtflags) noexcept;
+  fmtflags setf(fmtflags, fmtflags) noexcept;
+  void unsetf(fmtflags) noexcept;
+
+  streamsize precision() const noexcept;
+  streamsize precision(streamsize) noexcept;
+  streamsize width() const noexcept;
+  streamsize width(streamsize) noexcept;
+
+#if __has_include(<locale>)
+  locale imbue(const locale&);
+  locale getloc() const;
+#endif
+
+  static int xalloc();
+  long& iword(int);
+  void*& pword(int);
+
+  virtual ~ios_base() noexcept;
+
+  enum event {
+    erase_event,
+    imbue_event,
+    copyfmt_event
+  };
+
+  using event_callback = void (*)(event, ios_base&, int);
+  void register_callback(event_callback, int);
+
+  ios_base(const ios_base&) = delete;
+  ios_base& operator=(const ios_base&) = delete;
+
+  static bool sync_with_stdio(bool = true);
+
+ protected:
+  ios_base();
+  void invoke_event_cb(event) noexcept;
+
+ private:
+  struct event_cb {
+    event_cb() = default;
+    event_cb(const event_cb&) = default;
+    event_cb(event_cb&&) = default;
+    event_cb& operator=(const event_cb&) = default;
+    event_cb& operator=(event_cb&&) = default;
+    event_cb(event_callback cb, int index) noexcept : cb(cb), index(index) {}
+
+    event_callback cb;
+    int index;
+
+    void invoke(event ev, ios_base& self) noexcept { cb(ev, self, index); }
+  };
+
+#if __has_include(<locale>)
+  locale loc_;
+#endif
+  streamsize precision_;
+  streamsize width_;
+  fmtflags fmtflags_;
+
+  std::vector<event_cb> events_;
+  std::vector<long> iarray_;
+  std::vector<void*> parray_;
+};
+
+class ios_base::failure : public system_error {
+ public:
+  explicit failure(const string&, const error_code& = io_errc::stream);
+  explicit failure(string_ref, const error_code& = io_errc::stream);
+  explicit failure(const char*, const error_code& = io_errc::stream);
+
+  ~failure() noexcept override;
+};
+
+class ios_base::init {
+ public:
+  init() noexcept;
+  init(const init&) : init() {}
+  init& operator=(const init&) { return *this; }
+  ~init() noexcept;
+};
+
+
+template<typename State> class fpos {
+ public:
+  State state() const;
+  void state(State);
+
+  fpos() = default;
+  fpos(State);
+  fpos& operator=(const fpos&);
+  fpos& operator=(State);
+
+ private:
+  State state_;
+};
+
+template<typename State>
+bool operator==(const fpos<State>& a, const fpos<State>& b)
+    noexcept(noexcept(a.state() == b.state()));
+
+template<typename State>
+bool operator!=(const fpos<State>& a, const fpos<State>& b)
+    noexcept(noexcept(!(a == b)));
+
+
+namespace impl {
+
+class basic_ios_derived {
+  friend ios_base;
+
+ protected:
+  basic_ios_derived() = default;
+  basic_ios_derived(const basic_ios_derived&) = delete;
+  basic_ios_derived& operator=(const basic_ios_derived&) = delete;
+
+ public:
+  virtual ~basic_ios_derived() noexcept;
+
+  explicit operator bool() const noexcept;
+  bool operator!() const noexcept;
+  ios_base::iostate rdstate() const noexcept;
+  void setstate(ios_base::iostate);
+  bool good() const noexcept;
+  bool eof() const noexcept;
+  bool fail() const noexcept;
+  bool bad() const noexcept;
+
+  ios_base::iostate exceptions() const noexcept;
+  void exceptions(ios_base::iostate);
+
+ protected:
+  ios_base::iostate clear_(ios_base::iostate);
+  void move(basic_ios_derived&&) noexcept;
+  void swap(basic_ios_derived&) noexcept;
+
+ private:
+  ios_base::iostate iostate_;
+  ios_base::iostate exceptions_;
+};
+
+} /* namespace std::impl */
+
+
+template<typename Char, typename Traits> class basic_ios
+: public ios_base, public impl::basic_ios_derived {
+ public:
+  using char_type = Char;
+  using traits_type = Traits;
+  using int_type = typename traits_type::int_type;
+  using pos_type = typename traits_type::pos_type;
+  using off_type = typename traits_type::off_type;
+
+  void clear(iostate = goodbit);
+
+  explicit basic_ios(basic_streambuf<char_type, traits_type>*);
+  ~basic_ios() noexcept override;
+
+  basic_ostream<char_type, traits_type>* tie() const noexcept;
+  basic_ostream<char_type, traits_type>* tie(
+      basic_ostream<char_type, traits_type>*) noexcept;
+
+  basic_streambuf<char_type, traits_type>* rdbuf() const noexcept;
+  basic_streambuf<char_type, traits_type>* rdbuf(
+      basic_streambuf<char_type, traits_type>*) noexcept;
+
+  basic_ios& copyfmt(const basic_ios&);
+
+  char_type fill() const noexcept;
+  char_type fill(char_type) noexcept;
+
+#if __has_include(<locale>)
+  locale imbue(const locale&);
+
+  char narrow(char_type, char) const;
+  char_type widen(char) const;
+#endif
+
+  basic_ios(const basic_ios&) = delete;
+  basic_ios& operator=(const basic_ios&) = delete;
+
+ protected:
+  basic_ios();
+  void init(basic_streambuf<char_type, traits_type>*);
+  void move(basic_ios&);
+  void move(basic_ios&&);
+  void swap(basic_ios&) noexcept;
+  void set_rdbuf(basic_streambuf<char_type, traits_type>*) noexcept;
+
+ private:
+  basic_streambuf<char_type, traits_type>* rdbuf_;
+  basic_ostream<char_type, traits_type>* tie_;
+  char_type fill_;
+};
+
+
+_namespace_end(std)
+
+#include <ios-inl.h>
+
+#endif /* _IOS_ */
