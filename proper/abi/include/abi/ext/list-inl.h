@@ -55,7 +55,7 @@ auto list<T, Tag>::empty() const noexcept -> bool {
 
 template<typename T, typename Tag>
 auto list<T, Tag>::clear() noexcept -> void {
-  for (auto i = begin(); i != end(); i = begin()) unlink(begin());
+  while (!empty()) unlink(rbegin());
 }
 
 template<typename T, typename Tag>
