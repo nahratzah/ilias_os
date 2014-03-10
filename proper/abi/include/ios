@@ -246,11 +246,17 @@ template<typename State> class fpos {
   void state(State);
 
   fpos() = default;
-  fpos(State);
+  fpos(_TYPES(fpos_t) v);
   fpos& operator=(const fpos&);
-  fpos& operator=(State);
+  fpos& operator=(_TYPES(fpos_t) v);
+
+  fpos& operator+=(_TYPES(fpos_t) v) noexcept;
+  fpos& operator-=(_TYPES(fpos_t) v) noexcept;
+
+  _TYPES(fpos_t) operator-(const fpos& rhs) const noexcept;
 
  private:
+  _TYPES(fpos_t) pos_;
   State state_;
 };
 

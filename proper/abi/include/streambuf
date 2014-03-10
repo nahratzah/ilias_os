@@ -1,0 +1,107 @@
+#ifndef _STREAMBUF_
+#define _STREAMBUF_
+
+#include <cdecl.h>
+#include <iosfwd>
+#include <ios>
+#include <algorithm>
+
+_namespace_begin(std)
+
+
+template<typename Char, typename Traits> class basic_streambuf {
+ public:
+  using char_type = Char;
+  using traits_type = Traits;
+  using int_type = typename traits_type::int_type;
+  using pos_type = typename traits_type::pos_type;
+  using off_type = typename traits_type::off_type;
+
+  virtual ~basic_streambuf() = default;
+
+#if __has_include(<locale>)
+  locale pubimbue(const locale&);
+  locale getloc() const;
+#endif
+
+  basic_streambuf* pubsetbuf(char_type*, streamsize);
+  pos_type pubseekoff(off_type, ios_base::seekdir,
+                      ios_base::openmode = ios_base::in | ios_base::out);
+  pos_type pubseekpos(pos_type,
+                      ios_base::openmode = ios_base::in | ios_base::out);
+  int pubsync();
+
+  streamsize in_avail();
+  int_type snextc();
+  int_type sbumpc();
+  int_type sgetc();
+  streamsize sgetn(char_type*, streamsize);
+
+  int_type sputbackc(char_type);
+  int_type sungetc();
+
+  int_type sputc(char_type);
+  streamsize sputn(const char_type*, streamsize);
+
+ protected:
+  basic_streambuf() = default;
+  basic_streambuf(const basic_streambuf&) = default;
+  basic_streambuf& operator=(const basic_streambuf&) = default;
+
+  void swap(basic_streambuf&) noexcept;
+
+  char_type* eback() const noexcept;
+  char_type* gptr() const noexcept;
+  char_type* egptr() const noexcept;
+  void gbump(int);
+  void setg(char_type*, char_type*, char_type*);
+
+  char_type* pbase() const noexcept;
+  char_type* pptr() const noexcept;
+  char_type* epptr() const noexcept;
+  void pbump(int);
+  void setp(char_type*, char_type*);
+
+#if __has_include(<locale>)
+  virtual void imbue(const locale&);
+#endif
+
+  virtual basic_streambuf* setbuf(char_type*, streamsize);
+  virtual pos_type seekoff(off_type, ios_base::seekdir,
+                           ios_base::openmode = ios_base::in | ios_base::out);
+  virtual pos_type seekpos(pos_type,
+                           ios_base::openmode = ios_base::in | ios_base::out);
+  virtual int sync();
+
+  virtual streamsize showmanyc();
+  virtual streamsize xsgetn(char_type*, streamsize);
+  virtual int_type underflow();
+  virtual int_type uflow();
+
+  virtual int_type pbackfail(int_type = traits_type::eof());
+
+  virtual streamsize xsputn(const char_type*, streamsize);
+  virtual int_type overflow(int_type = traits_type::eof());
+
+ private:
+  char_type* eback_ = nullptr;
+  char_type* gptr_ = nullptr;
+  char_type* egptr_ = nullptr;
+  char_type* pbase_ = nullptr;
+  char_type* pptr_ = nullptr;
+  char_type* epptr_ = nullptr;
+#if __has_include(<locale>)
+  locale loc_;
+#endif
+};
+
+
+using streambuf = basic_streambuf<char>;
+using wstreambuf = basic_streambuf<wchar_t>;
+
+
+_namespace_end(std)
+
+#include <streambuf-inl.h>
+
+#endif /* _STREAMBUF_ */

@@ -97,22 +97,39 @@ auto fpos<State>::state(State s) -> void { state_ = s; }
 template<typename State>
 auto fpos<State>::operator=(const fpos& other) -> fpos& {
   state_ = other.state_;
+  pos_ = other.pos_;
   return *this;
 }
 
 template<typename State>
-auto fpos<State>::operator=(State s) -> fpos& {
-  state_ = s;
+auto fpos<State>::operator=(_TYPES(fpos_t) v) -> fpos& {
+  return *this = fpos(v);
+}
+
+template<typename State>
+fpos<State>::fpos(_TYPES(fpos_t) v) : pos_(v) {}
+
+template<typename State>
+auto fpos<State>::operator+=(_TYPES(fpos_t) v) noexcept -> fpos& {
+  pos_ += v;
   return *this;
 }
 
 template<typename State>
-fpos<State>::fpos(State s) : state_(s) {}
+auto fpos<State>::operator-=(_TYPES(fpos_t) v) noexcept -> fpos& {
+  pos_ -= v;
+  return *this;
+}
+
+template<typename State>
+auto fpos<State>::operator-(const fpos& rhs) const noexcept -> _TYPES(fpos_t) {
+  return pos_ - rhs.pos_;
+}
 
 template<typename State>
 bool operator==(const fpos<State>& a, const fpos<State>& b)
     noexcept(noexcept(a.state() == b.state())) {
-  return a.state() == b.state();
+  return a.pos_ == b.pos_ && a.state() == b.state();
 }
 
 template<typename State>
