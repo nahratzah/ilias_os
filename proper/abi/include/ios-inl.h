@@ -223,11 +223,7 @@ auto basic_ios<Char, Traits>::init(
   this->flags(skipws | dec);
   this->width(0);
   this->precision(6);
-#if __has_include(<locale>)
   fill(widen(' '));
-#else
-  fill(char_type(' '));
-#endif
 }
 
 template<typename Char, typename Traits>
@@ -271,10 +267,20 @@ auto basic_ios<Char, Traits>::narrow(char_type c, char dfault) const -> char {
 }
 
 template<typename Char, typename Traits>
-auto basic_ios<Char, Traits>::narrow(char c) const -> char_type {
+auto basic_ios<Char, Traits>::widen(char c) const -> char_type {
   return use_facet<ctype<char_type>>(getloc()).widen(c);
 }
-#endif
+#else /* __has_include(<locale>) */
+template<typename Char, typename Traits>
+auto basic_ios<Char, Traits>::narrow(char_type c, char dfault) const -> char {
+  return ((c & 0x7f) == c ? c : dfault);
+}
+
+template<typename Char, typename Traits>
+auto basic_ios<Char, Traits>::widen(char c) const -> char_type {
+  return c;
+}
+#endif /* __has_include(<locale>) ... else */
 
 template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::fill() const noexcept -> char_type {

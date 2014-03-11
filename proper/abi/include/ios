@@ -336,10 +336,10 @@ template<typename Char, typename Traits> class basic_ios
 
 #if __has_include(<locale>)
   locale imbue(const locale&);
+#endif
 
   char narrow(char_type, char) const;
   char_type widen(char) const;
-#endif
 
   basic_ios(const basic_ios&) = delete;
   basic_ios& operator=(const basic_ios&) = delete;
