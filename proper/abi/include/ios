@@ -7,6 +7,7 @@
 #include <system_error>
 #include <type_traits>
 #include <utility>
+#include <string>
 #include <vector>
 #if __has_include(<locale>)
 # include <locale>
@@ -357,6 +358,12 @@ template<typename Char, typename Traits> class basic_ios
   basic_ostream<char_type, traits_type>* tie_;
   char_type fill_;
 };
+
+
+extern template class basic_ios<char>;
+extern template class basic_ios<char16_t>;
+extern template class basic_ios<char32_t>;
+extern template class basic_ios<wchar_t>;
 
 
 _namespace_end(std)

@@ -208,4 +208,10 @@ const error_category& iostream_category() noexcept {
 }
 
 
+template class basic_ios<char>;
+template class basic_ios<char16_t>;
+template class basic_ios<char32_t>;
+template class basic_ios<wchar_t>;
+
+
 _namespace_end(std)
