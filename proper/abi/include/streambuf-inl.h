@@ -270,4 +270,57 @@ auto basic_streambuf<Char, Traits>::overflow(int_type) -> int_type {
 }
 
 
+namespace impl {
+
+
+template<typename Char, typename Traits>
+streamsize copybuf(basic_streambuf<Char, Traits>& dst,
+                   basic_streambuf<Char, Traits>& src) {
+  assert(&dst != &src);
+  streamsize count = 0;
+
+  for (;;) {
+    /*
+     * Figure out avail bytes.  Clamp to INT_MAX, otherwise
+     * dst.pbump() and src.gbump() will fail.
+     */
+    streamsize dst_avail = dst.epptr() - dst.pptr();
+    streamsize src_avail = src.egptr() - src.gptr();
+    if (dst_avail > INT_MAX) dst_avail = INT_MAX;
+    if (src_avail > INT_MAX) src_avail = INT_MAX;
+
+    if (dst_avail == 0 && src_avail == 0) {
+      /* No buffer available: transfer a single char across. */
+      const typename Traits::int_type cc = src.sgetc();
+      if (Traits::eq_int_type(cc, Traits::eof())) break;
+      const typename Traits::char_type c = Traits::to_char_type(cc);
+      if (Traits::eq_int_type(dst.sputc(c), Traits::eof())) break;
+      src.sbumpc();
+      ++count;
+    } else if (dst_avail == 0) {
+      /* Dst buffer unavailable: invoke virtual function for transfer. */
+      const streamsize put_sz = dst.sputn(src.gptr(), src_avail);
+      if (put_sz == 0) break;
+      count += put_sz;
+      src.gbump(put_sz);
+    } else if (src_avail == 0) {
+      /* Src buffer unavailable: invoke virtual function for transfer. */
+      const streamsize get_sz = src.sgetn(dst.pptr(), dst_avail);
+      if (get_sz == 0) break;
+      count += get_sz;
+      dst.pbump(get_sz);
+    } else {
+      /* Buffers available, use memcpy to transfer. */
+      auto copylen = min(dst_avail, src_avail);
+      Traits::copy(dst.pptr(), src.gptr(), copylen);
+      src.gbump(copylen);
+      dst.pbump(copylen);
+      count += copylen;
+    }
+  }
+  return count;
+}
+
+
+} /* namespace std::impl */
 _namespace_end(std)

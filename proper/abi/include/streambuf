@@ -2,14 +2,30 @@
 #define _STREAMBUF_
 
 #include <cdecl.h>
+#include <cassert>
 #include <iosfwd>
 #include <ios>
 #include <algorithm>
+#include <string>
 
 _namespace_begin(std)
 
 
+namespace impl {
+
+
+template<typename Char, typename Traits>
+streamsize copybuf(basic_streambuf<Char, Traits>&,
+                   basic_streambuf<Char, Traits>&);
+
+
+} /* namespace std::impl */
+
+
 template<typename Char, typename Traits> class basic_streambuf {
+  template friend streamsize impl::copybuf<>(basic_streambuf&,
+                                             basic_streambuf&);
+
  public:
   using char_type = Char;
   using traits_type = Traits;
@@ -96,10 +112,20 @@ template<typename Char, typename Traits> class basic_streambuf {
 };
 
 
-using streambuf = basic_streambuf<char>;
-using wstreambuf = basic_streambuf<wchar_t>;
+extern template class basic_streambuf<char>;
+extern template class basic_streambuf<char16_t>;
+extern template class basic_streambuf<char32_t>;
+extern template class basic_streambuf<wchar_t>;
 
 
+namespace impl {
+
+extern template streamsize copybuf(basic_streambuf<char>&,
+                                   basic_streambuf<char>&);
+extern template streamsize copybuf(basic_streambuf<wchar_t>&,
+                                   basic_streambuf<wchar_t>&);
+
+} /* namespace impl */
 _namespace_end(std)
 
 #include <streambuf-inl.h>
