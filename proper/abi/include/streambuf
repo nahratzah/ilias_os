@@ -122,6 +122,10 @@ namespace impl {
 
 extern template streamsize copybuf(basic_streambuf<char>&,
                                    basic_streambuf<char>&);
+extern template streamsize copybuf(basic_streambuf<char16_t>&,
+                                   basic_streambuf<char16_t>&);
+extern template streamsize copybuf(basic_streambuf<char32_t>&,
+                                   basic_streambuf<char32_t>&);
 extern template streamsize copybuf(basic_streambuf<wchar_t>&,
                                    basic_streambuf<wchar_t>&);
 
