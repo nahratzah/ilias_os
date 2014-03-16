@@ -119,7 +119,7 @@ class bigint {
   explicit operator bool() const noexcept;
   bool operator!() const noexcept;
 
-  friend _namespace(std)::string to_string(const bigint&);
+  friend _namespace(std)::string to_string(bigint);
   bool is_pow2() const noexcept;
 
  private:

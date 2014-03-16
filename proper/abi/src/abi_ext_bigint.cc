@@ -853,4 +853,22 @@ bigint& bigint::operator%=(bigint y) {
 }
 
 
+_namespace(std)::string to_string(bigint x) {
+  _namespace(std)::string rv;
+
+  const bool neg = (x.sign_ == bigint::NEG);
+  x.sign_ = bigint::POS;
+
+  while (!x.x_.empty()) {
+    unsigned int digit;
+    _namespace(std)::tie(x, digit) =
+        bigint::divmod(_namespace(std)::move(x), 10U);
+    rv.insert(rv.begin(), char('0' + digit));
+  }
+
+  if (neg) rv.insert(rv.begin(), '-');
+  return rv;
+}
+
+
 }} /* namespace __cxxabiv1::ext */
