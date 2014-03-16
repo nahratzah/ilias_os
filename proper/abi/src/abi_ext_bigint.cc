@@ -272,10 +272,10 @@ _namespace(std)::tuple<bigint, bigint> bigint::divmod(bigint x, bigint y) {
   y.sign_ = POS;
   const size_t x_digits =
       x.x_.size() * _namespace(std)::numeric_limits<int_t>::digits -
-      __builtin_clz(x.x_.back());
+      clz(x.x_.back());
   const size_t y_digits =
       y.x_.size() * _namespace(std)::numeric_limits<int_t>::digits -
-      __builtin_clz(y.x_.back());
+      clz(y.x_.back());
 
   bigint mask = 1U;
   if (x_digits > y_digits) {

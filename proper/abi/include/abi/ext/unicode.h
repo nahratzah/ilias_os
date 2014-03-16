@@ -3,6 +3,7 @@
 
 #include <utility>
 #include <abi/errno.h>
+#include <abi/misc_int.h>
 
 namespace __cxxabiv1 {
 namespace ext {

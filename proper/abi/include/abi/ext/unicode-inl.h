@@ -53,7 +53,7 @@ int unicode_conv_in<char>::operator()(char c, CB& cb)
     return 0;
   }
 
-  initial_need_ = need_ = __builtin_clz(~c);
+  initial_need_ = need_ = clz(~c);
   if (need_ <= 1) return _ABI_EILSEQ;  // Continuation char.
   if (need_ > 6) return _ABI_EILSEQ;  // Oversized length.
   const char mask = (char(1) << (8 - need_));

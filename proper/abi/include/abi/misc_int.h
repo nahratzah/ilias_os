@@ -346,8 +346,193 @@ unsigned long long umulll_extend(unsigned long long x, unsigned long long y,
 #endif /* __cplusplus */
 
 
+constexpr int ctzb(unsigned char x) noexcept {
+  return (x == 0 ? sizeof(unsigned char) * CHAR_BIT : __builtin_ctz(x));
+}
+
+constexpr int ctzs(unsigned short x) noexcept {
+  return (x == 0 ? sizeof(unsigned short) * CHAR_BIT : __builtin_ctz(x));
+}
+
+constexpr int ctz(unsigned int x) noexcept {
+  return (x == 0 ? sizeof(unsigned int) * CHAR_BIT : __builtin_ctz(x));
+}
+
+constexpr int ctzl(unsigned long x) noexcept {
+  return (x == 0 ? sizeof(unsigned long) * CHAR_BIT : __builtin_ctzl(x));
+}
+
+constexpr int ctzll(unsigned long long x) noexcept {
+  return (x == 0 ? sizeof(unsigned long long) * CHAR_BIT : __builtin_ctzll(x));
+}
+
+#ifdef __cplusplus
+
+constexpr int ctz(int x) noexcept {
+  return (x == 0 ? sizeof(int) * CHAR_BIT : __builtin_ctz(x));
+}
+
+constexpr int ctz(unsigned char x) noexcept {
+  return (x == 0 ? sizeof(unsigned char) * CHAR_BIT : __builtin_ctz(x));
+}
+
+constexpr int ctz(char x) noexcept {
+  return (x == 0 ? sizeof(char) * CHAR_BIT : __builtin_ctz(x));
+}
+
+constexpr int ctz(unsigned short x) noexcept {
+  return (x == 0 ? sizeof(unsigned short) * CHAR_BIT : __builtin_ctz(x));
+}
+
+constexpr int ctz(short x) noexcept {
+  return (x == 0 ? sizeof(short) * CHAR_BIT : __builtin_ctz(x));
+}
+
+constexpr int ctz(unsigned long x) noexcept {
+  return (x == 0 ? sizeof(unsigned long) * CHAR_BIT : __builtin_ctzl(x));
+}
+
+constexpr int ctz(long x) noexcept {
+  return (x == 0 ? sizeof(long) * CHAR_BIT : __builtin_ctzl(x));
+}
+
+constexpr int ctz(unsigned long long x) noexcept {
+  return (x == 0 ? sizeof(unsigned long long) * CHAR_BIT : __builtin_ctzll(x));
+}
+
+constexpr int ctz(long long x) noexcept {
+  return (x == 0 ? sizeof(long long) * CHAR_BIT : __builtin_ctzll(x));
+}
+
+#endif /* __cplusplus */
+
+
+constexpr int clzb(unsigned char x) noexcept {
+  /* clz counts for int, so we need to compensate... */
+  return (x == 0 ?
+          sizeof(unsigned char) * CHAR_BIT :
+          __builtin_clz(x) -
+          (sizeof(unsigned int) - sizeof(unsigned char)) * CHAR_BIT);
+}
+
+constexpr int clzs(unsigned short x) noexcept {
+  /* clz counts for int, so we need to compensate... */
+  return (x == 0 ?
+          sizeof(unsigned short) * CHAR_BIT :
+          __builtin_clz(x) -
+          (sizeof(unsigned int) - sizeof(unsigned short)) * CHAR_BIT);
+}
+
+constexpr int clz(unsigned int x) noexcept {
+  return (x == 0 ? sizeof(unsigned int) * CHAR_BIT : __builtin_clz(x));
+}
+
+constexpr int clzl(unsigned long x) noexcept {
+  return (x == 0 ? sizeof(unsigned long) * CHAR_BIT : __builtin_clzl(x));
+}
+
+constexpr int clzll(unsigned long long x) noexcept {
+  return (x == 0 ? sizeof(unsigned long long) * CHAR_BIT : __builtin_clzll(x));
+}
+
+#ifdef __cplusplus
+
+constexpr int clz(int x) noexcept {
+  return (x == 0 ? sizeof(int) * CHAR_BIT : __builtin_clz(x));
+}
+
+constexpr int clz(unsigned char x) noexcept {
+  /* clz counts for int, so we need to compensate... */
+  return (x == 0 ?
+          sizeof(unsigned char) * CHAR_BIT :
+          __builtin_clz(x) -
+          (sizeof(unsigned int) - sizeof(unsigned char)) * CHAR_BIT);
+}
+
+constexpr int clz(signed char x) noexcept {
+  /* clz counts for int, so we need to compensate... */
+  return (x == 0 ?
+          sizeof(signed char) * CHAR_BIT :
+          __builtin_clz(x) -
+          (sizeof(int) - sizeof(signed char)) * CHAR_BIT);
+}
+
+constexpr int clz(unsigned short x) noexcept {
+  /* clz counts for int, so we need to compensate... */
+  return (x == 0 ?
+          sizeof(unsigned short) * CHAR_BIT :
+          __builtin_clz(x) -
+          (sizeof(unsigned int) - sizeof(unsigned short)) * CHAR_BIT);
+}
+
+constexpr int clz(short x) noexcept {
+  /* clz counts for int, so we need to compensate... */
+  return (x == 0 ?
+          sizeof(short) * CHAR_BIT :
+          __builtin_clz(x) -
+          (sizeof(int) - sizeof(short)) * CHAR_BIT);
+}
+
+constexpr int clz(unsigned long x) noexcept {
+  return (x == 0 ? sizeof(unsigned long) * CHAR_BIT : __builtin_clzl(x));
+}
+
+constexpr int clz(long x) noexcept {
+  return (x == 0 ? sizeof(long) * CHAR_BIT : __builtin_clzl(x));
+}
+
+constexpr int clz(unsigned long long x) noexcept {
+  return (x == 0 ? sizeof(unsigned long long) * CHAR_BIT : __builtin_clzll(x));
+}
+
+constexpr int clz(long long x) noexcept {
+  return (x == 0 ? sizeof(long long) * CHAR_BIT : __builtin_clzll(x));
+}
+
+#endif /* __cplusplus */
+
+
 #ifdef __cplusplus
 } /* namespace __cxxabiv1 */
 #endif /* __cplusplus */
+
+
+#ifdef __cplusplus
+using abi::addcb;
+using abi::addcs;
+using abi::addc;
+using abi::addcl;
+using abi::addcll;
+
+using abi::subcb;
+using abi::subcs;
+using abi::subc;
+using abi::subcl;
+using abi::subcll;
+
+using abi::umulb_overflow;
+using abi::umuls_overflow;
+using abi::umul_overflow;
+using abi::umull_overflow;
+using abi::umulll_overflow;
+
+using abi::umulb_extend;
+using abi::umuls_extend;
+using abi::umul_extend;
+using abi::umull_extend;
+using abi::umulll_extend;
+
+using abi::ctzb;
+using abi::ctzs;
+using abi::ctz;
+using abi::ctzl;
+using abi::ctzll;
+
+using abi::clzb;
+using abi::clzs;
+using abi::clz;
+using abi::clzl;
+using abi::clzll;
+#endif
 
 #endif /* _ABI_MISC_INT_H_ */
