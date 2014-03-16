@@ -12,6 +12,7 @@ ABI_SRCS += abi/src/abi_ext_reader.cc
 ABI_SRCS += abi/src/abi_hashcode.cc
 ABI_SRCS += abi/src/abi_linker.cc
 ABI_SRCS += abi/src/abi_memory.cc
+ABI_SRCS += abi/src/abi_misc_int.cc
 ABI_SRCS += abi/src/abi_ref_cstr.cc
 ABI_SRCS += abi/src/abi_semaphore.cc
 ABI_SRCS += abi/src/abi_typeinfo.cc

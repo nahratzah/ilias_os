@@ -123,8 +123,6 @@ class bigint {
   bool is_pow2() const noexcept;
 
  private:
-  static _namespace(std)::tuple<int_t, int_t> multiply_(int_t, int_t) noexcept;
-
   enum sign { POS, NEG };
 
   _namespace(std)::vector<int_t> x_;

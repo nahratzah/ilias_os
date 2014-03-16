@@ -168,6 +168,10 @@ template<bool B, typename T, typename F> using conditional_t =
 template<typename... T> using common_type_t = typename common_type<T...>::type;
 template<typename T> using result_of_t = typename result_of<T>::type;
 
+/* Extension.  Very useful to inhibit template argument deduction. */
+template<typename T> struct identity { using type = T; };
+template<typename T> using identity_t = typename identity<T>::type;
+
 
 _namespace_end(std)
 

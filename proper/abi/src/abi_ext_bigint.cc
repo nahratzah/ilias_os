@@ -1,5 +1,6 @@
 #include <abi/ext/bigint.h>
 #include <abi/ext/log2.h>
+#include <abi/misc_int.h>
 #include <limits>
 #include <tuple>
 
@@ -144,42 +145,6 @@ int compare(const bigint& lhs, const bigint& rhs)
   return 0;
 }
 
-_namespace(std)::tuple<bigint::int_t, bigint::int_t> bigint::multiply_(
-    int_t x, int_t y) noexcept {
-  constexpr auto digits = _namespace(std)::numeric_limits<int_t>::digits;
-  static_assert(digits % 4 == 0,
-                "digits in bigint internal type must be even");
-  static_assert(digits > 4,
-                "insufficient digits in bigint internal type");
-  constexpr auto half_shift = digits / 2;
-  constexpr auto hh_shift = half_shift / 2;
-  constexpr int_t half_mask = (int_t(1) << half_shift) - 1U;
-
-  {
-    int_t tmp;
-    if (!umul_overflow(x, y, &tmp))
-      return _namespace(std)::make_tuple(0, tmp);
-  }
-
-  const int_t x_top = x >> half_shift;
-  const int_t y_top = y >> half_shift;
-  const int_t x_bottom = x & half_mask;
-  const int_t y_bottom = y & half_mask;
-
-  const int_t rv_bottom = x_bottom * y_bottom;
-  const int_t rv_top = x_top * y_top;
-  const int_t rv_mid1 = x_bottom * y_top;
-  const int_t rv_mid2 = x_top * y_bottom;
-
-  int_t bottom, top, c0, c1;
-
-  bottom = rv_bottom;
-  bottom = addc(bottom, rv_mid1 << hh_shift, 0, &c0);
-  bottom = addc(bottom, rv_mid2 << hh_shift, 0, &c1);
-  top = rv_top + (rv_mid1 >> hh_shift) + (rv_mid2 >> hh_shift) + c0 + c1;
-  return _namespace(std)::make_tuple(top, bottom);
-}
-
 bool bigint::is_pow2() const noexcept {
   if (x_.empty() || sign_ != POS) return false;
 
@@ -208,7 +173,7 @@ bigint& bigint::multadd(uintmax_t m, uintmax_t a) {
 
   for (auto& xi : x_) {
     int_t next_carry;
-    _namespace(std)::tie(next_carry, xi) = multiply_(xi, m);
+    _namespace(std)::tie(xi, next_carry) = umul_extend(xi, int_t(m));
     int_t carry_out;
     xi = addc(xi, carry, carry_in, &carry_out);
     carry = next_carry;
@@ -237,7 +202,7 @@ bigint& bigint::multsub(uintmax_t m, uintmax_t a) {
 
   for (auto& xi : x_) {
     int_t next_carry;
-    _namespace(std)::tie(next_carry, xi) = multiply_(xi, m);
+    _namespace(std)::tie(xi, next_carry) = umul_extend(xi, int_t(m));
     int_t carry_out;
     xi = addc(xi, carry, carry_in, &carry_out);
     carry = next_carry;
@@ -554,8 +519,7 @@ bigint operator*(bigint x, uintmax_t y) {
   bigint::int_t next = 0;
   for (auto& xi : x.x_) {
     bigint::int_t next_carry;
-    _namespace(std)::tie(next_carry, xi) =
-	bigint::multiply_(xi, bigint::int_t(y));
+    _namespace(std)::tie(xi, next_carry) = umul_extend(xi, bigint::int_t(y));
     xi = addc(xi, next, carry, &carry);
     next = next_carry;
   }
