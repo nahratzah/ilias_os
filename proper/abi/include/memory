@@ -131,6 +131,9 @@ template<typename Alloc> struct allocator_traits {
       noexcept(noexcept(impl::alloc_traits<Alloc>::max_size(a)));
 };
 
+struct allocator_arg_t {};
+constexpr allocator_arg_t allocator_arg = allocator_arg_t();
+
 
 _namespace_end(std)
 

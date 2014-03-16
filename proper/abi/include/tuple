@@ -1,0 +1,211 @@
+#ifndef _TUPLE_
+#define _TUPLE_
+
+#include <cdecl.h>
+#include <cstddef>
+#include <memory>
+#include <utility>
+#include <stdimpl/cons.h>
+#include <stdimpl/refwrap.h>
+
+_namespace_begin(std)
+namespace impl {
+
+/* Declare helper to deduce implicit conversion. */
+_STATIC_MEMBER_FUNCTION_CHECK(implicit_convertible_);
+
+template<typename... T> struct implicit_convertible_helper_ {
+  static void implicit_convertible_(T...);  // No implementation.
+};
+
+} /* namespace impl */
+
+
+constexpr impl::ignore_t ignore = impl::ignore_t();
+
+template<typename... Types>
+constexpr auto make_tuple(Types&&...)
+-> tuple<typename impl::refwrap<Types>::type...>;
+
+template<typename... Types>
+constexpr tuple<Types&&...> forward_as_tuple(Types&&...) noexcept;
+
+template<typename... Types>
+constexpr tuple<Types&...> tie(Types&...) noexcept;
+
+/* Due to how this type is derived, the declaration here is omitted.
+ *
+ * template<typename... Tuples>
+ * constexpr tuple<CTypes...> tuple_cat(Tuples&&...);
+ */
+
+template<typename T> class tuple_size;  // undefined.
+template<typename T> class tuple_size<const T>;
+template<typename T> class tuple_size<volatile T>;
+template<typename T> class tuple_size<const volatile T>;
+
+template<typename... Types> class tuple_size<tuple<Types...>>;
+
+template<size_t I, class T> class tuple_element;  // undefined.
+template<size_t I, class T> class tuple_element<I, const T>;
+template<size_t I, class T> class tuple_element<I, volatile T>;
+template<size_t I, class T> class tuple_element<I, const volatile T>;
+
+template<size_t I, typename... Types> class tuple_element<I, tuple<Types...>>;
+
+template<size_t I, typename... Types>
+constexpr auto get(tuple<Types...>&) noexcept ->
+    typename tuple_element<I, tuple<Types...>>::type&;
+template<size_t I, typename... Types>
+constexpr auto get(tuple<Types...>&&) noexcept ->
+    typename tuple_element<I, tuple<Types...>>::type&&;
+template<size_t I, typename... Types>
+constexpr auto get(const tuple<Types...>&) noexcept ->
+    add_const_t<typename tuple_element<I, tuple<Types...>>::type>&;
+
+template<typename T, typename... Types>
+constexpr auto get(tuple<Types...>&) noexcept -> T&;
+template<typename T, typename... Types>
+constexpr auto get(tuple<Types...>&&) noexcept -> T&&;
+template<typename T, typename... Types>
+constexpr auto get(const tuple<Types...>&) noexcept -> const T&;
+
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator==(const tuple<TTypes...>&, const tuple<UTypes...>&);
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator<(const tuple<TTypes...>&, const tuple<UTypes...>&);
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator!=(const tuple<TTypes...>&, const tuple<UTypes...>&);
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator>(const tuple<TTypes...>&, const tuple<UTypes...>&);
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator<=(const tuple<TTypes...>&, const tuple<UTypes...>&);
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator>=(const tuple<TTypes...>&, const tuple<UTypes...>&);
+
+#if 0 // XXX
+template<typename... Types, class Alloc>
+struct uses_allocator<tuple<Types...>, Alloc>;
+#endif
+
+template<typename... Types>
+void swap(tuple<Types...>& lhs, tuple<Types...>& rhs)
+    noexcept(noexcept(lhs.swap(rhs)));
+
+
+template<typename... Types> class tuple
+: private impl::sorted_cons<Types...>
+{
+  template<typename... UTypes> friend class tuple;
+
+  template<size_t I, typename... T>
+  friend constexpr auto get(tuple<T...>&) noexcept
+  -> typename tuple_element<I, tuple<T...>>::type&;
+  template<size_t I, typename... T>
+  friend constexpr auto get(tuple<T...>&&) noexcept
+  -> typename tuple_element<I, tuple<T...>>::type&&;
+  template<size_t I, typename... T>
+  friend constexpr auto get(const tuple<T...>&) noexcept
+  -> add_const_t<typename tuple_element<I, tuple<T...>>::type>&;
+
+  template<typename I, typename... T>
+  friend constexpr auto get(tuple<T...>&) noexcept -> I&;
+  template<typename I, typename... T>
+  friend constexpr auto get(tuple<T...>&&) noexcept -> I&&;
+  template<typename I, typename... T>
+  friend constexpr auto get(const tuple<T...>&) noexcept -> const I&;
+
+ private:
+  using cons = impl::sorted_cons<Types...>;
+  struct enable_ {};
+
+  template<typename... U> using implicit_convertible =
+      impl::static_member_function_check_implicit_convertible_<
+          impl::implicit_convertible_helper_<Types...>, U...>;
+
+ public:
+  constexpr tuple();
+  explicit constexpr tuple(const Types&...);
+  template<typename... UTypes> explicit constexpr tuple(UTypes&&...,
+      enable_if_t<implicit_convertible<UTypes...>::value,
+                  enable_> = enable_());
+
+  tuple(const tuple&) = default;
+  tuple(tuple&&) = default;
+
+  template<typename... UTypes> constexpr tuple(const tuple<UTypes...>&,
+      enable_if_t<implicit_convertible<UTypes...>::value,
+                  enable_> = enable_());
+  template<typename... UTypes> constexpr tuple(tuple<UTypes...>&&,
+      enable_if_t<implicit_convertible<UTypes...>::value,
+                  enable_> = enable_());
+
+  template<typename U1, typename U2>
+  constexpr tuple(const pair<U1, U2>&,
+      enable_if_t<implicit_convertible<U1, U2>::value,
+                  enable_> = enable_());
+  template<typename U1, typename U2>
+  constexpr tuple(pair<U1, U2>&&,
+      enable_if_t<implicit_convertible<U1, U2>::value,
+                  enable_> = enable_());
+
+  template<typename Alloc>
+  tuple(allocator_arg_t, const Alloc&);
+  template<typename Alloc>
+  tuple(allocator_arg_t, const Alloc&, const Types&...);
+  template<typename Alloc, typename... UTypes>
+  tuple(allocator_arg_t, const Alloc&, UTypes&&...,
+      enable_if_t<implicit_convertible<UTypes...>::value,
+                  enable_> = enable_());
+  template<typename Alloc>
+  tuple(allocator_arg_t, const Alloc&, const tuple&);
+  template<typename Alloc>
+  tuple(allocator_arg_t, const Alloc&, tuple&&);
+  template<typename Alloc, typename... UTypes>
+  tuple(allocator_arg_t, const Alloc&, const tuple<UTypes...>&);
+  template<typename Alloc, typename... UTypes>
+  tuple(allocator_arg_t, const Alloc&, tuple<UTypes...>&&);
+  template<typename Alloc, typename U1, typename U2>
+  tuple(allocator_arg_t, const Alloc&, const pair<U1, U2>&);
+  template<typename Alloc, typename U1, typename U2>
+  tuple(allocator_arg_t, const Alloc&, pair<U1, U2>&&);
+
+  tuple& operator=(const tuple&) = default;
+  tuple& operator=(tuple&&) = default;
+
+  template<typename... UTypes>
+  tuple& operator=(const tuple<UTypes...>&);
+  template<typename... UTypes>
+  tuple& operator=(tuple<UTypes...>&&);
+
+  template<typename U1, typename U2> tuple& operator=(const pair<U1, U2>&);
+  template<typename U1, typename U2> tuple& operator=(pair<U1, U2>&&);
+
+  void swap(tuple& rhs) noexcept(noexcept(this->cons::swap(rhs)));
+};
+
+
+template<> class tuple<> {
+ public:
+  constexpr tuple() = default;
+  constexpr tuple(const tuple&) = default;
+  constexpr tuple(tuple&&) = default;
+  tuple& operator=(const tuple&) = default;
+  tuple& operator=(tuple&&) = default;
+
+  const bool operator==(const tuple&) const noexcept { return true; }
+  const bool operator!=(const tuple&) const noexcept { return false; }
+  const bool operator<(const tuple&) const noexcept { return false; }
+  const bool operator>(const tuple&) const noexcept { return false; }
+  const bool operator<=(const tuple&) const noexcept { return true; }
+  const bool operator>=(const tuple&) const noexcept { return true; }
+
+  void swap(tuple&) noexcept {}
+};
+
+
+_namespace_end(std)
+
+#include <tuple-inl.h>
+
+#endif /* _TUPLE_ */

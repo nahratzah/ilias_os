@@ -67,7 +67,7 @@ struct _function_check_##function##_impl<				\
 									\
 template<typename... Args> using function_check_##function =		\
     typename _function_check_##function##_impl<				\
-	::_namespace(std)::impl::_function_check_args<Args...>>::type
+        ::_namespace(std)::impl::_function_check_args<Args...>>::type
 
 
 #define _MEMBER_FUNCTION_CHECK(function)				\
@@ -87,7 +87,26 @@ template<typename T, typename... Args>					\
 using member_function_check_##function =				\
     typename _member_function_check_##function##_impl<			\
         T,								\
-	::_namespace(std)::impl::_function_check_args<Args...>>::type
+        ::_namespace(std)::impl::_function_check_args<Args...>>::type
+
+
+#define _STATIC_MEMBER_FUNCTION_CHECK(function)				\
+template<typename T, typename Args, typename = int>			\
+struct _static_member_function_check_##function##_impl			\
+: ::_namespace(std)::false_type {};					\
+									\
+template<typename T, typename... Args>					\
+struct _static_member_function_check_##function##_impl<			\
+    T,									\
+    ::_namespace(std)::impl::_function_check_args<Args...>,		\
+    decltype(T::function(declval<Args>()...), 0)>			\
+: ::_namespace(std)::true_type {};					\
+									\
+template<typename T, typename... Args>					\
+using static_member_function_check_##function =				\
+    typename _static_member_function_check_##function##_impl<		\
+        T,								\
+        ::_namespace(std)::impl::_function_check_args<Args...>>::type
 
 
 _MEMBER_CHECK(member);
@@ -95,12 +114,14 @@ _MEMBER_TYPE_CHECK(type);
 _STATIC_MEMBER_CHECK(static_member);
 _FUNCTION_CHECK(function);
 _MEMBER_FUNCTION_CHECK(member_function);
+_STATIC_MEMBER_FUNCTION_CHECK(static_member_function);
 
 struct yes_t {
   int member;
   using type = int;
   static int static_member;
   int member_function();
+  static int static_member_function();
 };
 struct no_t {};
 
@@ -176,6 +197,16 @@ static_assert(!member_function_check_member_function<yes_t, int, bool>::value,
               "_MEMBER_FUNCTION_CHECK macro failure");
 static_assert(!member_function_check_member_function<no_t>::value,
               "_MEMBER_FUNCTION_CHECK macro failure");
+
+static_assert(static_member_function_check_static_member_function<yes_t>::value,
+              "_STATIC_MEMBER_FUNCTION_CHECK macro failure");
+static_assert(!static_member_function_check_static_member_function<yes_t, int>::value,
+              "_STATIC_MEMBER_FUNCTION_CHECK macro failure");
+static_assert(!static_member_function_check_static_member_function<yes_t, int,
+                                                            bool>::value,
+              "_STATIC_MEMBER_FUNCTION_CHECK macro failure");
+static_assert(!static_member_function_check_static_member_function<no_t>::value,
+              "_STATIC_MEMBER_FUNCTION_CHECK macro failure");
 
 } /* namespace std::impl */
 _namespace_end(std)
