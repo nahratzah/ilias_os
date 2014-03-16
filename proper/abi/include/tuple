@@ -126,19 +126,24 @@ template<typename... Types> class tuple
  public:
   constexpr tuple();
   explicit constexpr tuple(const Types&...);
-  template<typename... UTypes> explicit constexpr tuple(UTypes&&...,
-      enable_if_t<implicit_convertible<UTypes...>::value,
-                  enable_> = enable_());
+
+  template<typename... UTypes,
+           typename = enable_if_t<implicit_convertible<UTypes...>::value,
+                                  enable_>>
+  explicit constexpr tuple(UTypes&&...);
 
   tuple(const tuple&) = default;
   tuple(tuple&&) = default;
 
-  template<typename... UTypes> constexpr tuple(const tuple<UTypes...>&,
-      enable_if_t<implicit_convertible<UTypes...>::value,
-                  enable_> = enable_());
-  template<typename... UTypes> constexpr tuple(tuple<UTypes...>&&,
-      enable_if_t<implicit_convertible<UTypes...>::value,
-                  enable_> = enable_());
+  template<typename... UTypes,
+           typename = enable_if_t<implicit_convertible<UTypes...>::value,
+                                  enable_>>
+  constexpr tuple(const tuple<UTypes...>&);
+
+  template<typename... UTypes,
+           typename = enable_if_t<implicit_convertible<UTypes...>::value,
+                                  enable_>>
+  constexpr tuple(tuple<UTypes...>&&);
 
   template<typename U1, typename U2>
   constexpr tuple(const pair<U1, U2>&,

@@ -34,18 +34,19 @@ template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<typename... U>
 auto cons<Nitems, cons_elem<I, Type, B>...>::operator=(
     const cons<Nitems, U...>& v)
-    noexcept(noexcept(this->assign_(v)))
+    noexcept(noexcept(this->assign_(v, index_sequence<I...>())))
 -> cons& {
-  this->assign_(v);
+  this->assign_(v, index_sequence<I...>());
   return *this;
 }
 
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<typename... U>
 auto cons<Nitems, cons_elem<I, Type, B>...>::operator=(cons<Nitems, U...>&& v)
-    noexcept(noexcept(this->asign_(forward<cons<Nitems, U...>>(v))))
+    noexcept(noexcept(this->assign_(forward<cons<Nitems, U...>>(v),
+                                   index_sequence<I...>())))
 -> cons& {
-  this->assign_(forward<cons<Nitems, U...>>(v));
+  this->assign_(forward<cons<Nitems, U...>>(v), index_sequence<I...>());
   return *this;
 }
 
@@ -105,9 +106,9 @@ auto cons<Nitems, cons_elem<I, Type, B>...>::operator>=(
 
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
 auto cons<Nitems, cons_elem<I, Type, B>...>::swap_impl(cons& v)
-  noexcept(noexcept(this->swap_(v)))
+  noexcept(noexcept(this->swap_(v, index_sequence<I...>())))
 -> void {
-  this->swap_(v);
+  this->swap_(v, index_sequence<I...>());
 }
 
 template<size_t Nitems, size_t... I, typename... Type, bool... B>

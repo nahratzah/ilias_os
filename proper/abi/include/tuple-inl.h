@@ -12,26 +12,20 @@ constexpr tuple<Types...>::tuple(const Types&... v)
 {}
 
 template<typename... Types>
-template<typename... UTypes>
-constexpr tuple<Types...>::tuple(
-    UTypes&&... v,
-    enable_if_t<implicit_convertible<UTypes...>::value, enable_>)
+template<typename... UTypes, typename>
+constexpr tuple<Types...>::tuple(UTypes&&... v)
 : cons(piecewise_construct_t(), forward<UTypes>(v)...)
 {}
 
 template<typename... Types>
-template<typename... UTypes>
-constexpr tuple<Types...>::tuple(
-    const tuple<UTypes...>& v,
-    enable_if_t<implicit_convertible<UTypes...>::value, enable_>)
+template<typename... UTypes, typename>
+constexpr tuple<Types...>::tuple(const tuple<UTypes...>& v)
 : cons(v)
 {}
 
 template<typename... Types>
-template<typename... UTypes>
-constexpr tuple<Types...>::tuple(
-    tuple<UTypes...>&& v,
-    enable_if_t<implicit_convertible<UTypes...>::value, enable_>)
+template<typename... UTypes, typename>
+constexpr tuple<Types...>::tuple(tuple<UTypes...>&& v)
 : cons(forward<tuple<UTypes...>>(v))
 {}
 
@@ -59,7 +53,7 @@ auto tuple<Types...>::operator=(const tuple<UTypes...>& u) -> tuple& {
 template<typename... Types>
 template<typename... UTypes>
 auto tuple<Types...>::operator=(tuple<UTypes...>&& u) -> tuple& {
-  this->cons::operator=(forward<tuple<UTypes>>(u)...);
+  this->cons::operator=(forward<tuple<UTypes...>>(u));
   return *this;
 }
 

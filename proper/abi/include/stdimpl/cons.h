@@ -353,9 +353,10 @@ class cons<Nitems, cons_elem<I, Type, B>...>
                         decltype(impl::get_value<I>(forward<U>(v)...))
                         >::value...));
   template<typename... U> cons& operator=(const cons<Nitems, U...>& v)
-      noexcept(noexcept(this->assign_(v)));
+      noexcept(noexcept(this->assign_(v, index_sequence<I...>())));
   template<typename... U> cons& operator=(cons<Nitems, U...>&& v)
-      noexcept(noexcept(this->assign_(forward<Nitems, U...>>(v))));
+      noexcept(noexcept(this->assign_(forward<cons<Nitems, U...>>(v),
+                                      index_sequence<I...>())));
 
   template<typename... U> bool operator==(const cons<Nitems, U...>& v) const
       noexcept(noexcept(cons_and((this->template get_value<I>() ==
@@ -371,7 +372,8 @@ class cons<Nitems, cons_elem<I, Type, B>...>
   template<typename... U> bool operator>=(const cons<Nitems, U...>& v) const
       noexcept(noexcept(!(*this < v)));
 
-  void swap_impl(cons& v) noexcept(noexcept(this->swap(v)));
+  void swap_impl(cons& v)
+      noexcept(noexcept(this->swap_(v, index_sequence<I...>())));
 
   template<size_t Idx> auto get_value() noexcept
   -> decltype(get_value_(integral_constant<size_t, Idx>(), *this)) {
@@ -418,8 +420,7 @@ class cons<Nitems, cons_elem<I, Type, B>...>
   bool equals_(const cons<Nitems, U...>& v, index_sequence<>) const noexcept;
 
   template<typename... U, size_t Idx0, size_t... Idx>
-  void assign_(const cons<Nitems, U...>& v,
-               index_sequence<Idx0, Idx...> = index_sequence<I...>())
+  void assign_(const cons<Nitems, U...>& v, index_sequence<Idx0, Idx...>)
       noexcept(noexcept(this->template get_value<Idx0>() =
                         v.template get_value<Idx0>()) &&
                noexcept(this->assign_(v, index_sequence<Idx...>())));
@@ -428,8 +429,7 @@ class cons<Nitems, cons_elem<I, Type, B>...>
   void assign_(const cons<Nitems, U...>& v, index_sequence<>) noexcept;
 
   template<typename... U, size_t Idx0, size_t... Idx>
-  void assign_(cons<Nitems, U...>&& v,
-               index_sequence<Idx0, Idx...> = index_sequence<I...>())
+  void assign_(cons<Nitems, U...>&& v, index_sequence<Idx0, Idx...>)
       noexcept(noexcept(this->template get_value<Idx0>() =
                         move(v.template get_value<Idx0>())) &&
                noexcept(this->assign_(forward<cons<Nitems, U...>>(v),
@@ -439,8 +439,7 @@ class cons<Nitems, cons_elem<I, Type, B>...>
   void assign_(cons<Nitems, U...>&& v, index_sequence<>) noexcept;
 
   template<size_t Idx0, size_t... Idx>
-  void swap_(cons& v,
-             index_sequence<Idx0, Idx...> = index_sequence<I...>())
+  void swap_(cons& v, index_sequence<Idx0, Idx...>)
       noexcept(noexcept(swap(this->template get_value<Idx0>(),
                              v.template get_value<Idx0>())) &&
                noexcept(this->swap_(v, index_sequence<Idx...>())));
