@@ -1,7 +1,7 @@
 COMPILER_FLAGS +=	-ffreestanding					\
 			-nostdinc					\
 			-fno-stack-protector				\
-			-fomit-frame-pointer				\
+			-fno-omit-frame-pointer				\
 			-integrated-as					\
 			-D_KERNEL=1					\
 			-Wno-tautological-compare			\
