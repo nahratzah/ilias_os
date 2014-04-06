@@ -7,11 +7,11 @@ namespace {
 
 
 const std::string_ref units[] = {
-    "B",  // bytes
-    "kB",  // kilobytes
-    "MB",  // megabytes
-    "GB",  // gigabytes
-    "TB",  // terabytes
+    { "B", 1 },  // bytes
+    { "kB", 2 },  // kilobytes
+    { "MB", 2 },  // megabytes
+    { "GB", 2 },  // gigabytes
+    { "TB", 2 },  // terabytes
   };
 
 constexpr unsigned int N_UNITS = sizeof(units) / sizeof(units[0]);
