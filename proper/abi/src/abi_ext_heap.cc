@@ -1,6 +1,7 @@
 #include <abi/ext/heap.h>
 #include <abi/ext/hash_set.h>
 #include <abi/ext/list.h>
+#include <abi/ext/elide_destructor.h>
 #include <abi/semaphore.h>
 #include <abi/hashcode.h>
 #include <abi/ext/log2.h>
@@ -63,9 +64,22 @@ constexpr size_t min_allocsz = 2U * (size_t(1U) << log2_up(meta_sz));
 constexpr size_t max_allocsz = size_t(1U) << allocsz_bits;
 constexpr unsigned int alloc_sz_log2 = log2_up(max_allocsz / min_allocsz);
 
-hash_set<meta, n_buckets, addr_tag> addrset;
-list<meta, free_tag> freelist[alloc_sz_log2 + 1U];
-list<meta, lin_tag> linlist;
+using freelist_buckets = list<meta, free_tag>[alloc_sz_log2 + 1U];
+
+hash_set<meta, n_buckets, addr_tag>& addrset() noexcept {
+  static elide_destructor<hash_set<meta, n_buckets, addr_tag>> impl;
+  return *impl;
+}
+
+freelist_buckets& freelist() {
+  static elide_destructor<freelist_buckets> impl;
+  return *impl;
+}
+
+list<meta, lin_tag>& linlist() noexcept {
+  static elide_destructor<list<meta, lin_tag>> impl;
+  return *impl;
+}
 
 
 constexpr unsigned int freelist_slot(size_t sz) {
@@ -101,9 +115,9 @@ inline void* meta::get_end_ptr() const noexcept {
 
 void add_memory(void* p, size_t sz) noexcept {
   meta* root = new (p) meta(sz - meta_sz, true);
-  freelist[root->freelist_slot()].link_front(root);
-  addrset.link_front(root);
-  linlist.link_front(root);
+  freelist()[root->freelist_slot()].link_front(root);
+  addrset().link_front(root);
+  linlist().link_front(root);
 }
 
 bool ask_for_memory(semlock& lock, size_t sz) noexcept {
@@ -122,10 +136,10 @@ meta* alloc_meta(semlock& lock, size_t sz) noexcept {
 
   do {
     for (unsigned int i = f_start; i <= alloc_sz_log2; ++i) {
-      if (freelist[i].empty()) continue;
+      if (freelist()[i].empty()) continue;
 
-      meta* m = &*freelist[i].begin();
-      freelist[i].unlink(m);
+      meta* m = &*freelist()[i].begin();
+      freelist()[i].unlink(m);
 
       /*
        * Create a new meta, in the free space of m.
@@ -135,15 +149,15 @@ meta* alloc_meta(semlock& lock, size_t sz) noexcept {
       if (m->used_ != 0) {
         meta* nwm = new (m->get_free_ptr()) meta(m->free_ - meta_sz);
         m->free_ = 0;
-        freelist[m->freelist_slot()].link_back(m);
-        addrset.link_front(nwm);
-        linlist.link_after(nwm, linlist.iterator_to(m));
+        freelist()[m->freelist_slot()].link_back(m);
+        addrset().link_front(nwm);
+        linlist().link_after(nwm, linlist().iterator_to(m));
         m = nwm;
       }
 
       m->used_ = sz;
       m->free_ -= sz;
-      freelist[m->freelist_slot()].link_front(m);
+      freelist()[m->freelist_slot()].link_front(m);
       return m;
     }
   } while (ask_for_memory(lock, alloc_sz));
@@ -192,26 +206,27 @@ bool heap::resize(void* addr, size_t nsz, size_t* osz) noexcept {
   nsz = fix_size(nsz);
   semlock lock{ mlock };
 
-  auto bucket = addrset.get_bucket(addrset.hashcode_2_bucket(hash_code(addr)));
+  auto bucket =
+      addrset().get_bucket(addrset().hashcode_2_bucket(hash_code(addr)));
   for (auto& i : bucket) {
     if (i.get_used_ptr() == addr) {
       *osz = i.used_;
       if (*osz == nsz) return resize_result(true, addr, nsz, *osz);
 
       if (nsz < *osz) {
-        freelist[i.freelist_slot()].unlink(&i);
+        freelist()[i.freelist_slot()].unlink(&i);
         i.free_ += *osz - nsz;
         i.used_ -= *osz - nsz;
-        freelist[i.freelist_slot()].link_front(&i);
+        freelist()[i.freelist_slot()].link_front(&i);
         return resize_result(true, addr, nsz, *osz);
       }
 
       const auto delta = nsz - *osz;
       if (i.free_ < delta) return resize_result(false, addr, nsz, *osz);
-      freelist[i.freelist_slot()].unlink(&i);
+      freelist()[i.freelist_slot()].unlink(&i);
       i.free_ -= delta;
       i.used_ += delta;
-      freelist[i.freelist_slot()].link_front(&i);
+      freelist()[i.freelist_slot()].link_front(&i);
       return resize_result(true, addr, nsz, *osz);
     }
   }
@@ -223,24 +238,25 @@ bool heap::resize(void* addr, size_t nsz, size_t* osz) noexcept {
 void heap::free(void* addr) noexcept {
   semlock lock{ mlock };
 
-  auto bucket = addrset.get_bucket(addrset.hashcode_2_bucket(hash_code(addr)));
+  auto bucket =
+      addrset().get_bucket(addrset().hashcode_2_bucket(hash_code(addr)));
   for (auto& i : bucket) {
     if (i.get_used_ptr() == addr) {
       atom_inc(stats_.free_bytes, i.used_);
-      freelist[i.freelist_slot()].unlink(&i);
+      freelist()[i.freelist_slot()].unlink(&i);
       i.free_ -= i.used_;
       i.used_ = 0;
-      freelist[i.freelist_slot()].link_front(&i);
+      freelist()[i.freelist_slot()].link_front(&i);
 
       // Merge with pred.
       if (!i.root_) {
-        auto pred = --linlist.iterator_to(&i);
+        auto pred = --linlist().iterator_to(&i);
         if (&i == pred->get_end_ptr()) {
           pred->free_ += meta_sz + i.free_;
 
-          linlist.unlink(&i);
-          addrset.unlink(&i);
-          freelist[i.freelist_slot()].unlink(&i);
+          linlist().unlink(&i);
+          addrset().unlink(&i);
+          freelist()[i.freelist_slot()].unlink(&i);
         }
       }
 
