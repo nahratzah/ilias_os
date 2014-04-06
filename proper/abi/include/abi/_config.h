@@ -16,6 +16,7 @@
 # include <loader/abi.h>
 # include <loader/panic.h>
 #endif
+#include <tuple>
 
 namespace __cxxabiv1 {
 
@@ -44,8 +45,8 @@ namespace _config {
 #ifdef _LOADER
 using loader::heap_malloc;
 #else
-inline void* heap_malloc(size_t* sz, size_t min_sz) noexcept {
-  return nullptr;
+inline _namespace(std)::tuple<void*, size_t> heap_malloc(size_t) noexcept {
+  return _namespace(std)::make_tuple(nullptr, 0);
 }
 #endif
 /*

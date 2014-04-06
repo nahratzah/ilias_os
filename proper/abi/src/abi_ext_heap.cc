@@ -121,11 +121,17 @@ void add_memory(void* p, size_t sz) noexcept {
 }
 
 bool ask_for_memory(semlock& lock, size_t sz) noexcept {
-  void*const p = lock.do_unlocked([&]() {
-      return _config::heap_malloc(&sz, min_allocsz);
-    });
-  if (p) add_memory(p, sz);
-  return bool(p);
+  using _config::heap_malloc;
+  using _namespace(std)::get;
+
+  auto p = lock.do_unlocked([&]() {
+                              return heap_malloc(min_allocsz);
+                            });
+  if (get<0>(p)) {
+    add_memory(get<0>(p), get<1>(p));
+    return true;
+  }
+  return false;
 }
 
 meta* alloc_meta(semlock& lock, size_t sz) noexcept {
@@ -168,7 +174,6 @@ meta* alloc_meta(semlock& lock, size_t sz) noexcept {
 } /* namespace __cxxabiv1::ext::<unnamed> */
 
 
-using _config::heap_malloc;
 using _config::heap_free;
 
 void* heap::malloc_result(void* rv, size_t sz) noexcept {
