@@ -45,6 +45,7 @@ class hash_set {
   iterator iterator_to(pointer) noexcept;
   const_iterator iterator_to(const_pointer) const noexcept;
 
+  static bool is_linked(const_pointer) noexcept;
   bool link_front(pointer) noexcept;
   bool link_back(pointer) noexcept;
   bool unlink(pointer) noexcept;

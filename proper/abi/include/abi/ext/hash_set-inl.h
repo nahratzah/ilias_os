@@ -66,6 +66,11 @@ auto hash_set<T, Buckets, Tag>::iterator_to(const_pointer e) const noexcept ->
 }
 
 template<typename T, size_t Buckets, typename Tag>
+auto hash_set<T, Buckets, Tag>::is_linked(const_pointer e) noexcept -> bool {
+  return list_t::is_linked(e);
+}
+
+template<typename T, size_t Buckets, typename Tag>
 auto hash_set<T, Buckets, Tag>::link_front(pointer e) noexcept -> bool {
   const bucket_idx b = hash(*e);
 
