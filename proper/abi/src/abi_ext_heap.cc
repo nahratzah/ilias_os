@@ -1,276 +1,634 @@
 #include <abi/ext/heap.h>
 #include <abi/ext/hash_set.h>
-#include <abi/ext/list.h>
-#include <abi/ext/elide_destructor.h>
 #include <abi/semaphore.h>
 #include <abi/hashcode.h>
 #include <abi/ext/log2.h>
 #include <abi/panic.h>
 #include <new>
+#include <thread>
 
 namespace __cxxabiv1 {
 namespace ext {
 namespace {
 
 
-void atom_inc(std::atomic<uintmax_t>& atom, uintmax_t n = 1) noexcept {
-  atom.fetch_add(n, std::memory_order_relaxed);
-}
+class global_heap {
+ private:
+  struct used_tag {};
+  struct chain_tag {};
+  struct free_tag {};
+  static constexpr unsigned int n_used_buckets = 256;
 
-void atom_dec(std::atomic<uintmax_t>& atom, uintmax_t n = 1) noexcept {
-  atom.fetch_sub(n, std::memory_order_relaxed);
-}
+  global_heap() = default;
+  global_heap(const global_heap&) = delete;
+  global_heap& operator=(const global_heap&) = delete;
 
-semaphore mlock{ 1U };
+ public:
+  using span = _namespace(std)::tuple<const void*, size_t>;
 
+  class memory
+  : public list_elem<used_tag>,
+    public list_elem<chain_tag>,
+    public list_elem<free_tag>
+  {
+   public:
+    memory() = delete;
+    memory(const memory&) = delete;
+    memory& operator=(const memory&) = delete;
 
-/* Round size up to the next multiple of alignof(max_align_t). */
-constexpr size_t fix_size(size_t sz) {
-  return ((sz == 0 ? 1U : sz) + alignof(max_align_t) - 1U) /
-         alignof(max_align_t);
-}
+    memory(size_t, bool) noexcept;
+    ~memory() noexcept;
 
+    span get_span_space() const noexcept;
+    span get_base_space() const noexcept;
+    span get_used_space() const noexcept;
+    span get_free_space() const noexcept;
+    bool has_used() const noexcept { return used_; }
+    bool is_root() const noexcept { return root_; }
 
-constexpr unsigned int n_buckets = 256;
-constexpr size_t allocsz_bits = 31;
-struct free_tag {};
-struct addr_tag {};
-struct lin_tag {};
+    bool try_claim(const void*, size_t) noexcept;
+    bool try_claim(uintptr_t, size_t) noexcept;
+    memory* try_split(const void*, size_t) noexcept;
+    memory* try_split(uintptr_t, size_t) noexcept;
+    void release() noexcept;
+    bool resize(size_t) noexcept;
+    static bool pred_merge(memory*, memory*) noexcept;
 
-struct meta
-: list_elem<addr_tag>,
-  list_elem<free_tag>,
-  list_elem<lin_tag>
-{
-  size_t used_ : allocsz_bits;
-  bool root_ : 1;
-  size_t free_;
+    static constexpr unsigned int used_bits = 30;
+    static constexpr size_t max_alloc_size = (size_t(1) << used_bits) - 1U;
 
-  meta(size_t free, bool root = false) : used_(0), root_(root), free_(free) {}
-  inline void* get_used_ptr() const noexcept;
-  inline void* get_free_ptr() const noexcept;
-  inline void* get_end_ptr() const noexcept;
-  inline unsigned int freelist_slot() const noexcept;
+   private:
+    const bool root_ : 1;
+    bool used_ : 1;  // Keep track of allocation:
+                     // bytes_used_ will be 0 for 0-sized allocations.
+    size_t bytes_used_ : used_bits;
+    size_t bytes_free_ : 32;
+  };
+
+  /* Fix alignment of address. */
+  static uintptr_t align(uintptr_t, size_t) noexcept;
+  static const void* align(const void*, size_t) noexcept;
+  static void* align(void*, size_t) noexcept;
+
+  /* Size and alignment of memory unit. */
+  static constexpr size_t memory_align = alignof(memory);
+  static const size_t memory_alloc_space;
+
+  void* allocate(size_t, size_t) noexcept;
+  _namespace(std)::tuple<bool, size_t> free(const void*) noexcept;
+  _namespace(std)::tuple<bool, size_t> resize(const void*, size_t) noexcept;
+
+  static global_heap& get_singleton() noexcept;
+
+ private:
+  const memory* lookup_used_addr_(const void*) const noexcept;
+  memory* lookup_used_addr_(const void*) noexcept;
+  const memory* try_claim_(memory*, size_t, size_t) noexcept;
+  const memory* allocate_from_free_(size_t, size_t) noexcept;
+
+  using used_set = hash_set<memory, n_used_buckets, used_tag>;
+  using chain = list<memory, chain_tag>;
+  using free_set = list<memory, free_tag>;
+
+  semaphore lock_{ 1U };
+  used_set used_;
+  chain chain_;
+  free_set free_;
 };
 
-using abi::hash_code;
 
-inline size_t hash_code(const meta& m) noexcept {
-  return hash_code(m.get_used_ptr());
-}
-
-constexpr size_t meta_sz = fix_size(sizeof(meta));
-constexpr size_t min_allocsz = 2U * (size_t(1U) << log2_up(meta_sz));
-constexpr size_t max_allocsz = size_t(1U) << allocsz_bits;
-constexpr unsigned int alloc_sz_log2 = log2_up(max_allocsz / min_allocsz);
-
-using freelist_buckets = list<meta, free_tag>[alloc_sz_log2 + 1U];
-
-hash_set<meta, n_buckets, addr_tag>& addrset() noexcept {
-  static elide_destructor<hash_set<meta, n_buckets, addr_tag>> impl;
-  return *impl;
-}
-
-freelist_buckets& freelist() {
-  static elide_destructor<freelist_buckets> impl;
-  return *impl;
-}
-
-list<meta, lin_tag>& linlist() noexcept {
-  static elide_destructor<list<meta, lin_tag>> impl;
-  return *impl;
-}
-
-
-constexpr unsigned int freelist_slot(size_t sz) {
-  return (log2_up(sz / min_allocsz) > alloc_sz_log2 ?
-          alloc_sz_log2 :
-          log2_up(sz / min_allocsz));
-}
-
-inline unsigned int meta::freelist_slot() const noexcept {
-  using __cxxabiv1::ext::freelist_slot;
-
-  return freelist_slot(free_);
-}
-
-inline void* meta::get_used_ptr() const noexcept {
-  const void* self = this;
-  const auto addr = reinterpret_cast<uintptr_t>(self) + meta_sz;
-  return reinterpret_cast<void*>(addr);
-}
-
-inline void* meta::get_free_ptr() const noexcept {
-  const void* self = get_used_ptr();
-  const auto addr = reinterpret_cast<uintptr_t>(self) + used_;
-  return reinterpret_cast<void*>(addr);
-}
-
-inline void* meta::get_end_ptr() const noexcept {
-  const void* self = get_free_ptr();
-  const auto addr = reinterpret_cast<uintptr_t>(self) + free_;
-  return reinterpret_cast<void*>(addr);
-}
-
-
-void add_memory(void* p, size_t sz) noexcept {
-  meta* root = new (p) meta(sz - meta_sz, true);
-  freelist()[root->freelist_slot()].link_front(root);
-  addrset().link_front(root);
-  linlist().link_front(root);
-}
-
-bool ask_for_memory(semlock& lock, size_t sz) noexcept {
-  using _config::heap_malloc;
+inline size_t hash_code(const global_heap::memory& m) noexcept {
+  using abi::hash_code;
   using _namespace(std)::get;
 
-  auto p = lock.do_unlocked([&]() {
-                              return heap_malloc(min_allocsz);
-                            });
-  if (get<0>(p)) {
-    add_memory(get<0>(p), get<1>(p));
+  return hash_code(get<0>(m.get_used_space()));
+}
+
+
+global_heap::memory::memory(size_t span_bytes, bool root) noexcept
+: root_(root),
+  used_(false),
+  bytes_used_(0),
+  bytes_free_(span_bytes - memory_alloc_space)
+{
+  assert(span_bytes >= memory_alloc_space);
+}
+
+global_heap::memory::~memory() noexcept {
+  assert(!has_used());
+  assert(bytes_used_ == 0);
+  assert(!chain::is_linked(this));
+  assert(!used_set::is_linked(this));
+  assert(!free_set::is_linked(this));
+}
+
+auto global_heap::memory::get_span_space() const noexcept -> span {
+  using _namespace(std)::tie;
+  using _namespace(std)::ignore;
+  using _namespace(std)::make_tuple;
+
+  const void* base_addr;
+  size_t base;
+  size_t used;
+  size_t free;
+
+  tie(base_addr, base) = get_base_space();
+  tie(ignore, used) = get_used_space();
+  tie(ignore, free) = get_free_space();
+  return make_tuple(base_addr, base + used + free);
+}
+
+auto global_heap::memory::get_base_space() const noexcept -> span {
+  using _namespace(std)::make_tuple;
+
+  return make_tuple(this, memory_alloc_space);
+}
+
+auto global_heap::memory::get_used_space() const noexcept -> span {
+  using _namespace(std)::tie;
+  using _namespace(std)::make_tuple;
+
+  const void* base_addr;
+  size_t off;
+
+  tie(base_addr, off) = get_base_space();
+  return make_tuple(reinterpret_cast<const uint8_t*>(base_addr) + off,
+                    bytes_used_);
+}
+
+auto global_heap::memory::get_free_space() const noexcept -> span {
+  using _namespace(std)::tie;
+  using _namespace(std)::make_tuple;
+
+  const void* base_addr;
+  size_t off;
+
+  tie(base_addr, off) = get_used_space();
+  return make_tuple(reinterpret_cast<const uint8_t*>(base_addr) + off,
+                    bytes_free_);
+}
+
+auto global_heap::memory::try_claim(const void* addr, size_t sz) noexcept ->
+    bool {
+  using _namespace(std)::tie;
+
+  const void* fp_addr;
+  size_t fp_size;
+  tie(fp_addr, fp_size) = get_free_space();
+
+  if (sz > max_alloc_size) return false;  // Too large.
+  if (has_used()) return false;  // This is already keeping track of an alloc.
+  if (fp_addr != addr) return false;  // Address mismatch.
+  if (fp_size < sz) return false;  // Insufficient space.
+
+  used_ = true;
+  bytes_used_ += sz;
+  bytes_free_ -= sz;
+  return true;
+}
+
+auto global_heap::memory::try_claim(uintptr_t addr, size_t sz) noexcept ->
+    bool {
+  return try_claim(reinterpret_cast<const void*>(addr), sz);
+}
+
+auto global_heap::memory::try_split(const void* addr, size_t sz) noexcept ->
+    memory* {
+  using _namespace(std)::tie;
+  using _namespace(std)::get;
+
+  assert(align(addr, memory_align) == addr);
+
+  void* m_addr = reinterpret_cast<void*>(
+      reinterpret_cast<uintptr_t>(addr) - memory_alloc_space);
+  const void* fp_addr;
+  size_t fp_size;
+  tie(fp_addr, fp_size) = get_free_space();
+  if (!(m_addr >= fp_addr)) return nullptr;
+  const size_t off = reinterpret_cast<const uint8_t*>(m_addr) -
+                     reinterpret_cast<const uint8_t*>(fp_addr);
+
+  /* Create new memory segment. */
+  memory* m = new (m_addr) memory(fp_size - off, false);
+  if (m->try_claim(addr, sz)) {
+    bytes_free_ -= get<1>(m->get_span_space());
+    return m;
+  }
+
+  /* Insufficient space in allocation. */
+  m->~memory();
+  return nullptr;
+}
+
+auto global_heap::memory::try_split(uintptr_t addr, size_t sz) noexcept ->
+    memory* {
+  return try_split(reinterpret_cast<const void*>(addr), sz);
+}
+
+auto global_heap::memory::release() noexcept -> void {
+  assert(has_used());
+
+  used_ = false;
+  bytes_free_ += bytes_used_;
+  bytes_used_ = 0;
+}
+
+auto global_heap::memory::resize(size_t nsz) noexcept -> bool {
+  assert(has_used());
+
+  if (nsz > max_alloc_size) return false;  // Too large.
+  if (bytes_used_ + bytes_free_ >= nsz) {
+    bytes_free_ = bytes_free_ + bytes_used_ - nsz;
+    bytes_used_ = nsz;
     return true;
   }
   return false;
 }
 
-meta* alloc_meta(semlock& lock, size_t sz) noexcept {
-  sz = fix_size(sz);
-  const size_t alloc_sz = sz + meta_sz;
-  const unsigned int f_start = freelist_slot(alloc_sz);
-  if (f_start >= alloc_sz_log2) return nullptr;
+auto global_heap::memory::pred_merge(memory* p, memory* s) noexcept -> bool {
+  using _namespace(std)::tie;
+  using _namespace(std)::ignore;
 
-  do {
-    for (unsigned int i = f_start; i <= alloc_sz_log2; ++i) {
-      if (freelist()[i].empty()) continue;
+  assert(s != nullptr);
+  assert(p != nullptr || s->is_root());
+  if (s->has_used()) return false;
+  if (s->is_root()) return false;
 
-      meta* m = &*freelist()[i].begin();
-      freelist()[i].unlink(m);
+  const void* p_addr;
+  size_t p_size;
+  tie(p_addr, p_size) = p->get_span_space();
 
-      /*
-       * Create a new meta, in the free space of m.
-       * Since the actual allocation code uses the m pointer,
-       * store the new meta in variable m.
-       */
-      if (m->used_ != 0) {
-        meta* nwm = new (m->get_free_ptr()) meta(m->free_ - meta_sz);
-        m->free_ = 0;
-        freelist()[m->freelist_slot()].link_back(m);
-        addrset().link_front(nwm);
-        linlist().link_after(nwm, linlist().iterator_to(m));
-        m = nwm;
-      }
+  /* Non-root spans must always connect with their predecessor. */
+  assert(static_cast<const void*>(reinterpret_cast<const uint8_t*>(p_addr) +
+                                  p_size) == s);
 
-      m->used_ = sz;
-      m->free_ -= sz;
-      freelist()[m->freelist_slot()].link_front(m);
-      return m;
+  size_t s_size;
+  tie(ignore, s_size) = s->get_span_space();
+  p->bytes_free_ += s_size;
+  return true;
+}
+
+
+auto global_heap::align(uintptr_t addr, size_t alignment) noexcept ->
+    uintptr_t {
+  assert(is_pow2(alignment));
+
+  if (alignment == 0) alignment = 1;
+  return (addr + (alignment - 1U)) & ~uintptr_t(alignment - 1U);
+}
+
+auto global_heap::align(const void* addr, size_t alignment) noexcept ->
+    const void* {
+  return reinterpret_cast<const void*>(
+      align(reinterpret_cast<uintptr_t>(addr), alignment));
+}
+
+auto global_heap::align(void* addr, size_t alignment) noexcept -> void* {
+  return reinterpret_cast<void*>(
+      align(reinterpret_cast<uintptr_t>(addr), alignment));
+}
+
+auto global_heap::allocate(size_t sz, size_t alignment) noexcept -> void* {
+  using _namespace(std)::tie;
+  using _namespace(std)::get;
+
+  if (sz > memory::max_alloc_size) return nullptr;  // Too large.
+
+  semlock l{ lock_ };
+
+  for (;;) {
+    /* Try to allocate from this arena. */
+    {
+      const memory* m = allocate_from_free_(sz, alignment);
+      if (m) return const_cast<void*>(get<0>(m->get_used_space()));
     }
-  } while (ask_for_memory(lock, alloc_sz));
+
+    /* Ask for more memory from the heap allocator. */
+    const size_t request_h_size = align(memory_alloc_space + sz, alignment);
+    void* h_addr;
+    size_t h_size;
+    tie(h_addr, h_size) = l.do_unlocked(&_config::heap_malloc, request_h_size);
+    if (!h_addr) return nullptr;  // Nope, can't get more memory to manage.
+    if (h_size < request_h_size) {
+      panic("abi::_config::heap_malloc yields less space (%zu) "
+            "than requested (%zu)", h_size, request_h_size);
+    }
+
+    /*
+     * Link memory into global heap;
+     * note that we link at the front of the free list,
+     * so the second iteration of this loop will succeed quickly.
+     */
+    memory* new_mem = new (h_addr) memory(h_size, true);
+    chain_.link_back(new_mem);
+    free_.link_front(new_mem);
+  }
+  /* UNREACHABLE */
+}
+
+auto global_heap::free(const void* p) noexcept ->
+    _namespace(std)::tuple<bool, size_t> {
+  using _namespace(std)::make_tuple;
+  using _namespace(std)::tie;
+
+  semlock l{ lock_ };
+
+  /* Lookup memory segment holding the allocation. */
+  memory* m = lookup_used_addr_(p);
+  if (!m) return make_tuple(false, 0);
+  assert(m->has_used());
+
+  /* Check address and size of used space. */
+  const void* u_addr;
+  size_t u_size;
+  tie(u_addr, u_size) = m->get_used_space();
+  assert(u_addr == p);
+
+  /* Lookup predecessor of m. */
+  auto m_iter = chain_.iterator_to(m);
+  auto p_iter = _namespace(std)::prev(m_iter);
+  memory* predecessor = (m_iter == chain_.begin() ? nullptr : &*p_iter);
+
+  /* Release memory and try to merge it with its predecessor. */
+  m->release();
+  if (memory::pred_merge(predecessor, m)) {
+    chain_.unlink(m);
+    used_.unlink(m);
+    free_.unlink(m);
+    free_.link_front(predecessor);
+  } else {
+    free_.link_front(m);
+  }
+  return make_tuple(true, u_size);
+}
+
+auto global_heap::resize(const void* p, size_t nsz) noexcept ->
+    _namespace(std)::tuple<bool, size_t> {
+  using _namespace(std)::tie;
+  using _namespace(std)::get;
+  using _namespace(std)::make_tuple;
+
+  semlock l{ lock_ };
+
+  /* Lookup memory segment holding the allocation. */
+  memory* m = lookup_used_addr_(p);
+  if (!m) return make_tuple(false, 0);
+  assert(m->has_used());
+
+  /* Check old size (for return value). */
+  size_t osz;
+  const void* u_addr;
+  tie(u_addr, osz) = m->get_used_space();
+  assert(u_addr == p);
+
+  /* Try to resize m. */
+  if (m->resize(nsz)) {
+    if (get<1>(m->get_free_space()) >= memory_alloc_space)
+      free_.link_back(m);
+    else
+      free_.unlink(m);
+    return make_tuple(true, osz);
+  }
+  return make_tuple(false, osz);
+}
+
+auto global_heap::get_singleton() noexcept -> global_heap& {
+  static _namespace(std)::once_flag guard;
+  static _namespace(std)::aligned_storage_t<sizeof(global_heap),
+                                            alignof(global_heap)> data;
+
+  void* data_ptr = reinterpret_cast<void*>(&data);
+  _namespace(std)::call_once(guard,
+                             [](void* ptr) { new (ptr) global_heap; },
+                             data_ptr);
+  return *static_cast<global_heap*>(data_ptr);
+}
+
+auto global_heap::lookup_used_addr_(const void* p) const noexcept ->
+    const memory* {
+  using abi::hash_code;
+  using _namespace(std)::get;
+
+  for (const auto& i :
+       used_.get_bucket(used_set::hashcode_2_bucket(hash_code(p))))
+    if (get<0>(i.get_used_space()) == p) return &i;
   return nullptr;
 }
+
+auto global_heap::lookup_used_addr_(const void* p) noexcept ->
+    memory* {
+  const global_heap& self = *this;  // To force calling of const member.
+  return const_cast<memory*>(self.lookup_used_addr_(p));
+}
+
+auto global_heap::try_claim_(memory* m, size_t sz, size_t alignment)
+    noexcept -> const memory* {
+  using _namespace(std)::tie;
+  using _namespace(std)::get;
+
+  if (alignment <= 0) alignment = 1;
+  assert(is_pow2(alignment));
+
+  uintptr_t fp_addr;
+  size_t fp_size;
+
+  /* Load free space in m. */
+  {
+    const void* fp;
+    tie(fp, fp_size) = m->get_free_space();
+    fp_addr = reinterpret_cast<uintptr_t>(fp);
+  }
+
+  /* Align allocation address. */
+  uintptr_t alloc_addr = align(fp_addr, alignment);
+
+  /* Try to make memory argument handle the space directly. */
+  if (m->try_claim(alloc_addr, sz)) {
+    used_.link_front(m);
+    if (get<1>(m->get_free_space()) <= memory_alloc_space) free_.unlink(m);
+    return m;
+  }
+
+  /*
+   * Split m, creating a second memory segment that will keep track of this
+   * allocation.
+   *
+   * Layout:
+   * - free space in m
+   * - new memory segment  --  mm
+   * - allocated data  --  alloc_addr
+   */
+  alloc_addr = align(align(fp_addr, memory_align) + memory_alloc_space,
+                     alignment);
+  memory* mm = m->try_split(alloc_addr, sz);
+  if (mm) {
+    /* Link mm into the maintained lists. */
+    assert(get<0>(mm->get_used_space()) ==
+           reinterpret_cast<const void*>(alloc_addr));
+    chain_.link_after(mm, chain_.iterator_to(m));
+    used_.link_front(mm);
+    if (get<1>(mm->get_free_space()) >= memory_alloc_space)
+      free_.link_front(mm);
+
+    /* Unlink m from free list if it is no longer suitable for allocation. */
+    if (get<1>(m->get_free_space()) < memory_alloc_space ||
+        (m->has_used() && get<1>(m->get_free_space()) == memory_alloc_space))
+      free_.unlink(m);
+  }
+  return mm;
+}
+
+auto global_heap::allocate_from_free_(size_t sz, size_t alignment) noexcept ->
+    const memory* {
+  for (auto& m : free_) {
+    const memory* mm = try_claim_(&m, sz, alignment);
+    if (mm) return mm;
+  }
+  return nullptr;
+}
+
+const size_t global_heap::memory_alloc_space =
+    global_heap::align(sizeof(global_heap::memory), global_heap::memory_align);
 
 
 } /* namespace __cxxabiv1::ext::<unnamed> */
 
 
-using _config::heap_free;
+struct heap::all_stats {
+ private:
+  all_stats() = default;
 
-void* heap::malloc_result(void* rv, size_t sz) noexcept {
-  atom_inc(stats_.malloc_calls);
-  if (rv)
-    atom_inc(stats_.malloc_bytes, fix_size(sz));
+ public:
+  static all_stats& get_singleton() noexcept;
+  void do_register(stats_data&) noexcept;
+  void do_deregister(stats_data&) noexcept;
+  stats_collection get_all(stats_collection = stats_collection()) const;
+
+ private:
+  mutable semaphore lock_;
+  list<heap::stats_data, void> data_;
+};
+
+auto heap::all_stats::get_singleton() noexcept -> heap::all_stats& {
+  _namespace(std)::once_flag guard;
+  _namespace(std)::aligned_storage_t<sizeof(all_stats),
+                                     alignof(all_stats)> data;
+
+  void* data_ptr = reinterpret_cast<void*>(&data);
+  _namespace(std)::call_once(guard,
+                             [](void* ptr) { new (ptr) all_stats; },
+                             data_ptr);
+  return *static_cast<all_stats*>(data_ptr);
+}
+
+auto heap::all_stats::do_register(stats_data& sd) noexcept -> void {
+  semlock l = semlock(lock_);
+  data_.link_back(&sd);
+}
+
+auto heap::all_stats::do_deregister(stats_data& sd) noexcept -> void {
+  semlock l = semlock(lock_);
+  data_.unlink(&sd);
+}
+
+auto heap::all_stats::get_all(stats_collection c) const -> stats_collection {
+  c.clear();
+
+  semlock l = semlock(lock_);
+  for (const auto& i : data_) c.emplace_back(i);
+  return c;
+}
+
+
+heap::heap(_namespace(std)::string_ref name) noexcept
+: stats_(name)
+{
+  all_stats::get_singleton().do_register(stats_);
+}
+
+heap::~heap() noexcept {
+  all_stats::get_singleton().do_deregister(stats_);
+}
+
+auto heap::get_stats(stats_collection c) -> stats_collection {
+  using _namespace(std)::move;
+
+  return all_stats::get_singleton().get_all(move(c));
+}
+
+auto heap::malloc(size_t sz) noexcept -> void* {
+  using _namespace(std)::min;
+
+  const size_t args = sz;
+  size_t align = min(size_t(1) << log2_down(sz), alignof(max_align_t));
+  void*const rv = global_heap::get_singleton().allocate(sz, align);
+  return malloc_result(rv, args);
+}
+
+auto heap::free(void* p) noexcept -> void {
+  using _namespace(std)::tie;
+
+  const void* args = p;
+  if (_predict_false(p == nullptr)) {
+    free_result(0, args);
+    return;
+  }
+
+  bool succes;
+  size_t size;
+  tie(succes, size) = global_heap::get_singleton().free(p);
+  if (!succes) panic("heap::free for %p, which is not allocated.", args);
+  free_result(size, args);
+}
+
+auto heap::resize(void* p, size_t nsz) noexcept ->
+    _namespace(std)::tuple<bool, size_t> {
+  using _namespace(std)::make_tuple;
+
+  const auto args = make_tuple(p, nsz);
+  return resize_result(global_heap::get_singleton().resize(p, nsz), args);
+}
+
+auto heap::get_stats() -> stats_collection {
+  return all_stats::get_singleton().get_all();
+}
+
+auto heap::malloc_result(void* p, size_t sz) noexcept -> void* {
+  using _namespace(std)::memory_order_relaxed;
+
+  stats_.malloc_calls_.fetch_add(1U, memory_order_relaxed);
+  if (p)
+    stats_.malloc_bytes_.fetch_add(sz, memory_order_relaxed);
   else
-    atom_inc(stats_.malloc_fail);
+    stats_.malloc_fail_.fetch_add(1U, memory_order_relaxed);
+  return p;
+}
+
+auto heap::resize_result(_namespace(std)::tuple<bool, size_t> rv,
+                         _namespace(std)::tuple<void*, size_t> args)
+    noexcept -> _namespace(std)::tuple<bool, size_t> {
+  using _namespace(std)::get;
+  using _namespace(std)::memory_order_relaxed;
+
+  auto& old_sz = get<1>(rv);
+  auto& new_sz = get<1>(args);
+
+  stats_.resize_calls_.fetch_add(1U, memory_order_relaxed);
+  if (!get<0>(rv))
+    stats_.resize_fail_.fetch_add(1U, memory_order_relaxed);
+  else if (new_sz > old_sz)
+    stats_.resize_bytes_up_.fetch_add(new_sz - old_sz, memory_order_relaxed);
+  else if (new_sz < old_sz)
+    stats_.resize_bytes_down_.fetch_add(old_sz - new_sz, memory_order_relaxed);
   return rv;
 }
 
-void* heap::malloc(size_t sz) noexcept {
-  semlock lock{ mlock };
+auto heap::free_result(size_t sz, const void* arg) noexcept -> void {
+  using _namespace(std)::memory_order_relaxed;
 
-  meta* s = alloc_meta(lock, sz);
-  if (s == nullptr) return malloc_result(nullptr, sz);
-  return malloc_result(s->get_used_ptr(), sz);
-}
-
-bool heap::resize_result(bool rv, void* addr, size_t nsz, size_t osz)
-    noexcept {
-  atom_inc(stats_.realloc_calls);
-  if (rv) {
-    if (nsz > osz)
-      atom_inc(stats_.resize_bytes_up, nsz - osz);
-    else if (nsz < osz)
-      atom_inc(stats_.resize_bytes_down, osz - nsz);
-  } else {
-    atom_inc(stats_.resize_fail);
-  }
-  return rv;
-}
-
-bool heap::resize(void* addr, size_t nsz, size_t* osz) noexcept {
-  nsz = fix_size(nsz);
-  semlock lock{ mlock };
-
-  auto bucket =
-      addrset().get_bucket(addrset().hashcode_2_bucket(hash_code(addr)));
-  for (auto& i : bucket) {
-    if (i.get_used_ptr() == addr) {
-      *osz = i.used_;
-      if (*osz == nsz) return resize_result(true, addr, nsz, *osz);
-
-      if (nsz < *osz) {
-        freelist()[i.freelist_slot()].unlink(&i);
-        i.free_ += *osz - nsz;
-        i.used_ -= *osz - nsz;
-        freelist()[i.freelist_slot()].link_front(&i);
-        return resize_result(true, addr, nsz, *osz);
-      }
-
-      const auto delta = nsz - *osz;
-      if (i.free_ < delta) return resize_result(false, addr, nsz, *osz);
-      freelist()[i.freelist_slot()].unlink(&i);
-      i.free_ -= delta;
-      i.used_ += delta;
-      freelist()[i.freelist_slot()].link_front(&i);
-      return resize_result(true, addr, nsz, *osz);
-    }
-  }
-
-  panic("heap::resize(%p) -- address not in allocation list", addr);
-  for (;;);
-}
-
-void heap::free(void* addr) noexcept {
-  semlock lock{ mlock };
-
-  auto bucket =
-      addrset().get_bucket(addrset().hashcode_2_bucket(hash_code(addr)));
-  for (auto& i : bucket) {
-    if (i.get_used_ptr() == addr) {
-      atom_inc(stats_.free_bytes, i.used_);
-      freelist()[i.freelist_slot()].unlink(&i);
-      i.free_ -= i.used_;
-      i.used_ = 0;
-      freelist()[i.freelist_slot()].link_front(&i);
-
-      // Merge with pred.
-      if (!i.root_) {
-        auto pred = --linlist().iterator_to(&i);
-        if (&i == pred->get_end_ptr()) {
-          pred->free_ += meta_sz + i.free_;
-
-          linlist().unlink(&i);
-          addrset().unlink(&i);
-          freelist()[i.freelist_slot()].unlink(&i);
-        }
-      }
-
-      atom_inc(stats_.free_calls);
-      return;
-    }
-  }
-
-  panic("heap::free(%p) -- address not in allocation list", addr);
+  stats_.free_calls_.fetch_add(1U, memory_order_relaxed);
+  if (arg)
+    stats_.free_bytes_.fetch_add(sz, memory_order_relaxed);
 }
 
 
