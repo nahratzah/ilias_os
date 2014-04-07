@@ -16,6 +16,7 @@ KERNEL_FLAGS +=		-O3
 # Loader is always single threaded.
 LOADER_FLAGS +=		-Os						\
 			-D_SINGLE_THREADED=1				\
+			-D_LOADER=1					\
 			-fno-pic
 
 CFLAGS_32 +=		-target i386-eabi
