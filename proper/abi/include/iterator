@@ -92,6 +92,24 @@ class reverse_iterator
 };
 
 
+template<typename InputIterator, typename Distance>
+void advance(InputIterator&, Distance);
+
+template<typename InputIterator>
+typename iterator_traits<InputIterator>::difference_type distance(
+    InputIterator, InputIterator);
+
+template<typename ForwardIterator>
+ForwardIterator next(
+    ForwardIterator,
+    typename iterator_traits<ForwardIterator>::difference_type = 1);
+
+template<typename BidirectionalIterator>
+BidirectionalIterator prev(
+    BidirectionalIterator,
+    typename iterator_traits<BidirectionalIterator>::difference_type = 1);
+
+
 _namespace_end(std)
 
 #include <iterator-inl.h>

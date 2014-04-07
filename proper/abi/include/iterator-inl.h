@@ -160,4 +160,86 @@ auto operator-(const reverse_iterator<I1>& a, const reverse_iterator<I2>& b)
 }
 
 
+/* Provide helper implementations for advance, distance. */
+namespace impl {
+
+
+template<typename Iter, typename Distance>
+void advance(Iter& x, Distance n, const random_access_iterator_tag&) {
+  x += n;
+}
+
+template<typename Iter, typename Distance>
+void advance(Iter& x, Distance n, const bidirectional_iterator_tag&) {
+  while (n > Distance(0)) {
+    ++x;
+    --n;
+  }
+  while (n < Distance(0)) {
+    --x;
+    ++n;
+  }
+}
+
+template<typename Iter, typename Distance>
+void advance(Iter& x, Distance n, const input_iterator_tag&) {
+  assert(n >= Distance(0));
+  while (n > Distance(0)) {
+    ++x;
+    --n;
+  }
+}
+
+
+template<typename Iter, typename Distance>
+auto distance(Iter& x, Iter& y, const random_access_iterator_tag&) ->
+    typename iterator_traits<Iter>::difference_type {
+  return y - x;
+}
+
+template<typename Iter, typename Distance>
+auto distance(Iter& x, Iter& y, const input_iterator_tag&) ->
+    typename iterator_traits<Iter>::difference_type {
+  typename iterator_traits<Iter>::difference_type count = 0;
+
+  while (x != y) {
+    ++x;
+    ++count;
+  }
+  return count;
+}
+
+
+} /* namespace std::impl */
+
+template<typename InputIterator, typename Distance>
+void advance(InputIterator& x, Distance n) {
+  impl::advance(
+      x, n, typename iterator_traits<InputIterator>::iterator_category());
+}
+
+template<typename InputIterator>
+typename iterator_traits<InputIterator>::difference_type distance(
+    InputIterator x, InputIterator y) {
+  return impl::distance(
+      x, y, typename iterator_traits<InputIterator>::iterator_category());
+}
+
+template<typename ForwardIterator>
+ForwardIterator next(
+    ForwardIterator x,
+    typename iterator_traits<ForwardIterator>::difference_type n) {
+  advance(x, n);
+  return x;
+}
+
+template<typename BidirectionalIterator>
+BidirectionalIterator prev(
+    BidirectionalIterator x,
+    typename iterator_traits<BidirectionalIterator>::difference_type n) {
+  advance(x, -n);
+  return x;
+}
+
+
 _namespace_end(std)
