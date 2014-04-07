@@ -5,8 +5,9 @@
 #include <abi/memory.h>
 #include <abi/panic.h>
 #include <cerrno>
-#include <new>
 #include <cstring>
+#include <new>
+#include <thread>
 
 namespace std {
 
@@ -49,7 +50,7 @@ class fn_stack {
   fn_type fn_;
   fn_stack* tail_ = nullptr;
   static fn_stack* head_;
-  static abi::heap heap;
+  static abi::heap& heap;
 };
 
 
@@ -148,12 +149,37 @@ void resolve(bool quick_only) noexcept {
 
 
 fn_stack* fn_stack::head_ = nullptr;
-::abi::heap fn_stack::heap{ "abi/atexit" };
+
+namespace {
+
+::abi::heap& fn_stack_heap_singleton() {
+  using _namespace(std)::aligned_storage_t;
+  using ::abi::heap;
+
+  static aligned_storage_t<sizeof(heap), alignof(heap)> data;
+  void* data_ptr = &data;
+  return *new (data_ptr) heap("abi/atexit");
+}
+
+}
+
+::abi::heap& fn_stack::heap = fn_stack_heap_singleton();
 
 
 abi::big_heap& c_malloc_heap() noexcept {
-  static abi::big_heap impl{ "abi/malloc" };
-  return impl;
+  using _namespace(std)::once_flag;
+  using _namespace(std)::call_once;
+  using _namespace(std)::aligned_storage_t;
+  using ::abi::big_heap;
+
+  static once_flag guard;
+  static aligned_storage_t<sizeof(big_heap), alignof(big_heap)> data;
+
+  void* data_ptr = &data;
+  call_once(guard,
+            [](void* ptr) { new (ptr) big_heap("abi/malloc"); },
+            data_ptr);
+  return *static_cast<big_heap*>(data_ptr);
 }
 
 
@@ -217,10 +243,13 @@ void __attribute__((weak)) free(void* p) noexcept {
 
 void* __attribute__((weak)) realloc(void* p, size_t sz) noexcept {
   size_t oldsz;
+  bool succes;
   auto& heap = c_malloc_heap();
-  if (heap.resize(p, sz, &oldsz)) return p;
-  if (sz < oldsz) oldsz = sz;
+  tie(succes, oldsz) = heap.resize(p, sz);
+  if (succes) return p;
 
+  /* Move memory. */
+  if (sz < oldsz) oldsz = sz;
   void* q = heap.malloc(sz);
   if (!q) return nullptr;
   memcpy(q, p, oldsz);

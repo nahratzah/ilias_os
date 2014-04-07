@@ -1,5 +1,6 @@
 #include <new>
 #include <atomic>
+#include <thread>
 #include <abi/memory.h>
 #include <cdecl.h>
 
@@ -45,25 +46,57 @@ new_handler set_new_handler(new_handler n) noexcept {
 
 namespace {
 
-abi::heap& throwing_heap() noexcept {
-  static abi::big_heap impl{ "abi/operator new" };
-  return impl;
+using _namespace(std)::once_flag;
+using _namespace(std)::aligned_storage_t;
+
+abi::big_heap& throwing_heap() noexcept {
+  static once_flag guard;
+  static aligned_storage_t<sizeof(abi::big_heap), alignof(abi::big_heap)> impl;
+  void*const impl_ptr = &impl;
+
+  call_once(guard,
+            [](void* p) { new (p) abi::big_heap("abi/operator new"); },
+            impl_ptr);
+  return *static_cast<abi::big_heap*>(impl_ptr);
 }
-abi::heap& no_throw_heap() noexcept {
-  static abi::big_heap impl{ "abi/operator new/nothrow" };
-  return impl;
+
+abi::big_heap& no_throw_heap() noexcept {
+  static once_flag guard;
+  static aligned_storage_t<sizeof(abi::big_heap), alignof(abi::big_heap)> impl;
+  void*const impl_ptr = &impl;
+
+  call_once(guard,
+            [](void* p) { new (p) abi::big_heap("abi/operator new/nothrow"); },
+            impl_ptr);
+  return *static_cast<abi::big_heap*>(impl_ptr);
 }
-abi::heap& throwing_array_heap() noexcept {
-  static abi::big_heap impl{ "abi/operator new[]" };
-  return impl;
+
+abi::big_heap& throwing_array_heap() noexcept {
+  static once_flag guard;
+  static aligned_storage_t<sizeof(abi::big_heap), alignof(abi::big_heap)> impl;
+  void*const impl_ptr = &impl;
+
+  call_once(guard,
+            [](void* p) { new (p) abi::big_heap("abi/operator new[]"); },
+            impl_ptr);
+  return *static_cast<abi::big_heap*>(impl_ptr);
 }
-abi::heap& no_throw_array_heap() noexcept {
-  static abi::big_heap impl{ "abi/operator new[]/nothrow" };
-  return impl;
+
+abi::big_heap& no_throw_array_heap() noexcept {
+  static once_flag guard;
+  static aligned_storage_t<sizeof(abi::big_heap), alignof(abi::big_heap)> impl;
+  void*const impl_ptr = &impl;
+
+  call_once(guard,
+            [](void* p) {
+              new (p) abi::big_heap("abi/operator new[]/nothrow");
+            },
+            impl_ptr);
+  return *static_cast<abi::big_heap*>(impl_ptr);
 }
 
 
-void* new_impl(abi::heap& heap, std::size_t sz) {
+void* new_impl(abi::big_heap& heap, std::size_t sz) {
   void* p;
   for (p = heap.malloc(sz); _predict_false(!p); p = heap.malloc(sz)) {
     std::new_handler nh = std::get_new_handler();
@@ -81,7 +114,7 @@ void* new_impl(abi::heap& heap, std::size_t sz) {
   return p;
 }
 
-void* new_impl_nothrow(abi::heap& heap, std::size_t sz) noexcept {
+void* new_impl_nothrow(abi::big_heap& heap, std::size_t sz) noexcept {
   try {
     return new_impl(heap, sz);
   } catch (const std::bad_alloc&) {
@@ -128,6 +161,7 @@ void __attribute__((weak)) operator delete[](
     void* p, const std::nothrow_t&) noexcept {
   if (p) no_throw_array_heap().free(p);
 }
+
 
 _namespace_begin(std)
 
