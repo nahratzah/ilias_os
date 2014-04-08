@@ -355,6 +355,7 @@ auto global_heap::free(const void* p) noexcept ->
     chain_.unlink(m);
     used_.unlink(m);
     free_.unlink(m);
+    m->~memory();
     free_.link_front(predecessor);
   } else {
     free_.link_front(m);
@@ -505,7 +506,7 @@ struct heap::all_stats {
   stats_collection get_all(stats_collection = stats_collection()) const;
 
  private:
-  mutable semaphore lock_;
+  mutable semaphore lock_{ 1U };
   list<heap::stats_data, void> data_;
 };
 
