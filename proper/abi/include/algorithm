@@ -2,8 +2,12 @@
 #define _ALGORITHM_
 
 #include <cdecl.h>
+#include <cstring>
 #include <initializer_list>
 #include <iterator>
+#include <new>
+#include <tuple>
+#include <utility>
 #include <stdimpl/simple_bitset.h>
 
 _namespace_begin(std)
@@ -136,6 +140,151 @@ template<typename ForwardIterator, class Size, typename T,
          typename BinaryPredicate>
 ForwardIterator search_n(ForwardIterator, ForwardIterator, Size, const T&,
                          BinaryPredicate);
+
+
+template<typename InputIterator, typename OutputIterator>
+OutputIterator copy(InputIterator, InputIterator, OutputIterator);
+
+template<typename InputIterator, typename Size, typename OutputIterator>
+OutputIterator copy_n(InputIterator, Size, OutputIterator);
+
+template<typename InputIterator, typename OutputIterator, typename Predicate>
+OutputIterator copy_if(InputIterator, InputIterator, OutputIterator,
+                       Predicate);
+
+template<typename BidirectionalIterator1, typename BidirectionalIterator2>
+BidirectionalIterator2 copy_backward(BidirectionalIterator1,
+                                     BidirectionalIterator1,
+                                     BidirectionalIterator2);
+
+template<typename InputIterator, typename OutputIterator>
+OutputIterator move(InputIterator, InputIterator, OutputIterator);
+
+template<typename BidirectionalIterator1, typename BidirectionalIterator2>
+BidirectionalIterator2 move_backward(BidirectionalIterator1,
+                                     BidirectionalIterator1,
+                                     BidirectionalIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+ForwardIterator2 swap_ranges(ForwardIterator1, ForwardIterator1,
+                             ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+void iter_swap(ForwardIterator1, ForwardIterator2);
+
+template<typename InputIterator, typename OutputIterator,
+         typename UnaryOperation>
+OutputIterator transform(InputIterator, InputIterator,
+                         OutputIterator, UnaryOperation);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename BinaryOperation>
+OutputIterator transform(InputIterator1, InputIterator1,
+                         InputIterator2,
+                         OutputIterator, BinaryOperation);
+
+template<typename ForwardIterator, typename T>
+void replace(ForwardIterator, ForwardIterator, const T&, const T&);
+
+template<typename ForwardIterator, typename Predicate, typename T>
+void replace_if(ForwardIterator, ForwardIterator, Predicate, const T&);
+
+template<typename ForwardIterator, typename OutputIterator, typename T>
+void replace_copy(ForwardIterator, ForwardIterator, OutputIterator,
+                  const T&, const T&);
+
+template<typename ForwardIterator, typename OutputIterator,
+         typename Predicate, typename T>
+void replace_copy_if(ForwardIterator, ForwardIterator, OutputIterator,
+                     Predicate, const T&);
+
+template<typename ForwardIterator, typename T>
+void fill(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename Size, typename T>
+ForwardIterator fill_n(ForwardIterator, Size, const T&);
+
+template<typename OutputIterator, typename Generator>
+void generate(OutputIterator, OutputIterator, Generator);
+
+template<typename OutputIterator, typename Size, typename Generator>
+OutputIterator generate_n(OutputIterator, Size, Generator);
+
+template<typename ForwardIterator, typename T>
+ForwardIterator remove(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename Predicate>
+ForwardIterator remove_if(ForwardIterator, ForwardIterator, Predicate);
+
+template<typename InputIterator, typename OutputIterator, typename T>
+OutputIterator remove_copy(InputIterator, InputIterator, OutputIterator,
+                           const T&);
+
+template<typename InputIterator, typename OutputIterator, typename Predicate>
+OutputIterator remove_copy_if(InputIterator, InputIterator, OutputIterator,
+                              Predicate);
+
+template<typename ForwardIterator>
+ForwardIterator unique(ForwardIterator, ForwardIterator);
+
+template<typename ForwardIterator, typename BinaryPredicate>
+ForwardIterator unique(ForwardIterator, ForwardIterator, BinaryPredicate);
+
+template<typename InputIterator, typename OutputIterator>
+OutputIterator unique_copy(InputIterator, InputIterator, OutputIterator);
+
+template<typename InputIterator, typename OutputIterator,
+         typename BinaryPredicate>
+OutputIterator unique_copy(InputIterator, InputIterator, OutputIterator,
+                           BinaryPredicate);
+
+template<typename BidirectionalIterator>
+void reverse(BidirectionalIterator, BidirectionalIterator);
+
+template<typename BidirectionalIterator, typename OutputIterator>
+OutputIterator reverse(BidirectionalIterator, BidirectionalIterator,
+                       OutputIterator);
+
+template<typename ForwardIterator>
+ForwardIterator rotate(ForwardIterator first, ForwardIterator middle,
+                       ForwardIterator last);
+
+template<typename ForwardIterator, typename OutputIterator>
+OutputIterator rotate_copy(ForwardIterator, ForwardIterator, ForwardIterator,
+                           OutputIterator);
+
+#if 0 // XXX implement once randomization is implemented
+template<typename RandomAccessIterator>
+void random_shuffle(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename RandomNumberGenerator>
+void random_shuffle(RandomAccessIterator, RandomAccessIterator, RandomNumberGenerator&&);
+
+template<typename RandomAccessIterator, typename UniformRandomNumberGenerator>
+void random_shuffle(RandomAccessIterator, RandomAccessIterator, UniformRandomNumberGenerator&&);
+#endif
+
+template<typename InputIterator, typename Predicate>
+bool is_partitioned(InputIterator, InputIterator, Predicate);
+
+template<typename ForwardIterator, typename Predicate>
+ForwardIterator partition(ForwardIterator, ForwardIterator, Predicate);
+
+template<typename BidirectionalIterator, typename Predicate>
+BidirectionalIterator stable_partition(BidirectionalIterator,
+                                       BidirectionalIterator,
+                                       Predicate);
+
+template<typename InputIterator, typename OutputIterator1,
+         typename OutputIterator2, typename Predicate>
+pair<OutputIterator1, OutputIterator2> partition_copy(InputIterator,
+                                                      InputIterator,
+                                                      OutputIterator1,
+                                                      OutputIterator2,
+                                                      Predicate);
+
+template<typename ForwardIterator, typename Predicate>
+ForwardIterator partition_point(ForwardIterator, ForwardIterator, Predicate);
 
 
 template<typename T>
