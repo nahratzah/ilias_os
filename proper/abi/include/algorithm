@@ -3,22 +3,164 @@
 
 #include <cdecl.h>
 #include <initializer_list>
+#include <iterator>
+#include <stdimpl/simple_bitset.h>
 
 _namespace_begin(std)
 
 
-template<typename T> auto min(const T& a, const T& b) -> const T&;
-template<typename T> auto max(const T& a, const T& b) -> const T&;
-template<typename T, typename Comp> auto min(const T& a, const T& b,
-                                             Comp cmp) -> const T&;
-template<typename T, typename Comp> auto max(const T& a, const T& b,
-                                             Comp cmp) -> const T&;
-template<typename T> auto min(initializer_list<T> il) -> T;
-template<typename T> auto max(initializer_list<T> il) -> T;
-template<typename T, typename Comp> auto min(initializer_list<T> il,
-                                             Comp cmp) -> T;
-template<typename T, typename Comp> auto max(initializer_list<T> il,
-                                             Comp cmp) -> T;
+template<typename InputIterator, class Predicate>
+bool all_of(InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator, class Predicate>
+bool any_of(InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator, class Predicate>
+bool none_of(InputIterator, InputIterator, Predicate);
+
+
+template<typename InputIterator, class Function>
+Function for_each(InputIterator, InputIterator, Function);
+
+template<typename InputIterator, typename T>
+InputIterator find(InputIterator, InputIterator, const T&);
+
+template<typename InputIterator, typename Predicate>
+InputIterator find_if(InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator, typename Predicate>
+InputIterator find_if_not(InputIterator, InputIterator, Predicate);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+ForwardIterator1 find_end(ForwardIterator1, ForwardIterator1,
+                          ForwardIterator2, ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2,
+         typename BinaryPredicate>
+ForwardIterator1 find_end(ForwardIterator1, ForwardIterator1,
+                          ForwardIterator2, ForwardIterator2,
+                          BinaryPredicate);
+
+template<typename InputIterator, typename ForwardIterator>
+InputIterator find_first_of(InputIterator, InputIterator,
+                            ForwardIterator, ForwardIterator);
+
+template<typename InputIterator, typename ForwardIterator,
+         typename BinaryPredicate>
+InputIterator find_first_of(InputIterator, InputIterator,
+                            ForwardIterator, ForwardIterator,
+                            BinaryPredicate);
+
+template<typename ForwardIterator>
+ForwardIterator adjecent_find(ForwardIterator, ForwardIterator);
+
+template<typename ForwardIterator, typename BinaryPredicate>
+ForwardIterator adjecent_find(ForwardIterator, ForwardIterator,
+                              BinaryPredicate);
+
+template<typename InputIterator, typename T>
+typename iterator_traits<InputIterator>::difference_type count(
+    InputIterator, InputIterator, const T&);
+
+template<typename InputIterator, typename Predicate>
+typename iterator_traits<InputIterator>::difference_type count(
+    InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator1, typename InputIterator2>
+pair<InputIterator1, InputIterator2> mismatch(InputIterator1, InputIterator1,
+                                              InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename BinaryPredicate>
+pair<InputIterator1, InputIterator2> mismatch(InputIterator1, InputIterator1,
+                                              InputIterator2,
+                                              BinaryPredicate);
+
+template<typename InputIterator1, typename InputIterator2>
+pair<InputIterator1, InputIterator2> mismatch(InputIterator1, InputIterator1,
+                                              InputIterator2, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename BinaryPredicate>
+pair<InputIterator1, InputIterator2> mismatch(InputIterator1, InputIterator1,
+                                              InputIterator2, InputIterator2,
+                                              BinaryPredicate);
+
+template<typename InputIterator1, typename InputIterator2>
+bool equal(InputIterator1, InputIterator1, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename BinaryPredicate>
+bool equal(InputIterator1, InputIterator1, InputIterator2, BinaryPredicate);
+
+template<typename InputIterator1, typename InputIterator2>
+bool equal(InputIterator1, InputIterator1, InputIterator2, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename BinaryPredicate>
+bool equal(InputIterator1, InputIterator1, InputIterator2, InputIterator2,
+           BinaryPredicate);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+bool is_permutation(ForwardIterator1, ForwardIterator1, ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2,
+         typename BinaryPredicate>
+bool is_permutation(ForwardIterator1, ForwardIterator1, ForwardIterator2,
+                    BinaryPredicate);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+bool is_permutation(ForwardIterator1, ForwardIterator1,
+                    ForwardIterator2, ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2,
+         typename BinaryPredicate>
+bool is_permutation(ForwardIterator1, ForwardIterator1,
+                    ForwardIterator2, ForwardIterator2,
+                    BinaryPredicate);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+ForwardIterator1 search(ForwardIterator1, ForwardIterator1,
+                        ForwardIterator2, ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2,
+         typename BinaryPredicate>
+ForwardIterator1 search(ForwardIterator1, ForwardIterator1,
+                        ForwardIterator2, ForwardIterator2,
+                        BinaryPredicate);
+
+template<typename ForwardIterator, class Size, typename T>
+ForwardIterator search_n(ForwardIterator, ForwardIterator, Size, const T&);
+
+template<typename ForwardIterator, class Size, typename T,
+         typename BinaryPredicate>
+ForwardIterator search_n(ForwardIterator, ForwardIterator, Size, const T&,
+                         BinaryPredicate);
+
+
+template<typename T>
+auto min(const T& a, const T& b) -> const T&;
+
+template<typename T>
+auto max(const T& a, const T& b) -> const T&;
+
+template<typename T, typename Comp>
+auto min(const T& a, const T& b, Comp cmp) -> const T&;
+
+template<typename T, typename Comp>
+auto max(const T& a, const T& b, Comp cmp) -> const T&;
+
+template<typename T>
+auto min(initializer_list<T> il) -> T;
+
+template<typename T>
+auto max(initializer_list<T> il) -> T;
+
+template<typename T, typename Comp>
+auto min(initializer_list<T> il, Comp cmp) -> T;
+
+template<typename T, typename Comp>
+auto max(initializer_list<T> il, Comp cmp) -> T;
 
 
 _namespace_end(std)
