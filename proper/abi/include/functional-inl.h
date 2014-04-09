@@ -199,8 +199,8 @@ constexpr binary_negate<Predicate> not2(const Predicate& pred) {
 
 namespace _bind {
 
-using ::_namespace(std)::impl::invoke;
 
+using ::_namespace(std)::impl::invoke;
 
 /* Resolve placement argument. */
 template<int I, typename T>
@@ -274,15 +274,22 @@ auto resolve_argument(T&& v, Args&& args)
  * Invoke tuple of f, bound_args... using tuple of args...
  */
 template<typename FTuple, typename ArgTuple,
+         size_t Index0,
          size_t... Indices,
-         index_sequence<Indices...> =
+         index_sequence<Index0, Indices...> =
              make_index_sequence<tuple_size<ArgTuple>::value>()>
 auto invoke_tuple(FTuple&& ft, ArgTuple&& args)
-    noexcept(noexcept(invoke(resolve_argument(
-        get<Indices>(forward<FTuple>(ft)), forward<ArgTuple>(args))...))) ->
-    decltype(invoke(resolve_argument(
-        get<Indices>(forward<FTuple>(ft)), forward<ArgTuple>(args))...)) {
-  return invoke(resolve_argument(get<Indices>(forward<FTuple>(ft)),
+    noexcept(noexcept(invoke(get<0>(forward<FTuple>(ft)),
+                      resolve_argument(get<Indices>(forward<FTuple>(ft)),
+                                       forward<ArgTuple>(args))...))) ->
+    decltype(invoke(get<0>(forward<FTuple>(ft)),
+             resolve_argument(get<Indices>(forward<FTuple>(ft)),
+                              forward<ArgTuple>(args))...)) {
+  static_assert(Index0 == 0,
+                "Uh oh, there's something very wrong with "
+                "the index_sequence generation or its use here...");
+  return invoke(get<0>(forward<FTuple>(ft)),
+                resolve_argument(get<Indices>(forward<FTuple>(ft)),
                                  forward<ArgTuple>(args))...);
 }
 
@@ -349,7 +356,84 @@ class expression
   data_type data_;
 };
 
+template<typename R, typename F, typename... BoundArgs>
+class expression_r
+{
+ private:
+  using impl_type = expression<F, BoundArgs...>;
+
+ public:
+  using result_type = R;
+
+  expression_r() = delete;
+  expression_r(const expression_r&) = default;
+  expression_r& operator=(const expression_r&) = default;
+
+  expression_r(expression_r&& other)
+      noexcept(is_nothrow_move_constructible<impl_type>::value)
+  : impl_(move(other.impl_))
+  {}
+
+  expression_r& operator=(expression_r&& other)
+      noexcept(is_nothrow_move_assignable<impl_type>::value) {
+    impl_ = move(other.impl_);
+    return *this;
+  }
+
+  template<typename... Args>
+  auto operator()(Args&&... args)
+      noexcept(noexcept(invoke(this->impl_, forward<Args>(args)...))) ->
+      result_type {
+    return invoke(this->impl_, forward<Args>(args)...);
+  }
+
+  template<typename... Args>
+  auto operator()(Args&&... args) const
+      noexcept(noexcept(invoke(this->impl_, forward<Args>(args)...))) ->
+      result_type {
+    return invoke(this->impl_, forward<Args>(args)...);
+  }
+
+  template<typename... Args>
+  auto operator()(Args&&... args) volatile
+      noexcept(noexcept(invoke(this->impl_, forward<Args>(args)...))) ->
+      result_type {
+    return invoke(this->impl_, forward<Args>(args)...);
+  }
+
+  template<typename... Args>
+  auto operator()(Args&&... args) const volatile
+      noexcept(noexcept(invoke(this->impl_, forward<Args>(args)...))) ->
+      result_type {
+    return invoke(this->impl_, forward<Args>(args)...);
+  }
+
+ private:
+  impl_type impl_;
+};
+
+
 } /* namespace std::_bind */
+
+
+template<typename F, typename... BoundArgs>
+auto bind(F&& f, BoundArgs&&... bound_args)
+    noexcept(noexcept(_bind::expression<decay_t<F>, decay_t<BoundArgs>...>(
+        forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
+    _bind::expression<decay_t<F>, decay_t<BoundArgs>...> {
+  return _bind::expression<decay_t<F>, decay_t<BoundArgs>...>(
+      forward<F>(f), forward<BoundArgs>(bound_args)...);
+}
+
+template<typename R, typename F, typename... BoundArgs>
+auto bind(F&& f, BoundArgs&&... bound_args)
+    noexcept(noexcept(
+        _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>(
+            forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
+    _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...> {
+  return _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>(
+      forward<F>(f), forward<BoundArgs>(bound_args)...);
+}
 
 
 _namespace_end(std)
