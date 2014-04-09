@@ -202,6 +202,59 @@ namespace _bind {
 
 using ::_namespace(std)::impl::invoke;
 
+
+template<typename T> struct _result_type_impl {
+  struct type { using result_type = T; };
+};
+struct _no_result_type { struct type {}; };
+
+_MEMBER_TYPE_CHECK(result_type);
+
+template<typename T, typename... Args>
+struct _result_type_impl<T(Args...)> {
+  using result_type = T;
+};
+
+template<typename T, typename Arg0, typename Arg1>
+struct _result_type_impl<T(Arg0, Arg1)> {
+  using result_type = T;
+  using first_argument_type = Arg0;
+  using second_argument_type = Arg1;
+};
+
+template<typename T, typename Arg>
+struct _result_type_impl<T(Arg)> {
+  using result_type = T;
+  using argument_type = Arg;
+};
+
+template<typename T, typename C, typename... Args>
+struct _result_type_impl<T (C::*)(Args...)>
+: _result_type_impl<T(C*, Args...)> {};
+
+template<typename T, typename C, typename... Args>
+struct _result_type_impl<T (C::*)(Args...) const>
+: _result_type_impl<T(const C*, Args...)> {};
+
+template<typename T, typename C, typename... Args>
+struct _result_type_impl<T (C::*)(Args...) volatile>
+: _result_type_impl<T(volatile C*, Args...)> {};
+
+template<typename T, typename C, typename... Args>
+struct _result_type_impl<T (C::*)(Args...) const volatile>
+: _result_type_impl<T(const volatile C*, Args...)> {};
+
+template<typename T, typename... Args>
+struct _result_type_impl<T (*)(Args...)>
+: _result_type_impl<T(Args...)> {};
+
+/* Base class, used to add the result_type member type. */
+template<typename T> using _result_type =
+    typename conditional_t<member_type_check_result_type<T>::value,
+                           _result_type_impl<T>,
+                           _no_result_type>::type;
+
+
 /* Resolve placement argument. */
 template<int I, typename T>
 auto resolve_placement(T&& t) noexcept ->
@@ -296,6 +349,7 @@ auto invoke_tuple(FTuple&& ft, ArgTuple&& args)
 
 template<typename F, typename... BoundArgs>
 class expression
+: public _result_type<F>
 {
  private:
   using data_type = tuple<F, BoundArgs...>;
@@ -358,6 +412,7 @@ class expression
 
 template<typename R, typename F, typename... BoundArgs>
 class expression_r
+: public _result_type<F>
 {
  private:
   using impl_type = expression<F, BoundArgs...>;
