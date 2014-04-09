@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <functional-fwd.h>
+#include <exception>
 #include <type_traits>
 #include <stdimpl/functional_fnhelper.h>
 #include <stdimpl/invoke.h>
@@ -362,6 +363,8 @@ namespace _bind {
 
 template<typename, typename...> class expression;
 template<typename, typename, typename...> class expression_r;
+template<typename> class mem_fn;  // Not a bind expression,
+                                  // just a simple function wrapper.
 
 } /* namespace bind */
 
@@ -521,9 +524,19 @@ const_mem_fun1_ref_t<S, T, A> mem_fun_ref(S (T::*)(A) const)
     __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
 
 
-template<typename R, typename T> ... mem_fn(R T::*);
+template<typename R, typename T> _bind::mem_fn<R T::*> mem_fn(R T::*);
 
-class bad_function_call;
+
+class bad_function_call
+: public exception
+{
+ public:
+  bad_function_call() noexcept;
+  ~bad_function_call() noexcept override;
+
+  const char* what() const noexcept override;
+};
+
 
 template<class> class function;  // Undefined.
 template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>;

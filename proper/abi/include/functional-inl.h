@@ -248,6 +248,10 @@ template<typename T, typename... Args>
 struct _result_type_impl<T (*)(Args...)>
 : _result_type_impl<T(Args...)> {};
 
+template<typename R, typename T>
+struct _result_type_impl<R T::*>
+: _result_type_impl<R(T)> {};
+
 /* Base class, used to add the result_type member type. */
 template<typename T> using _result_type =
     typename conditional_t<member_type_check_result_type<T>::value,
@@ -468,6 +472,26 @@ class expression_r
 };
 
 
+template<typename F>
+class mem_fn
+: public _result_type<F>
+{
+ public:
+  constexpr mem_fn(F fn) noexcept
+  : fn_(fn)
+  {}
+
+  template<typename... Args>
+  typename _result_type<F>::result_type operator()(Args&&... args) const
+      noexcept(noexcept(invoke(this->fn_, forward<Args>(args)...))) {
+    return invoke(fn_, forward<Args>(args)...);
+  }
+
+ private:
+  F fn_ = nullptr;
+};
+
+
 } /* namespace std::_bind */
 
 
@@ -488,6 +512,12 @@ auto bind(F&& f, BoundArgs&&... bound_args)
     _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...> {
   return _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>(
       forward<F>(f), forward<BoundArgs>(bound_args)...);
+}
+
+
+template<typename R, typename T>
+_bind::mem_fn<R T::*> mem_fn(R T::*fn) {
+  return _bind::mem_fn<R T::*>(fn);
 }
 
 

@@ -22,6 +22,7 @@ ABI_SRCS += abi/src/cstdio.cc
 ABI_SRCS += abi/src/cstring.cc
 ABI_SRCS += abi/src/cwchar.cc
 ABI_SRCS += abi/src/exception.cc
+ABI_SRCS += abi/src/functional.cc
 ABI_SRCS += abi/src/ios.cc
 ABI_SRCS += abi/src/stdexcept.cc
 ABI_SRCS += abi/src/new.cc
