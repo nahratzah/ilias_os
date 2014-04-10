@@ -432,8 +432,7 @@ class __attribute__((deprecated("auto_ptr is deprecated in C++11, "
 template<typename T>
 class __attribute__((deprecated("auto_ptr is deprecated in C++11, "
                                 "please use unique_ptr instead.")))
-    auto_ptr
-{
+    auto_ptr {
  public:
   using element_type = T;
 
