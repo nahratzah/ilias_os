@@ -89,8 +89,9 @@ class heap {
   ~heap() noexcept;
 
   void* malloc(size_t) noexcept;
-  void free(void*) noexcept;
-  _namespace(std)::tuple<bool, size_t> resize(void*, size_t) noexcept;
+  void* malloc(size_t, size_t) noexcept;
+  void free(const void*) noexcept;
+  _namespace(std)::tuple<bool, size_t> resize(const void*, size_t) noexcept;
 
   static stats_collection get_stats(stats_collection);
   static stats_collection get_stats();
@@ -99,7 +100,7 @@ class heap {
   void* malloc_result(void*, size_t) noexcept;
   _namespace(std)::tuple<bool, size_t> resize_result(
       _namespace(std)::tuple<bool, size_t>,
-      _namespace(std)::tuple<void*, size_t>) noexcept;
+      _namespace(std)::tuple<const void*, size_t>) noexcept;
   void free_result(size_t, const void*) noexcept;
 
   stats_data stats_;
