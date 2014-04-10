@@ -29,6 +29,10 @@ template<typename T> T* addressof(T&) noexcept;
 template<typename T>
 class __attribute__((deprecated("auto_ptr is deprecated in C++11, "
                                 "please use unique_ptr instead.")))
+    auto_ptr_ref;
+template<typename T>
+class __attribute__((deprecated("auto_ptr is deprecated in C++11, "
+                                "please use unique_ptr instead.")))
     auto_ptr;
 
 
@@ -400,6 +404,60 @@ template<typename T, typename D>
 bool operator>=(const unique_ptr<T, D>&, nullptr_t) noexcept;
 template<typename T, typename D>
 bool operator>=(nullptr_t, const unique_ptr<T, D>&) noexcept;
+
+
+template<typename T>
+class __attribute__((deprecated("auto_ptr is deprecated in C++11, "
+                                "please use unique_ptr instead.")))
+    auto_ptr_ref {
+ public:
+  constexpr auto_ptr_ref() = default;
+  auto_ptr_ref(const auto_ptr_ref&) = default;
+  auto_ptr_ref& operator=(const auto_ptr_ref&) = default;
+
+  template<typename U>
+  explicit auto_ptr_ref(auto_ptr<U>& p) noexcept;
+
+  T* release() const noexcept;
+
+ private:
+  using functor = T*(void*);
+
+  template<typename U> static T* release_impl_(void*) noexcept;
+
+  void* ptr_ = nullptr;
+  functor* fn_ = nullptr;
+};
+
+template<typename T>
+class __attribute__((deprecated("auto_ptr is deprecated in C++11, "
+                                "please use unique_ptr instead.")))
+    auto_ptr
+{
+ public:
+  using element_type = T;
+
+  explicit auto_ptr(T* = nullptr) noexcept;
+  auto_ptr(auto_ptr&) noexcept;
+  template<typename U> auto_ptr(auto_ptr<U>&) noexcept;
+  auto_ptr& operator=(auto_ptr&) noexcept;
+  template<typename U> auto_ptr& operator=(auto_ptr<U>&) noexcept;
+  auto_ptr& operator=(auto_ptr_ref<T>) noexcept;
+  ~auto_ptr() noexcept;
+
+  T& operator*() const noexcept;
+  T* operator->() const noexcept;
+  T* get() const noexcept;
+  T* release() noexcept;
+  void reset(T* = nullptr) noexcept;
+
+  auto_ptr(auto_ptr_ref<T>) noexcept;
+  template<typename U> operator auto_ptr_ref<U>() noexcept;
+  template<typename U> operator auto_ptr<U>() noexcept;
+
+ private:
+  element_type* ptr_;
+};
 
 
 class bad_weak_ptr;

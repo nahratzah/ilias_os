@@ -367,6 +367,7 @@ auto unique_ptr<T, D>::operator*() const -> add_lvalue_reference_t<T> {
 
 template<typename T, typename D>
 auto unique_ptr<T, D>::operator->() const noexcept -> pointer {
+  assert_msg(get() != nullptr, "attempt to dereference unique_ptr to nullptr");
   return get();
 }
 
@@ -560,34 +561,163 @@ bool operator>=(const unique_ptr<T1, D1>& x, const unique_ptr<T2, D2>& y) {
 }
 
 template<typename T, typename D>
-bool operator==(const unique_ptr<T, D>&, nullptr_t) noexcept;
+bool operator==(const unique_ptr<T, D>& x, nullptr_t) noexcept {
+  return !x;
+}
 template<typename T, typename D>
-bool operator==(nullptr_t, const unique_ptr<T, D>&) noexcept;
+bool operator==(nullptr_t, const unique_ptr<T, D>& x) noexcept {
+  return !x;
+}
 
 template<typename T, typename D>
-bool operator!=(const unique_ptr<T, D>&, nullptr_t) noexcept;
+bool operator!=(const unique_ptr<T, D>& x, nullptr_t) noexcept {
+  return bool(x);
+}
 template<typename T, typename D>
-bool operator!=(nullptr_t, const unique_ptr<T, D>&) noexcept;
+bool operator!=(nullptr_t, const unique_ptr<T, D>& x) noexcept{
+  return bool(x);
+}
 
 template<typename T, typename D>
-bool operator<(const unique_ptr<T, D>&, nullptr_t) noexcept;
+bool operator<(const unique_ptr<T, D>& x, nullptr_t) noexcept {
+  return less<typename unique_ptr<T, D>::pointer>()(x, nullptr);
+}
 template<typename T, typename D>
-bool operator<(nullptr_t, const unique_ptr<T, D>&) noexcept;
+bool operator<(nullptr_t, const unique_ptr<T, D>& x) noexcept {
+  return less<typename unique_ptr<T, D>::pointer>()(nullptr, x);
+}
 
 template<typename T, typename D>
-bool operator<=(const unique_ptr<T, D>&, nullptr_t) noexcept;
+bool operator<=(const unique_ptr<T, D>& x, nullptr_t) noexcept {
+  return !(nullptr < x);
+}
 template<typename T, typename D>
-bool operator<=(nullptr_t, const unique_ptr<T, D>&) noexcept;
+bool operator<=(nullptr_t, const unique_ptr<T, D>& x) noexcept {
+  return !(x < nullptr);
+}
 
 template<typename T, typename D>
-bool operator>(const unique_ptr<T, D>&, nullptr_t) noexcept;
+bool operator>(const unique_ptr<T, D>& x, nullptr_t) noexcept {
+  return nullptr < x;
+}
 template<typename T, typename D>
-bool operator>(nullptr_t, const unique_ptr<T, D>&) noexcept;
+bool operator>(nullptr_t, const unique_ptr<T, D>& x) noexcept {
+  return x < nullptr;
+}
 
 template<typename T, typename D>
-bool operator>=(const unique_ptr<T, D>&, nullptr_t) noexcept;
+bool operator>=(const unique_ptr<T, D>& x, nullptr_t) noexcept {
+  return !(x < nullptr);
+}
 template<typename T, typename D>
-bool operator>=(nullptr_t, const unique_ptr<T, D>&) noexcept;
+bool operator>=(nullptr_t, const unique_ptr<T, D>& x) noexcept {
+  return !(nullptr < x);
+}
+
+
+template<typename T>
+auto_ptr<T>::auto_ptr(T* p) noexcept
+: ptr_(p)
+{}
+
+template<typename T>
+auto_ptr<T>::auto_ptr(auto_ptr& x) noexcept
+: ptr_(x.release())
+{}
+
+template<typename T>
+template<typename U>
+auto_ptr<T>::auto_ptr(auto_ptr<U>& x) noexcept
+: ptr_(x.release())
+{}
+
+template<typename T>
+auto auto_ptr<T>::operator=(auto_ptr& p) noexcept -> auto_ptr& {
+  reset(p.release());
+  return *this;
+}
+
+template<typename T>
+template<typename U>
+auto auto_ptr<T>::operator=(auto_ptr<U>& p) noexcept -> auto_ptr& {
+  reset(p.release());
+  return *this;
+}
+
+template<typename T>
+auto auto_ptr<T>::operator=(auto_ptr_ref<T> p) noexcept -> auto_ptr& {
+  reset(p.release());
+}
+
+template<typename T>
+auto_ptr<T>::~auto_ptr() noexcept {
+  delete release();
+}
+
+template<typename T>
+T& auto_ptr<T>::operator*() const noexcept {
+  assert_msg(get() != nullptr, "attempt to dereference auto_ptr to nullptr");
+  return *get();
+}
+
+template<typename T>
+T* auto_ptr<T>::operator->() const noexcept {
+  assert_msg(get() != nullptr, "attempt to dereference auto_ptr to nullptr");
+  return get();
+}
+
+template<typename T>
+T* auto_ptr<T>::get() const noexcept {
+  return ptr_;
+}
+
+template<typename T>
+T* auto_ptr<T>::release() noexcept {
+  return exchange(ptr_, nullptr);
+}
+
+template<typename T>
+void auto_ptr<T>::reset(T* p) noexcept {
+  if (_predict_true(get() != p))
+    delete exchange(ptr_, p);
+}
+
+template<typename T>
+auto_ptr<T>::auto_ptr(auto_ptr_ref<T> p) noexcept
+: auto_ptr(p.release())
+{}
+
+template<typename T>
+template<typename U>
+auto_ptr<T>::operator auto_ptr_ref<U>() noexcept {
+  return auto_ptr_ref<U>(*this);
+}
+
+template<typename T>
+template<typename U>
+auto_ptr<T>::operator auto_ptr<U>() noexcept {
+  return auto_ptr<U>(release());
+}
+
+
+template<typename T>
+template<typename U>
+auto_ptr_ref<T>::auto_ptr_ref(auto_ptr<U>& p) noexcept
+: ptr_(addressof(p)),
+  fn_(&release_impl_<U>)
+{}
+
+template<typename T>
+T* auto_ptr_ref<T>::release() const noexcept {
+  if (!ptr_) return nullptr;
+  return (*fn_)(ptr_);
+}
+
+template<typename T>
+template<typename U>
+T* auto_ptr_ref<T>::release_impl_(void* pp) noexcept {
+  return static_cast<auto_ptr<U>*>(pp)->release();
+}
 
 
 _namespace_end(std)
