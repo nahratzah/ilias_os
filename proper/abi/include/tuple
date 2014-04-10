@@ -3,10 +3,11 @@
 
 #include <cdecl.h>
 #include <cstddef>
-#include <memory>
 #include <utility>
+#include <memory-fwd.h>
 #include <stdimpl/cons.h>
 #include <stdimpl/refwrap.h>
+#include <stdimpl/member_check.h>
 
 _namespace_begin(std)
 namespace impl {
