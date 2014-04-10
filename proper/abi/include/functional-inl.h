@@ -83,43 +83,6 @@ constexpr auto negate<void>::operator()(T&& x) const ->
 
 
 template<typename T, typename U>
-auto equal_to<void>::operator()(T&& x, U&& y) const ->
-    decltype(forward<T>(x) == forward<U>(y)) {
-  return forward<T>(x) == forward<U>(y);
-}
-
-template<typename T, typename U>
-auto not_equal_to<void>::operator()(T&& x, U&& y) const ->
-    decltype(forward<T>(x) != forward<U>(y)) {
-  return forward<T>(x) != forward<U>(y);
-}
-
-template<typename T, typename U>
-auto greater<void>::operator()(T&& x, U&& y) const ->
-    decltype(forward<T>(x) > forward<U>(y)) {
-  return forward<T>(x) > forward<U>(y);
-}
-
-template<typename T, typename U>
-auto less<void>::operator()(T&& x, U&& y) const ->
-    decltype(forward<T>(x) < forward<U>(y)) {
-  return forward<T>(x) < forward<U>(y);
-}
-
-template<typename T, typename U>
-auto greater_equal<void>::operator()(T&& x, U&& y) const ->
-    decltype(forward<T>(x) >= forward<U>(y)) {
-  return forward<T>(x) >= forward<U>(y);
-}
-
-template<typename T, typename U>
-auto less_equal<void>::operator()(T&& x, U&& y) const ->
-    decltype(forward<T>(x) <= forward<U>(y)) {
-  return forward<T>(x) <= forward<U>(y);
-}
-
-
-template<typename T, typename U>
 constexpr auto logical_and<void>::operator()(T&& x, U&& y) const ->
     decltype(forward<T>(x) && forward<U>(y)) {
   return forward<T>(x) && forward<U>(y);

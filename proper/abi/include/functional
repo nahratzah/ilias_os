@@ -4,10 +4,13 @@
 #include <cdecl.h>
 #include <functional-fwd.h>
 #include <exception>
+#include <memory>
 #include <type_traits>
+#include <typeinfo>
 #include <stdimpl/functional_fnhelper.h>
 #include <stdimpl/invoke.h>
 #include <stdimpl/member_check.h>
+#include <stdimpl/functional_comparators.h>
 
 _namespace_begin(std)
 
@@ -134,91 +137,6 @@ template<> struct negate<void> {
   template<typename T>
   constexpr auto operator()(T&& x) const ->
       decltype(-forward<T>(x));
-  using is_transparent = true_type;
-};
-
-
-template<typename T = void> struct equal_to {
-  constexpr bool operator()(const T& x, const T& y) const { return x == y; }
-  using first_argument_type = T;
-  using second_argument_type = T;
-  using result_type = bool;
-};
-
-template<typename T = void> struct not_equal_to {
-  constexpr bool operator()(const T& x, const T& y) const { return x != y; }
-  using first_argument_type = T;
-  using second_argument_type = T;
-  using result_type = bool;
-};
-
-template<typename T = void> struct greater {
-  constexpr bool operator()(const T& x, const T& y) const { return x > y; }
-  using first_argument_type = T;
-  using second_argument_type = T;
-  using result_type = bool;
-};
-
-template<typename T = void> struct less {
-  constexpr bool operator()(const T& x, const T& y) const { return x < y; }
-  using first_argument_type = T;
-  using second_argument_type = T;
-  using result_type = bool;
-};
-
-template<typename T = void> struct greater_equal {
-  constexpr bool operator()(const T& x, const T& y) const { return x >= y; }
-  using first_argument_type = T;
-  using second_argument_type = T;
-  using result_type = bool;
-};
-
-template<typename T = void> struct less_equal {
-  constexpr bool operator()(const T& x, const T& y) const { return x <= y; }
-  using first_argument_type = T;
-  using second_argument_type = T;
-  using result_type = bool;
-};
-
-template<> struct equal_to<void> {
-  template<typename T, typename U>
-  auto operator()(T&& x, U&& y) const ->
-      decltype(forward<T>(x) == forward<U>(y));
-  using is_transparent = true_type;
-};
-
-template<> struct not_equal_to<void> {
-  template<typename T, typename U>
-  auto operator()(T&& x, U&& y) const ->
-      decltype(forward<T>(x) != forward<U>(y));
-  using is_transparent = true_type;
-};
-
-template<> struct greater<void> {
-  template<typename T, typename U>
-  auto operator()(T&& x, U&& y) const ->
-      decltype(forward<T>(x) > forward<U>(y));
-  using is_transparent = true_type;
-};
-
-template<> struct less<void> {
-  template<typename T, typename U>
-  auto operator()(T&& x, U&& y) const ->
-      decltype(forward<T>(x) < forward<U>(y));
-  using is_transparent = true_type;
-};
-
-template<> struct greater_equal<void> {
-  template<typename T, typename U>
-  auto operator()(T&& x, U&& y) const ->
-      decltype(forward<T>(x) >= forward<U>(y));
-  using is_transparent = true_type;
-};
-
-template<> struct less_equal<void> {
-  template<typename T, typename U>
-  auto operator()(T&& x, U&& y) const ->
-      decltype(forward<T>(x) <= forward<U>(y));
   using is_transparent = true_type;
 };
 
@@ -539,7 +457,41 @@ class bad_function_call
 
 
 template<class> class function;  // Undefined.
-template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>;
+
+template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>
+: public impl::fnhelper<R(ArgTypes...)>
+{
+ public:
+  function() noexcept;
+  function(nullptr_t) noexcept;
+  function(const function&);
+  function(function&&);
+  template<typename F> function(F);
+  template<typename A> function(allocator_arg_t, const A&) noexcept;
+  template<typename A> function(allocator_arg_t, const A&, nullptr_t) noexcept;
+  template<typename A> function(allocator_arg_t, const A&, const function&);
+  template<typename A> function(allocator_arg_t, const A&, function&&);
+  template<typename A, typename F> function(allocator_arg_t, const A&, F);
+
+  function& operator=(const function&);
+  function& operator=(function&&);
+  function& operator=(nullptr_t);
+  template<typename F> function& operator=(F&&);
+  template<typename F> function& operator=(reference_wrapper<F>&) noexcept;
+
+  ~function() noexcept;
+
+  void swap(function&) noexcept;
+  template<typename F, typename A> void assign(F&&, const A&);
+
+  explicit operator bool() const noexcept;
+
+  R operator()(ArgTypes...);
+
+  const std::type_info& target_type() const noexcept;
+  template<typename T> T* target() noexcept;
+  template<typename T> const T* target() const noexcept;
+};
 
 template<typename R, typename... ArgTypes>
 void swap(function<R(ArgTypes...)>&, function<R(ArgTypes...)>&);
@@ -552,6 +504,10 @@ template<typename R, typename... ArgTypes>
 bool operator!=(const function<R(ArgTypes...)>&, nullptr_t);
 template<typename R, typename... ArgTypes>
 bool operator!=(nullptr_t, const function<R(ArgTypes...)>&);
+
+template<typename R, typename... ArgTypes, typename Alloc>
+struct uses_allocator<function<R(ArgTypes...)>, Alloc> : true_type {};
+
 
 template<typename T> struct hash;
 template<> struct hash<bool>;
