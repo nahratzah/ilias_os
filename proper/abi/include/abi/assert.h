@@ -9,7 +9,7 @@ namespace __cxxabiv1 {
 _cdecl_begin
 
 void _assert_fail(const char*, const char*, int, const char*,
-                  const char*) __attribute__((__noreturn__));
+                  const char*) noexcept __attribute__((__noreturn__));
 
 inline void _assert_test(bool, const char*, const char*, int,
                          const char*, const char*) noexcept;
