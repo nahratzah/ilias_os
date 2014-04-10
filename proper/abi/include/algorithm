@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <cstring>
+#include <functional>
 #include <initializer_list>
 #include <iterator>
 #include <new>
@@ -285,6 +286,13 @@ pair<OutputIterator1, OutputIterator2> partition_copy(InputIterator,
 
 template<typename ForwardIterator, typename Predicate>
 ForwardIterator partition_point(ForwardIterator, ForwardIterator, Predicate);
+
+
+template<typename RandomAccessIterator>
+void sort(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void sort(RandomAccessIterator, RandomAccessIterator, Predicate);
 
 
 template<typename T>
