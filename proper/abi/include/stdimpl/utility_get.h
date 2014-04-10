@@ -26,7 +26,13 @@ template<> struct pair_getter<0> {
   template<typename T>
   static constexpr auto get(T&& p) noexcept ->
       add_rvalue_reference_t<typename T::first_type> {
-    return p.first;
+    using result_type = add_rvalue_reference_t<typename T::first_type>;
+
+    /*
+     * This is forward<T>, but since the header declaring forward
+     * depends on us, we execute its step manually.
+     */
+    return static_cast<result_type>(p.first);
   }
 };
 
@@ -46,7 +52,13 @@ template<> struct pair_getter<1> {
   template<typename T>
   static constexpr auto get(T&& p) noexcept ->
       add_rvalue_reference_t<typename T::second_type> {
-    return p.second;
+    using result_type = add_rvalue_reference_t<typename T::second_type>;
+
+    /*
+     * This is forward<T>, but since the header declaring forward
+     * depends on us, we execute its step manually.
+     */
+    return static_cast<result_type>(p.second);
   }
 };
 
