@@ -11,6 +11,8 @@
 #include <stdimpl/invoke.h>
 #include <stdimpl/member_check.h>
 #include <stdimpl/functional_comparators.h>
+#include <stdimpl/allocator_cloneable.h>
+#include <stdimpl/function.h>
 
 _namespace_begin(std)
 
@@ -465,7 +467,7 @@ template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>
   function() noexcept;
   function(nullptr_t) noexcept;
   function(const function&);
-  function(function&&);
+  function(function&&) noexcept;
   template<typename F> function(F);
   template<typename A> function(allocator_arg_t, const A&) noexcept;
   template<typename A> function(allocator_arg_t, const A&, nullptr_t) noexcept;
@@ -486,11 +488,69 @@ template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>
 
   explicit operator bool() const noexcept;
 
-  R operator()(ArgTypes...);
+  R operator()(ArgTypes...) const;
 
   const std::type_info& target_type() const noexcept;
   template<typename T> T* target() noexcept;
   template<typename T> const T* target() const noexcept;
+
+ private:
+  using functor_wrapper_t = impl::functor_wrapper<R(ArgTypes...)>;
+  using functor_wrapper_ptr =
+      impl::allocator_cloneable::pointer_type<functor_wrapper_t>;
+
+  using special_ptr_p_type = aligned_union_t<
+      ((sizeof(functor_wrapper_ptr) - sizeof(const type_info*)) /
+       sizeof(const type_info*) * sizeof(const type_info*)),
+      void*,
+      int (function::*),
+      int (function::*)(),
+      uintmax_t>;
+  using fn_type = R(*)(const special_ptr_p_type&, ArgTypes...);
+
+  bool is_special() const noexcept { return fn_ != nullptr; }
+  static R bad_function_call_fn(const special_ptr_p_type&, ArgTypes...);
+  template<typename Functor> R simple_function_call(const special_ptr_p_type&,
+                                                    ArgTypes...);
+
+  struct special_ptr {
+    special_ptr_p_type p;
+    const type_info* ti;
+  };
+
+  union data_type {
+    static_assert(is_pod<special_ptr>::value, "Special case must be a pod.");
+
+    data_type() noexcept : data_type(special_ptr{ nullptr, nullptr }) {};
+
+    fn_type assign(bool, nullptr_t) noexcept;
+    fn_type assign(bool, functor_wrapper_ptr) noexcept;
+    fn_type assign(bool, special_ptr, fn_type) noexcept;
+
+    template<typename F> fn_type assign(bool, F&&);
+
+    template<typename F, typename Alloc>
+    auto assign(bool, F&&, Alloc&&) ->
+        enable_if_t<!(is_trivially_copyable<decay_t<F>>::value &&
+                      is_trivially_destructible<decay_t<F>>::value &&
+                      sizeof(decay_t<F>) <= sizeof(special_ptr_p_type) &&
+                      alignof(special_ptr_p_type) % alignof(F) == 0),
+                    fn_type>;
+
+    template<typename F, typename Alloc>
+    auto assign(bool, F&&, Alloc&&) noexcept ->
+        enable_if_t<(is_trivially_copyable<decay_t<F>>::value &&
+                     is_trivially_destructible<decay_t<F>>::value &&
+                     sizeof(decay_t<F>) <= sizeof(special_ptr_p_type) &&
+                     alignof(special_ptr_p_type) % alignof(F) == 0),
+                    fn_type>;
+
+    special_ptr special;
+    functor_wrapper_ptr functor;
+  };
+
+  fn_type fn_ = nullptr;
+  data_type data_;
 };
 
 template<typename R, typename... ArgTypes>

@@ -484,4 +484,288 @@ _bind::mem_fn<R T::*> mem_fn(R T::*fn) {
 }
 
 
+template<typename R, typename... ArgTypes>
+function<R(ArgTypes...)>::function() noexcept
+: fn_(&bad_function_call_fn),
+  data_()
+{}
+
+template<typename R, typename... ArgTypes>
+function<R(ArgTypes...)>::function(nullptr_t) noexcept
+: function()
+{}
+
+template<typename R, typename... ArgTypes>
+function<R(ArgTypes...)>::function(const function& other)
+: function(allocator_arg_t(), allocator<void>(), other)
+{}
+
+template<typename R, typename... ArgTypes>
+function<R(ArgTypes...)>::function(function&& other) noexcept
+: function()
+{
+  swap(other);
+}
+
+template<typename R, typename... ArgTypes>
+template<typename F>
+function<R(ArgTypes...)>::function(F f)
+: function()
+{
+  fn_ = data_.assign(is_special(), forward<F>(f));
+}
+
+template<typename R, typename... ArgTypes>
+template<typename A>
+function<R(ArgTypes...)>::function(allocator_arg_t, const A&) noexcept
+: function()
+{}
+
+template<typename R, typename... ArgTypes>
+template<typename A>
+function<R(ArgTypes...)>::function(allocator_arg_t, const A&, nullptr_t)
+    noexcept
+: function()
+{}
+
+template<typename R, typename... ArgTypes>
+template<typename A>
+function<R(ArgTypes...)>::function(allocator_arg_t, const A& alloc,
+    const function& other)
+: function()
+{
+  if (other.is_special()) {
+    fn_ = data_.assign(is_special(), other.data_.special);
+  } else {
+    fn_ = data_.assign(is_special(),
+                       functor_wrapper_t::clone(*other.data_.functor, alloc));
+  }
+}
+
+template<typename R, typename... ArgTypes>
+template<typename A>
+function<R(ArgTypes...)>::function(allocator_arg_t, const A& alloc,
+    function&& other)
+: function()
+{
+  if (other.is_special()) {
+    fn_ = data_.assign(is_special(), move(other.data_.special));
+  } else {
+    fn_ = data_.assign(is_special(),
+                       functor_wrapper_t::clone(move(*other.data_.functor),
+                                                alloc));
+  }
+  other.reset();
+}
+
+template<typename R, typename... ArgTypes>
+template<typename A, typename F>
+function<R(ArgTypes...)>::function(allocator_arg_t, const A& alloc, F f)
+: function()
+{
+  fn_ = data_.assign(is_special(), forward<F>(f), alloc);
+}
+
+template<typename R, typename... ArgTypes>
+auto function<R(ArgTypes...)>::operator=(const function& other) -> function& {
+  if (other.is_special()) {
+    fn_ = data_.assign(is_special(), other.data_.special);
+  } else {
+    fn_ = data_.assign(is_special(),
+                       functor_wrapper_t::clone(*other.data_.functor,
+                                                allocator<void>()));
+  }
+  return *this;
+}
+
+template<typename R, typename... ArgTypes>
+auto function<R(ArgTypes...)>::operator=(function&& other) -> function& {
+  function(forward<function>(other)).swap(*this);
+  return *this;
+}
+
+template<typename R, typename... ArgTypes>
+auto function<R(ArgTypes...)>::operator=(nullptr_t) -> function& {
+  fn_ = data_.assign(is_special(), nullptr);
+  return *this;
+}
+
+template<typename R, typename... ArgTypes>
+template<typename F>
+auto function<R(ArgTypes...)>::operator=(F&& f) -> function& {
+  fn_ = data_.assign(is_special(), forward<F>(f));
+  return *this;
+}
+
+template<typename R, typename... ArgTypes>
+template<typename F>
+auto function<R(ArgTypes...)>::operator=(reference_wrapper<F>& f) noexcept ->
+    function& {
+  function(f).swap(*this);
+  return *this;
+}
+
+template<typename R, typename... ArgTypes>
+function<R(ArgTypes...)>::~function() noexcept {
+  fn_ = data_.assign(is_special(), nullptr);
+}
+
+template<typename R, typename... ArgTypes>
+void function<R(ArgTypes...)>::swap(function& other) noexcept {
+  using _namespace(std)::swap;
+
+  const fn_type my_fn = fn_;
+  const fn_type other_fn = other.fn_;
+
+  if (other.is_special()) {
+    special_ptr tmp = other.data_.special;
+    if (is_special())
+      other.fn_ = other.assign(true, move(data_.functor));
+    else
+      other.fn_ = other.assign(true, data_.special, my_fn);
+    fn_ = assign(is_special(), tmp, other_fn);
+  } else if (!is_special()) {
+    swap(data_.functor, other.data_.functor);
+    /* fn_ is null for both. */
+  } else {
+    /* this is special, other is not special. */
+    special_ptr tmp = data_.special;
+    fn_ = assign(true, move(other.data_.functor));
+    other.fn_ = other.assign(false, tmp, my_fn);
+  }
+}
+
+template<typename R, typename... ArgTypes>
+template<typename F, typename A>
+void function<R(ArgTypes...)>::assign(F&& f, const A& a) {
+  function(allocator_arg_t(), a, forward<F>(f)).swap(*this);
+}
+
+template<typename R, typename... ArgTypes>
+function<R(ArgTypes...)>::operator bool() const noexcept {
+  return !is_special() || data_.special.ti != nullptr;
+}
+
+template<typename R, typename... ArgTypes>
+auto function<R(ArgTypes...)>::operator()(ArgTypes... args) const -> R {
+  if (is_special())
+    return impl::invoke(fn_, data_.special, forward<ArgTypes>(args)...);
+  else
+    return impl::invoke(*data_.functor, forward<ArgTypes>(args)...);
+}
+
+template<typename R, typename... ArgTypes>
+auto function<R(ArgTypes...)>::target_type() const noexcept ->
+    const type_info& {
+  if (is_special())
+    return (data_.special.ti ? *data_.special.ti : typeid(void));
+  return data_.functor->ti;
+}
+
+template<typename R, typename... ArgTypes>
+template<typename T>
+auto function<R(ArgTypes...)>::target() noexcept -> T* {
+  if (is_special()) {
+    return (target_type() == typeid(T) ?
+            reinterpret_cast<T*>(&data_.special.p) :
+            nullptr);
+  }
+  return static_cast<T*>(data_.functor->get_impl_pointer(typeid(T)));
+}
+
+template<typename R, typename... ArgTypes>
+template<typename T>
+auto function<R(ArgTypes...)>::target() const noexcept -> const T* {
+  if (is_special()) {
+    return (target_type() == typeid(T) ?
+            reinterpret_cast<const T*>(&data_.special.p) :
+            nullptr);
+  }
+  return static_cast<T*>(data_.functor->get_impl_pointer(typeid(T)));
+}
+
+template<typename R, typename... ArgTypes>
+auto function<R(ArgTypes...)>::bad_function_call_fn(
+    const special_ptr_p_type&, ArgTypes...) -> R {
+  throw bad_function_call();
+}
+
+template<typename R, typename... ArgTypes>
+template<typename Functor>
+auto function<R(ArgTypes...)>::simple_function_call(
+    const special_ptr_p_type& f, ArgTypes... args) -> R {
+  return impl::invoke(static_cast<Functor&>(f),
+                      forward<ArgTypes>(args)...);
+}
+
+
+template<typename R, typename... ArgTypes>
+auto function<R(ArgTypes...)>::data_type::assign(bool is_special, nullptr_t)
+    noexcept -> fn_type {
+  special_ptr sp;
+  sp.ti = nullptr;
+  memset(&sp.p, 0, sizeof(sp.p));
+  return assign(is_special, sp, &bad_function_call_fn);
+}
+
+template<typename R, typename... ArgTypes>
+auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
+                                                 functor_wrapper_ptr p)
+    noexcept -> fn_type {
+  if (is_special)
+    new (&functor) functor_wrapper_ptr(move(p));
+  else
+    functor = move(p);
+  return nullptr;
+}
+
+template<typename R, typename... ArgTypes>
+auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
+                                                 special_ptr p, fn_type fn)
+    noexcept -> fn_type {
+  if (!is_special) functor.~functor_wrapper_ptr();
+  special = move(p);
+  return fn;
+}
+
+template<typename R, typename... ArgTypes>
+template<typename F>
+auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
+                                                 F&& f) -> fn_type {
+  return assign(is_special, forward<F>(f), std::allocator<void>());
+}
+
+template<typename R, typename... ArgTypes>
+template<typename F, typename Alloc>
+auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
+                                                 F&& f, Alloc&& alloc) ->
+    enable_if_t<!(is_trivially_copyable<decay_t<F>>::value &&
+                  is_trivially_destructible<decay_t<F>>::value &&
+                  sizeof(decay_t<F>) <= sizeof(special_ptr_p_type) &&
+                  alignof(special_ptr_p_type) % alignof(F) == 0),
+                fn_type> {
+  using wrapper =
+      impl::functor_wrapper_impl<R(ArgTypes...), remove_const_t<F>>;
+
+  return assign(is_special, functor_wrapper_t::clone(wrapper(forward<F>(f)),
+                                                     forward<Alloc>(alloc)));
+}
+
+template<typename R, typename... ArgTypes>
+template<typename F, typename Alloc>
+auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
+                                                 F&& f,
+                                                 Alloc&& alloc) noexcept ->
+    enable_if_t<(is_trivially_copyable<decay_t<F>>::value &&
+                 is_trivially_destructible<decay_t<F>>::value &&
+                 sizeof(decay_t<F>) <= sizeof(special_ptr_p_type) &&
+                 alignof(special_ptr_p_type) % alignof(F) == 0),
+                fn_type> {
+  special_ptr sp;
+  sp.ti = &typeid(f);
+  memcpy(&sp.p, &f, sizeof(f));
+  return assign(is_special, move(sp), &simple_function_call<decay_t<F>>);
+}
+
+
 _namespace_end(std)

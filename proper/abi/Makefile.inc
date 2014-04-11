@@ -32,6 +32,7 @@ ABI_SRCS += abi/src/string.cc
 ABI_SRCS += abi/src/system_error.cc
 ABI_SRCS += abi/src/typeinfo.cc
 ABI_SRCS += abi/src/vector.cc
+ABI_SRCS += abi/src/stdimpl_allocator_cloneable.cc
 ABI_SRCS += abi/src/stdimpl_simple_bitset.cc
 
 SRCS_32 += abi/i386/divdi3.s
