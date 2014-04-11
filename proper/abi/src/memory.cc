@@ -6,17 +6,21 @@
 _namespace_begin(std)
 
 
-void* align(size_t alignment, size_t size, void*& ptr, size_t space) {
+void* align(size_t alignment, size_t size, void*& ptr, size_t& space) {
+  if (ptr == nullptr) return nullptr;
+  if (size == 0) size = 1;
   if (alignment == 0) alignment = 1;
   if (!abi::ext::is_pow2(alignment)) return nullptr;
   if (size > space) return nullptr;
 
-  uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
-  uintptr_t aligned_addr = (addr + alignment - 1U) & ~uintptr_t(alignment);
+  const uintptr_t addr = reinterpret_cast<uintptr_t>(ptr);
+  const uintptr_t aligned_addr = (addr + alignment - 1U) &
+                                 ~uintptr_t(alignment);
   if (aligned_addr - addr > space - size) return nullptr;
 
   space -= size + (aligned_addr - addr);
-  return ptr = reinterpret_cast<void*>(aligned_addr);
+  ptr = reinterpret_cast<void*>(aligned_addr + size);
+  return reinterpret_cast<void*>(aligned_addr);
 }
 
 

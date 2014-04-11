@@ -72,7 +72,7 @@ void undeclare_no_pointers(char*, size_t);
 pointer_safety get_pointer_safety() noexcept;
 
 
-void* align(size_t, size_t, void*&, size_t);
+void* align(size_t, size_t, void*&, size_t&);
 
 
 constexpr allocator_arg_t allocator_arg = allocator_arg_t();
