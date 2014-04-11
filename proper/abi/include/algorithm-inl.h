@@ -1297,48 +1297,48 @@ auto max(const T& a, const T& b, Comp cmp) -> const T& {
 
 template<typename T>
 auto min(initializer_list<T> il) -> T {
-  T* ptr = nullptr;
-  for (T& i : il) {
+  const T* ptr = nullptr;
+  for (const T& i : il) {
     if (ptr == nullptr)
-      ptr = &i;
+      ptr = addresof(i);
     else
-      ptr = &min(*ptr, i);
+      ptr = addresof(min(*ptr, i));
   }
   return *ptr;
 }
 
 template<typename T>
 auto max(initializer_list<T> il) -> T {
-  T* ptr = nullptr;
-  for (T& i : il) {
+  const T* ptr = nullptr;
+  for (const T& i : il) {
     if (ptr == nullptr)
-      ptr = &i;
+      ptr = addressof(i);
     else
-      ptr = &max(*ptr, i);
+      ptr = addressof(max(*ptr, i));
   }
   return *ptr;
 }
 
 template<typename T, typename Comp>
 auto min(initializer_list<T> il, Comp cmp) -> T {
-  T* ptr = nullptr;
-  for (T& i : il) {
+  const T* ptr = nullptr;
+  for (const T& i : il) {
     if (ptr == nullptr)
-      ptr = &i;
+      ptr = addressof(i);
     else
-      ptr = &min(*ptr, i, cmp);
+      ptr = addressof(min(*ptr, i, cmp));
   }
   return *ptr;
 }
 
 template<typename T, typename Comp>
 auto max(initializer_list<T> il, Comp cmp) -> T {
-  T* ptr = nullptr;
-  for (T& i : il) {
+  const T* ptr = nullptr;
+  for (const T& i : il) {
     if (ptr == nullptr)
-      ptr = &i;
+      ptr = addressof(i);
     else
-      ptr = &max(*ptr, i, cmp);
+      ptr = addressof(max(*ptr, i, cmp));
   }
   return *ptr;
 }
