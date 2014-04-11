@@ -143,16 +143,41 @@ template<typename T> struct is_unsigned
 template<typename T, typename... Args> struct _is_constructible
 : integral_constant<bool, __is_constructible(T, Args...)> {};
 template<typename T, typename... Args> struct is_constructible
-: is_constructible<remove_cv_t<T>, Args...> {};
-template<typename T> struct is_default_constructible;  // XXX
-template<typename T> struct is_copy_constructible;  // XXX
-template<typename T> struct is_move_constructible;  // XXX
+: _is_constructible<remove_cv_t<T>, Args...> {};
+
+template<typename T> struct is_default_constructible
+: is_constructible<T> {};
+
+template<typename T> struct is_copy_constructible
+: is_constructible<T, const remove_cv_t<remove_reference_t<T>>&> {};
+
+template<typename T> struct is_move_constructible
+: is_constructible<T, remove_cv_t<remove_reference_t<T>>&&> {};
 
 
-template<typename T, typename U> struct is_assignable;  // XXX
-template<typename T> struct is_copy_assignable;  // XXX
-template<typename T> struct is_move_assignable;  // XXX
-template<typename T> struct is_destructible;  // XXX
+template<typename T, typename U> struct _is_assignable_support
+{ static T& t(); static U& u(); };
+template<typename T, typename U, typename = int> struct _is_assignable
+: false_type {};
+template<typename T, typename U> struct _is_assignable<T, U,
+    decltype((_is_assignable_support<T, U>::t() =
+              _is_assignable_support<T, U>::u()), int(0))>
+: true_type {};
+template<typename T, typename U> struct is_assignable
+: _is_assignable<remove_cv_t<T>, U> {};
+
+template<typename T> struct is_copy_assignable
+: is_assignable<T, const remove_cv_t<remove_reference_t<T>>&> {};
+
+template<typename T> struct is_move_assignable
+: is_assignable<T, remove_cv_t<remove_reference_t<T>>&&> {};
+
+template<typename T> struct _is_destructible_support { static T& v(); };
+template<typename T, typename = int> struct _is_destructible : false_type {};
+template<typename T> struct _is_destructible<T,
+    decltype(_is_destructible_support<T>::v().~T(), int(0))> : true_type {};
+template<typename T> struct is_destructible
+: _is_destructible<remove_cv_t<T>>::type {};
 
 
 template<typename T, typename... Args> struct _is_trivially_constructible
@@ -160,14 +185,26 @@ template<typename T, typename... Args> struct _is_trivially_constructible
 template<typename T, typename... Args> struct is_trivially_constructible
 : _is_trivially_constructible<remove_cv_t<T>, Args...> {};
 
-template<typename T> struct is_trivially_default_constructible;  // XXX
-template<typename T> struct is_trivially_copy_constructible;  // XXX
-template<typename T> struct is_trivially_move_constructible;  // XXX
+template<typename T> struct is_trivially_default_constructible
+: is_trivially_constructible<T> {};
+
+template<typename T> struct is_trivially_copy_constructible
+: is_trivially_constructible<T, const remove_reference_t<T>&> {};
+
+template<typename T> struct is_trivially_move_constructible
+: is_trivially_constructible<T, remove_reference_t<T>&&> {};
 
 
-template<typename T, typename... Args> struct is_trivially_assignable;  // XXX
-template<typename T> struct is_trivially_copy_assignable;  // XXX
-template<typename T> struct is_trivially_move_assignable;  // XXX
+template<typename T, typename U> struct _is_trivially_assignable
+: integral_constant<bool, __is_trivially_assignable(T, U)> {};
+template<typename T, typename U> struct is_trivially_assignable
+: _is_trivially_assignable<remove_cv_t<T>, U> {};
+
+template<typename T> struct is_trivially_copy_assignable
+: is_trivially_assignable<T, const remove_reference_t<T>&> {};
+
+template<typename T> struct is_trivially_move_assignable
+: is_trivially_assignable<T, remove_reference_t<T>&&> {};
 
 template<typename T> struct _is_trivially_destructible
 : integral_constant<bool, __has_trivial_destructor(T)> {};
@@ -454,7 +491,7 @@ template<typename T> struct underlying_type
 
 template<typename T> class result_of;  // Not defined (specialized below).
 template<typename F, typename... ArgTypes> class result_of<F(ArgTypes...)>
-{ using type = F; };
+{ public: using type = F; };
 
 
 static_assert(rank<int>::value == 0, "std::rank error");

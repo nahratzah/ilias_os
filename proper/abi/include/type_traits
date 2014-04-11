@@ -74,7 +74,7 @@ template<typename T> struct is_trivially_default_constructible;
 template<typename T> struct is_trivially_copy_constructible;
 template<typename T> struct is_trivially_move_constructible;
 
-template<typename T, typename... Args> struct is_trivially_assignable;
+template<typename T, typename U> struct is_trivially_assignable;
 template<typename T> struct is_trivially_copy_assignable;
 template<typename T> struct is_trivially_move_assignable;
 template<typename T> struct is_trivially_destructible;
