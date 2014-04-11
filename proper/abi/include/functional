@@ -495,7 +495,8 @@ template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>
   template<typename T> const T* target() const noexcept;
 
  private:
-  using functor_wrapper_t = impl::functor_wrapper<R(ArgTypes...)>;
+  using functor_wrapper_t =
+      impl::functor_wrapper<R(impl::function_transform_to_ref_t<ArgTypes>...)>;
   using functor_wrapper_ptr =
       impl::allocator_cloneable::pointer_type<functor_wrapper_t>;
 
@@ -506,12 +507,16 @@ template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>
       int (function::*),
       int (function::*)(),
       uintmax_t>;
-  using fn_type = R(*)(const special_ptr_p_type&, ArgTypes...);
+  using fn_type = R(*)(const special_ptr_p_type&,
+                       impl::function_transform_to_ref_t<ArgTypes>...);
 
   bool is_special() const noexcept { return fn_ != nullptr; }
-  static R bad_function_call_fn(const special_ptr_p_type&, ArgTypes...);
-  template<typename Functor> R simple_function_call(const special_ptr_p_type&,
-                                                    ArgTypes...);
+  static R bad_function_call_fn(
+      const special_ptr_p_type&,
+      impl::function_transform_to_ref_t<ArgTypes>...);
+  template<typename Functor> R simple_function_call(
+      const special_ptr_p_type&,
+      impl::function_transform_to_ref_t<ArgTypes>...);
 
   struct special_ptr {
     special_ptr_p_type p;

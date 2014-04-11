@@ -686,14 +686,16 @@ auto function<R(ArgTypes...)>::target() const noexcept -> const T* {
 
 template<typename R, typename... ArgTypes>
 auto function<R(ArgTypes...)>::bad_function_call_fn(
-    const special_ptr_p_type&, ArgTypes...) -> R {
+    const special_ptr_p_type&,
+    impl::function_transform_to_ref_t<ArgTypes>...) -> R {
   throw bad_function_call();
 }
 
 template<typename R, typename... ArgTypes>
 template<typename Functor>
 auto function<R(ArgTypes...)>::simple_function_call(
-    const special_ptr_p_type& f, ArgTypes... args) -> R {
+    const special_ptr_p_type& f,
+    impl::function_transform_to_ref_t<ArgTypes>... args) -> R {
   return impl::invoke(static_cast<Functor&>(f),
                       forward<ArgTypes>(args)...);
 }

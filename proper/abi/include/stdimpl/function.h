@@ -55,6 +55,28 @@ class functor_wrapper_impl<R(ArgTypes...), F> final
 };
 
 
+/*
+ * A small struct, that transforms non-reference values into references.
+ */
+template<typename T>
+struct function_transform_to_ref {
+  using type = T&&;
+};
+
+template<typename T>
+struct function_transform_to_ref<T&> {
+  using type = T&;
+};
+
+template<typename T>
+struct function_transform_to_ref<T&&> {
+  using type = T&&;
+};
+
+template<typename T> using function_transform_to_ref_t =
+    typename function_transform_to_ref<T>::type;
+
+
 } /* namespace std::impl */
 _namespace_end(std)
 
