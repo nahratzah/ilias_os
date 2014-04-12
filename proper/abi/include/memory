@@ -16,10 +16,6 @@
 #include <stdimpl/unique_ptr_support.h>
 #include <stdimpl/functional_comparators.h>
 
-/*
- * XXX: pointer_traits, allocator_traits are not very pretty...
- * Consider refactoring them.
- */
 _namespace_begin(std)
 
 
@@ -37,29 +33,40 @@ class __attribute__((deprecated("auto_ptr is deprecated in C++11, "
 
 
 template<typename Ptr> struct pointer_traits {
- private:
-  template<typename P> static auto select_difftype_(P = declval<Ptr>()) ->
-      typename P::difference_type;
-  static auto select_difftype_(...) -> ptrdiff_t;
-
  public:
   using pointer = Ptr;
-  using element_type = typename pointer::element_type;
-  using difference_type = decltype(select_difftype_());
+  using element_type = impl::pointer::select_element_type<Ptr>;
+  using difference_type = typename conditional_t<
+      impl::pointer::member_type_check_difference_type<Ptr>::value,
+      Ptr,
+      impl::pointer::difference_type_default<ptrdiff_t>>::difference_type;
 
   template<typename T> using rebind =
-      typename impl::pointer_rebind<T, pointer>::type;
+      typename impl::pointer::resolve_rebind<T, Ptr>;
 
-  inline pointer pointer_to(element_type& r) { return pointer::pointer_to(r); }
+ private:
+  using pointer_to_arg = conditional_t<is_void<element_type>::value,
+                                       impl::pointer::cannot_instantiate_me,
+                                       element_type>;
+
+ public:
+  pointer pointer_to(pointer_to_arg& r) { return pointer::pointer_to(r); }
 };
 
 template<typename T> struct pointer_traits<T*> {
+ public:
   using pointer = T*;
   using element_type = T;
   using difference_type = ptrdiff_t;
   template<typename U> using rebind = U*;
 
-  inline pointer pointer_to(element_type& r) { return addressof(r); }
+ private:
+  using pointer_to_arg = conditional_t<is_void<element_type>::value,
+                                       impl::pointer::cannot_instantiate_me,
+                                       element_type>;
+
+ public:
+  pointer pointer_to(pointer_to_arg& r) { return addressof(r); }
 };
 
 
@@ -80,43 +87,91 @@ constexpr allocator_arg_t allocator_arg = allocator_arg_t();
 
 template<typename Alloc> struct allocator_traits {
   using value_type = typename Alloc::value_type;
-  using reference = typename impl::alloc_traits<Alloc>::reference;
-  using const_reference = typename impl::alloc_traits<Alloc>::const_reference;
-  using pointer = typename impl::alloc_traits<Alloc>::pointer;
-  using const_pointer = typename impl::alloc_traits<Alloc>::const_pointer;
-  using size_type = typename impl::alloc_traits<Alloc>::size_type;
-  using difference_type = typename impl::alloc_traits<Alloc>::difference_type;
-  using void_pointer = typename impl::alloc_traits<Alloc>::void_pointer;
-  using const_void_pointer =
-      typename impl::alloc_traits<Alloc>::const_void_pointer;
+  using pointer = typename impl::allocator::traits_select<
+      impl::allocator::member_type_check_pointer<Alloc>,
+      Alloc>::pointer;
+  using const_pointer = typename impl::allocator::traits_select<
+      impl::allocator::member_type_check_const_pointer<Alloc>,
+      Alloc>::const_pointer;
 
-  using propagate_on_container_copy_assignment = typename
-      impl::alloc_traits<Alloc>::propagate_on_container_copy_assignment;
-  using propagate_on_container_move_assignment = typename
-      impl::alloc_traits<Alloc>::propagate_on_container_move_assignment;
-  using propagate_on_container_swap = typename
-      impl::alloc_traits<Alloc>::propagate_on_container_swap;
+  using difference_type = typename conditional_t<
+      impl::allocator::member_type_check_difference_type<Alloc>::value,
+      Alloc,
+      pointer_traits<pointer>>::difference_type;
+  using size_type = typename conditional_t<
+      impl::allocator::member_type_check_size_type<Alloc>::value,
+      Alloc,
+      impl::allocator::size_type_for_difference_type<difference_type>
+      >::size_type;
 
-  template<typename T> using rebind_alloc = typename
-      impl::alloc_traits<Alloc>::template rebind_alloc<T>;
-  template<typename T> using rebind_traits =
-      allocator_traits<rebind_alloc<T>>;
+  using void_pointer = typename conditional_t<
+      impl::allocator::member_type_check_void_pointer<Alloc>::value,
+      Alloc,
+      impl::allocator::void_pointer_for_pointer<pointer, const_pointer>
+      >::void_pointer;
+  using const_void_pointer = typename conditional_t<
+      impl::allocator::member_type_check_const_void_pointer<Alloc>::value,
+      Alloc,
+      impl::allocator::void_pointer_for_pointer<pointer, const_pointer>
+      >::const_void_pointer;
 
-  static pointer allocate(Alloc& alloc, size_type,
-                          const_void_pointer = nullptr);
-  static void deallocate(Alloc& alloc, pointer p, size_type n)
-      noexcept(noexcept(alloc.deallocate(p, n)));
+  using propagate_on_container_copy_assignment = typename conditional_t<
+      impl::allocator::member_type_check_propagate_on_container_copy_assignment<Alloc>::value,
+      Alloc,
+      impl::allocator::alloc_traits_propagate_defaults
+      >::propagate_on_container_copy_assignment;
+  using propagate_on_container_move_assignment = typename conditional_t<
+      impl::allocator::member_type_check_propagate_on_container_move_assignment<Alloc>::value,
+      Alloc,
+      impl::allocator::alloc_traits_propagate_defaults
+      >::propagate_on_container_move_assignment;
+  using propagate_on_container_swap = typename conditional_t<
+      impl::allocator::member_type_check_propagate_on_container_swap<Alloc>::value,
+      Alloc,
+      impl::allocator::alloc_traits_propagate_defaults
+      >::propagate_on_container_swap;
 
-  template<typename T, typename... Args> static void construct(
-      Alloc& alloc, T* p, Args&&... args)
-      noexcept(noexcept(impl::alloc_traits<Alloc>::construct(
-          alloc, p, forward<Args>(args)...)));
+  template<typename T, typename... Args>
+  static void construct(Alloc& alloc, T* p, Args&&... args)
+      noexcept(noexcept(impl::allocator::construct(alloc, p,
+                                                  forward<Args>(args)...))) {
+    impl::allocator::construct(alloc, p, forward<Args>(args)...);
+  }
 
-  template<typename T> static void destroy(Alloc& alloc, T* p)
-      noexcept(noexcept(impl::alloc_traits<Alloc>::destroy(alloc, p)));
+  template<typename T>
+  static void destroy(Alloc& alloc, T* p)
+      noexcept(noexcept(impl::allocator::destroy(alloc, p))) {
+    impl::allocator::destroy(alloc, p);
+  }
 
-  static size_type max_size(const Alloc& a)
-      noexcept(noexcept(impl::alloc_traits<Alloc>::max_size(a)));
+  static pointer allocate(Alloc& alloc, size_type n)
+      noexcept(noexcept(alloc.allocate(n))) {
+    return alloc.allocate(n);
+  }
+
+  static pointer allocate(Alloc& alloc, size_type n, const_void_pointer hint)
+      noexcept(noexcept(impl::allocator::allocate<pointer>(alloc, move(n),
+                                                          move(hint)))) {
+    return impl::allocator::allocate<pointer>(alloc, move(n), move(hint));
+  }
+
+  static void deallocate(Alloc& alloc, pointer p, size_type n) noexcept {
+    alloc.deallocate(p, n);
+  }
+
+  static size_type max_size(const Alloc& alloc) noexcept {
+    return impl::allocator::max_size<size_type>(alloc);
+  }
+
+  static Alloc select_on_container_copy_construction(const Alloc& alloc)
+      noexcept(noexcept(
+        impl::allocator::select_on_container_copy_construction(alloc))) {
+    return impl::allocator::select_on_container_copy_construction(alloc);
+  }
+
+  template<typename T> using rebind_alloc =
+      impl::allocator::resolve_rebind<T, Alloc>;
+  template<typename T> using rebind_traits = allocator_traits<rebind_alloc<T>>;
 };
 
 

@@ -11,10 +11,9 @@ _namespace_begin(std)
 template<typename T> class pointer_traits;  // See <memory>
 
 namespace impl {
+namespace allocator {
 
 
-_MEMBER_TYPE_CHECK(reference);
-_MEMBER_TYPE_CHECK(const_reference);
 _MEMBER_TYPE_CHECK(pointer);
 _MEMBER_TYPE_CHECK(const_pointer);
 _MEMBER_TYPE_CHECK(void_pointer);
@@ -30,188 +29,143 @@ _MEMBER_FUNCTION_CHECK(construct);
 _MEMBER_FUNCTION_CHECK(destroy);
 _MEMBER_FUNCTION_CHECK(max_size);
 _MEMBER_FUNCTION_CHECK(allocate);
+_MEMBER_FUNCTION_CHECK(select_on_container_copy_construction);
 
 
 template<typename T>
 struct alloc_traits_fallback {
   using value_type = T;
-  using reference = value_type&;
-  using const_reference = const value_type&;
   using pointer = value_type*;
   using const_pointer = const value_type*;
+};
 
+template<typename Test, typename Alloc> using traits_select =
+    conditional_t<Test::value,
+                  Alloc,
+                  alloc_traits_fallback<typename Alloc::value_type>>;
+
+template<typename T> struct size_type_for_difference_type {
+  using size_type = make_unsigned_t<T>;
+};
+
+template<typename P, typename CP> struct void_pointer_for_pointer {
+  using void_pointer =
+      typename pointer_traits<P>::template rebind<void>;
+  using const_void_pointer =
+      typename pointer_traits<CP>::template rebind<void>;
+};
+
+struct alloc_traits_propagate_defaults {
   using propagate_on_container_copy_assignment = false_type;
   using propagate_on_container_move_assignment = false_type;
   using propagate_on_container_swap = false_type;
-
-  template<typename Pointer> struct ptr_derived {
-    using void_pointer =
-        typename pointer_traits<Pointer>::template rebind<void>;
-    using const_void_pointer =
-        typename pointer_traits<Pointer>::template rebind<const void>;
-    using difference_type =
-        typename pointer_traits<Pointer>::difference_type;
-  };
-
-  template<typename DiffType> struct difftype_derived {
-    using size_type = make_unsigned_t<DiffType>;
-  };
 };
 
 
-template<typename Alloc> struct alloc_traits {
- private:
-  using value_type = typename Alloc::value_type;
-  using fallback = alloc_traits_fallback<value_type>;
+template<typename Alloc, typename T, typename... Args>
+auto construct(Alloc& alloc, T* p, Args&&... args)
+    noexcept(noexcept(alloc.construct(p, forward<Args>(args)...))) ->
+    enable_if_t<member_function_check_construct<Alloc, T*, Args&&...>::value,
+                void> {
+  alloc.construct(p, forward<Args>(args)...);
+}
 
- public:
-  using reference =
-      typename conditional_t<member_type_check_reference<Alloc>::value,
-                             Alloc,
-                             fallback>::reference;
-  using const_reference =
-      typename conditional_t<member_type_check_const_reference<Alloc>::value,
-                             Alloc,
-                             fallback>::const_reference;
-  using pointer =
-      typename conditional_t<member_type_check_pointer<Alloc>::value,
-                             Alloc,
-                             fallback>::pointer;
-  using const_pointer =
-      typename conditional_t<member_type_check_const_pointer<Alloc>::value,
-                             Alloc,
-                             fallback>::const_pointer;
+template<typename Alloc, typename T, typename... Args>
+auto construct(Alloc& alloc, T* p, Args&&... args)
+    noexcept(noexcept(
+        new (static_cast<void*>(p)) T(forward<Args>(args)...))) ->
+    enable_if_t<!member_function_check_construct<Alloc, T*, Args&&...>::value,
+                void> {
+  new (static_cast<void*>(p)) T(forward<Args>(args)...);
+}
 
-  using void_pointer = typename conditional_t<
-          member_type_check_void_pointer<Alloc>::value,
-          Alloc,
-          typename fallback::template ptr_derived<pointer>>::void_pointer;
-  using const_void_pointer = typename conditional_t<
-          member_type_check_const_void_pointer<Alloc>::value,
-          Alloc,
-          typename fallback::template ptr_derived<pointer>>::
-              const_void_pointer;
-  using difference_type = typename conditional_t<
-          member_type_check_difference_type<Alloc>::value,
-          Alloc,
-          typename fallback::template ptr_derived<pointer>>::difference_type;
+template<typename Alloc, typename T>
+auto destroy(Alloc& alloc, T* p)
+    noexcept(noexcept(alloc.destroy(p))) ->
+    enable_if_t<member_function_check_destroy<Alloc, T*>::value,
+                void> {
+  alloc.destroy(p);
+}
 
-  using size_type = typename conditional_t<
-          member_type_check_size_type<Alloc>::value,
-          Alloc,
-          typename fallback::template difftype_derived<difference_type>>::
-              size_type;
+template<typename Alloc, typename T>
+auto destroy(Alloc& alloc, T* p)
+    noexcept(noexcept(p->~T())) ->
+    enable_if_t<!member_function_check_destroy<Alloc, T*>::value, void> {
+  if (p) p->~T();
+}
 
-  template<typename T, typename... Args>
-  static auto construct(Alloc& alloc, T* ptr, Args&&... args)
-      noexcept(noexcept(alloc.construct(ptr, forward<Args>(args)...))) ->
-      enable_if_t<
-          member_function_check_construct<Alloc, T*, Args...>::value,
-          void> {
-    alloc.construct(ptr, forward<Args>(args)...);
-  }
+template<typename Result, typename Alloc, typename Size, typename T>
+auto allocate(Alloc& alloc, Size&& n, T&& hint)
+    noexcept(noexcept(alloc.allocate(forward<Size>(n), forward<T>(hint)))) ->
+    enable_if_t<member_function_check_allocate<Alloc, Size&&, T&&>::value,
+                Result> {
+  return alloc.allocate(forward<Size>(n), forward<T>(hint));
+}
 
-  template<typename T, typename... Args>
-  static auto construct(Alloc&, T* ptr, Args&&... args)
-      noexcept(noexcept(new (ptr) value_type(forward<Args>(args)...))) ->
-      enable_if_t<
-          !member_function_check_construct<Alloc, T*, Args...>::value,
-          void> {
-    new (ptr) T(forward<Args>(args)...);
-  }
+template<typename Result, typename Alloc, typename Size, typename T>
+auto allocate(Alloc& alloc, Size&& n, T&&)
+    noexcept(noexcept(alloc.allocate(forward<Size>(n)))) ->
+    enable_if_t<!member_function_check_allocate<Alloc, Size&&, T&&>::value,
+                Result> {
+  return alloc.allocate(forward<Size>(n));
+}
 
-  template<typename T>
-  static auto destroy(Alloc& alloc, T* ptr)
-      noexcept(noexcept(alloc.destroy(ptr))) ->
-      enable_if_t<
-          member_function_check_destroy<Alloc, T*>::value,
-          void> {
-    alloc.destroy(ptr);
-  }
+template<typename Result, typename Alloc>
+auto max_size(const Alloc& alloc)
+    noexcept(noexcept(alloc.max_size())) ->
+    enable_if_t<member_function_check_max_size<Alloc>::value, Result> {
+  return alloc.max_size();
+}
 
-  template<typename T>
-  static auto destroy(Alloc&, T* ptr)
-      noexcept(noexcept(ptr->~value_type())) ->
-      enable_if_t<
-          !member_function_check_destroy<Alloc, T*>::value,
-          void> {
-    ptr->~T();
-  }
+template<typename Result, typename Alloc>
+constexpr auto max_size(const Alloc&) noexcept ->
+    enable_if_t<!member_function_check_max_size<Alloc>::value, Result> {
+  return numeric_limits<Result>::max();
+}
 
-  template<typename... Args>
-  static auto max_size(const Alloc& alloc, Args&&... args)
-      noexcept(noexcept(alloc.max_size(forward<Args>(args)...))) ->
-      enable_if_t<member_function_check_max_size<const Alloc, Args...>::value,
-                  size_type> {
-    return alloc.max_size(forward<Args>(args)...);
-  }
+template<typename Alloc>
+auto select_on_container_copy_construction(const Alloc& alloc)
+    noexcept(noexcept(alloc.select_on_container_copy_construction())) ->
+    enable_if_t<member_function_check_select_on_container_copy_construction<Alloc>::value,
+                Alloc> {
+  return alloc.select_on_container_copy_construction();
+}
 
-  template<typename... Args>
-  static constexpr auto max_size(const Alloc&, Args&&... args) noexcept ->
-      enable_if_t<!member_function_check_max_size<const Alloc, Args...>::value,
-                  size_type> {
-    return numeric_limits<size_type>::max(forward<Args>(args)...);
-  }
-
-  template<typename Hint>
-  static auto allocate(Alloc& alloc, size_type n, Hint&& hint)
-      noexcept(noexcept(alloc.allocate(n, forward<Hint>(hint)))) ->
-      enable_if_t<
-          member_function_check_allocate<Alloc, size_type, Hint>::value,
-          pointer>
-  {
-    return alloc.allocate(n, forward<Hint>(hint));
-  }
-
-  template<typename Hint>
-  static auto allocate(Alloc& alloc, size_type n, Hint&& hint)
-      noexcept(noexcept(alloc.allocate(n))) ->
-      enable_if_t<
-          !member_function_check_allocate<Alloc, size_type, Hint>::value,
-          pointer>
-  {
-    return alloc.allocate(n);
-  }
-
-  static auto deallocate(Alloc& alloc, pointer p, size_type n)
-      noexcept(noexcept(alloc.deallocate(p, n))) -> void
-  {
-    alloc.deallocate(p, n);
-  }
-
-  using propagate_on_container_move_assignment = typename conditional_t<
-      member_type_check_propagate_on_container_move_assignment<Alloc>::value,
-      Alloc,
-      fallback>::propagate_on_container_move_assignment;
-  using propagate_on_container_copy_assignment = typename conditional_t<
-      member_type_check_propagate_on_container_copy_assignment<Alloc>::value,
-      Alloc,
-      fallback>::propagate_on_container_copy_assignment;
-  using propagate_on_container_swap = typename conditional_t<
-      member_type_check_propagate_on_container_swap<Alloc>::value,
-      Alloc,
-      fallback>::propagate_on_container_swap;
+template<typename Alloc>
+auto select_on_container_copy_construction(const Alloc& alloc)
+    noexcept(noexcept(is_nothrow_copy_constructible<Alloc>::value)) ->
+    enable_if_t<!member_function_check_select_on_container_copy_construction<Alloc>::value,
+                Alloc> {
+  return alloc;
+}
 
 
-
- private:
-  /* Rebind selector. */
-  template<typename T, typename A>
-      static auto select_rebind_(A = declval<Alloc>()) ->
-      typename A::template rebind<T>::other;
-  template<typename T,
-           template<typename, typename...> class AllocImpl,
-           typename U, typename... Args>
-      static auto select_rebind_(const AllocImpl<U, Args...>& =
-                                 declval<Alloc>()) ->
-          AllocImpl<T, Args...>;
-
- public:
-  template<typename T> using rebind_alloc = decltype(select_rebind_<T>());
+template<typename, typename> struct rebind_immediately;  // undefined
+template<typename U, typename T, typename... Args,
+         template<typename, typename...> class Template>
+struct rebind_immediately<U, Template<T, Args...>> {
+  using type = Template<U, Args...>;
 };
 
+template<typename U, typename T> struct allocator_rebind {
+  using type = typename T::template rebind<U>::other;
+};
 
-} /* namespace std::impl */
+template<template<typename> class> struct rebind_matcher
+{ using type = int; };
+
+template<typename T, typename = int> struct has_rebind : false_type {};
+template<typename T>
+struct has_rebind<T, typename rebind_matcher<T::template rebind>::type>
+: true_type {};
+
+template<typename U, typename T> using resolve_rebind =
+    typename conditional_t<has_rebind<T>::value,
+        allocator_rebind<U, T>,
+        rebind_immediately<U, T>>::type;
+
+
+}} /* namespace std::impl::allocator */
 _namespace_end(std)
 
 #endif /* _STDIMPL_ALLOC_TRAITS_H_ */
