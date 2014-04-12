@@ -77,7 +77,7 @@ auto tuple<Types...>::operator=(pair<U1, U2>&& u) -> tuple& {
 
 template<typename... Types>
 auto tuple<Types...>::swap(tuple& rhs)
-    noexcept(noexcept(this->cons::swap(rhs)))
+    noexcept(noexcept(this->cons::swap_impl(rhs)))
 -> void {
   this->cons::swap_impl(rhs);
 }

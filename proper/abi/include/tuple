@@ -186,7 +186,7 @@ template<typename... Types> class tuple
   template<typename U1, typename U2> tuple& operator=(const pair<U1, U2>&);
   template<typename U1, typename U2> tuple& operator=(pair<U1, U2>&&);
 
-  void swap(tuple& rhs) noexcept(noexcept(this->cons::swap(rhs)));
+  void swap(tuple& rhs) noexcept(noexcept(this->cons::swap_impl(rhs)));
 };
 
 
