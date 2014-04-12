@@ -88,7 +88,7 @@ auto allocator_cloneable::clone_impl(T&& cloneable_t, Alloc&& alloc_arg,
       [&alloc, store_items](pointer p) {
         alloc_traits::deallocate(alloc, p, store_items);
       };
-  using storage_ptr = unique_ptr<pointer, decltype(storage_deleter)&>;
+  using storage_ptr = unique_ptr<value_type, decltype(storage_deleter)&>;
 
   /* Allocate memory. */
   storage_ptr store_ptr{ alloc_traits::allocate(alloc, store_items),
@@ -96,11 +96,11 @@ auto allocator_cloneable::clone_impl(T&& cloneable_t, Alloc&& alloc_arg,
   void* store = addressof(*store_ptr);
 
   /* Decide where exactly to store everything. */
-  const void* alloc_ptr = align(alignof(alloc_type), sizeof(alloc_type),
-                                store, store_sz);
-  const void* clone_ptr = align(cloneable.constraints_.align,
-                                cloneable.constraints_.size,
-                                store, store_sz);
+  void*const alloc_ptr = align(alignof(alloc_type), sizeof(alloc_type),
+                               store, store_sz);
+  void*const clone_ptr = align(cloneable.constraints_.align,
+                               cloneable.constraints_.size,
+                               store, store_sz);
   assert_msg(alloc_ptr != nullptr && clone_ptr != nullptr,
              "Programmer error: "
              "storage is incorrect or std::align is broken.");
@@ -111,7 +111,7 @@ auto allocator_cloneable::clone_impl(T&& cloneable_t, Alloc&& alloc_arg,
    * if an exception occurs later on.
    */
   auto clone_uptr = unique_ptr<T, destroy_clone>(invoke(clone_into,
-                                                        ref(cloneable_t),
+                                                        cloneable_t,
                                                         clone_ptr));
 
   /*

@@ -33,7 +33,7 @@ class allocator_cloneable {
     template<typename Alloc>
     static void cleanup_alloc_(void*, void*, size_t) noexcept;
 
-    void (*cleanup_fn_)(void*, void*) = nullptr;
+    void (*cleanup_fn_)(void*, void*, size_t) = nullptr;
     uint32_t store_items_ = 0;
     int16_t base_off_ = 0;
     int16_t alloc_off_ = 0;

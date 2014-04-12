@@ -45,7 +45,7 @@ void allocator_cloneable::deleter::operator()(allocator_cloneable* p)
   assert(p != nullptr);
 
   p->~allocator_cloneable();
-  cleanup_fn_(apply_off(p, base_off_), apply_off(p, alloc_off_));
+  cleanup_fn_(apply_off(p, base_off_), apply_off(p, alloc_off_), store_items_);
 }
 
 auto allocator_cloneable::deleter::calc_off(const void* dst, const void* src)
