@@ -329,7 +329,7 @@ unique_ptr<T, D>::~unique_ptr() noexcept {
 template<typename T, typename D>
 auto unique_ptr<T, D>::operator=(unique_ptr&& p) noexcept -> unique_ptr& {
   /* Protect against self assignment. */
-  if (_predict_false(&p == *this)) return *this;
+  if (_predict_false(p == *this)) return *this;
 
   /* Exchange current value for new value. */
   auto old =
@@ -447,7 +447,7 @@ unique_ptr<T[], D>::~unique_ptr() noexcept {
 template<typename T, typename D>
 auto unique_ptr<T[], D>::operator=(unique_ptr&& p) noexcept -> unique_ptr& {
   /* Protect against self assignment. */
-  if (_predict_false(&p == *this)) return *this;
+  if (_predict_false(p == *this)) return *this;
 
   /* Exchange current value for new value. */
   auto old =
