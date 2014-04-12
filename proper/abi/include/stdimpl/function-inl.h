@@ -45,7 +45,7 @@ auto functor_wrapper_impl<R(ArgTypes...), F>::operator()(ArgTypes... args) ->
 template<typename R, typename... ArgTypes, typename F>
 auto functor_wrapper_impl<R(ArgTypes...), F>::copy_into(void* p) const ->
     functor_wrapper_impl* {
-  return functor_wrapper_copy_impl_(p, *this);
+  return functor_wrapper_copy_impl_<functor_wrapper_impl>(p, *this);
 }
 
 template<typename R, typename... ArgTypes, typename F>
@@ -56,7 +56,7 @@ auto functor_wrapper_impl<R(ArgTypes...), F>::move_into(void* p) ->
 
 template<typename R, typename... ArgTypes, typename F>
 auto functor_wrapper_impl<R(ArgTypes...), F>::get_impl_pointer(
-    const std::type_info& ti) const noexcept -> void* {
+    const std::type_info& ti) noexcept -> void* {
   return (this->ti == ti ? &fn_ : nullptr);
 }
 

@@ -620,18 +620,18 @@ void function<R(ArgTypes...)>::swap(function& other) noexcept {
   if (other.is_special()) {
     special_ptr tmp = other.data_.special;
     if (is_special())
-      other.fn_ = other.assign(true, move(data_.functor));
+      other.fn_ = other.data_.assign(true, move(data_.functor));
     else
-      other.fn_ = other.assign(true, data_.special, my_fn);
-    fn_ = assign(is_special(), tmp, other_fn);
+      other.fn_ = other.data_.assign(true, data_.special, my_fn);
+    fn_ = data_.assign(is_special(), tmp, other_fn);
   } else if (!is_special()) {
     swap(data_.functor, other.data_.functor);
     /* fn_ is null for both. */
   } else {
     /* this is special, other is not special. */
     special_ptr tmp = data_.special;
-    fn_ = assign(true, move(other.data_.functor));
-    other.fn_ = other.assign(false, tmp, my_fn);
+    fn_ = data_.assign(true, move(other.data_.functor));
+    other.fn_ = other.data_.assign(false, tmp, my_fn);
   }
 }
 
@@ -696,10 +696,14 @@ template<typename Functor>
 auto function<R(ArgTypes...)>::simple_function_call(
     const special_ptr_p_type& f,
     impl::function_transform_to_ref_t<ArgTypes>... args) -> R {
-  return impl::invoke(static_cast<Functor&>(f),
+  return impl::invoke(*reinterpret_cast<const Functor*>(&f),
                       forward<ArgTypes>(args)...);
 }
 
+template<typename R, typename... ArgTypes>
+function<R(ArgTypes...)>::data_type::data_type() noexcept {
+  special.ti = nullptr;
+}
 
 template<typename R, typename... ArgTypes>
 auto function<R(ArgTypes...)>::data_type::assign(bool is_special, nullptr_t)
@@ -746,11 +750,13 @@ auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
                   sizeof(decay_t<F>) <= sizeof(special_ptr_p_type) &&
                   alignof(special_ptr_p_type) % alignof(F) == 0),
                 fn_type> {
-  using wrapper =
-      impl::functor_wrapper_impl<R(ArgTypes...), remove_const_t<F>>;
+  using wrapper = impl::functor_wrapper_impl<
+      R(impl::function_transform_to_ref_t<ArgTypes>...), remove_const_t<F>>;
 
-  return assign(is_special, functor_wrapper_t::clone(wrapper(forward<F>(f)),
-                                                     forward<Alloc>(alloc)));
+  /* Result from clone is too specialized for us. */
+  functor_wrapper_ptr p = functor_wrapper_t::clone(wrapper(forward<F>(f)),
+                                                   forward<Alloc>(alloc));
+  return assign(is_special, move(p));
 }
 
 template<typename R, typename... ArgTypes>

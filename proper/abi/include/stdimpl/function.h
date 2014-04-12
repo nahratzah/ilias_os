@@ -26,7 +26,7 @@ class functor_wrapper<R(ArgTypes...)>
 
   functor_wrapper* copy_into(void*) const override = 0;
   functor_wrapper* move_into(void*) override = 0;
-  virtual void* get_impl_pointer(const std::type_info&) const noexcept = 0;
+  virtual void* get_impl_pointer(const std::type_info&) noexcept = 0;
 
   const std::type_info& ti;
 };
@@ -48,7 +48,7 @@ class functor_wrapper_impl<R(ArgTypes...), F> final
   R operator()(ArgTypes... args) override;
   functor_wrapper_impl* copy_into(void* p) const override;
   functor_wrapper_impl* move_into(void* p) override;
-  void* get_impl_pointer(const std::type_info&) const noexcept override;
+  void* get_impl_pointer(const std::type_info&) noexcept override;
 
  private:
   F fn_;

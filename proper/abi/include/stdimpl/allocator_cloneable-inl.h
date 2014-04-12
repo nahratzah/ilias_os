@@ -20,7 +20,7 @@ auto allocator_cloneable::clone(const T& v, Alloc&& a) ->
   static_assert(is_base_of<T, remove_pointer_t<copy_into_result>>::value,
                 "The copy_into method must provide a return type of T.");
 
-  return clone_impl(v, forward<Alloc>(a), T::copy_into);
+  return clone_impl(v, forward<Alloc>(a), &T::copy_into);
 }
 
 template<typename T, typename Alloc>
@@ -30,7 +30,7 @@ auto allocator_cloneable::clone(T&& v, Alloc&& a) ->
   static_assert(is_base_of<T, remove_pointer_t<move_into_result>>::value,
                 "The copy_into method must provide a return type of T.");
 
-  return clone_impl(forward<T>(v), forward<Alloc>(a), T::move_into);
+  return clone_impl(forward<T>(v), forward<Alloc>(a), &T::move_into);
 }
 
 template<typename T, typename Alloc, typename CloneInto>
@@ -57,7 +57,7 @@ auto allocator_cloneable::clone_impl(T&& cloneable_t, Alloc&& alloc_arg,
       allocator_traits<remove_const_t<Alloc>>;
   using value_type = alloc_type_;
   using alloc_type =
-      typename alloc_arg_traits::template rebind<value_type>;
+      typename alloc_arg_traits::template rebind_alloc<value_type>;
   using alloc_traits = allocator_traits<alloc_type>;
   using pointer = typename alloc_traits::pointer;
 

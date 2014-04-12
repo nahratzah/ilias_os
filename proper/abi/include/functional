@@ -514,7 +514,7 @@ template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>
   static R bad_function_call_fn(
       const special_ptr_p_type&,
       impl::function_transform_to_ref_t<ArgTypes>...);
-  template<typename Functor> R simple_function_call(
+  template<typename Functor> static R simple_function_call(
       const special_ptr_p_type&,
       impl::function_transform_to_ref_t<ArgTypes>...);
 
@@ -526,7 +526,8 @@ template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>
   union data_type {
     static_assert(is_pod<special_ptr>::value, "Special case must be a pod.");
 
-    data_type() noexcept : data_type(special_ptr{ nullptr, nullptr }) {};
+    data_type() noexcept;
+    ~data_type() noexcept {}
 
     fn_type assign(bool, nullptr_t) noexcept;
     fn_type assign(bool, functor_wrapper_ptr) noexcept;
