@@ -2,6 +2,7 @@
 #define _UTILITY_H_
 
 #include <cdecl.h>
+#include <tuple-fwd.h>
 #include <type_traits>
 #include <stdimpl/utility_get.h>
 #include <stdimpl/utility_mkpair.h>
@@ -67,10 +68,6 @@ void swap(pair<T1, T2>& x, pair<T1, T2>& y) noexcept(noexcept(x.swap(y)));
 template<typename T1, typename T2>
 constexpr auto make_pair(T1&&, T2&&) ->
     pair<impl::pair_elem_t<T1>, impl::pair_elem_t<T2>>;
-
-
-template<typename T> struct tuple_size;
-template<size_t I, class T> struct tuple_element;
 
 template<typename T1, typename T2> struct tuple_size<pair<T1, T2>>;
 template<typename T1, typename T2> struct tuple_element<0, pair<T1, T2>>;

@@ -212,18 +212,6 @@ constexpr auto tuple_cat(Tuples&&... v)
 
 
 template<typename T>
-class tuple_size<const T>
-: public tuple_size<T> {};
-
-template<typename T>
-class tuple_size<volatile T>
-: public tuple_size<T> {};
-
-template<typename T>
-class tuple_size<const volatile T>
-: public tuple_size<T> {};
-
-template<typename T>
 class tuple_size<T&>
 : public tuple_size<T> {};
 
