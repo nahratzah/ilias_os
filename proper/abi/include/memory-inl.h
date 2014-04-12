@@ -49,7 +49,7 @@ auto allocator<T>::allocate(size_type n,
 
 template<typename T>
 auto allocator<T>::deallocate(pointer p, size_type n) -> void {
-  ::operator delete(p);
+  ::operator delete(p, n * sizeof(value_type));
 }
 
 template<typename T>
