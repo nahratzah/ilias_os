@@ -8,7 +8,7 @@ constexpr tuple<Types...>::tuple()
 
 template<typename... Types>
 constexpr tuple<Types...>::tuple(const Types&... v)
-: cons(piecewise_construct_t(), forward<Types>(v)...)
+: cons(piecewise_construct_t(), v...)
 {}
 
 template<typename... Types>
