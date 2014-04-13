@@ -78,7 +78,7 @@ inline void c_string_ptr::append(const c_string_ptr& other) {
   if (!other.empty()) append(other.data_, other.len_);
 }
 inline void c_string_ptr::append(const char* s) {
-  append(s, strlen(s));
+  append(s, __builtin_strlen(s));
 }
 
 inline void c_string_ptr::clear() noexcept {
@@ -114,7 +114,7 @@ inline const char& c_string_ptr::operator[](size_type idx) const {
 
 inline c_string_ptr make_c_string_ptr(const char* s) {
   c_string_ptr result;
-  result.append(s, strlen(s));
+  result.append(s, __builtin_strlen(s));
   return result;
 }
 
