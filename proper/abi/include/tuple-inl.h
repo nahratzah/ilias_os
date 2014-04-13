@@ -225,13 +225,13 @@ class tuple_size<tuple<Types...>>
 
 
 template<size_t I, class T> class tuple_element<I, const T>
-{ using type = add_const_t<typename tuple_element<I, T>::type>; };
+{ public: using type = add_const_t<typename tuple_element<I, T>::type>; };
 
 template<size_t I, class T> class tuple_element<I, volatile T>
-{ using type = add_volatile_t<typename tuple_element<I, T>::type>; };
+{ public: using type = add_volatile_t<typename tuple_element<I, T>::type>; };
 
 template<size_t I, class T> class tuple_element<I, const volatile T>
-{ using type = add_cv_t<typename tuple_element<I, T>::type>; };
+{ public: using type = add_cv_t<typename tuple_element<I, T>::type>; };
 
 template<size_t I, class T> class tuple_element<I, T&>
 : public tuple_element<I, T> {};
@@ -239,46 +239,56 @@ template<size_t I, class T> class tuple_element<I, T&>
 template<size_t I, class T> class tuple_element<I, T&&>
 : public tuple_element<I, T> {};
 
+namespace impl {
+template<size_t I, typename T0, typename... Types> struct select_tuple_element
+: select_tuple_element<I - 1, Types...> {};
+template<typename T0, typename... Types>
+struct select_tuple_element<0, T0, Types...> { using type = T0; };
+} /* namespace std::impl */
+
 template<size_t I, typename... Types> class tuple_element<I, tuple<Types...>> {
   static_assert(I < sizeof...(Types), "Tuple element index out of bounds.");
 
  public:
-  using type =
-      remove_reference_t<decltype(impl::get_value<I>(declval<Types>()...))>;
+  using type = typename impl::select_tuple_element<I, Types...>::type;
 };
 
 
 template<size_t I, typename... Types>
 constexpr auto get(tuple<Types...>& t) noexcept
--> typename tuple_element<I, tuple<Types...>>::type& {
-  return t.template get_value<I>();
+-> add_lvalue_reference_t<typename tuple_element<I, tuple<Types...>>::type> {
+  return t.template get_value<I>(t);
 }
 
 template<size_t I, typename... Types>
 constexpr auto get(tuple<Types...>&& t) noexcept
--> typename tuple_element<I, tuple<Types...>>::type&& {
-  return move(t.template get_value<I>());
+-> add_rvalue_reference_t<typename tuple_element<I, tuple<Types...>>::type> {
+  return t.template get_value<I>(move(t));
 }
 
 template<size_t I, typename... Types>
 constexpr auto get(const tuple<Types...>& t) noexcept
--> add_const_t<typename tuple_element<I, tuple<Types...>>::type>& {
-  return t.template get_value<I>();
+-> add_lvalue_reference_t<
+       typename tuple_element<I, const tuple<Types...>>::type> {
+  return t.template get_value<I>(t);
 }
 
 
 template<typename I, typename... Types>
-constexpr auto get(tuple<Types...>& t) noexcept -> I& {
-  return t.template get_value_by_type<I>();
+constexpr auto get(tuple<Types...>& t) noexcept
+-> add_lvalue_reference_t<I> {
+  return t.template get_value_by_type<I>(t);
 }
 
 template<typename I, typename... Types>
-constexpr auto get(tuple<Types...>&& t) noexcept -> I&& {
-  return move(t.template get_value_by_type<I>());
+constexpr auto get(tuple<Types...>&& t) noexcept
+-> add_rvalue_reference_t<I> {
+  return t.template get_value_by_type<I>(move(t));
 }
 
 template<typename I, typename... Types>
-constexpr auto get(const tuple<Types...>& t) noexcept -> const I& {
+constexpr auto get(const tuple<Types...>& t) noexcept
+-> add_lvalue_reference_t<add_const_t<I>> {
   return t.template get_value_by_type<I>();
 }
 

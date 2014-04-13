@@ -51,20 +51,24 @@ template<size_t I, typename... Types> class tuple_element<I, tuple<Types...>>;
 
 template<size_t I, typename... Types>
 constexpr auto get(tuple<Types...>&) noexcept ->
-    typename tuple_element<I, tuple<Types...>>::type&;
+    add_lvalue_reference_t<typename tuple_element<I, tuple<Types...>>::type>;
 template<size_t I, typename... Types>
 constexpr auto get(tuple<Types...>&&) noexcept ->
-    typename tuple_element<I, tuple<Types...>>::type&&;
+    add_rvalue_reference_t<typename tuple_element<I, tuple<Types...>>::type>;
 template<size_t I, typename... Types>
 constexpr auto get(const tuple<Types...>&) noexcept ->
-    add_const_t<typename tuple_element<I, tuple<Types...>>::type>&;
+    add_lvalue_reference_t<
+        typename tuple_element<I, const tuple<Types...>>::type>;
 
 template<typename T, typename... Types>
-constexpr auto get(tuple<Types...>&) noexcept -> T&;
+constexpr auto get(tuple<Types...>&) noexcept ->
+    add_lvalue_reference_t<T>;
 template<typename T, typename... Types>
-constexpr auto get(tuple<Types...>&&) noexcept -> T&&;
+constexpr auto get(tuple<Types...>&&) noexcept ->
+    add_rvalue_reference_t<T>;
 template<typename T, typename... Types>
-constexpr auto get(const tuple<Types...>&) noexcept -> const T&;
+constexpr auto get(const tuple<Types...>&) noexcept ->
+    add_lvalue_reference_t<add_const_t<T>>;
 
 template<typename... TTypes, typename... UTypes>
 constexpr bool operator==(const tuple<TTypes...>&, const tuple<UTypes...>&);
@@ -96,20 +100,24 @@ template<typename... Types> class tuple
 
   template<size_t I, typename... T>
   friend constexpr auto get(tuple<T...>&) noexcept
-  -> typename tuple_element<I, tuple<T...>>::type&;
+  -> add_lvalue_reference_t<typename tuple_element<I, tuple<T...>>::type>;
   template<size_t I, typename... T>
   friend constexpr auto get(tuple<T...>&&) noexcept
-  -> typename tuple_element<I, tuple<T...>>::type&&;
+  -> add_rvalue_reference_t<typename tuple_element<I, tuple<T...>>::type>;
   template<size_t I, typename... T>
   friend constexpr auto get(const tuple<T...>&) noexcept
-  -> add_const_t<typename tuple_element<I, tuple<T...>>::type>&;
+  -> add_lvalue_reference_t<
+         typename tuple_element<I, const tuple<T...>>::type>;
 
   template<typename I, typename... T>
-  friend constexpr auto get(tuple<T...>&) noexcept -> I&;
+  friend constexpr auto get(tuple<T...>&) noexcept
+  -> add_lvalue_reference_t<I>;
   template<typename I, typename... T>
-  friend constexpr auto get(tuple<T...>&&) noexcept -> I&&;
+  friend constexpr auto get(tuple<T...>&&) noexcept
+  -> add_lvalue_reference_t<I>;
   template<typename I, typename... T>
-  friend constexpr auto get(const tuple<T...>&) noexcept -> const I&;
+  friend constexpr auto get(const tuple<T...>&) noexcept
+  -> add_lvalue_reference_t<add_const_t<I>>;
 
  private:
   using cons = impl::sorted_cons<Types...>;
