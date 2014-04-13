@@ -191,13 +191,13 @@ void advance(Iter& x, Distance n, const input_iterator_tag&) {
 }
 
 
-template<typename Iter, typename Distance>
+template<typename Iter>
 auto distance(Iter& x, Iter& y, const random_access_iterator_tag&) ->
     typename iterator_traits<Iter>::difference_type {
   return y - x;
 }
 
-template<typename Iter, typename Distance>
+template<typename Iter>
 auto distance(Iter& x, Iter& y, const input_iterator_tag&) ->
     typename iterator_traits<Iter>::difference_type {
   typename iterator_traits<Iter>::difference_type count = 0;
