@@ -406,7 +406,7 @@ namespace impl {
 
 template<typename T>
 auto algorithm_copy(const T* b, const T* e, T* out) ->
-    enable_if_t<is_trivially_copyable<T>::value, T> {
+    enable_if_t<is_trivially_copyable<T>::value, T*> {
   const auto delta = e - b;
   memcpy(out, b, delta * sizeof(T));
   return out + delta;
@@ -414,7 +414,7 @@ auto algorithm_copy(const T* b, const T* e, T* out) ->
 
 template<typename T>
 auto algorithm_copy(T* b, T* e, T* out) ->
-    enable_if_t<is_trivially_copyable<T>::value, T> {
+    enable_if_t<is_trivially_copyable<T>::value, T*> {
   const auto delta = e - b;
   memcpy(out, b, delta * sizeof(T));
   return out + delta;
@@ -443,14 +443,14 @@ namespace impl {
 
 template<typename T, typename Size>
 auto algorithm_copy_n(const T* b, Size n, T* out) ->
-    enable_if_t<is_trivially_copyable<T>::value, T> {
+    enable_if_t<is_trivially_copyable<T>::value, T*> {
   memcpy(out, b, n * sizeof(T));
   return out + n;
 }
 
 template<typename T, typename Size>
 auto algorithm_copy_n(T* b, Size n, T* out) ->
-    enable_if_t<is_trivially_copyable<T>::value, T> {
+    enable_if_t<is_trivially_copyable<T>::value, T*> {
   memcpy(out, b, n * sizeof(T));
   return out + n;
 }
@@ -500,7 +500,7 @@ namespace impl {
 
 template<typename T>
 auto algorithm_move(const T* b, const T* e, T* out) ->
-    enable_if_t<is_trivially_copyable<T>::value, T> {
+    enable_if_t<is_trivially_copyable<T>::value, T*> {
   const auto delta = e - b;
   memcpy(out, b, delta * sizeof(T));
   return out + delta;
@@ -508,7 +508,7 @@ auto algorithm_move(const T* b, const T* e, T* out) ->
 
 template<typename T>
 auto algorithm_move(T* b, T* e, T* out) ->
-    enable_if_t<is_trivially_copyable<T>::value, T> {
+    enable_if_t<is_trivially_copyable<T>::value, T*> {
   const auto delta = e - b;
   memcpy(out, b, delta * sizeof(T));
   return out + delta;
