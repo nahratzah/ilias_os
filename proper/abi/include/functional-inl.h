@@ -222,95 +222,66 @@ template<typename T> using _result_type =
                            _no_result_type>::type;
 
 
-/* Resolve placement argument. */
-template<int I, typename T>
-auto resolve_placement(T&& t) noexcept ->
-    decltype(get<I - 1>(t)) {
-  return get<I - 1>(forward<T>(t));
+/*
+ * Resolve argument:  case for non-bind-expression, non-placeholder.
+ */
+template<typename T, typename Args, typename ArgIndices>
+auto resolve_argument(T& v, Args, ArgIndices) ->
+    enable_if_t<!is_bind_expression<T>::value &&
+                !is_placeholder<T>::value,
+                T&> {
+  return v;
 }
-
 
 /*
- * Resolve argument based on T;
- * default is placeholder based, specializtion below gives bound argument.
+ * Resolve argument:  case for placeholder.
  */
-template<typename T,
-         int Placeholder =
-             is_placeholder<remove_cv_t<remove_reference_t<T>>>::value>
-struct resolve_argument_t {
-  template<typename T_, typename Args>
-  constexpr auto operator()(T_&&, Args&& args) const noexcept ->
-      decltype(resolve_placement<Placeholder>(forward<Args>(args))) {
-    return resolve_placement<Placeholder>(forward<Args>(args));
-  }
+template<typename PlaceHolder>
+struct placeholder_type {
+  template<typename Tuple> using type =
+      typename tuple_element<is_placeholder<PlaceHolder>::value - 1,
+                             Tuple>::type;
 };
+template<typename T, typename Args, size_t... ArgIndices>
+auto resolve_argument(const T& v, Args args,
+                      index_sequence<ArgIndices...>) ->
+    typename enable_if_t<is_placeholder<T>::value,
+                         placeholder_type<T>
+                        >::template type<Args> {
+  constexpr int index = is_placeholder<T>::value - 1;
+  using result = typename tuple_element<index, Args>::type;
+  static_assert(is_reference<result>::value,
+                "Argument is not a reference...");
 
-struct resolve_bind_expression {
-  template<typename T_, typename Args,
-           size_t... Indices,
-           index_sequence<Indices...> =
-               make_index_sequence<tuple_size<Args>::value>()>
-  auto operator()(T_&& expr, Args&& args) const
-      noexcept(noexcept(invoke(forward<T_>(expr),
-                               get<Indices>(forward<Args>(args))...))) ->
-      decltype(invoke(forward<T_>(expr),
-                      get<Indices>(forward<Args>(args))...)) {
-    return invoke(forward<T_>(expr),
-                  get<Indices>(forward<Args>(args))...);
-  }
-};
-
-struct resolve_bound_argument {
-  template<typename T_, typename Args>
-  constexpr T_& operator()(reference_wrapper<T_> rw, Args&&) const noexcept {
-    return rw.get();
-  }
-
-  template<typename T_, typename Args>
-  constexpr auto operator()(T_&& v, Args&&) const noexcept ->
-      decltype(forward<T_>(v)) {
-    return forward<T_>(v);
-  }
-};
-
-template<typename T>
-struct resolve_argument_t<T, 0>
-: conditional_t<is_bind_expression<remove_cv_t<remove_reference_t<T>>>::value,
-                resolve_bind_expression,
-                resolve_bound_argument>
-{};
-
-template<typename T, typename Args>
-auto resolve_argument(T&& v, Args&& args)
-    noexcept(noexcept(resolve_argument_t<remove_cv_t<remove_reference_t<T>>>()(
-          forward<T>(v), forward<Args>(args)))) ->
-    decltype(resolve_argument_t<remove_cv_t<remove_reference_t<T>>>()(
-          forward<T>(v), forward<Args>(args))) {
-  return resolve_argument_t<remove_cv_t<remove_reference_t<T>>>()(
-      forward<T>(v), forward<Args>(args));
+  return static_cast<result>(get<index>(args));
 }
+
+/*
+ * Resolve argument:  case for bind expression.
+ */
+template<typename T, typename Args, size_t... ArgIndices>
+auto resolve_argument(T& v, Args args,
+                      index_sequence<ArgIndices...>) ->
+    enable_if_t<is_bind_expression<T>::value,
+                decltype(v(get<ArgIndices>(args)...))> {
+  static_assert(!is_void<decltype(v(get<ArgIndices>(args)...))>::value,
+                "Nested bind expression returning void.");
+  return v(get<ArgIndices>(args)...);
+}
+
 
 /*
  * Invoke tuple of f, bound_args... using tuple of args...
  */
 template<typename FTuple, typename ArgTuple,
-         size_t Index0,
-         size_t... Indices,
-         index_sequence<Index0, Indices...> =
-             make_index_sequence<tuple_size<ArgTuple>::value>()>
-auto invoke_tuple(FTuple&& ft, ArgTuple&& args)
-    noexcept(noexcept(invoke(get<0>(forward<FTuple>(ft)),
-                      resolve_argument(get<Indices>(forward<FTuple>(ft)),
-                                       forward<ArgTuple>(args))...))) ->
-    decltype(invoke(get<0>(forward<FTuple>(ft)),
-             resolve_argument(get<Indices>(forward<FTuple>(ft)),
-                              forward<ArgTuple>(args))...)) {
-  static_assert(Index0 == 0,
-                "Uh oh, there's something very wrong with "
-                "the index_sequence generation or its use here...");
-  return invoke(get<0>(forward<FTuple>(ft)),
-                resolve_argument(get<Indices>(forward<FTuple>(ft)),
-                                 forward<ArgTuple>(args))...);
+         size_t... FTIndices, size_t... ArgIndices>
+auto invoke_tuple(FTuple& ft, ArgTuple args,
+                  index_sequence<FTIndices...>,
+                  index_sequence<ArgIndices...> arg_indices) ->
+    decltype(invoke(get<0>(ft), resolve_argument(get<FTIndices + 1>(ft),
+                                                 args, arg_indices)...)) {
+  return invoke(get<0>(ft), resolve_argument(get<FTIndices + 1>(ft),
+                                             args, arg_indices)...);
 }
 
 
@@ -331,6 +302,12 @@ class expression
   : data_(move(other.data_))
   {}
 
+  template<typename F_, typename... Args_>
+  expression(F_&& f, Args_&&... args)
+      noexcept(is_nothrow_constructible<data_type, F_, Args_...>::value)
+  : data_(forward<F_>(f), forward<Args_>(args)...)
+  {}
+
   expression& operator=(expression&& other)
       noexcept(is_nothrow_move_assignable<data_type>::value) {
     data_ = move(other.data_);
@@ -338,39 +315,27 @@ class expression
   }
 
   template<typename... Args>
-  auto operator()(Args&&... args)
-      noexcept(noexcept(invoke_tuple(
-          this->data_, forward_as_tuple(forward<Args>(args)...)))) ->
-      decltype(invoke_tuple(this->data_,
-                            forward_as_tuple(forward<Args>(args)...))) {
-    return invoke_tuple(data_, forward_as_tuple(forward<Args>(args)...));
+  auto operator()(Args&&... args) ->
+      decltype(invoke_tuple(declval<expression::data_type&>(),
+                            forward_as_tuple(forward<Args>(args)...),
+                            index_sequence_for<BoundArgs...>(),
+                            index_sequence_for<Args...>())) {
+    return invoke_tuple(data_,
+                        forward_as_tuple(forward<Args>(args)...),
+                        index_sequence_for<BoundArgs...>(),
+                        index_sequence_for<Args...>());
   }
 
   template<typename... Args>
-  auto operator()(Args&&... args) const
-      noexcept(noexcept(invoke_tuple(
-          this->data_, forward_as_tuple(forward<Args>(args)...)))) ->
-      decltype(invoke_tuple(this->data_,
-                            forward_as_tuple(forward<Args>(args)...))) {
-    return invoke_tuple(data_, forward_as_tuple(forward<Args>(args)...));
-  }
-
-  template<typename... Args>
-  auto operator()(Args&&... args) volatile
-      noexcept(noexcept(invoke_tuple(
-          this->data_, forward_as_tuple(forward<Args>(args)...)))) ->
-      decltype(invoke_tuple(this->data_,
-                            forward_as_tuple(forward<Args>(args)...))) {
-    return invoke_tuple(data_, forward_as_tuple(forward<Args>(args)...));
-  }
-
-  template<typename... Args>
-  auto operator()(Args&&... args) const volatile
-      noexcept(noexcept(invoke_tuple(
-          this->data_, forward_as_tuple(forward<Args>(args)...)))) ->
-      decltype(invoke_tuple(this->data_,
-                            forward_as_tuple(forward<Args>(args)...))) {
-    return invoke_tuple(data_, forward_as_tuple(forward<Args>(args)...));
+  auto operator()(Args&&... args) const ->
+      decltype(invoke_tuple(declval<const expression::data_type&>(),
+                            forward_as_tuple(forward<Args>(args)...),
+                            index_sequence_for<BoundArgs...>(),
+                            index_sequence_for<Args...>())) {
+    return invoke_tuple(data_,
+                        forward_as_tuple(forward<Args>(args)...),
+                        index_sequence_for<BoundArgs...>(),
+                        index_sequence_for<Args...>());
   }
 
  private:
@@ -396,6 +361,12 @@ class expression_r
   : impl_(move(other.impl_))
   {}
 
+  template<typename F_, typename... Args_>
+  expression_r(F_&& f, Args_&&... args)
+      noexcept(is_nothrow_constructible<impl_type, F_, Args_...>::value)
+  : impl_(forward<F_>(f), forward<Args_>(args)...)
+  {}
+
   expression_r& operator=(expression_r&& other)
       noexcept(is_nothrow_move_assignable<impl_type>::value) {
     impl_ = move(other.impl_);
@@ -403,31 +374,58 @@ class expression_r
   }
 
   template<typename... Args>
-  auto operator()(Args&&... args)
-      noexcept(noexcept(invoke(this->impl_, forward<Args>(args)...))) ->
-      result_type {
-    return invoke(this->impl_, forward<Args>(args)...);
+  auto operator()(Args&&... args) -> result_type {
+    return impl_(forward<Args>(args)...);
   }
 
   template<typename... Args>
-  auto operator()(Args&&... args) const
-      noexcept(noexcept(invoke(this->impl_, forward<Args>(args)...))) ->
-      result_type {
-    return invoke(this->impl_, forward<Args>(args)...);
+  auto operator()(Args&&... args) const -> result_type {
+    return impl_(forward<Args>(args)...);
+  }
+
+ private:
+  impl_type impl_;
+};
+/* Specialization for void return type. */
+template<typename F, typename... BoundArgs>
+class expression_r<void, F, BoundArgs...>
+: public _result_type<F>
+{
+ private:
+  using impl_type = expression<F, BoundArgs...>;
+
+ public:
+  using result_type = void;
+
+  expression_r() = delete;
+  expression_r(const expression_r&) = default;
+  expression_r& operator=(const expression_r&) = default;
+
+  expression_r(expression_r&& other)
+      noexcept(is_nothrow_move_constructible<impl_type>::value)
+  : impl_(move(other.impl_))
+  {}
+
+  template<typename F_, typename... Args_>
+  expression_r(F_&& f, Args_&&... args)
+      noexcept(is_nothrow_constructible<impl_type, F_, Args_...>::value)
+  : impl_(forward<F_>(f), forward<Args_>(args)...)
+  {}
+
+  expression_r& operator=(expression_r&& other)
+      noexcept(is_nothrow_move_assignable<impl_type>::value) {
+    impl_ = move(other.impl_);
+    return *this;
   }
 
   template<typename... Args>
-  auto operator()(Args&&... args) volatile
-      noexcept(noexcept(invoke(this->impl_, forward<Args>(args)...))) ->
-      result_type {
-    return invoke(this->impl_, forward<Args>(args)...);
+  auto operator()(Args&&... args) -> result_type {
+    impl_(forward<Args>(args)...);
   }
 
   template<typename... Args>
-  auto operator()(Args&&... args) const volatile
-      noexcept(noexcept(invoke(this->impl_, forward<Args>(args)...))) ->
-      result_type {
-    return invoke(this->impl_, forward<Args>(args)...);
+  auto operator()(Args&&... args) const -> result_type {
+    impl_(forward<Args>(args)...);
   }
 
  private:
@@ -459,10 +457,41 @@ class mem_fn
 
 
 template<typename F, typename... BoundArgs>
+struct is_bind_expression<_bind::expression<F, BoundArgs...>>
+: true_type {};
+template<typename R, typename F, typename... BoundArgs>
+struct is_bind_expression<_bind::expression_r<R, F, BoundArgs...>>
+: true_type {};
+
+template<typename T> struct is_bind_expression<const T>
+: is_bind_expression<T> {};
+template<typename T> struct is_bind_expression<volatile T>
+: is_bind_expression<T> {};
+template<typename T> struct is_bind_expression<const volatile T>
+: is_bind_expression<T> {};
+template<typename T> struct is_bind_expression<T&>
+: is_bind_expression<T> {};
+template<typename T> struct is_bind_expression<T&&>
+: is_bind_expression<T> {};
+
+template<typename T> struct is_placeholder<const T>
+: is_placeholder<T> {};
+template<typename T> struct is_placeholder<volatile T>
+: is_placeholder<T> {};
+template<typename T> struct is_placeholder<const volatile T>
+: is_placeholder<T> {};
+template<typename T> struct is_placeholder<T&>
+: is_placeholder<T> {};
+template<typename T> struct is_placeholder<T&&>
+: is_placeholder<T> {};
+
+
+template<typename F, typename... BoundArgs>
 auto bind(F&& f, BoundArgs&&... bound_args)
     noexcept(noexcept(_bind::expression<decay_t<F>, decay_t<BoundArgs>...>(
         forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
     _bind::expression<decay_t<F>, decay_t<BoundArgs>...> {
+  static_assert(is_bind_expression<_bind::expression<decay_t<F>, decay_t<BoundArgs>...>>::value, "GRMBL");
   return _bind::expression<decay_t<F>, decay_t<BoundArgs>...>(
       forward<F>(f), forward<BoundArgs>(bound_args)...);
 }
@@ -473,6 +502,7 @@ auto bind(F&& f, BoundArgs&&... bound_args)
         _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>(
             forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
     _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...> {
+  static_assert(is_bind_expression<_bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>>::value, "GRMBL");
   return _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>(
       forward<F>(f), forward<BoundArgs>(bound_args)...);
 }

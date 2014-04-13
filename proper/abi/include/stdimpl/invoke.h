@@ -74,10 +74,22 @@ auto invoke(F T::*f, T1&& t1)
  * in all other cases.
  */
 template<typename F, typename... Args>
+auto invoke(F& f, Args&&... args)
+    noexcept(noexcept(f(forward<Args>(args)...))) ->
+    decltype(f(forward<Args>(args)...)) {
+  return f(forward<Args>(args)...);
+}
+template<typename F, typename... Args>
 auto invoke(F&& f, Args&&... args)
-    noexcept(noexcept(forward<F>(f)(forward<Args>(args)...))) ->
-    decltype(forward<F>(f)(forward<Args>(args)...)) {
-  return forward<F>(f)(forward<Args>(args)...);
+    noexcept(noexcept(f(forward<Args>(args)...))) ->
+    decltype(f(forward<Args>(args)...)) {
+  return f(forward<Args>(args)...);
+}
+template<typename F, typename... Args>
+auto invoke(const F& f, Args&&... args)
+    noexcept(noexcept(f(forward<Args>(args)...))) ->
+    decltype(f(forward<Args>(args)...)) {
+  return f(forward<Args>(args)...);
 }
 
 
