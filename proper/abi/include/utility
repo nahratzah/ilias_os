@@ -107,6 +107,13 @@ template<size_t N> using make_index_sequence =
 template<typename... T> using index_sequence_for =
     make_index_sequence<sizeof...(T)>;
 
+static_assert(is_same<index_sequence_for<>, index_sequence<>>::value,
+              "std::index_sequence_for broken?");
+static_assert(is_same<index_sequence_for<int>, index_sequence<0>>::value,
+              "std::index_sequence_for broken?");
+static_assert(is_same<index_sequence_for<char, int>, index_sequence<0, 1>>::value,
+              "std::index_sequence_for broken?");
+
 
 template<typename T1, typename T2> struct pair {
   using first_type = T1;
