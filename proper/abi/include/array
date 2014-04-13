@@ -1,0 +1,104 @@
+#ifndef _ARRAY_
+#define _ARRAY_
+
+#include <cdecl.h>
+#include <cstddef>
+#include <algorithm>
+#include <initializer_list>
+#include <iterator>
+#include <memory>
+#include <tuple-fwd.h>
+#include <type_traits>
+#include <utility>
+
+_namespace_begin(std)
+
+
+template<typename T, size_t N> struct array {
+  using value_type = T;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
+  using size_type = size_t;
+  using difference_type = ptrdiff_t;
+
+  using iterator = pointer;
+  using const_iterator = const_pointer;
+  using reverse_iterator =
+      _namespace(std)::reverse_iterator<iterator>;
+  using const_reverse_iterator =
+      _namespace(std)::reverse_iterator<const_iterator>;
+
+  void fill(const T& v);
+  void swap(array&)
+      noexcept(N == 0 ||
+               noexcept(swap(declval<reference>(), declval<reference>())));
+
+  iterator begin() noexcept;
+  const_iterator begin() const noexcept;
+  iterator end() noexcept;
+  const_iterator end() const noexcept;
+
+  reverse_iterator rbegin() noexcept;
+  const_reverse_iterator rbegin() const noexcept;
+  reverse_iterator rend() noexcept;
+  const_reverse_iterator rend() const noexcept;
+
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+  const_reverse_iterator crbegin() const noexcept;
+  const_reverse_iterator crend() const noexcept;
+
+  constexpr size_type size() const noexcept;
+  constexpr size_type max_size() const noexcept;
+  constexpr bool empty() const noexcept;
+
+  reference operator[](size_type);
+  constexpr const_reference operator[](size_type) const noexcept;
+  reference at(size_type);
+  constexpr const_reference at(size_type) const;
+  reference front();
+  constexpr const_reference front() const;
+  reference back();
+  constexpr const_reference back() const;
+
+  pointer data() noexcept;
+  const_pointer data() const noexcept;
+
+  value_type elems_[N];
+};
+
+template<typename T, size_t N>
+bool operator==(const array<T, N>&, const array<T, N>&);
+template<typename T, size_t N>
+bool operator!=(const array<T, N>&, const array<T, N>&);
+template<typename T, size_t N>
+bool operator<(const array<T, N>&, const array<T, N>&);
+template<typename T, size_t N>
+bool operator>(const array<T, N>&, const array<T, N>&);
+template<typename T, size_t N>
+bool operator<=(const array<T, N>&, const array<T, N>&);
+template<typename T, size_t N>
+bool operator>=(const array<T, N>&, const array<T, N>&);
+
+template<typename T, size_t N>
+void swap(array<T, N>& x, array<T, N>& y)
+    noexcept(noexcept(x.swap(y)));
+
+template<typename T, size_t N> class tuple_size<array<T, N>>;
+template<size_t I, typename T, size_t N> class tuple_element<I, array<T, N>>;
+
+template<size_t I, typename T, size_t N>
+constexpr auto get(array<T, N>&) noexcept -> enable_if_t<(I < N), T&>;
+template<size_t I, typename T, size_t N>
+constexpr auto get(array<T, N>&&) noexcept -> enable_if_t<(I < N), T&&>;
+template<size_t I, typename T, size_t N>
+constexpr auto get(const array<T, N>&) noexcept -> enable_if_t<(I < N), T&>;
+
+
+_namespace_end(std)
+
+#include <array-inl.h>
+
+#endif /* _ARRAY_ */
