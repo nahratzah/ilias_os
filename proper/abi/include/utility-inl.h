@@ -235,6 +235,8 @@ template<typename T1, typename T2>
 void pair<T1, T2>::swap(pair& o)
     noexcept(noexcept(swap(first, o.first)) &&
              noexcept(swap(second, o.second))) {
+  using _namespace(std)::swap;
+
   swap(first, o.first);
   swap(second, o.second);
 }
