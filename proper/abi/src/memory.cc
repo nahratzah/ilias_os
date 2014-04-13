@@ -28,6 +28,19 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space) {
 namespace impl {
 namespace {
 
+#if defined(_LOADER)
+constexpr size_t N_temporary_storage_cache = 2;
+#elif defined(_KERNEL)
+constexpr size_t N_temporary_storage_cache = 16;
+#else
+constexpr size_t N_temporary_storage_cache = 64;
+#endif
+#if defined(_LOADER) || defined(_KERNEL)
+constexpr size_t N_assigned_cache = 8 * N_temporary_storage_cache;
+#else
+constexpr size_t N_assigned_cache = 64 * N_temporary_storage_cache;
+#endif
+
 abi::big_heap& get_temporary_heap() noexcept {
   using abi::big_heap;
 
@@ -51,14 +64,16 @@ struct temporary_buffer_release {
 using temporary_buffer_ptr = unique_ptr<void, temporary_buffer_release>;
 
 /* Cache a few recently released blocks of memory. */
-using temporary_cache = array<pair<temporary_buffer_ptr, size_t>, 16>;
+using temporary_cache = array<pair<temporary_buffer_ptr, size_t>,
+                              N_temporary_storage_cache>;
 thread_local temporary_cache cache;
 
 /* Remember a couple of recent assignments. */
-using temporary_assigned = array<pair<void*, size_t>, 32>;
+using temporary_assigned = array<pair<void*, size_t>, N_assigned_cache>;
 thread_local temporary_assigned assigned;
 
-bool satisfies_constraints(temporary_cache::reference item, size_t size, size_t align, bool try_realloc) {
+bool satisfies_constraints(temporary_cache::reference item,
+                           size_t size, size_t align, bool try_realloc) {
   if (!item.first) return false;
 
   uintptr_t addr = reinterpret_cast<uintptr_t>(item.first.get());
@@ -114,10 +129,11 @@ void temporary_buffer_deallocate(const void* p) {
 
   temporary_buffer_ptr ptr{ const_cast<void*>(p) };
 
-  auto assign = find_if(assigned.begin(), assigned.end(),
-                        bind(equal_to<const void*>(),
-                             bind<const void*>(&temporary_assigned::value_type::first, _1),
-                             p));
+  auto assign = find_if(
+      assigned.begin(), assigned.end(),
+      bind(equal_to<const void*>(),
+           bind<const void*>(&temporary_assigned::value_type::first, _1),
+           p));
   if (assign != assigned.end()) {
     /* Place assignment at the front of the cache. */
     move(cache.begin(), prev(cache.end()), next(cache.begin()));
