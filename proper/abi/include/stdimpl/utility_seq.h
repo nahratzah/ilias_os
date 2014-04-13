@@ -6,17 +6,16 @@
 _namespace_begin(std)
 namespace impl {
 
-template<typename Seq, size_t Sz>
-struct extend_sequence;
+template<typename, size_t> struct extend_sequence;  // undefined
 
-template<template <typename T, T...> class Type, typename T, T... Seq,
+template<template<typename X, X...> class Type, typename T, T... Seq,
          size_t Sz>
 struct extend_sequence<Type<T, Seq...>, Sz> {
   struct current {
     using type = Type<T, Seq...>;
   };
 
-  using successor = extend_sequence<Type<T, Seq..., sizeof...(Seq)>, Sz>;
+  using successor = extend_sequence<Type<T, Seq..., T(sizeof...(Seq))>, Sz>;
 
   using type = typename conditional_t<(sizeof...(Seq) == Sz),
                                       current,
