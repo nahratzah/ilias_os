@@ -50,7 +50,9 @@ template<typename Ptr> struct pointer_traits {
                                        element_type>;
 
  public:
-  pointer pointer_to(pointer_to_arg& r) { return pointer::pointer_to(r); }
+  static pointer pointer_to(pointer_to_arg& r) {
+    return pointer::pointer_to(r);
+  }
 };
 
 template<typename T> struct pointer_traits<T*> {
@@ -66,7 +68,7 @@ template<typename T> struct pointer_traits<T*> {
                                        element_type>;
 
  public:
-  pointer pointer_to(pointer_to_arg& r) { return addressof(r); }
+  static pointer pointer_to(pointer_to_arg& r) { return addressof(r); }
 };
 
 
