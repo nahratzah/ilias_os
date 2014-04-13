@@ -921,25 +921,30 @@ OutputIterator reverse(BidirectionalIterator b, BidirectionalIterator e,
 template<typename ForwardIterator>
 ForwardIterator rotate(ForwardIterator first, ForwardIterator middle,
                        ForwardIterator last) {
-  if (first == middle) return last;  // Rotate 0 elements.
+  ForwardIterator result = last;
+  bool result_set = false;
 
-  const auto shift = distance(first, middle);
-  auto len = shift;
-  for (ForwardIterator i = middle; i != last; ++first, ++i, ++len)
-    iter_swap(first, i);
+  auto shift = distance(first, middle);
+  while (shift != 0) {
+    auto len_mod_shift_base_1 = shift;
+    for (ForwardIterator i = middle;
+         i != last;
+         ++first, ++i) {
+      iter_swap(first, i);
+      len_mod_shift_base_1 = (len_mod_shift_base_1 == shift ?
+                              1U :
+                              len_mod_shift_base_1 + 1U);
+    }
+    if (!exchange(result_set, true)) result = first;
 
-  /*
-   * This recursion is bounded:
-   * it will be swapping at most last-first elements, decreasing at each step.
-   */
-  const auto rotate_right = len % shift;
-  if (rotate_right != 0) {
-    auto rotate_left = shift - rotate_right;
-    // XXX try to eliminate the recursion
-    rotate(first, next(first, rotate_left), last);
+    /*
+     * Shift the last few elements to fix ordering.
+     */
+    shift -= len_mod_shift_base_1;
+    middle = next(first, shift);
   }
 
-  return first;
+  return result;
 }
 
 template<typename ForwardIterator, typename OutputIterator>
@@ -952,7 +957,7 @@ OutputIterator rotate_copy(ForwardIterator b, ForwardIterator middle,
 template<typename InputIterator, typename Predicate>
 bool is_partitioned(InputIterator b, InputIterator e, Predicate predicate) {
   b = find_if_not(b, e, ref(predicate));
-  return b == e || none_of(next(b), e, move(predicate));
+  return b == e || none_of(next(b), e, ref(predicate));
 }
 
 template<typename ForwardIterator, typename Predicate>
@@ -970,7 +975,7 @@ ForwardIterator partition(ForwardIterator b, ForwardIterator e,
 /* Support for stable_partition. */
 namespace impl {
 
-/* stable partition, but requires that *b is true. */
+/* stable partition, but requires that *b is false. */
 template<typename BidirectionalIterator, typename Predicate>
 BidirectionalIterator stable_partition_inplace(
     BidirectionalIterator b, BidirectionalIterator e, Predicate predicate) {
