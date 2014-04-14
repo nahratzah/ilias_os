@@ -9,12 +9,14 @@ bool all_of(InputIterator b, InputIterator e, Predicate predicate) {
 
 template<typename InputIterator, class Predicate>
 bool any_of(InputIterator b, InputIterator e, Predicate predicate) {
-  return !none_of(move(b), move(e), ref(predicate));
+  return !none_of(b, e, ref(predicate));
 }
 
 template<typename InputIterator, class Predicate>
 bool none_of(InputIterator b, InputIterator e, Predicate predicate) {
-  return all_of(move(b), move(e), not1(ref(predicate)));
+  using placeholders::_1;
+  return all_of(b, e,
+                bind(logical_not<void>(), bind(ref(predicate), _1)));
 }
 
 
@@ -31,7 +33,7 @@ template<typename InputIterator, typename T>
 InputIterator find(InputIterator b, InputIterator e, const T& v) {
   using placeholders::_1;
 
-  return find_if(move(b), move(e), bind(equal_to<void>(), _1, cref(v)));
+  return find_if(b, e, bind(equal_to<void>(), _1, ref(v)));
 }
 
 template<typename InputIterator, typename Predicate>
@@ -43,7 +45,9 @@ InputIterator find_if(InputIterator b, InputIterator e, Predicate predicate) {
 template<typename InputIterator, typename Predicate>
 InputIterator find_if_not(InputIterator b, InputIterator e,
                           Predicate predicate) {
-  return find_if(move(b), move(e), not1(ref(predicate)));
+  using placeholders::_1;
+  return find_if(b, e,
+                 bind(logical_not<void>(), bind(ref(predicate), _1)));
 }
 
 template<typename ForwardIterator1, typename ForwardIterator2>
@@ -51,8 +55,8 @@ ForwardIterator1 find_end(ForwardIterator1 haystack_b,
                           ForwardIterator1 haystack_e,
                           ForwardIterator2 needle_b,
                           ForwardIterator2 needle_e) {
-  return find_end(move(haystack_b), move(haystack_e),
-                  move(needle_b), move(needle_e), equal_to<void>());
+  return find_end(haystack_b, haystack_e,
+                  needle_b, needle_e, equal_to<void>());
 }
 
 template<typename ForwardIterator1, typename ForwardIterator2,
@@ -85,8 +89,8 @@ InputIterator find_first_of(InputIterator haystack_b,
                             InputIterator haystack_e,
                             ForwardIterator needles_b,
                             ForwardIterator needles_e) {
-  return find_first_of(move(haystack_b), move(haystack_e),
-                       move(needles_b), move(needles_e),
+  return find_first_of(haystack_b, haystack_e,
+                       needles_b, needles_e,
                        equal_to<void>());
 }
 
@@ -101,7 +105,7 @@ InputIterator find_first_of(InputIterator haystack_b,
 
   while (haystack_b != haystack_e) {
     if (find_if(needles_b, needles_e,
-                bind(ref(predicate), _1, cref(*haystack_b))) != needles_e)
+                bind(ref(predicate), _1, ref(*haystack_b))) != needles_e)
       return haystack_b;
     ++haystack_b;
   }
@@ -110,7 +114,7 @@ InputIterator find_first_of(InputIterator haystack_b,
 
 template<typename ForwardIterator>
 ForwardIterator adjecent_find(ForwardIterator b, ForwardIterator e) {
-  return adjecent_find(move(b), move(e), equal_to<void>());
+  return adjecent_find(b, e, equal_to<void>());
 }
 
 template<typename ForwardIterator, typename BinaryPredicate>
@@ -134,11 +138,11 @@ typename iterator_traits<InputIterator>::difference_type count(
     InputIterator b, InputIterator e, const T& v) {
   using placeholders::_1;
 
-  return count(move(b), move(e), bind(equal_to<void>(), _1, cref(v)));
+  return count_if(b, e, bind(equal_to<void>(), _1, ref(v)));
 }
 
 template<typename InputIterator, typename Predicate>
-typename iterator_traits<InputIterator>::difference_type count(
+typename iterator_traits<InputIterator>::difference_type count_if(
     InputIterator b, InputIterator e, Predicate predicate) {
   typename iterator_traits<InputIterator>::difference_type rv = 0;
 
@@ -153,7 +157,7 @@ template<typename InputIterator1, typename InputIterator2>
 pair<InputIterator1, InputIterator2> mismatch(InputIterator1 b1,
                                               InputIterator1 e1,
                                               InputIterator2 b2) {
-  return mismatch(move(b1), move(e1), move(b2), equal_to<void>());
+  return mismatch(b1, e1, b2, equal_to<void>());
 }
 
 template<typename InputIterator1, typename InputIterator2,
@@ -174,7 +178,7 @@ pair<InputIterator1, InputIterator2> mismatch(InputIterator1 b1,
                                               InputIterator1 e1,
                                               InputIterator2 b2,
                                               InputIterator2 e2) {
-  return mismatch(move(b1), move(e1), move(b2), move(e2), equal_to<void>());
+  return mismatch(b1, e1, b2, e2, equal_to<void>());
 }
 
 template<typename InputIterator1, typename InputIterator2,
@@ -219,7 +223,7 @@ bool unequal_distance(Iter1 b1, Iter1 e1, Iter2 b2, Iter2 e2) {
 
 template<typename InputIterator1, typename InputIterator2>
 bool equal(InputIterator1 b1, InputIterator1 e1, InputIterator2 b2) {
-  return equal(move(b1), move(e1), move(b2), equal_to<void>());
+  return equal(b1, e1, b2, equal_to<void>());
 }
 
 template<typename InputIterator1, typename InputIterator2,
@@ -236,7 +240,7 @@ bool equal(InputIterator1 b1, InputIterator1 e1, InputIterator2 b2,
 template<typename InputIterator1, typename InputIterator2>
 bool equal(InputIterator1 b1, InputIterator1 e1,
            InputIterator2 b2, InputIterator2 e2) {
-  return equal(move(b1), move(e1), move(b2), move(e2), equal_to<void>());
+  return equal(b1, e1, b2, e2, equal_to<void>());
 }
 
 template<typename InputIterator1, typename InputIterator2,
@@ -256,7 +260,7 @@ bool equal(InputIterator1 b1, InputIterator1 e1,
 template<typename ForwardIterator1, typename ForwardIterator2>
 bool is_permutation(ForwardIterator1 b1, ForwardIterator1 e1,
                     ForwardIterator2 b2) {
-  return is_permutation(move(b1), move(e1), move(b2), equal_to<void>());
+  return is_permutation(b1, e1, b2, equal_to<void>());
 }
 
 template<typename ForwardIterator1, typename ForwardIterator2,
@@ -267,7 +271,7 @@ bool is_permutation(ForwardIterator1 b1, ForwardIterator1 e1,
   using impl::simple_bitset;
 
   /* First eliminate anything that is equal. */
-  tie(b1, b2) = mismatch(move(b1), e1, move(b2), ref(predicate));
+  tie(b1, b2) = mismatch(b1, e1, b2, ref(predicate));
   if (b1 == e1) return true;  // Everything is equal.
 
   /* Use a collection to find the remaining items. */
@@ -293,7 +297,7 @@ bool is_permutation(ForwardIterator1 b1, ForwardIterator1 e1,
 template<typename ForwardIterator1, typename ForwardIterator2>
 bool is_permutation(ForwardIterator1 b1, ForwardIterator1 e1,
                     ForwardIterator2 b2, ForwardIterator2 e2) {
-  return is_permutation(move(b1), move(e1), move(b2), move(e2),
+  return is_permutation(b1, e1, b2, e2,
                         equal_to<void>());
 }
 
@@ -307,7 +311,7 @@ bool is_permutation(ForwardIterator1 b1, ForwardIterator1 e1,
   if (impl::unequal_distance(b1, e1, b2, e2)) return false;
 
   /* First eliminate anything that is equal. */
-  tie(b1, b2) = mismatch(move(b1), e1, move(b2), e2, ref(predicate));
+  tie(b1, b2) = mismatch(b1, e1, b2, e2, ref(predicate));
   if (b1 == e1) return b2 == e2;  // Everything is equal.
   if (b2 == e2) return false;  // Unequal length.
   if (impl::unequal_distance(b1, e1, b2, e2)) return false;
@@ -338,8 +342,8 @@ ForwardIterator1 search(ForwardIterator1 haystack_b,
                         ForwardIterator1 haystack_e,
                         ForwardIterator2 needle_b,
                         ForwardIterator2 needle_e) {
-  return search(move(haystack_b), move(haystack_e),
-                move(needle_b), move(needle_e), equal_to<void>());
+  return search(haystack_b, haystack_e,
+                needle_b, needle_e, equal_to<void>());
 }
 
 template<typename ForwardIterator1, typename ForwardIterator2,
@@ -353,7 +357,7 @@ ForwardIterator1 search(ForwardIterator1 haystack_b,
   ForwardIterator2 n_mismatch;
 
   for (;;) {
-    haystack_b = find(move(haystack_b), haystack_e, *needle_b);
+    haystack_b = find(haystack_b, haystack_e, *needle_b);
     tie(h_mismatch, n_mismatch) = mismatch(haystack_b, haystack_e,
                                            needle_b, needle_e, ref(predicate));
     if (n_mismatch == needle_e) return haystack_b;
@@ -365,7 +369,7 @@ ForwardIterator1 search(ForwardIterator1 haystack_b,
 template<typename ForwardIterator, class Size, typename T>
 ForwardIterator search_n(ForwardIterator b, ForwardIterator e,
                          Size n, const T& v) {
-  return search_n(move(b), move(e), move(n), v, equal_to<void>());
+  return search_n(b, e, n, v, equal_to<void>());
 }
 
 template<typename ForwardIterator, class Size, typename T,
@@ -379,7 +383,7 @@ ForwardIterator search_n(ForwardIterator b, ForwardIterator e,
 
   for (;;) {
     /* Find first match. */
-    ForwardIterator match = b = find_if(move(b), e,
+    ForwardIterator match = b = find_if(b, e,
                                         bind(ref(predicate), _1, v));
     if (b == e) return b;
 
@@ -435,7 +439,7 @@ auto algorithm_copy(InputIterator b, InputIterator e, OutputIterator out) ->
 
 template<typename InputIterator, typename OutputIterator>
 OutputIterator copy(InputIterator b, InputIterator e, OutputIterator out) {
-  return impl::algorithm_copy(move(b), move(e), move(out));
+  return impl::algorithm_copy(b, e, out);
 }
 
 /* Some specializations for copy_n. */
@@ -471,7 +475,7 @@ auto algorithm_copy_n(InputIterator b, Size n, OutputIterator out) ->
 
 template<typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(InputIterator b, Size n, OutputIterator out) {
-  return impl::algorithm_copy_n(move(b), move(n), move(out));
+  return impl::algorithm_copy_n(b, n, out);
 }
 
 template<typename InputIterator, typename OutputIterator, typename Predicate>
@@ -529,7 +533,7 @@ auto algorithm_move(InputIterator b, InputIterator e, OutputIterator out) ->
 
 template<typename InputIterator, typename OutputIterator>
 OutputIterator move(InputIterator b, InputIterator e, OutputIterator out) {
-  return impl::algorithm_move(move(b), move(e), move(out));
+  return impl::algorithm_move(b, e, out);
 }
 
 template<typename BidirectionalIterator1, typename BidirectionalIterator2>
@@ -659,7 +663,7 @@ OutputIterator generate_n(OutputIterator b, Size n, Generator gen) {
 
 template<typename ForwardIterator, typename T>
 ForwardIterator remove(ForwardIterator b, ForwardIterator e, const T& v) {
-  b = find(move(b), e, v);
+  b = find(b, e, v);
   if (b == e) return b;
 
   ForwardIterator out = b;
@@ -864,7 +868,7 @@ OutputIterator algorithm_unique_copy(ForwardIterator b, ForwardIterator e,
                                      Predicate predicate,
                                      const forward_iterator_tag& t,
                                      const forward_iterator_tag&) {
-  return unique_copy(move(b), move(e), move(out), move(predicate),
+  return unique_copy(b, e, out, ref(predicate),
                      t, output_iterator_tag());
 }
 
@@ -881,7 +885,7 @@ struct unique_cmp {
 template<typename InputIterator, typename OutputIterator>
 OutputIterator unique_copy(InputIterator b, InputIterator e,
                            OutputIterator out) {
-  return unique_copy(move(b), move(e), move(out), impl::unique_cmp());
+  return unique_copy(b, e, out, impl::unique_cmp());
 }
 
 template<typename InputIterator, typename OutputIterator,
@@ -890,7 +894,7 @@ OutputIterator unique_copy(InputIterator b, InputIterator e,
                            OutputIterator out,
                            BinaryPredicate predicate) {
   return impl::algorithm_unique_copy(
-      move(b), move(e), move(out), move(predicate),
+      b, e, out, ref(predicate),
       typename iterator_traits<InputIterator>::iterator_tag(),
       typename iterator_traits<OutputIterator>::iterator_tag());
 }
@@ -951,7 +955,7 @@ template<typename ForwardIterator, typename OutputIterator>
 OutputIterator rotate_copy(ForwardIterator b, ForwardIterator middle,
                            ForwardIterator e,
                            OutputIterator out) {
-  return copy(b, middle, copy(middle, e, move(out)));
+  return copy(b, middle, copy(middle, e, out));
 }
 
 template<typename InputIterator, typename Predicate>
@@ -967,7 +971,7 @@ ForwardIterator partition(ForwardIterator b, ForwardIterator e,
   if (b == e) return b;
 
   ForwardIterator i = next(b);
-  while ((i = find_if(i, e, predicate)) != e)
+  while ((i = find_if(i, e, ref(predicate))) != e)
     iter_swap(b++, i++);
   return b;
 }
@@ -980,7 +984,7 @@ template<typename BidirectionalIterator, typename Predicate>
 BidirectionalIterator stable_partition_inplace(
     BidirectionalIterator b, BidirectionalIterator e, Predicate predicate) {
   if (b == e) return b;
-  assert(predicate(b) == false);
+  assert(predicate(*b) == false);
 
   BidirectionalIterator middle = find_if(next(b), e, ref(predicate));
 
@@ -991,7 +995,7 @@ BidirectionalIterator stable_partition_inplace(
      */
     BidirectionalIterator next_fail = find_if_not(next(middle), e,
                                                   ref(predicate));
-    e = stable_partition_inplace(move(next_fail), e, ref(predicate));
+    e = stable_partition_inplace(next_fail, e, ref(predicate));
   }
   return rotate(b, middle, e);
 }
@@ -1117,7 +1121,7 @@ template<typename BidirectionalIterator, typename Predicate>
 BidirectionalIterator stable_partition(BidirectionalIterator b,
                                        BidirectionalIterator e,
                                        Predicate predicate) {
-  return impl::stable_partition_impl(move(b), move(e), move(predicate));
+  return impl::stable_partition_impl(b, e, ref(predicate));
 }
 
 template<typename InputIterator, typename OutputIterator1,
@@ -1140,16 +1144,13 @@ template<typename ForwardIterator, typename Predicate>
 ForwardIterator partition_point(ForwardIterator b, ForwardIterator e,
                                 Predicate predicate) {
   assert(is_partitioned(b, e, ref(predicate)));
-  return find_if_not(move(b), move(e), move(predicate));
+  return find_if_not(b, e, ref(predicate));
 }
 
 
 template<typename RandomAccessIterator>
 void sort(RandomAccessIterator b, RandomAccessIterator e) {
-  using value_type =
-      typename iterator_traits<RandomAccessIterator>::value_type;
-
-  sort(move(b), move(e), less<value_type>());
+  sort(b, e, less<void>());
 }
 
 template<typename RandomAccessIterator, typename Predicate>
@@ -1173,10 +1174,11 @@ void sort(RandomAccessIterator b, RandomAccessIterator e,
    * Sort will proceed recursively on the two partitions.
    */
   RandomAccessIterator mid = b;  // XXX use random generator!
-  auto left_mid = partition(b, mid,
-                            not1(bind(ref(predicate), cref(*mid), _1)));
+  auto left_mid = partition(
+      b, mid,
+      bind(logical_not<void>(), bind(ref(predicate), ref(*mid), _1)));
   auto right_mid = partition(next(mid), e,
-                             bind(ref(predicate), _1, cref(*mid)));
+                             bind(ref(predicate), _1, ref(*mid)));
 
   /*
    * Layout:
@@ -1208,15 +1210,12 @@ void sort(RandomAccessIterator b, RandomAccessIterator e,
    * - [right_mid, e)                                  \o/
    */
   sort(b, pivot, ref(predicate));
-  sort(next(move(pivot)), move(e), ref(predicate));
+  sort(next(pivot), e, ref(predicate));
 }
 
 template<typename RandomAccessIterator>
 void stable_sort(RandomAccessIterator b, RandomAccessIterator e) {
-  using value_type =
-      typename iterator_traits<RandomAccessIterator>::value_type;
-
-  stable_sort(move(b), move(e), less<value_type>());
+  stable_sort(b, e, less<void>());
 }
 
 
@@ -1242,9 +1241,9 @@ void stable_sort(RandomAccessIterator b, RandomAccessIterator e,
    */
   RandomAccessIterator mid = b;  // XXX use random generator!
   auto left_mid = stable_partition(b, mid,
-                                   not1(bind(ref(predicate), cref(*mid), _1)));
+      bind(logical_not<void>(), bind(ref(predicate), ref(*mid), _1)));
   auto right_mid = stable_partition(next(mid), e,
-                                    bind(ref(predicate), _1, cref(*mid)));
+                                    bind(ref(predicate), _1, ref(*mid)));
 
   /*
    * Layout:
@@ -1276,7 +1275,7 @@ void stable_sort(RandomAccessIterator b, RandomAccessIterator e,
    * - [right_mid, e)                                  \o/
    */
   stable_sort(b, pivot, ref(predicate));
-  stable_sort(next(move(pivot)), move(e), ref(predicate));
+  stable_sort(next(pivot), e, ref(predicate));
 }
 
 

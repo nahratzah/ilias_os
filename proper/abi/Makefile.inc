@@ -16,6 +16,7 @@ ABI_SRCS += abi/src/abi_misc_int.cc
 ABI_SRCS += abi/src/abi_ref_cstr.cc
 ABI_SRCS += abi/src/abi_semaphore.cc
 ABI_SRCS += abi/src/abi_typeinfo.cc
+ABI_SRCS += abi/src/algorithm.cc
 ABI_SRCS += abi/src/atomic.cc
 ABI_SRCS += abi/src/cstdlib.cc
 ABI_SRCS += abi/src/cstdio.cc

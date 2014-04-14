@@ -68,7 +68,7 @@ typename iterator_traits<InputIterator>::difference_type count(
     InputIterator, InputIterator, const T&);
 
 template<typename InputIterator, typename Predicate>
-typename iterator_traits<InputIterator>::difference_type count(
+typename iterator_traits<InputIterator>::difference_type count_if(
     InputIterator, InputIterator, Predicate);
 
 template<typename InputIterator1, typename InputIterator2>
@@ -294,6 +294,13 @@ void sort(RandomAccessIterator, RandomAccessIterator);
 template<typename RandomAccessIterator, typename Predicate>
 void sort(RandomAccessIterator, RandomAccessIterator, Predicate);
 
+template<typename RandomAccessIterator>
+void stable_sort(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void stable_sort(RandomAccessIterator, RandomAccessIterator,
+                 Predicate);
+
 
 template<typename T>
 auto min(const T& a, const T& b) -> const T&;
@@ -318,6 +325,48 @@ auto min(initializer_list<T> il, Comp cmp) -> T;
 
 template<typename T, typename Comp>
 auto max(initializer_list<T> il, Comp cmp) -> T;
+
+
+#define _EXTERNALIZE(extern, Type)					\
+extern template Type* find(Type*, Type*, const Type&);			\
+extern template const Type* find(const Type*, const Type*,		\
+                                 const Type&);				\
+extern template Type* adjecent_find(Type*, Type*);			\
+extern template const Type* adjecent_find(const Type*, const Type*);	\
+extern template iterator_traits<Type*>::difference_type count(		\
+    Type*, Type*, const Type&);						\
+extern template iterator_traits<const Type*>::difference_type count(	\
+    const Type*, const Type*, const Type&);				\
+extern template void replace(Type*, Type*, const Type&, const Type&);	\
+extern template void fill(Type*, Type*, const Type&);			\
+extern template Type* remove(Type*, Type*, const Type&);		\
+extern template Type* unique(Type*, Type*);				\
+extern template void reverse(Type*, Type*);				\
+extern template Type* rotate(Type*, Type*, Type*);			\
+extern template void sort(Type*, Type*);				\
+extern template void stable_sort(Type*, Type*);
+
+
+#define _EXTERNALIZE_ALL(extern)					\
+_EXTERNALIZE(extern, char)						\
+_EXTERNALIZE(extern, wchar_t)						\
+_EXTERNALIZE(extern, signed char)					\
+_EXTERNALIZE(extern, unsigned char)					\
+_EXTERNALIZE(extern, short)						\
+_EXTERNALIZE(extern, unsigned short)					\
+_EXTERNALIZE(extern, int)						\
+_EXTERNALIZE(extern, unsigned int)					\
+_EXTERNALIZE(extern, long)						\
+_EXTERNALIZE(extern, unsigned long)					\
+_EXTERNALIZE(extern, long long)						\
+_EXTERNALIZE(extern, unsigned long long)
+
+_EXTERNALIZE_ALL(extern)
+
+#ifndef _COMPILING_ALGORITHM
+# undef _EXTERNALIZE
+# undef _EXTERNALIZE_ALL
+#endif
 
 
 _namespace_end(std)
