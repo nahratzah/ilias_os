@@ -19,29 +19,9 @@ auto reference_wrapper<T>::get() const noexcept -> type& {
 template<typename T>
 template<typename... ArgTypes>
 auto reference_wrapper<T>::operator()(ArgTypes&&... args) const
-    noexcept(noexcept(get()(forward<ArgTypes>(args)...))) ->
-    result_of_t<type&(ArgTypes&&...)> {
+    noexcept(noexcept(impl::invoke(get(), forward<ArgTypes>(args)...))) ->
+    decltype(impl::invoke(get(), forward<ArgTypes>(args)...)) {
   return impl::invoke(get(), forward<ArgTypes>(args)...);
-}
-
-template<typename T>
-reference_wrapper<T> ref(T& v) noexcept {
-  return reference_wrapper<T>(v);
-}
-
-template<typename T>
-reference_wrapper<const T> cref(const T& v) noexcept {
-  return reference_wrapper<const T>(v);
-}
-
-template<typename T>
-reference_wrapper<T> ref(reference_wrapper<T> rw) noexcept {
-  return reference_wrapper<T>(rw.get());
-}
-
-template<typename T>
-reference_wrapper<const T> cref(reference_wrapper<T> rw) noexcept {
-  return reference_wrapper<const T>(rw.get());
 }
 
 
@@ -232,6 +212,10 @@ auto resolve_argument(T& v, Args, ArgIndices) ->
                 T&> {
   return v;
 }
+template<typename T, typename Args, typename ArgIndices>
+auto resolve_argument(const reference_wrapper<T>& v, Args, ArgIndices) -> T& {
+  return v.get();
+}
 
 /*
  * Resolve argument:  case for placeholder.
@@ -263,10 +247,10 @@ template<typename T, typename Args, size_t... ArgIndices>
 auto resolve_argument(T& v, Args args,
                       index_sequence<ArgIndices...>) ->
     enable_if_t<is_bind_expression<T>::value,
-                decltype(v(get<ArgIndices>(args)...))> {
-  static_assert(!is_void<decltype(v(get<ArgIndices>(args)...))>::value,
+                decltype(impl::invoke(v, get<ArgIndices>(args)...))> {
+  static_assert(!is_void<decltype(impl::invoke(v, get<ArgIndices>(args)...))>::value,
                 "Nested bind expression returning void.");
-  return v(get<ArgIndices>(args)...);
+  return impl::invoke(v, get<ArgIndices>(args)...);
 }
 
 
@@ -375,12 +359,12 @@ class expression_r
 
   template<typename... Args>
   auto operator()(Args&&... args) -> result_type {
-    return impl_(forward<Args>(args)...);
+    return impl::invoke(impl_, forward<Args>(args)...);
   }
 
   template<typename... Args>
   auto operator()(Args&&... args) const -> result_type {
-    return impl_(forward<Args>(args)...);
+    return impl::invoke(impl_, forward<Args>(args)...);
   }
 
  private:
@@ -420,12 +404,12 @@ class expression_r<void, F, BoundArgs...>
 
   template<typename... Args>
   auto operator()(Args&&... args) -> result_type {
-    impl_(forward<Args>(args)...);
+    impl::invoke(impl_, forward<Args>(args)...);
   }
 
   template<typename... Args>
   auto operator()(Args&&... args) const -> result_type {
-    impl_(forward<Args>(args)...);
+    impl::invoke(impl_, forward<Args>(args)...);
   }
 
  private:

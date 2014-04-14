@@ -42,8 +42,9 @@ template<typename T> class reference_wrapper
   type& get() const noexcept;
 
   template<typename... ArgTypes>
-  result_of_t<type&(ArgTypes&&...)> operator()(ArgTypes&&... args) const
-      noexcept(noexcept(get()(forward<ArgTypes>(args)...)));
+  auto operator()(ArgTypes&&... args) const
+      noexcept(noexcept(impl::invoke(get(), forward<ArgTypes>(args)...))) ->
+      decltype(impl::invoke(get(), forward<ArgTypes>(args)...));
 
  private:
   type* ref_;
