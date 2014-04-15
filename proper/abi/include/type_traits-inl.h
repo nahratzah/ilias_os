@@ -308,17 +308,9 @@ template<typename T> struct remove_reference { using type = T; };
 template<typename T> struct remove_reference<T&> { using type = T; };
 template<typename T> struct remove_reference<T&&> { using type = T; };
 
-template<typename T, bool = is_void<T>::value> struct _add_lvalue_ref
-{ using type = remove_reference_t<T>&; };
-template<typename T> struct _add_lvalue_ref<T, true>
-{ using type = remove_reference_t<T>; };
-template<typename T> struct add_lvalue_reference : _add_lvalue_ref<T> {};
+template<typename T> struct add_lvalue_reference { using type = T&; };
 
-template<typename T, bool = is_void<T>::value> struct _add_rvalue_ref
-{ using type = remove_reference_t<T>&&; };
-template<typename T> struct _add_rvalue_ref<T, true>
-{ using type = remove_reference_t<T>; };
-template<typename T> struct add_rvalue_reference : _add_rvalue_ref<T> {};
+template<typename T> struct add_rvalue_reference { using type = T&&; };
 
 
 template<typename T> struct _make_signed_ll;

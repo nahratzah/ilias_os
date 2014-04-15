@@ -17,7 +17,10 @@ class relptr {
  public:
   using element_type = T;
   using pointer = _namespace(std)::add_pointer_t<element_type>;
-  using reference = _namespace(std)::add_lvalue_reference_t<T>;
+  using reference = typename _namespace(std)::conditional_t<
+      _namespace(std)::is_void<T>::value,
+      _namespace(std)::identity<T>,
+      _namespace(std)::add_lvalue_reference<T>>::type;
   using difference_type = ptrdiff_t;
 
   constexpr relptr(decltype(nullptr) = nullptr) noexcept {}

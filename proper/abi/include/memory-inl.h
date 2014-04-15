@@ -321,7 +321,10 @@ auto unique_ptr<T, D>::operator=(nullptr_t) noexcept -> unique_ptr& {
 }
 
 template<typename T, typename D>
-auto unique_ptr<T, D>::operator*() const -> add_lvalue_reference_t<T> {
+auto unique_ptr<T, D>::operator*() const ->
+    typename conditional_t<is_void<T>::value,
+                           identity<T>,
+                           add_lvalue_reference<T>>::type {
   assert_msg(get() != nullptr, "attempt to dereference unique_ptr to nullptr");
   return *get();
 }

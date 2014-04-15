@@ -323,7 +323,10 @@ template<typename T, typename D = default_delete<T>> class unique_ptr {
       noexcept;
   unique_ptr& operator=(nullptr_t) noexcept;
 
-  add_lvalue_reference_t<T> operator*() const;
+  auto operator*() const ->
+      typename conditional_t<is_void<T>::value,
+                             identity<T>,
+                             add_lvalue_reference<T>>::type;
   pointer operator->() const noexcept;
   pointer get() const noexcept;
   deleter_type& get_deleter() noexcept;
