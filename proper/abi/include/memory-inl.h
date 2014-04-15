@@ -1,3 +1,5 @@
+#include <stdimpl/shared_ptr_ownership.h>
+
 _namespace_begin(std)
 namespace impl {
 
@@ -681,6 +683,460 @@ template<typename T>
 template<typename U>
 T* auto_ptr_ref<T>::release_impl_(void* pp) noexcept {
   return static_cast<auto_ptr<U>*>(pp)->release();
+}
+
+
+/* Implementation for shared_ptr_ownership. */
+namespace impl {
+
+
+template<typename T, typename D, typename A>
+class shared_ptr_ownership_impl
+: public shared_ptr_ownership
+{
+ public:
+  using allocator_type = typename
+      allocator_traits<A>::template rebind_alloc<shared_ptr_ownership_impl>;
+
+ private:
+  using data_type = tuple<unique_ptr<T, D>, A>;
+
+ public:
+  shared_ptr_ownership_impl(unique_ptr<T, D>, A);
+
+  void* get_deleter(const type_info& ti) noexcept override;
+
+ private:
+  void release_pointee() noexcept override;
+  void destroy_me() noexcept override;
+
+  data_type data_;
+};
+
+
+template<typename T, typename D, typename A>
+shared_ptr_ownership_impl<T, D, A>::shared_ptr_ownership_impl(
+    unique_ptr<T, D> ptr, A alloc)
+: data_(move(ptr), move(alloc))
+{}
+
+template<typename T, typename D, typename A>
+void* shared_ptr_ownership_impl<T, D, A>::get_deleter(const type_info& ti)
+    noexcept {
+  if (typeid(D) == ti)
+    return &get<0>(data_).get_deleter();
+  return nullptr;
+}
+
+template<typename T, typename D, typename A>
+void shared_ptr_ownership_impl<T, D, A>::release_pointee() noexcept {
+  get<0>(data_) = nullptr;
+}
+
+template<typename T, typename D, typename A>
+void shared_ptr_ownership_impl<T, D, A>::destroy_me() noexcept {
+  allocator_type alloc = get<1>(move(data_));
+  allocator_traits<allocator_type>::destroy(alloc, this);
+  allocator_traits<allocator_type>::deallocate(alloc, this, 1);
+}
+
+
+template<typename T, typename D, typename A>
+shared_ptr_ownership* allocate_shared_ptr_ownership(
+    unique_ptr<T, D> ptr, const A& alloc_arg = std::allocator<void>()) {
+  using impl = shared_ptr_ownership_impl<T, D, A>;
+  using allocator_type = typename impl::allocator_type;
+
+  class uninitialized_deleter {
+   public:
+    uninitialized_deleter(allocator_type& alloc) noexcept : alloc_(alloc) {}
+
+    void operator()(impl* p) const noexcept {
+      allocator_traits<allocator_type>::deallocate(alloc_, p, 1);
+    }
+
+   private:
+    allocator_type& alloc_;
+  };
+
+  allocator_type alloc = alloc_arg;
+  auto storage_ptr = unique_ptr<impl*, uninitialized_deleter>(
+      allocator_traits<allocator_type>::allocate(1), alloc);
+  allocator_traits<allocator_type>::construct(storage_ptr.get(),
+                                              move(ptr), alloc);
+  return storage_ptr.release();
+}
+
+
+} /* namespace impl */
+
+template<typename T>
+template<typename Y>
+shared_ptr<T>::shared_ptr(Y* ptr)
+: shared_ptr(unique_ptr<Y>(ptr))
+{}
+
+template<typename T>
+template<typename Y, typename D>
+shared_ptr<T>::shared_ptr(Y* ptr, D deleter)
+: shared_ptr(unique_ptr<Y, D>(ptr, move_if_noexcept(deleter)))
+{}
+
+template<typename T>
+template<typename Y, typename D, typename A>
+shared_ptr<T>::shared_ptr(Y* ptr, D deleter, A alloc)
+: shared_ptr(unique_ptr<Y, D>(ptr, move_if_noexcept(deleter)),
+             move_if_noexcept(alloc))
+{}
+
+template<typename T>
+template<typename D>
+shared_ptr<T>::shared_ptr(nullptr_t, D)
+: shared_ptr()
+{}
+
+template<typename T>
+template<typename D, typename A>
+shared_ptr<T>::shared_ptr(nullptr_t, D, A)
+: shared_ptr()
+{}
+
+template<typename T>
+template<typename Y>
+shared_ptr<T>::shared_ptr(const shared_ptr<Y>& owner, T* ptr) noexcept
+: ptr_(ptr),
+  ownership_(owner.ownership_)
+{
+  if (ownership_) {
+    impl::shared_ptr_ownership::acquire(ownership_);
+    ownership_->shared_ptr_acquire_from_shared_ptr();
+  }
+}
+
+template<typename T>
+shared_ptr<T>::shared_ptr(const shared_ptr& ptr) noexcept
+: shared_ptr(ptr, (ptr.ownership_ ? ptr.get() : nullptr))
+{}
+
+template<typename T>
+template<typename Y, typename>
+shared_ptr<T>::shared_ptr(const shared_ptr<Y>& ptr) noexcept
+: shared_ptr(ptr, (ptr.ownership_ ? ptr.get() : nullptr))
+{}
+
+template<typename T>
+shared_ptr<T>::shared_ptr(shared_ptr&& ptr) noexcept
+: ptr_(exchange(ptr.ptr_, nullptr)),
+  ownership_(exchange(ptr.ownership_, nullptr))
+{}
+
+template<typename T>
+template<typename Y, typename>
+shared_ptr<T>::shared_ptr(shared_ptr<Y>&& ptr) noexcept
+: ptr_(exchange(ptr.ptr_, nullptr)),
+  ownership_(exchange(ptr.ownership_, nullptr))
+{}
+
+template<typename T>
+template<typename Y>
+shared_ptr<T>::shared_ptr(const weak_ptr<Y>& wptr) {
+  T* ptr = wptr.ptr_;
+  impl::shared_ptr_ownership* ownership = wptr.ownership_;
+
+  /* Try to acquire ownership. */
+  if (ownership) {
+    impl::shared_ptr_ownership::acquire(ownership);
+    if (!ownership->shared_ptr_acquire_from_weak_ptr()) {
+      impl::shared_ptr_ownership::release(ownership);
+      throw bad_weak_ptr();
+    }
+  }
+
+  /* Ownership acquisition succesful, assign to this. */
+  ptr_ = ptr;
+  ownership_ = ownership;
+}
+
+template<typename T>
+template<typename Y>
+shared_ptr<T>::shared_ptr(auto_ptr<Y>&& aptr)
+: shared_ptr(unique_ptr<Y>(aptr))
+{}
+
+template<typename T>
+template<typename Y, typename D>
+shared_ptr<T>::shared_ptr(unique_ptr<Y, D>&& ptr)
+: shared_ptr(move(ptr), allocator<void>())
+{}
+
+template<typename T>
+template<typename Y, typename D, typename A>
+shared_ptr<T>::shared_ptr(unique_ptr<Y, D>&& ptr, A alloc) {
+  if (ptr) {
+    T* p = ptr.get();
+    /* ownership_ gets constructed with reference counters set to 1. */
+    ownership_ = impl::allocate_shared_ptr_ownership(move(ptr),
+                                                     move_if_noexcept(alloc));
+    ptr_ = p;
+  }
+}
+
+template<typename T>
+shared_ptr<T>::~shared_ptr() noexcept {
+  if (ownership_) {
+    ownership_->shared_ptr_release();
+    impl::shared_ptr_ownership::release(ownership_);
+  } else if (ptr_) {
+    delete ptr_;
+  }
+
+  ownership_ = nullptr;
+  ptr_ = nullptr;
+}
+
+template<typename T>
+auto shared_ptr<T>::operator=(const shared_ptr& ptr) noexcept -> shared_ptr& {
+  if (ownership_ != nullptr && ownership_ == ptr.ownership_)
+    ptr_ = ptr.ptr_;  // Don't modify the reference counters.
+  else
+    shared_ptr(ptr).swap(*this);
+  return *this;
+}
+
+template<typename T>
+template<typename Y>
+auto shared_ptr<T>::operator=(const shared_ptr<Y>& ptr) noexcept ->
+    shared_ptr& {
+  if (ownership_ != nullptr && ownership_ == ptr.ownership_)
+    ptr_ = ptr.ptr_;  // Don't modify the reference counters.
+  else
+    shared_ptr(ptr).swap(*this);
+  return *this;
+}
+
+template<typename T>
+auto shared_ptr<T>::operator=(shared_ptr&& ptr) noexcept -> shared_ptr& {
+  shared_ptr(move(ptr)).swap(*this);
+  return *this;
+}
+
+template<typename T>
+template<typename Y>
+auto shared_ptr<T>::operator=(auto_ptr<Y>&& ptr) -> shared_ptr& {
+  shared_ptr(move(ptr)).swap(*this);
+  return *this;
+}
+
+template<typename T>
+template<typename Y, typename D>
+auto shared_ptr<T>::operator=(unique_ptr<Y, D>&& ptr) -> shared_ptr& {
+  shared_ptr(move(ptr)).swap(*this);
+  return *this;
+}
+
+template<typename T>
+auto shared_ptr<T>::swap(shared_ptr& other) noexcept -> void {
+  using _namespace(std)::swap;
+
+  swap(ptr_, other.ptr_);
+  swap(ownership_, other.ownership_);
+}
+
+template<typename T>
+auto shared_ptr<T>::reset() noexcept -> void {
+  shared_ptr().swap(*this);
+}
+
+template<typename T>
+template<typename Y>
+auto shared_ptr<T>::reset(Y* p) -> void {
+  shared_ptr(p).swap(*this);
+}
+
+template<typename T>
+template<typename Y, typename D>
+auto shared_ptr<T>::reset(Y* p, D d) -> void {
+  shared_ptr(p, d).swap(*this);
+}
+
+template<typename T>
+template<typename Y, typename D, typename A>
+auto shared_ptr<T>::reset(Y* p, D d, A a) -> void {
+  shared_ptr(p, d, a).swap(*this);
+}
+
+template<typename T>
+auto shared_ptr<T>::get() const noexcept -> T* {
+  return ptr_;
+}
+
+template<typename T>
+auto shared_ptr<T>::operator*() const noexcept ->
+    typename conditional_t<is_void<T>::value,
+                           identity<T>,
+                           add_lvalue_reference<T>>::type {
+  assert_msg(get() != nullptr, "shared_ptr: dereference of nullptr");
+  return *get();
+}
+
+template<typename T>
+auto shared_ptr<T>::operator->() const noexcept -> T* {
+  assert_msg(get() != nullptr, "shared_ptr: dereference of nullptr");
+  return get();
+}
+
+template<typename T>
+auto shared_ptr<T>::use_count() const noexcept -> long {
+  return (ownership_ ? ownership_->get_shared_refcount() : 0);
+}
+
+template<typename T>
+auto shared_ptr<T>::unique() const noexcept -> bool {
+  /*
+   * NOTE: this does not count weak pointers to the object.
+   */
+  return use_count() == 1;
+}
+
+template<typename T>
+shared_ptr<T>::operator bool() const noexcept {
+  return get() != nullptr;
+}
+
+template<typename T>
+template<typename U>
+auto shared_ptr<T>::owner_before(const shared_ptr<U>& other) const -> bool {
+  return ownership_ < other.ownership_;
+}
+
+template<typename T>
+template<typename U>
+auto shared_ptr<T>::owner_before(const weak_ptr<U>& other) const -> bool {
+  return ownership_ < other.ownership_;
+}
+
+template<typename T, typename... Args>
+shared_ptr<T> make_shared(Args&&... args) {
+  return allocate_shared<T>(std::allocator<void>(), forward<Args>(args)...);
+}
+
+template<typename T, typename A, typename... Args>
+shared_ptr<T> allocate_shared(const A& alloc, Args&&... args) {
+  shared_ptr<T> rv;
+
+  auto ownership_impl = impl::create_placement_shared_ptr_ownership(
+      alloc, forward<Args>(args)...);
+  rv.ownership_ = ownership_impl;
+  rv.ptr_ = ownership_impl.get();
+  return rv;
+}
+
+template<typename T, typename U>
+bool operator==(const shared_ptr<T>& a, const shared_ptr<U>& b) noexcept {
+  return a.get() == b.get();
+}
+
+template<typename T, typename U>
+bool operator!=(const shared_ptr<T>& a, const shared_ptr<U>& b) noexcept {
+}
+
+template<typename T, typename U>
+bool operator<(const shared_ptr<T>& a, const shared_ptr<U>& b) noexcept {
+  using ct = common_type_t<typename pointer_traits<shared_ptr<T>>::pointer,
+                           typename pointer_traits<shared_ptr<U>>::pointer>;
+  return less<ct>()(a.get(), b.get());
+}
+
+template<typename T, typename U>
+bool operator<=(const shared_ptr<T>& a, const shared_ptr<U>& b) noexcept {
+  return !(b < a);
+}
+
+template<typename T, typename U>
+bool operator>(const shared_ptr<T>& a, const shared_ptr<U>& b) noexcept {
+  return b < a;
+}
+
+template<typename T, typename U>
+bool operator>=(const shared_ptr<T>& a, const shared_ptr<U>& b) noexcept {
+  return !(a < b);
+}
+
+template<typename T>
+bool operator==(const shared_ptr<T>& a, nullptr_t) noexcept {
+  return !a;
+}
+template<typename T>
+bool operator==(nullptr_t, const shared_ptr<T>& a) noexcept {
+  return !a;
+}
+
+template<typename T>
+bool operator!=(const shared_ptr<T>& a, nullptr_t) noexcept {
+  return bool(a);
+}
+template<typename T>
+bool operator!=(nullptr_t, const shared_ptr<T>& a) noexcept {
+  return bool(a);
+}
+
+template<typename T>
+bool operator<(const shared_ptr<T>& a, nullptr_t) noexcept {
+  return less<T*>()(a.get(), nullptr);
+}
+template<typename T>
+bool operator<(nullptr_t, const shared_ptr<T>& a) noexcept {
+  return less<T*>()(nullptr, a.get());
+}
+
+template<typename T>
+bool operator>(const shared_ptr<T>& a, nullptr_t) noexcept {
+  return nullptr < a;
+}
+template<typename T>
+bool operator>(nullptr_t, const shared_ptr<T>& a) noexcept {
+  return a < nullptr;
+}
+
+template<typename T>
+bool operator<=(const shared_ptr<T>& a, nullptr_t) noexcept {
+  return !(nullptr < a);
+}
+template<typename T>
+bool operator<=(nullptr_t, const shared_ptr<T>& a) noexcept {
+  return !(a < nullptr);
+}
+
+template<typename T>
+bool operator>=(const shared_ptr<T>& a, nullptr_t) noexcept {
+  return !(a < nullptr);
+}
+template<typename T>
+bool operator>=(nullptr_t, const shared_ptr<T>& a) noexcept {
+  return !(nullptr < a);
+}
+
+template<typename T>
+void swap(shared_ptr<T>& a, shared_ptr<T>& b) noexcept {
+  a.swap(b);
+}
+
+template<typename T, typename U>
+shared_ptr<T> static_pointer_cast(const shared_ptr<U>& r) noexcept {
+  if (!r.use_count()) return nullptr;
+  return shared_ptr<T>(r, static_cast<T*>(r.get()));
+}
+
+template<typename T, typename U>
+shared_ptr<T> dynamic_pointer_cast(const shared_ptr<U>& r) noexcept {
+  if (!r.use_count()) return nullptr;
+  return shared_ptr<T>(r, dynamic_cast<T*>(r.get()));
+}
+
+template<typename T, typename U>
+shared_ptr<T> const_pointer_cast(const shared_ptr<U>& r) noexcept {
+  if (!r.use_count()) return nullptr;
+  return shared_ptr<T>(r, const_cast<T*>(r.get()));
 }
 
 

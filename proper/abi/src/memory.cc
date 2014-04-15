@@ -25,6 +25,11 @@ void* align(size_t alignment, size_t size, void*& ptr, size_t& space) {
 }
 
 
+bad_weak_ptr::bad_weak_ptr() noexcept {}
+bad_weak_ptr::~bad_weak_ptr() noexcept {}
+const char* bad_weak_ptr::what() const noexcept { return "bad_weak_ptr"; }
+
+
 namespace impl {
 namespace {
 

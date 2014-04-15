@@ -15,6 +15,7 @@
 #include <stdimpl/pointer_traits.h>
 #include <stdimpl/unique_ptr_support.h>
 #include <stdimpl/functional_comparators.h>
+#include <stdimpl/shared_ptr_ownership-fwd.h>
 
 _namespace_begin(std)
 
@@ -519,15 +520,89 @@ class __attribute__((deprecated("auto_ptr is deprecated in C++11, "
 };
 
 
-class bad_weak_ptr;
+class bad_weak_ptr : public exception {
+ public:
+  bad_weak_ptr() noexcept;
+  ~bad_weak_ptr() noexcept override;
+  const char* what() const noexcept;
+};
 
 template<typename T> class shared_ptr;
+template<typename T> class weak_ptr;
 
 template<typename T, typename... Args>
 shared_ptr<T> make_shared(Args&&...);
 
 template<typename T, typename A, typename... Args>
 shared_ptr<T> allocate_shared(const A&, Args&&...);
+
+template<typename T> class shared_ptr {
+  template<typename Y> friend class shared_ptr;
+
+  template<typename Y, typename A, typename... Args>
+  friend shared_ptr<Y> allocate_shared(const A&, Args&&...);
+
+ private:
+  static void implicit_convertible_(T*);  // No implementation.
+  template<typename U> using is_implicit_convertible =
+      decltype(shared_ptr::implicit_convertible_(declval<U*>()));
+
+ public:
+  using element_type = T;
+
+  constexpr shared_ptr() noexcept = default;
+  template<typename Y> explicit shared_ptr(Y*);
+  template<typename Y, typename D> shared_ptr(Y*, D);
+  template<typename Y, typename D, typename A> shared_ptr(Y*, D, A);
+  template<typename D> shared_ptr(nullptr_t, D);
+  template<typename D, typename A> shared_ptr(nullptr_t, D, A);
+  template<typename Y> shared_ptr(const shared_ptr<Y>&, T*) noexcept;
+  shared_ptr(const shared_ptr&) noexcept;
+  template<typename Y, typename = is_implicit_convertible<Y>>
+      shared_ptr(const shared_ptr<Y>&) noexcept;
+  shared_ptr(shared_ptr&&) noexcept;
+  template<typename Y, typename = is_implicit_convertible<Y>>
+      shared_ptr(shared_ptr<Y>&&) noexcept;
+  template<typename Y> explicit shared_ptr(const weak_ptr<Y>&);
+  template<typename Y> shared_ptr(auto_ptr<Y>&&);
+  template<typename Y, typename D> shared_ptr(unique_ptr<Y, D>&&);
+  constexpr shared_ptr(nullptr_t) : shared_ptr() {}
+
+  /* This is an extension. */
+  template<typename Y, typename D, typename A>
+      shared_ptr(unique_ptr<Y, D>&&, A);
+
+  ~shared_ptr() noexcept;
+
+  shared_ptr& operator=(const shared_ptr&) noexcept;
+  template<typename Y> shared_ptr& operator=(const shared_ptr<Y>&) noexcept;
+  shared_ptr& operator=(shared_ptr&&) noexcept;
+  template<typename Y> shared_ptr& operator=(shared_ptr<Y>&&) noexcept;
+  template<typename Y> shared_ptr& operator=(auto_ptr<Y>&&);
+  template<typename Y, typename D> shared_ptr& operator=(unique_ptr<Y, D>&&);
+
+  void swap(shared_ptr&) noexcept;
+  void reset() noexcept;
+  template<typename Y> void reset(Y*);
+  template<typename Y, typename D> void reset(Y*, D);
+  template<typename Y, typename D, typename A> void reset(Y*, D, A);
+
+  T* get() const noexcept;
+  auto operator*() const noexcept ->
+      typename conditional_t<is_void<T>::value,
+                             identity<T>,
+                             add_lvalue_reference<T>>::type;
+  T* operator->() const noexcept;
+  long use_count() const noexcept;
+  bool unique() const noexcept;
+  explicit operator bool() const noexcept;
+  template<typename U> bool owner_before(const shared_ptr<U>&) const;
+  template<typename U> bool owner_before(const weak_ptr<U>&) const;
+
+ private:
+  T* ptr_ = nullptr;
+  impl::shared_ptr_ownership* ownership_ = nullptr;
+};
 
 template<typename T, typename U>
 bool operator==(const shared_ptr<T>&, const shared_ptr<U>&) noexcept;
