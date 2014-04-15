@@ -69,9 +69,9 @@ template<typename T1, typename T2>
 constexpr auto make_pair(T1&&, T2&&) ->
     pair<impl::pair_elem_t<T1>, impl::pair_elem_t<T2>>;
 
-template<typename T1, typename T2> struct tuple_size<pair<T1, T2>>;
-template<typename T1, typename T2> struct tuple_element<0, pair<T1, T2>>;
-template<typename T1, typename T2> struct tuple_element<1, pair<T1, T2>>;
+template<typename T1, typename T2> class tuple_size<pair<T1, T2>>;
+template<typename T1, typename T2> class tuple_element<0, pair<T1, T2>>;
+template<typename T1, typename T2> class tuple_element<1, pair<T1, T2>>;
 
 template<size_t I, class T1, class T2>
 constexpr auto get(pair<T1, T2>&) noexcept ->
