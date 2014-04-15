@@ -27,9 +27,9 @@ constexpr bool suitable_for_rw(memory_order mo) {
 }
 constexpr memory_order derive_from_succes(memory_order mo) {
   memory_order rv = mo;
-  if (mo == memory_order_acq_rel) mo = memory_order_acquire;
-  if (mo == memory_order_release) mo = memory_order_relaxed;
-  return mo;
+  if (mo == memory_order_acq_rel) rv = memory_order_acquire;
+  if (mo == memory_order_release) rv = memory_order_relaxed;
+  return rv;
 }
 
 } /* namespace std::impl */
