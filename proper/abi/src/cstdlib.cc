@@ -53,7 +53,7 @@ class fn_stack {
   fn_type fn_;
   fn_stack* tail_ = nullptr;
   static fn_stack* head_;
-  static abi::heap& heap;
+  static abi::heap& heap();
 };
 
 
@@ -81,7 +81,7 @@ bool fn_stack::empty() noexcept {
 }
 
 bool fn_stack::push(fn_type fn) noexcept {
-  fn_stack* e = static_cast<fn_stack*>(heap.malloc(sizeof(fn_stack)));
+  fn_stack* e = static_cast<fn_stack*>(heap().malloc(sizeof(fn_stack)));
   if (!e) return false;
   new (e) fn_stack(fn);
 
@@ -100,7 +100,7 @@ fn_type fn_stack::pop(bool* fail) noexcept {
 
   head_ = h->tail_;
   fn_type rv = h->fn_;
-  heap.free(h);
+  heap().free(h);
   if (fail) *fail = false;
   return rv;
 }
@@ -153,9 +153,7 @@ void resolve(bool quick_only) noexcept {
 
 fn_stack* fn_stack::head_ = nullptr;
 
-namespace {
-
-::abi::heap& fn_stack_heap_singleton() {
+::abi::heap& fn_stack::heap() {
   using _namespace(std)::aligned_storage_t;
   using ::abi::heap;
 
@@ -163,10 +161,6 @@ namespace {
   void* data_ptr = &data;
   return *new (data_ptr) heap("abi/atexit");
 }
-
-}
-
-::abi::heap& fn_stack::heap = fn_stack_heap_singleton();
 
 
 abi::big_heap& c_malloc_heap() noexcept {
