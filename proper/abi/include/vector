@@ -26,8 +26,8 @@ template<typename T, bool Memcpy =
 
 template<typename T, typename Alloc = allocator<T>>
 class vector : public impl::alloc_base<Alloc> {
-  friend class impl::vector_copy_impl_basics<vector, true>;
-  friend class impl::vector_copy_impl_basics<vector, false>;
+  friend struct impl::vector_copy_impl_basics<vector, true>;
+  friend struct impl::vector_copy_impl_basics<vector, false>;
 
  public:
   using value_type = T;
