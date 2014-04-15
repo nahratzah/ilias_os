@@ -380,7 +380,17 @@ void iter_swap(stride_iterator x, stride_iterator y) noexcept {
   size_t stride = x.get_stride();
   uint8_t* x_i = static_cast<uint8_t*>(x.get_addr());
   uint8_t* y_i = static_cast<uint8_t*>(y.get_addr());
-  while (stride-- > 0) swap(*x_i++, *y_i++);
+
+  auto tmp = unique_ptr<uint8_t, decltype(&return_temporary_buffer<uint8_t>)>(
+      get<0>(get_temporary_buffer<uint8_t>(stride)),
+      &return_temporary_buffer<uint8_t>);
+  if (_predict_true(tmp)) {
+    memcpy(tmp.get(), x_i, stride);
+    memcpy(x_i, y_i, stride);
+    memcpy(y_i, tmp.get(), stride);
+  } else {
+    while (stride-- > 0) swap(*x_i++, *y_i++);
+  }
 }
 
 stride_reference ref(const stride_reference& x) noexcept { return x; }
