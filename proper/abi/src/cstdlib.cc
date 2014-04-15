@@ -6,6 +6,9 @@
 #include <abi/panic.h>
 #include <cerrno>
 #include <cstring>
+#include <algorithm>
+#include <functional>
+#include <iterator>
 #include <new>
 #include <thread>
 
@@ -255,6 +258,174 @@ void* __attribute__((weak)) realloc(void* p, size_t sz) noexcept {
   memcpy(q, p, oldsz);
   heap.free(p);
   return q;
+}
+
+
+/*
+ * Stride iterator, to help in implementing qsort.
+ */
+namespace {
+
+class stride_iterator;
+
+class stride_reference {
+  friend stride_iterator;
+
+ public:
+  const void* get() const noexcept { return addr_; }
+
+  stride_reference() noexcept = default;
+  stride_reference(const stride_reference&) noexcept = default;
+  stride_reference& operator=(const stride_reference&) noexcept = default;
+
+  stride_reference(void* addr, size_t stride) noexcept
+  : addr_(static_cast<uint8_t*>(addr)),
+    stride_(stride)
+  {}
+
+  stride_iterator operator&() const noexcept;
+
+ private:
+  uint8_t* addr_ = nullptr;
+  size_t stride_ = 0;
+};
+
+void swap(stride_reference&, stride_reference&) = delete;
+
+class stride_iterator
+: public iterator<random_access_iterator_tag, stride_reference, ptrdiff_t,
+                  stride_iterator, stride_reference>
+{
+ public:
+  stride_iterator(uint8_t* addr, size_t stride) noexcept
+  : ref_(addr, stride)
+  {}
+
+  stride_iterator() = default;
+
+  stride_iterator(const stride_iterator& other) noexcept
+  : ref_(other.ref_)
+  {}
+
+  stride_iterator& operator=(const stride_iterator& other) noexcept {
+    ref_ = other.ref_;
+    return *this;
+  }
+
+  stride_reference operator*() const noexcept { return ref_; }
+  void* operator->() = delete;
+
+  stride_iterator& operator++() noexcept {
+    ref_.addr_ += ref_.stride_;
+    return *this;
+  }
+
+  stride_iterator& operator--() noexcept {
+    ref_.addr_ -= ref_.stride_;
+    return *this;
+  }
+
+  stride_iterator operator++(int) noexcept {
+#if 0
+    stride_iterator clone = *this;
+    ++*this;
+    return clone;
+#endif
+    return *this;
+  }
+
+  stride_iterator operator--(int) noexcept {
+    stride_iterator clone = *this;
+    --*this;
+    return clone;
+  }
+
+  difference_type operator-(const stride_iterator& other) const noexcept {
+    return (other.ref_.addr_ - ref_.addr_) / ref_.stride_;
+  }
+
+  stride_iterator& operator+=(difference_type n) noexcept {
+    ref_.addr_ += (n * ref_.stride_);
+    return *this;
+  }
+
+  stride_iterator& operator-=(difference_type n) noexcept {
+    ref_.addr_ -= (n * ref_.stride_);
+    return *this;
+  }
+
+  stride_iterator operator+(difference_type n) const noexcept {
+    stride_iterator clone(*this);
+    clone += n;
+    return clone;
+  }
+
+  stride_iterator operator-(difference_type n) const noexcept {
+    stride_iterator clone(*this);
+    clone -= n;
+    return clone;
+  }
+
+  void* get_addr() const noexcept { return ref_.addr_; }
+  size_t get_stride() const noexcept { return ref_.stride_; }
+
+ private:
+  stride_reference ref_;
+};
+
+stride_iterator stride_reference::operator&() const noexcept {
+  return stride_iterator(addr_, stride_);
+}
+
+void iter_swap(stride_iterator x, stride_iterator y) noexcept {
+  using _namespace(std)::swap;
+
+  assert(x.get_addr() == y.get_addr());
+  assert(x.get_stride() == y.get_stride());
+
+  size_t stride = x.get_stride();
+  uint8_t* x_i = static_cast<uint8_t*>(x.get_addr());
+  uint8_t* y_i = static_cast<uint8_t*>(y.get_addr());
+  while (stride-- > 0) swap(*x_i++, *y_i++);
+}
+
+stride_reference ref(const stride_reference& x) noexcept { return x; }
+stride_reference ref(stride_reference&& x) noexcept { return x; }
+const stride_reference cref(const stride_reference& x) noexcept { return x; }
+const stride_reference cref(const stride_reference&& x) noexcept { return x; }
+
+bool operator==(const stride_iterator& x, const stride_iterator& y) noexcept {
+  return (*x).get() == (*y).get();
+}
+bool operator!=(const stride_iterator& x, const stride_iterator& y) noexcept {
+  return !(x == y);
+}
+bool operator<(const stride_iterator& x, const stride_iterator& y) noexcept {
+  return (*x).get() < (*y).get();
+}
+bool operator>(const stride_iterator& x, const stride_iterator& y) noexcept {
+  return y < x;
+}
+bool operator<=(const stride_iterator& x, const stride_iterator& y) noexcept {
+  return !(y < x);
+}
+bool operator>=(const stride_iterator& x, const stride_iterator& y) noexcept {
+  return !(x < y);
+}
+
+} /* namespace std::<unnamed> */
+
+void qsort(void* base, size_t n, size_t stride,
+           int (*cmp)(const void*, const void*)) {
+  using placeholders::_1;
+  using placeholders::_2;
+
+  stride_iterator b = stride_iterator(static_cast<uint8_t*>(base), stride);
+  stride_iterator e = b + n;
+  sort(b, e,
+       [cmp](stride_reference x, stride_reference y) -> bool {
+         return cmp(x.get(), y.get()) < 0;
+       });
 }
 
 
