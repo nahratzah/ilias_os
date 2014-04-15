@@ -1173,7 +1173,7 @@ void sort(RandomAccessIterator b, RandomAccessIterator e,
    * - rotate the collection to become correctly ordered
    * Sort will proceed recursively on the two partitions.
    */
-  RandomAccessIterator mid = b;  // XXX use random generator!
+  RandomAccessIterator mid = next(b, distance(b, e) / 2U);  // XXX use random generator!
   auto left_mid = partition(
       b, mid,
       bind(logical_not<void>(), bind(ref(predicate), ref(*mid), _1)));
@@ -1239,7 +1239,7 @@ void stable_sort(RandomAccessIterator b, RandomAccessIterator e,
    * - rotate the collection to become correctly ordered
    * Sort will proceed recursively on the two partitions.
    */
-  RandomAccessIterator mid = b;  // XXX use random generator!
+  RandomAccessIterator mid = next(b, distance(b, e) / 2U);  // XXX use random generator!
   auto left_mid = stable_partition(b, mid,
       bind(logical_not<void>(), bind(ref(predicate), ref(*mid), _1)));
   auto right_mid = stable_partition(next(mid), e,
