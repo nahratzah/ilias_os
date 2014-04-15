@@ -6,6 +6,8 @@ INSTALL_PREFIX = "${BUILDDIR}/install"
 CMAKE ?= cmake
 RM ?= rm
 
+LLVM_OPTS ?= -DCMAKE_BUILD_TYPE=Release
+CLANG_OPTS ?= -DCMAKE_BUILD_TYPE=Release
 LLVM_OPTS += -DLLVM_ENABLE_CXX11:BOOL=ON
 LLVM_OPTS += -DLLVM_ENABLE_LIBCXX:BOOL=ON
 
@@ -68,7 +70,7 @@ ${BUILDDIR}/clang.done_configure: ${BUILDDIR}/clang.done_dir ${BUILDDIR}/llvm.do
 	cd "${BUILDDIR}/clang" &&                                             \
 	  env CC="${CC}" CXX="${CXX}"                                         \
 	      "LLVM_CONFIG=../llvm/bin/llvm-config"                           \
-	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ../../clang
+	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ${CLANG_OPTS} ../../clang
 	touch "${BUILDDIR}/clang.done_configure"
 
 ${BUILDDIR}/clang.done_build: ${BUILDDIR}/clang.done_configure
