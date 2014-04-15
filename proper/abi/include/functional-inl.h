@@ -16,14 +16,6 @@ auto reference_wrapper<T>::get() const noexcept -> type& {
   return *ref_;
 }
 
-template<typename T>
-template<typename... ArgTypes>
-auto reference_wrapper<T>::operator()(ArgTypes&&... args) const
-    noexcept(noexcept(impl::invoke(get(), forward<ArgTypes>(args)...))) ->
-    decltype(impl::invoke(get(), forward<ArgTypes>(args)...)) {
-  return impl::invoke(get(), forward<ArgTypes>(args)...);
-}
-
 
 template<typename T, typename U>
 constexpr auto plus<void>::operator()(T&& x, U&& y) const ->
@@ -213,7 +205,7 @@ auto resolve_argument(T& v, Args, ArgIndices) ->
   return v;
 }
 template<typename T, typename Args, typename ArgIndices>
-auto resolve_argument(const reference_wrapper<T>& v, Args, ArgIndices) -> T& {
+auto resolve_argument(reference_wrapper<T> v, Args, ArgIndices) -> T& {
   return v.get();
 }
 
@@ -244,13 +236,16 @@ auto resolve_argument(const T& v, Args args,
  * Resolve argument:  case for bind expression.
  */
 template<typename T, typename Args, size_t... ArgIndices>
-auto resolve_argument(T& v, Args args,
+auto resolve_argument(T&& v, Args args,
                       index_sequence<ArgIndices...>) ->
     enable_if_t<is_bind_expression<T>::value,
-                decltype(impl::invoke(v, get<ArgIndices>(args)...))> {
-  static_assert(!is_void<decltype(impl::invoke(v, get<ArgIndices>(args)...))>::value,
-                "Nested bind expression returning void.");
-  return impl::invoke(v, get<ArgIndices>(args)...);
+                decltype(impl::invoke(forward<T>(v),
+                                      get<ArgIndices>(args)...))> {
+  static_assert(!is_void<decltype(impl::invoke(forward<T>(v),
+                                               get<ArgIndices>(args)...))
+                         >::value,
+                "Nested bind expression may not return void.");
+  return impl::invoke(forward<T>(v), get<ArgIndices>(args)...);
 }
 
 
@@ -262,10 +257,11 @@ template<typename FTuple, typename ArgTuple,
 auto invoke_tuple(FTuple& ft, ArgTuple args,
                   index_sequence<FTIndices...>,
                   index_sequence<ArgIndices...> arg_indices) ->
-    decltype(invoke(get<0>(ft), resolve_argument(get<FTIndices + 1>(ft),
-                                                 args, arg_indices)...)) {
-  return invoke(get<0>(ft), resolve_argument(get<FTIndices + 1>(ft),
-                                             args, arg_indices)...);
+    decltype(impl::invoke(get<0>(ft), resolve_argument(get<FTIndices + 1>(ft),
+                                                       args,
+                                                       arg_indices)...)) {
+  return impl::invoke(get<0>(ft), resolve_argument(get<FTIndices + 1>(ft),
+                                                   args, arg_indices)...);
 }
 
 
@@ -428,8 +424,8 @@ class mem_fn
 
   template<typename... Args>
   typename _result_type<F>::result_type operator()(Args&&... args) const
-      noexcept(noexcept(invoke(this->fn_, forward<Args>(args)...))) {
-    return invoke(fn_, forward<Args>(args)...);
+      noexcept(noexcept(impl::invoke(this->fn_, forward<Args>(args)...))) {
+    return impl::invoke(fn_, forward<Args>(args)...);
   }
 
  private:
