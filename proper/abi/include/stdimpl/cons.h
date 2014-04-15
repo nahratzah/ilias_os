@@ -15,13 +15,22 @@ struct ignore_t {};
 template<typename T> struct cons_elem_id {};
 
 template<size_t I, typename T, bool = is_empty<T>::value> class cons_elem {
+ private:
+  using copy_type_ = conditional_t<is_reference<T>::value,
+                                   T,
+                                   add_lvalue_reference_t<add_const_t<T>>>;
+  using move_type_ = conditional_t<(is_reference<T>::value ||
+                                    is_const<T>::value),
+                                   T,
+                                   add_rvalue_reference_t<T>>;
+
  public:
   using disambiguator = integral_constant<size_t, I>;
   using id = cons_elem_id<remove_reference_t<T>>;
 
   constexpr cons_elem() : value_() {}
-  constexpr cons_elem(const cons_elem&) = default;
-  constexpr cons_elem(cons_elem&&) = default;
+  constexpr cons_elem(const cons_elem& e) : value_(static_cast<copy_type_>(e.value_)) {}
+  constexpr cons_elem(cons_elem&& e) : value_(static_cast<move_type_>(e.value_)) {}
   constexpr cons_elem(const T& v) : value_(v) {}
   template<typename U>
   constexpr cons_elem(U&& v) : value_(forward<U>(v)) {}
