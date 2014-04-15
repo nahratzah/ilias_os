@@ -8,7 +8,7 @@
 
 _namespace_begin(std)
 
-template<typename T> class pointer_traits;  // See <memory>
+template<typename T> struct pointer_traits;  // See <memory>
 
 namespace impl {
 namespace allocator {
