@@ -31,11 +31,19 @@ class shared_ptr_ownership {
   virtual void* get_deleter(const type_info&) noexcept = 0;
 
   long get_shared_refcount() const noexcept;
+  long count_ptrs_to_me() const noexcept;
   static void acquire(shared_ptr_ownership*) noexcept;
   static void release(shared_ptr_ownership*) noexcept;
   void shared_ptr_acquire_from_shared_ptr() noexcept;
   bool shared_ptr_acquire_from_weak_ptr() noexcept;
   void shared_ptr_release() noexcept;
+
+  template<typename T, typename U>
+  auto weak_ptr_convert(U* ptr) noexcept ->
+      enable_if_t<!is_same<T, U>::value, T*>;
+  template<typename T, typename U>
+  auto weak_ptr_convert(U* ptr) noexcept ->
+      enable_if_t<is_same<T, U>::value, T*>;
 
  private:
   virtual void release_pointee() noexcept = 0;

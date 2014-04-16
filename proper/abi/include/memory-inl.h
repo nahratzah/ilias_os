@@ -877,6 +877,7 @@ shared_ptr<T>::shared_ptr(unique_ptr<Y, D>&& ptr, A alloc) {
     /* ownership_ gets constructed with reference counters set to 1. */
     ownership_ = impl::allocate_shared_ptr_ownership(move(ptr),
                                                      move_if_noexcept(alloc));
+    fixup_shared_from_this(ownership_, p);
     ptr_ = p;
   }
 }
@@ -1015,6 +1016,24 @@ auto shared_ptr<T>::owner_before(const weak_ptr<U>& other) const -> bool {
   return ownership_ < other.ownership_;
 }
 
+template<typename T>
+template<typename Y>
+void shared_ptr<T>::fixup_shared_from_this(
+    impl::shared_ptr_ownership* ownership,
+    enable_shared_from_this<Y>* x) noexcept {
+  impl::shared_ptr_ownership::acquire(ownership);
+  impl::shared_ptr_ownership* old = exchange(x->ownership_, ownership);
+
+  assert_msg(!old || old->get_shared_refcount() != 0,
+             "shared_ptr: constructed shared_ptr from object "
+             "that already has a shared_ptr to it");
+  assert_msg(!old || old->count_ptrs_to_me() != 1,
+             "shared_ptr: constructed shared_ptr from object "
+             "still owned by shared_ptr or weak_ptr");
+
+  if (old) impl::shared_ptr_ownership::release(old);
+}
+
 template<typename T, typename... Args>
 shared_ptr<T> make_shared(Args&&... args) {
   return allocate_shared<T>(std::allocator<void>(), forward<Args>(args)...);
@@ -1028,6 +1047,7 @@ shared_ptr<T> allocate_shared(const A& alloc, Args&&... args) {
       alloc, forward<Args>(args)...);
   rv.ownership_ = ownership_impl;
   rv.ptr_ = ownership_impl.get();
+  fixup_shared_from_this(rv.ownership_, rv.ptr_);
   return rv;
 }
 
@@ -1152,6 +1172,235 @@ basic_ostream<E, T>& operator<<(basic_ostream<E, T>& os,
                                 const shared_ptr<Y>& p) {
   os << p.get();
   return os;
+}
+
+
+template<typename T>
+template<typename Y, typename>
+weak_ptr<T>::weak_ptr(const shared_ptr<Y>& s) noexcept {
+  impl::shared_ptr_ownership* ownership = s.ownership_;
+  if (ownership) {
+    impl::shared_ptr_ownership::acquire(ownership);
+    ptr_ = s.ptr_;
+    ownership_ = ownership;
+  }
+}
+
+template<typename T>
+weak_ptr<T>::weak_ptr(const weak_ptr& w) noexcept {
+  impl::shared_ptr_ownership* ownership = w.ownership_;
+  if (ownership) {
+    impl::shared_ptr_ownership::acquire(ownership);
+    ptr_ = ownership->weak_ptr_convert(w.ptr_);
+    ownership_ = ownership;
+  }
+}
+
+template<typename T>
+template<typename Y, typename>
+weak_ptr<T>::weak_ptr(const weak_ptr<Y>& w) noexcept {
+  impl::shared_ptr_ownership* ownership = w.ownership_;
+  if (ownership) {
+    impl::shared_ptr_ownership::acquire(ownership);
+    ptr_ = ownership->weak_ptr_convert(w.ptr_);
+    ownership_ = ownership;
+  }
+}
+
+template<typename T>
+weak_ptr<T>::weak_ptr(weak_ptr&& other) noexcept
+: ptr_(exchange(other.ptr_, nullptr)),
+  ownership_(exchange(other.ownership_, nullptr))
+{}
+
+template<typename T>
+template<typename Y, typename>
+weak_ptr<T>::weak_ptr(weak_ptr<Y>&& other) noexcept
+: ownership_(exchange(other.ownership_, nullptr))
+{
+  ptr_ = ownership_->weak_ptr_convert(exchange(other.ptr_, nullptr));
+}
+
+template<typename T>
+weak_ptr<T>::~weak_ptr() noexcept {
+  if (ownership_) impl::shared_ptr_ownership::release(ownership_);
+  ownership_ = nullptr;
+  ptr_ = nullptr;
+}
+
+template<typename T>
+auto weak_ptr<T>::operator=(const weak_ptr& w) noexcept -> weak_ptr& {
+  weak_ptr(w).swap(*this);
+  return *this;
+}
+
+template<typename T>
+template<typename Y>
+auto weak_ptr<T>::operator=(const weak_ptr<Y>& w) noexcept -> weak_ptr& {
+  weak_ptr(w).swap(*this);
+  return *this;
+}
+
+template<typename T>
+template<typename Y>
+auto weak_ptr<T>::operator=(const shared_ptr<Y>& s) noexcept -> weak_ptr& {
+  weak_ptr(s).swap(*this);
+  return *this;
+}
+
+template<typename T>
+auto weak_ptr<T>::operator=(weak_ptr&& w) noexcept -> weak_ptr& {
+  weak_ptr(move(w)).swap(*this);
+  return *this;
+}
+
+template<typename T>
+template<typename Y>
+auto weak_ptr<T>::operator=(weak_ptr<Y>&& w) noexcept -> weak_ptr& {
+  weak_ptr(move(w)).swap(*this);
+  return *this;
+}
+
+template<typename T>
+auto weak_ptr<T>::swap(weak_ptr& other) noexcept -> void {
+  using _namespace(std)::swap;
+
+  swap(ptr_, other.ptr_);
+  swap(ownership_, other.ownership_);
+}
+
+template<typename T>
+auto weak_ptr<T>::reset() noexcept -> void {
+  weak_ptr().swap(*this);
+}
+
+template<typename T>
+auto weak_ptr<T>::use_count() const noexcept -> long {
+  return (ownership_ ? ownership_->get_shared_refcount() : 0);
+}
+
+template<typename T>
+auto weak_ptr<T>::expired() const noexcept -> bool {
+  return use_count() == 0;
+}
+
+template<typename T>
+auto weak_ptr<T>::lock() const noexcept -> shared_ptr<T> {
+  shared_ptr<T> rv;
+  if (ptr_ && ownership_) {
+    impl::shared_ptr_ownership::acquire(ownership_);
+    if (!ownership_->shared_ptr_acquire_from_weak_ptr()) {
+      impl::shared_ptr_ownership::release(ownership_);
+    } else {
+      rv.ownership_ = ownership_;
+      rv.ptr_ = ptr_;
+    }
+  }
+  return rv;
+}
+
+template<typename T>
+template<typename U>
+auto weak_ptr<T>::owner_before(const shared_ptr<U>& other) const -> bool {
+  return ownership_ < other.ownership_;
+}
+
+template<typename T>
+template<typename U>
+auto weak_ptr<T>::owner_before(const weak_ptr<U>& other) const -> bool {
+  return ownership_ < other.ownership_;
+}
+
+template<typename T>
+void swap(weak_ptr<T>& a, weak_ptr<T>& b) noexcept {
+  a.swap(b);
+}
+
+template<typename T>
+bool owner_less<shared_ptr<T>>::operator()(const shared_ptr<T>& a,
+                                           const shared_ptr<T>& b) const {
+  return a.owner_before(b);
+}
+
+template<typename T>
+bool owner_less<shared_ptr<T>>::operator()(const shared_ptr<T>& a,
+                                           const weak_ptr<T>& b) const {
+  return a.owner_before(b);
+}
+
+template<typename T>
+bool owner_less<shared_ptr<T>>::operator()(const weak_ptr<T>& a,
+                                           const shared_ptr<T>& b) const {
+  return a.owner_before(b);
+}
+
+template<typename T>
+bool owner_less<weak_ptr<T>>::operator()(const weak_ptr<T>& a,
+                                         const weak_ptr<T>& b) const {
+  return a.owner_before(b);
+}
+
+template<typename T>
+bool owner_less<weak_ptr<T>>::operator()(const shared_ptr<T>& a,
+                                         const weak_ptr<T>& b) const {
+  return a.owner_before(b);
+}
+
+template<typename T>
+bool owner_less<weak_ptr<T>>::operator()(const weak_ptr<T>& a,
+                                         const shared_ptr<T>& b) const {
+  return a.owner_before(b);
+}
+
+template<typename T>
+constexpr enable_shared_from_this<T>::enable_shared_from_this(
+    const enable_shared_from_this&) noexcept
+: enable_shared_from_this()
+{}
+
+template<typename T>
+auto enable_shared_from_this<T>::operator=(
+    const enable_shared_from_this&) noexcept -> enable_shared_from_this& {
+  return *this;
+}
+
+template<typename T>
+enable_shared_from_this<T>::~enable_shared_from_this() noexcept {
+  if (ownership_) impl::shared_ptr_ownership::release(ownership_);
+  ownership_ = nullptr;
+}
+
+template<typename T>
+auto enable_shared_from_this<T>::shared_from_this() -> shared_ptr<T> {
+  if (_predict_false(!ownership_)) throw bad_weak_ptr();
+
+  impl::shared_ptr_ownership::acquire(ownership_);
+  if (_predict_false(!ownership_->shared_ptr_acquire_from_weak_ptr())) {
+    impl::shared_ptr_ownership::release(ownership_);
+    throw bad_weak_ptr();
+  }
+
+  shared_ptr<T> rv;
+  rv.ptr_ = this;
+  rv.ownership_ = ownership_;
+  return rv;
+}
+
+template<typename T>
+auto enable_shared_from_this<T>::shared_from_this() const ->
+    shared_ptr<const T> {
+  if (_predict_false(!ownership_)) throw bad_weak_ptr();
+
+  impl::shared_ptr_ownership::acquire(ownership_);
+  if (_predict_false(!ownership_->shared_ptr_acquire_from_weak_ptr())) {
+    impl::shared_ptr_ownership::release(ownership_);
+    throw bad_weak_ptr();
+  }
+
+  shared_ptr<const T> rv;
+  rv.ptr_ = this;
+  rv.ownership_ = ownership_;
+  return rv;
 }
 
 

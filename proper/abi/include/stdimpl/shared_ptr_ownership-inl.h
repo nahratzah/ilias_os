@@ -6,6 +6,11 @@ inline long shared_ptr_ownership::get_shared_refcount() const noexcept {
   return shared_refcount_.load(memory_order_relaxed);
 }
 
+inline long shared_ptr_ownership::count_ptrs_to_me() const noexcept {
+  return refcount_.load(memory_order_seq_cst);
+}
+
+
 inline void shared_ptr_ownership::acquire(shared_ptr_ownership* spd) noexcept {
   auto old_refcount = spd->refcount_.fetch_add(1, memory_order_acquire);
   assert(old_refcount > 0);
@@ -25,6 +30,23 @@ inline void shared_ptr_ownership::shared_ptr_acquire_from_shared_ptr()
 inline void shared_ptr_ownership::shared_ptr_release() noexcept {
   if (shared_refcount_.fetch_sub(1, memory_order_release) == 1)
     release_pointee_();
+}
+
+template<typename T, typename U>
+auto shared_ptr_ownership::weak_ptr_convert(U* ptr) noexcept ->
+    enable_if_t<!is_same<T, U>::value, T*> {
+  if (ptr != nullptr && shared_ptr_acquire_from_weak_ptr()) {
+    T* rv = ptr;
+    shared_ptr_release();
+    return rv;
+  }
+  return nullptr;
+}
+
+template<typename T, typename U>
+auto shared_ptr_ownership::weak_ptr_convert(U* ptr) noexcept ->
+    enable_if_t<is_same<T, U>::value, T*> {
+  return ptr;
 }
 
 
