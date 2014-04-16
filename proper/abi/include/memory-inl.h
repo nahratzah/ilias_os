@@ -1139,5 +1139,20 @@ shared_ptr<T> const_pointer_cast(const shared_ptr<U>& r) noexcept {
   return shared_ptr<T>(r, const_cast<T*>(r.get()));
 }
 
+template<typename D, typename T>
+D* get_deleter(const shared_ptr<T>& ptr) noexcept {
+  void* d = (ptr.ownership_ ?
+             ptr.ownership_->get_deleter(typeid(D)) :
+             nullptr);
+  return (d ? static_cast<D*>(d) : nullptr);
+}
+
+template<typename E, typename T, typename Y>
+basic_ostream<E, T>& operator<<(basic_ostream<E, T>& os,
+                                const shared_ptr<Y>& p) {
+  os << p.get();
+  return os;
+}
+
 
 _namespace_end(std)

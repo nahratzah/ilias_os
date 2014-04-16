@@ -536,11 +536,16 @@ shared_ptr<T> make_shared(Args&&...);
 template<typename T, typename A, typename... Args>
 shared_ptr<T> allocate_shared(const A&, Args&&...);
 
+template<typename D, typename T> D* get_deleter(const shared_ptr<T>&) noexcept;
+
 template<typename T> class shared_ptr {
   template<typename Y> friend class shared_ptr;
+  template<typename Y> friend class weak_ptr;
 
   template<typename Y, typename A, typename... Args>
   friend shared_ptr<Y> allocate_shared(const A&, Args&&...);
+  template<typename D, typename Y>
+  friend D* get_deleter(const shared_ptr<Y>&);
 
  private:
   static void implicit_convertible_(T*);  // No implementation.
@@ -661,8 +666,6 @@ template<typename T, typename U>
 shared_ptr<T> dynamic_pointer_cast(const shared_ptr<U>&) noexcept;
 template<typename T, typename U>
 shared_ptr<T> const_pointer_cast(const shared_ptr<U>&) noexcept;
-
-template<typename D, typename T> D* get_deleter(const shared_ptr<T>&) noexcept;
 
 template<typename E, typename T, typename Y>
 basic_ostream<E, T>& operator<<(basic_ostream<E, T>&, const shared_ptr<Y>&);
