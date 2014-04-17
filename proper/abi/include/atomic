@@ -62,8 +62,8 @@ template<typename T> void atomic_init(atomic<T>*, T) noexcept;
 
 /* Declare general operations for atomic. */
 #define _ATOMIC_GENERIC(T)						\
-  friend void atomic_init<T>(volatile atomic<T>*, T) noexcept;	\
-  friend void atomic_init<T>(atomic<T>*, T) noexcept;		\
+  friend void atomic_init<T>(volatile atomic<T>*, T) noexcept;		\
+  friend void atomic_init<T>(atomic<T>*, T) noexcept;			\
 									\
  public:								\
   bool is_lock_free() const volatile noexcept;				\
@@ -198,8 +198,15 @@ _ATOMIC_INTEGRAL(unsigned long long)
 #undef _ATOMIC_INTEGRAL
 
 
-static_assert(is_pod<atomic<int>>::value, "atomic implementation failure");
-static_assert(is_pod<atomic<void*>>::value, "atomic implementation failure");
+static_assert(is_trivially_default_constructible<atomic<int>>::value,
+              "atomic implementation failure");
+static_assert(is_trivially_destructible<atomic<int>>::value,
+              "atomic implementation failure");
+
+static_assert(is_trivially_default_constructible<atomic<void*>>::value,
+              "atomic implementation failure");
+static_assert(is_trivially_destructible<atomic<void*>>::value,
+              "atomic implementation failure");
 #endif /* __cplusplus */
 
 
