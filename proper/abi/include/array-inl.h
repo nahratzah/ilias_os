@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 _namespace_begin(std)
 
 
