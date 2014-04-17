@@ -1410,5 +1410,261 @@ bool atomic_is_lock_free(const shared_ptr<T>*) {
   return _namespace(ilias)::hazard_is_lock_free();
 }
 
+template<typename T>
+auto atomic_load(const shared_ptr<T>* p) -> shared_ptr<T> {
+  return atomic_load_explicit(p, memory_order_seq_cst);
+}
+
+template<typename T>
+auto atomic_load_explicit(const shared_ptr<T>* p, memory_order mo) ->
+    shared_ptr<T> {
+  assert(mo != memory_order_release);
+
+  assert(impl::suitable_for_read(mo));
+
+  switch (mo) {
+  case memory_order_relaxed:
+    break;
+  case memory_order_consume:
+  case memory_order_acquire:
+  case memory_order_release:
+    mo = memory_order_acquire;
+    break;
+  case memory_order_acq_rel:
+  case memory_order_seq_cst:
+    break;
+  }
+
+  shared_ptr<T> rv;
+  typename shared_ptr<T>::atomic_lock lck{ *p };
+  impl::shared_ptr_ownership* o = lck.load(mo);
+  if (o != nullptr) {
+    impl::shared_ptr_ownership::acquire(o);
+    o->shared_ptr_acquire_from_shared_ptr();
+    rv.ptr_ = p->ptr_;
+    rv.ownership_ = o;
+  }
+  return rv;
+}
+
+template<typename T>
+auto atomic_store(shared_ptr<T>* p, shared_ptr<T> v) -> void {
+  atomic_store_explicit(p, move(v), memory_order_seq_cst);
+}
+
+template<typename T>
+auto atomic_store_explicit(shared_ptr<T>* p, shared_ptr<T> v,
+                           memory_order mo) -> void {
+  assert(impl::suitable_for_write(mo));
+
+  assert(mo != memory_order_consume);
+  assert(mo != memory_order_acquire);
+
+  switch (mo) {
+  case memory_order_relaxed:
+  case memory_order_consume:
+  case memory_order_acquire:
+  case memory_order_release:
+    mo = memory_order_release;
+    break;
+  case memory_order_acq_rel:
+  case memory_order_seq_cst:
+    break;
+  }
+
+  atomic_exchange_explicit(p, move(v));
+}
+
+template<typename T>
+auto atomic_exchange(shared_ptr<T>* p, shared_ptr<T> v) ->
+    shared_ptr<T> {
+  return atomic_exchange_explicit(p, move(v), memory_order_seq_cst);
+}
+
+template<typename T>
+auto atomic_exchange_explicit(shared_ptr<T>* p, shared_ptr<T> v,
+                              memory_order mo) -> shared_ptr<T> {
+  using _namespace(std)::swap;
+
+  assert(impl::suitable_for_rw(mo));
+
+  switch (mo) {
+  case memory_order_relaxed:
+  case memory_order_consume:
+  case memory_order_acquire:
+  case memory_order_release:
+    mo = memory_order_release;
+    break;
+  case memory_order_acq_rel:
+  case memory_order_seq_cst:
+    break;
+  }
+
+  typename shared_ptr<T>::atomic_lock lck{ *p };
+  swap(v.ptr_, p->ptr_);
+  v.ownership_ = lck.exchange_release(v.ownership_, mo);
+  return v;
+}
+
+template<typename T>
+auto atomic_exchange_weak(shared_ptr<T>* p, shared_ptr<T>* expect,
+                          shared_ptr<T> v) -> bool {
+  return atomic_exchange_weak_explicit(p, expect, move(v),
+                                       memory_order_seq_cst,
+                                       memory_order_seq_cst);
+}
+
+template<typename T>
+auto atomic_exchange_strong(shared_ptr<T>* p, shared_ptr<T>* expect,
+                            shared_ptr<T> v) -> bool {
+  return atomic_exchange_strong_explicit(p, expect, move(v),
+                                         memory_order_seq_cst,
+                                         memory_order_seq_cst);
+}
+
+template<typename T>
+auto atomic_exchange_weak_explicit(shared_ptr<T>* p, shared_ptr<T>* expect,
+                                   shared_ptr<T> v, memory_order mo_succes,
+                                   memory_order mo_fail) -> bool {
+  assert(impl::suitable_for_write(mo_succes));
+  assert(impl::suitable_for_read(mo_fail));
+  assert(impl::is_weaker(mo_fail, mo_succes));
+
+  shared_ptr<T> actual = atomic_load(p, mo_succes);
+  if (actual != *expect) {
+    *expect = move(actual);
+    return false;
+  }
+  return atomic_exchange_strong_explicit(p, expect, v, mo_succes, mo_fail);
+}
+
+template<typename T>
+auto atomic_exchange_strong_explicit(shared_ptr<T>* p, shared_ptr<T>* expect,
+                                     shared_ptr<T> v, memory_order mo_succes,
+                                     memory_order mo_fail) -> bool {
+  assert(impl::suitable_for_write(mo_succes));
+  assert(impl::suitable_for_read(mo_fail));
+  assert(impl::is_weaker(mo_fail, mo_succes));
+
+  switch (mo_succes) {
+  case memory_order_relaxed:
+    break;
+  case memory_order_consume:
+    mo_succes = memory_order_release;
+    break;
+  case memory_order_acquire:
+  case memory_order_release:
+  case memory_order_acq_rel:
+  case memory_order_seq_cst:
+    break;
+  }
+
+  switch (mo_fail) {
+  case memory_order_relaxed:
+    break;
+  case memory_order_consume:
+    mo_fail = memory_order_acquire;
+    break;
+  case memory_order_acquire:
+  case memory_order_release:
+  case memory_order_acq_rel:
+  case memory_order_seq_cst:
+    break;
+  }
+
+  shared_ptr<T> actual;
+  typename shared_ptr<T>::atomic_lock lck{ *p };
+  if (p->ptr_ != expect->ptr_ ||
+      lck->load(memory_order_relaxed) != expect->ownership_) {
+    actual->ptr_ = p->ptr_;
+    actual->ownership_ = lck.load(mo_fail);
+    if (actual->ownership_) {
+      impl::shared_ptr_ownership::acquire(actual.ownership_);
+      actual.ownership_->shared_ptr_acquire_from_shared_ptr();
+    }
+    *expect = actual;
+    return false;
+  }
+
+  actual->ptr_ = exchange(p->ptr_, exchange(v->ptr_, nullptr));
+  actual->ownership_ = lck.exchange_release(exchange(v->ownership_, nullptr),
+                                            mo_succes);
+  return true;
+}
+
+
+template<typename T>
+struct shared_ptr<T>::atomic_lock {
+  static_assert(alignof(impl::shared_ptr_ownership) % 2 == 0,
+      "std::impl::shared_ptr_ownership needs stricter alignment.");
+
+ public:
+  const uintptr_t MASK = 0x1;
+
+  atomic_lock() = delete;
+  atomic_lock(const atomic_lock&) = delete;
+  atomic_lock& operator=(const atomic_lock&) = delete;
+
+  atomic_lock(shared_ptr& ptr) noexcept
+  : ptr_(ptr)
+  {
+    static_assert(sizeof(impl::shared_ptr_ownership*) == sizeof(uintptr_t),
+                  "uintptr_t is wrongly implemented...");
+    static_assert(sizeof(atomic<impl::shared_ptr_ownership*>) ==
+                  sizeof(atomic<uintptr_t>),
+                  "Atomics size mismatch...");
+    static_assert(sizeof(uintptr_t) == sizeof(atomic<uintptr_t>),
+                  "This algorithm requires atomic version of uintptr_t "
+                  "to be sized equally to the non-atomic version...");
+
+    uintptr_t expect = 0;
+    while ((atomic_ownership().fetch_or(MASK, memory_order_acquire) & MASK) ==
+           MASK);
+    locked_ = true;
+  }
+
+  atomic_lock(const shared_ptr& ptr) noexcept
+  : atomic_lock(const_cast<shared_ptr&>(ptr))
+  {}
+
+  impl::shared_ptr_ownership* load(memory_order mo) {
+    assert(locked_);
+
+    uintptr_t o = atomic_ownership().load(mo);
+    assert(o & MASK);
+    return reinterpret_cast<impl::shared_ptr_ownership*>(o & ~MASK);
+  }
+
+  impl::shared_ptr_ownership* exchange_release(impl::shared_ptr_ownership* o_,
+                                               memory_order mo) {
+    assert(locked_);
+
+    uintptr_t o =
+        atomic_ownership().exchange(reinterpret_cast<uintptr_t>(o_), mo);
+    locked_ = false;
+    assert(o & MASK);
+    return reinterpret_cast<impl::shared_ptr_ownership*>(o & ~MASK);
+  }
+
+  void unlock() noexcept {
+    assert(locked_);
+
+    uintptr_t o = atomic_ownership().fetch_and(~MASK, memory_order_release);
+    assert(o & MASK);
+  }
+
+  ~atomic_lock() noexcept {
+    if (locked_) unlock();
+  }
+
+ private:
+  atomic<uintptr_t>& atomic_ownership() const noexcept {
+    return reinterpret_cast<atomic<uintptr_t>&>(ptr_.ownership_);
+  }
+
+  shared_ptr& ptr_;
+  bool locked_ = false;
+};
+
 
 _namespace_end(std)

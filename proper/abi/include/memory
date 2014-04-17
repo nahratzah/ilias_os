@@ -531,6 +531,23 @@ template<typename> class shared_ptr;
 template<typename> class weak_ptr;
 template<typename> class enable_shared_from_this;
 
+template<typename T>
+shared_ptr<T> atomic_load_explicit(const shared_ptr<T>*, memory_order);
+template<typename T>
+void atomic_store_explicit(const shared_ptr<T>*, shared_ptr<T>,
+                           memory_order);
+template<typename T>
+shared_ptr<T> atomic_exchange_explicit(shared_ptr<T>*, shared_ptr<T>,
+                                       memory_order);
+template<typename T>
+bool atomic_compare_exchange_weak_explicit(shared_ptr<T>*, shared_ptr<T>*,
+                                           shared_ptr<T>,
+                                           memory_order, memory_order);
+template<typename T>
+bool atomic_compare_exchange_strong_explicit(shared_ptr<T>*, shared_ptr<T>*,
+                                             shared_ptr<T>,
+                                             memory_order, memory_order);
+
 template<typename T, typename... Args>
 shared_ptr<T> make_shared(Args&&...);
 
@@ -547,6 +564,28 @@ template<typename T> class shared_ptr {
   friend shared_ptr<Y> allocate_shared(const A&, Args&&...);
   template<typename D, typename Y>
   friend D* get_deleter(const shared_ptr<Y>&);
+
+  template<typename Y>
+  friend shared_ptr<Y> atomic_load_explicit(const shared_ptr<Y>*,
+                                            memory_order);
+  template<typename Y>
+  friend void atomic_store_explicit(const shared_ptr<Y>*, shared_ptr<Y>,
+                                    memory_order);
+  template<typename Y>
+  friend shared_ptr<Y> atomic_exchange_explicit(shared_ptr<Y>*, shared_ptr<Y>,
+                                                memory_order);
+  template<typename Y>
+  friend bool atomic_compare_exchange_weak_explicit(shared_ptr<Y>*,
+                                                    shared_ptr<Y>*,
+                                                    shared_ptr<Y>,
+                                                    memory_order,
+                                                    memory_order);
+  template<typename Y>
+  friend bool atomic_compare_exchange_strong_explicit(shared_ptr<Y>*,
+                                                      shared_ptr<Y>*,
+                                                      shared_ptr<Y>,
+                                                      memory_order,
+                                                      memory_order);
 
  private:
   static void implicit_convertible_(T*);  // No implementation.
@@ -611,6 +650,8 @@ template<typename T> class shared_ptr {
                                      enable_shared_from_this<Y>*) noexcept;
   static void fixup_shared_from_this(impl::shared_ptr_ownership*, ...)
       noexcept {};
+
+  struct atomic_lock;
 
   T* ptr_ = nullptr;
   impl::shared_ptr_ownership* ownership_ = nullptr;
@@ -774,31 +815,15 @@ bool atomic_is_lock_free(const shared_ptr<T>*);
 template<typename T>
 shared_ptr<T> atomic_load(const shared_ptr<T>*);
 template<typename T>
-shared_ptr<T> atomic_load_explicit(const shared_ptr<T>*, memory_order);
-template<typename T>
-shared_ptr<T> atomic_store(const shared_ptr<T>*, shared_ptr<T>);
-template<typename T>
-shared_ptr<T> atomic_store_explicit(const shared_ptr<T>*, shared_ptr<T>,
-                                    memory_order);
+void atomic_store(const shared_ptr<T>*, shared_ptr<T>);
 template<typename T>
 shared_ptr<T> atomic_exchange(shared_ptr<T>*, shared_ptr<T>);
-template<typename T>
-shared_ptr<T> atomic_exchange_explicit(shared_ptr<T>*, shared_ptr<T>,
-                                       memory_order);
 template<typename T>
 bool atomic_compare_exchange_weak(shared_ptr<T>*, shared_ptr<T>*,
                                   shared_ptr<T>);
 template<typename T>
 bool atomic_compare_exchange_strong(shared_ptr<T>*, shared_ptr<T>*,
                                     shared_ptr<T>);
-template<typename T>
-bool atomic_compare_exchange_weak_explicit(shared_ptr<T>*, shared_ptr<T>*,
-                                           shared_ptr<T>,
-                                           memory_order, memory_order);
-template<typename T>
-bool atomic_compare_exchange_strong_explicit(shared_ptr<T>*, shared_ptr<T>*,
-                                             shared_ptr<T>,
-                                             memory_order, memory_order);
 
 
 template<typename T> struct hash;
