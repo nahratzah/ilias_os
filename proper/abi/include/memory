@@ -651,6 +651,10 @@ template<typename T> class shared_ptr {
   static void fixup_shared_from_this(impl::shared_ptr_ownership*, ...)
       noexcept {};
 
+  /*
+   * Simple spinlock, providing no fairness.
+   * Implemented by using the lower bit in data member ownership_.
+   */
   struct atomic_lock;
 
   T* ptr_ = nullptr;
