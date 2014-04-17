@@ -221,7 +221,7 @@ struct placeholder_type {
 template<typename T, typename Args, size_t... ArgIndices>
 auto resolve_argument(const T& v, Args args,
                       index_sequence<ArgIndices...>) ->
-    typename enable_if_t<is_placeholder<T>::value,
+    typename enable_if_t<is_placeholder<T>::value != 0,
                          placeholder_type<T>
                         >::template type<Args> {
   constexpr int index = is_placeholder<T>::value - 1;
