@@ -1480,7 +1480,7 @@ bool binary_search(ForwardIterator b, ForwardIterator e, const T& v,
 
   /* This invokes lower_bound with a <= variation of the predicate. */
   b = lower_bound(b, e, v, ref(predicate));
-  return !predicate(v, *b);
+  return b != e && !predicate(v, *b);
 }
 
 
