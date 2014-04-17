@@ -146,7 +146,8 @@ auto operator+(typename reverse_iterator<Iterator>::difference_type n,
 }
 
 template<typename Iterator>
-auto operator-(const reverse_iterator<Iterator>& a, const reverse_iterator<Iterator>& b)
+auto operator-(const reverse_iterator<Iterator>& a,
+               const reverse_iterator<Iterator>& b)
     noexcept(noexcept(b.base() - a.base())) ->
     typename reverse_iterator<Iterator>::difference_type {
   return b.base() - a.base();
@@ -239,6 +240,277 @@ BidirectionalIterator prev(
     typename iterator_traits<BidirectionalIterator>::difference_type n) {
   advance(x, -n);
   return x;
+}
+
+
+template<typename Container>
+back_insert_iterator<Container>::back_insert_iterator(Container& c)
+: container(&c)
+{}
+
+template<typename Container>
+auto back_insert_iterator<Container>::operator=(
+    const typename Container::value_type& v) -> back_insert_iterator& {
+  container->push_back(v);
+  return *this;
+}
+
+template<typename Container>
+auto back_insert_iterator<Container>::operator=(
+    typename Container::value_type&& v) -> back_insert_iterator& {
+  container->push_back(move(v));
+  return *this;
+}
+
+template<typename Container>
+auto back_insert_iterator<Container>::operator*() -> back_insert_iterator& {
+  return *this;
+}
+
+template<typename Container>
+auto back_insert_iterator<Container>::operator++() -> back_insert_iterator& {
+  return *this;
+}
+
+template<typename Container>
+auto back_insert_iterator<Container>::operator++(int) -> back_insert_iterator {
+  return *this;
+}
+
+template<typename Container>
+auto back_inserter(Container& c) -> back_insert_iterator<Container> {
+  return back_insert_iterator<Container>(c);
+}
+
+
+template<typename Container>
+front_insert_iterator<Container>::front_insert_iterator(Container& c)
+: container(&c)
+{}
+
+template<typename Container>
+auto front_insert_iterator<Container>::operator=(
+    const typename Container::value_type& v) -> front_insert_iterator& {
+  container->push_front(v);
+  return *this;
+}
+
+template<typename Container>
+auto front_insert_iterator<Container>::operator=(
+    typename Container::value_type&& v) -> front_insert_iterator& {
+  container->push_front(move(v));
+  return *this;
+}
+
+template<typename Container>
+auto front_insert_iterator<Container>::operator*() -> front_insert_iterator& {
+  return *this;
+}
+
+template<typename Container>
+auto front_insert_iterator<Container>::operator++() -> front_insert_iterator& {
+  return *this;
+}
+
+template<typename Container>
+auto front_insert_iterator<Container>::operator++(int) ->
+    front_insert_iterator {
+  return *this;
+}
+
+template<typename Container>
+auto front_inserter(Container& c) -> front_insert_iterator<Container> {
+  return front_insert_iterator<Container>(c);
+}
+
+
+template<typename Container>
+insert_iterator<Container>::insert_iterator(Container& c,
+                                            typename Container::iterator i)
+: container(&c),
+  iter(i)
+{}
+
+template<typename Container>
+auto insert_iterator<Container>::operator=(
+    const typename Container::value_type& v) -> insert_iterator& {
+  iter = container->insert(iter, v);
+  ++iter;
+  return *this;
+}
+
+template<typename Container>
+auto insert_iterator<Container>::operator=(
+    typename Container::value_type&& v) -> insert_iterator& {
+  iter = container->insert(iter, move(v));
+  ++iter;
+  return *this;
+}
+
+template<typename Container>
+auto insert_iterator<Container>::operator*() -> insert_iterator& {
+  return *this;
+}
+
+template<typename Container>
+auto insert_iterator<Container>::operator++() -> insert_iterator& {
+  return *this;
+}
+
+template<typename Container>
+auto insert_iterator<Container>::operator++(int) -> insert_iterator {
+  return *this;
+}
+
+template<typename Container>
+auto inserter(Container& c, typename Container::iterator i) ->
+    insert_iterator<Container> {
+  return insert_iterator<Container>(c, i);
+}
+
+
+template<typename Iterator>
+move_iterator<Iterator>::move_iterator(Iterator iter)
+: iter_(iter)
+{}
+
+template<typename Iterator>
+template<typename U>
+move_iterator<Iterator>::move_iterator(const move_iterator<U>& other)
+: iter_(other.base())
+{}
+
+template<typename Iterator>
+template<typename U>
+auto move_iterator<Iterator>::operator=(const move_iterator<U>& other) ->
+    move_iterator& {
+  iter_ = other.base();
+  return *this;
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::base() const -> iterator_type {
+  return iter_;
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator*() const -> reference {
+  return move(*iter_);
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator->() const -> pointer {
+  return iter_;
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator++() -> move_iterator& {
+  ++iter_;
+  return *this;
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator++(int) -> move_iterator {
+  move_iterator tmp = *this;
+  ++iter_;
+  return tmp;
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator--() -> move_iterator& {
+  --iter_;
+  return *this;
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator--(int) -> move_iterator {
+  move_iterator tmp = *this;
+  --iter_;
+  return tmp;
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator+(difference_type n) const ->
+    move_iterator {
+  return move_iterator(iter_ + n);
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator+=(difference_type n) -> move_iterator& {
+  iter_ += n;
+  return *this;
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator-(difference_type n) const ->
+    move_iterator {
+  return move_iterator(iter_ - n);
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator-=(difference_type n) -> move_iterator& {
+  iter_ -= n;
+  return *this;
+}
+
+template<typename Iterator>
+auto move_iterator<Iterator>::operator[](difference_type n) const ->
+    reference {
+  return move(iter_[n]);
+}
+
+template<typename Iterator1, typename Iterator2>
+auto operator==(const move_iterator<Iterator1>& x,
+                const move_iterator<Iterator2>& y) -> bool {
+  return x.base() == y.base();
+}
+
+template<typename Iterator1, typename Iterator2>
+auto operator!=(const move_iterator<Iterator1>& x,
+                const move_iterator<Iterator2>& y) -> bool {
+  return !(x == y);
+}
+
+template<typename Iterator1, typename Iterator2>
+auto operator<(const move_iterator<Iterator1>& x,
+               const move_iterator<Iterator2>& y) -> bool {
+  return x.base() < y.base();
+}
+
+template<typename Iterator1, typename Iterator2>
+auto operator<=(const move_iterator<Iterator1>& x,
+                const move_iterator<Iterator2>& y) -> bool {
+  return !(y < x);
+}
+
+template<typename Iterator1, typename Iterator2>
+auto operator>(const move_iterator<Iterator1>& x,
+               const move_iterator<Iterator2>& y) -> bool {
+  return y < x;
+}
+
+template<typename Iterator1, typename Iterator2>
+auto operator>=(const move_iterator<Iterator1>& x,
+                const move_iterator<Iterator2>& y) -> bool {
+  return !(x < y);
+}
+
+template<typename Iterator1, typename Iterator2>
+auto operator-(const move_iterator<Iterator1>& x,
+               const move_iterator<Iterator2>& y) ->
+    decltype(x.base() - y.base()) {
+  return x.base() - y.base();
+}
+
+template<typename Iterator>
+auto operator+(typename move_iterator<Iterator>::difference_type n,
+               const move_iterator<Iterator>& x) -> move_iterator<Iterator> {
+  return x + n;
+}
+
+template<typename Iterator>
+auto make_move_iterator(Iterator i) -> move_iterator<Iterator> {
+  return move_iterator<Iterator>(i);
 }
 
 

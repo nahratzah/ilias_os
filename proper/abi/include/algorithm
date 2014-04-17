@@ -373,6 +373,28 @@ template<typename ForwardIterator, typename T, typename Predicate>
 bool binary_search(ForwardIterator, ForwardIterator, const T&, Predicate);
 
 
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator merge(InputIterator1, InputIterator1,
+                     InputIterator2, InputIterator2,
+                     OutputIterator);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator merge(InputIterator1, InputIterator1,
+                     InputIterator2, InputIterator2,
+                     OutputIterator, Predicate);
+
+template<typename BidirectionalIterator>
+void inplace_merge(BidirectionalIterator, BidirectionalIterator,
+                   BidirectionalIterator);
+
+template<typename BidirectionalIterator, typename Predicate>
+void inplace_merge(BidirectionalIterator, BidirectionalIterator,
+                   BidirectionalIterator, Predicate);
+
+
+
 
 template<typename T>
 auto min(const T& a, const T& b) -> const T&;
@@ -430,7 +452,16 @@ extern template const Type* lower_bound(const Type*, const Type*,	\
 extern template Type* upper_bound(Type*, Type*, const Type&);		\
 extern template const Type* upper_bound(const Type*, const Type*,	\
                                         const Type&);			\
-extern template bool binary_search(Type*, Type*, const Type&);
+extern template bool binary_search(Type*, Type*, const Type&);		\
+extern template Type* merge(Type*, Type*, Type*,			\
+                            Type*, Type*);				\
+extern template Type* merge(const Type*, const Type*,			\
+                            Type*, Type*, Type*);			\
+extern template Type* merge(Type*, Type*,				\
+                            const Type*, const Type*, Type*);		\
+extern template Type* merge(const Type*, const Type*,			\
+                            const Type*, const Type*, Type*);		\
+extern template void inplace_merge(Type*, Type*, Type*);
 
 
 #define _EXTERNALIZE_ALL(extern)					\

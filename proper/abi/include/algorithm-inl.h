@@ -1,3 +1,5 @@
+#include <stdimpl/heap_array.h>
+
 _namespace_begin(std)
 
 
@@ -1012,43 +1014,8 @@ auto stable_partition_using_heap(BidirectionalIterator b,
                     >::value &&
                 noexcept(predicate(*b)),
                 tuple<BidirectionalIterator, bool>> {
-  /* Tiny class that provides temporary array storage. */
-  class heap_array {
-   public:
-    using value_type =
-        typename iterator_traits<BidirectionalIterator>::value_type;
-    using pointer = value_type*;
-    using iterator = pointer;
-
-    heap_array(size_t n)
-    : max_size_(n),
-      ptr_(get<0>(get_temporary_buffer<value_type>(n)))
-    {}
-
-    ~heap_array() noexcept {
-      if (*this) {
-        while (size_-- > 0)
-          ptr_[size_].~value_type();
-        return_temporary_buffer(ptr_);
-      }
-    }
-
-    explicit operator bool() const noexcept { return ptr_; }
-
-    iterator begin() const noexcept { return ptr_; }
-    iterator end() const noexcept { return begin() + size_; }
-
-    void emplace_back(value_type&& v) {
-      assert(size_ < max_size_);
-      new (&ptr_[size_]) value_type(forward<value_type>(v));
-      ++size_;
-    }
-
-   private:
-    const size_t max_size_;
-    size_t size_ = 0;
-    const pointer ptr_;
-  };
+  using value_type =
+      typename iterator_traits<BidirectionalIterator>::value_type;
 
   /* Skip all elements that are in the correct position already. */
   b = find_if_not(b, e, ref(predicate));
@@ -1058,7 +1025,7 @@ auto stable_partition_using_heap(BidirectionalIterator b,
    * Allocate array that is sufficiently large to hold elements that need
    * to be at the end of the range.  Worst case: all remaining elements.
    */
-  heap_array array{ distance(b, e) };
+  auto array = impl::heap_array<value_type>(distance(b, e));
   if (!array) return make_tuple(b, false);  // No memory.
 
   /*
@@ -1481,6 +1448,79 @@ bool binary_search(ForwardIterator b, ForwardIterator e, const T& v,
   /* This invokes lower_bound with a <= variation of the predicate. */
   b = lower_bound(b, e, v, ref(predicate));
   return b != e && !predicate(v, *b);
+}
+
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator merge(InputIterator1 b1, InputIterator1 e1,
+                     InputIterator2 b2, InputIterator2 e2,
+                     OutputIterator out) {
+  return merge(b1, e1, b2, e2, out, less<void>());
+}
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator merge(InputIterator1 b1, InputIterator1 e1,
+                     InputIterator2 b2, InputIterator2 e2,
+                     OutputIterator out, Predicate predicate) {
+  while (b1 != e1 && b2 != e2) {
+    if (predicate(*b1, *b2))
+      *out++ = *b1++;
+    else
+      *out++ = *b2++;
+  }
+
+  out = copy(b1, e1, out);
+  out = copy(b2, e2, out);
+  return out;
+}
+
+template<typename BidirectionalIterator>
+void inplace_merge(BidirectionalIterator b, BidirectionalIterator mid,
+                   BidirectionalIterator e) {
+  inplace_merge(b, mid, e, less<void>());
+}
+
+template<typename BidirectionalIterator, typename Predicate>
+void inplace_merge(BidirectionalIterator b, BidirectionalIterator mid,
+                   BidirectionalIterator e, Predicate predicate) {
+  using value_type =
+      typename iterator_traits<BidirectionalIterator>::value_type;
+
+  assert(distance(b, mid) <= distance(b, e));
+
+  if (is_nothrow_move_constructible<value_type>::value) {
+    /* Attempt to use the heap and a temporary copy. */
+    auto array1 = impl::heap_array<value_type>(distance(b, mid));
+    auto array2 = impl::heap_array<value_type>(distance(mid, e));
+
+    if (_predict_true(array1 && array2)) {
+      move(b, mid, back_inserter(array1));
+      move(mid, e, back_inserter(array2));
+      merge(make_move_iterator(array1.begin()),
+            make_move_iterator(array1.end()),
+            make_move_iterator(array2.begin()),
+            make_move_iterator(array2.end()),
+            b);
+      return;
+    }
+  }
+
+  auto be = mid;
+  while (mid != e &&
+         (b = upper_bound(b, mid, *mid, ref(predicate))) != mid) {
+    /* mid should be before b. */
+
+    /* Find all instance in [mid, e) that should be before b. */
+    auto mid_e = upper_bound(next(mid), e, *mid, ref(predicate));
+
+    /* Rotate elements to fix mid. */
+    rotate(b, mid, mid_e);
+    b = next(b, distance(mid, mid_e));
+    be = next(be, distance(mid, mid_e));
+    mid = mid_e;
+  }
 }
 
 
