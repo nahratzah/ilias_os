@@ -1278,6 +1278,195 @@ void stable_sort(RandomAccessIterator b, RandomAccessIterator e,
   stable_sort(next(pivot), e, ref(predicate));
 }
 
+template<typename RandomAccessIterator>
+void partial_sort(RandomAccessIterator b, RandomAccessIterator mid,
+                  RandomAccessIterator e) {
+  partial_sort(b, mid, e, less<void>());
+}
+
+template<typename RandomAccessIterator, typename Predicate>
+void partial_sort(RandomAccessIterator b, RandomAccessIterator mid,
+                  RandomAccessIterator e, Predicate predicate) {
+  if (_predict_false(mid == e)) {
+    sort(b, e, ref(predicate));
+    return;
+  }
+
+  auto n = distance(b, e);
+  auto mid_n = distance(b, mid);
+  RandomAccessIterator half = next(b, n / 2);
+
+  if (distance(b, half) <= mid_n)
+    sort(b, half, ref(predicate));
+  else
+    partial_sort(b, mid, half, ref(predicate));
+
+  if (distance(half, e) <= mid_n)
+    sort(half, e, ref(predicate));
+  else
+    partial_sort(half, next(half, mid_n), e, ref(predicate));
+
+  /* Merge half, e into mid. */
+  while (half != e &&
+         (b = upper_bound(b, mid, *half, ref(predicate))) != mid) {
+    rotate(b, prev(mid), mid);
+    iter_swap(b, half);
+  }
+}
+
+template<typename InputIterator, typename RandomAccessIterator>
+RandomAccessIterator partial_sort_copy(InputIterator b, InputIterator e,
+                                       RandomAccessIterator out_b,
+                                       RandomAccessIterator out_e) {
+  return partial_sort_copy(b, e, out_b, out_e, less<void>());
+}
+
+template<typename InputIterator, typename RandomAccessIterator,
+         typename Predicate>
+RandomAccessIterator partial_sort_copy(InputIterator b, InputIterator e,
+                                       RandomAccessIterator out_b,
+                                       RandomAccessIterator out_e,
+                                       Predicate predicate) {
+  const auto N = distance(out_b, out_e);
+  InputIterator i = b;
+  /* Advance i up to N positions. */
+  for (auto i_N = N; i_N > 0 && i != e; --i_N) ++i;
+
+  out_e = copy(b, i, out_b);
+  sort(out_b, out_e, ref(predicate));
+
+  while (i != e) {
+    auto out_ipos = upper_bound(out_b, out_e, *i, ref(predicate));
+    if (out_ipos != out_e) {
+      move_backward(out_ipos, prev(out_e), out_e);
+      *out_ipos = *i;
+    }
+    ++i;
+  }
+  return out_e;
+}
+
+template<typename InputIterator>
+bool is_sorted(InputIterator b, InputIterator e) {
+  return is_sorted_until(b, e) == e;
+}
+
+template<typename InputIterator, typename Predicate>
+bool is_sorted(InputIterator b, InputIterator e, Predicate predicate) {
+  return is_sorted_until(b, e, predicate) == e;
+}
+
+template<typename InputIterator>
+InputIterator is_sorted_until(InputIterator b, InputIterator e) {
+  return is_sorted_until(b, e, less<void>());
+}
+
+template<typename InputIterator, typename Predicate>
+InputIterator is_sorted_until(InputIterator b, InputIterator e,
+                              Predicate predicate) {
+  if (b == e) return e;
+
+  InputIterator i = next(b);
+  while (i != e && predicate(*b, *i)) {
+    ++b;
+    ++i;
+  }
+  return i;
+}
+
+template<typename RandomAccessIterator>
+void nth_element(RandomAccessIterator b, RandomAccessIterator nth,
+                 RandomAccessIterator e) {
+  nth_element(b, nth, e, less<void>());
+}
+
+template<typename RandomAccessIterator, typename Predicate>
+void nth_element(RandomAccessIterator b, RandomAccessIterator nth,
+                 RandomAccessIterator e, Predicate predicate) {
+  using placeholders::_1;
+
+  assert(b == nth || distance(b, nth) < distance(b, e));
+
+  /*
+   * Use pivot based selection, as in sort, but only traverse one leg of
+   * the two partitions instead of both.
+   *
+   * Since each stage divides the range in half,
+   * at most 2 * distance(b, e) - 1 invocations of the predicate are required,
+   * given that the pivot is well chosen.
+   */
+  while (b != e && next(b) != e) {
+    RandomAccessIterator mid = next(b, distance(b, e) / 2U);  // XXX use random generator!
+    auto left_mid = partition(
+        b, mid,
+        bind(logical_not<void>(), bind(ref(predicate), ref(*mid), _1)));
+    auto right_mid = partition(next(mid), e,
+                               bind(ref(predicate), _1, ref(*mid)));
+
+    rotate(left_mid, mid, next(mid));
+    RandomAccessIterator pivot = rotate(left_mid, next(mid), right_mid);
+
+    if (pivot < nth)
+      b = next(pivot);
+    else if (pivot > nth)
+      e = pivot;
+    else
+      return;  // pivot == nth, which is partitioned into the right place.
+  }
+}
+
+
+template<typename ForwardIterator, typename T>
+ForwardIterator lower_bound(ForwardIterator b, ForwardIterator e, const T& v) {
+  return lower_bound(b, e, v, less<void>());
+}
+
+template<typename ForwardIterator, typename T, typename Predicate>
+ForwardIterator lower_bound(ForwardIterator b, ForwardIterator e, const T& v,
+                            Predicate predicate) {
+  while (b != e) {
+    ForwardIterator m = next(b, distance(b, e) / 2);
+    if (predicate(*m, v))  // *m is too small
+      b = next(m);
+    else
+      e = m;
+  }
+  return b;
+}
+
+template<typename ForwardIterator, typename T>
+ForwardIterator upper_bound(ForwardIterator b, ForwardIterator e, const T& v) {
+  return upper_bound(b, e, v, less<void>());
+}
+
+template<typename ForwardIterator, typename T, typename Predicate>
+ForwardIterator upper_bound(ForwardIterator b, ForwardIterator e, const T& v,
+                            Predicate predicate) {
+  using placeholders::_1;
+  using placeholders::_2;
+
+  /* This invokes lower_bound with a <= variation of the predicate. */
+  return lower_bound(b, e, v,
+                     bind(logical_not<void>(), bind(ref(predicate), _2, _1)));
+}
+
+template<typename ForwardIterator, typename T>
+pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator b,
+                                                   ForwardIterator e,
+                                                   const T& v) {
+  return equal_range(b, e, v, less<void>());
+}
+
+template<typename ForwardIterator, typename T, typename Predicate>
+pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator b,
+                                                   ForwardIterator e,
+                                                   const T& v,
+                                                   Predicate predicate) {
+  b = lower_bound(b, e, v, ref(predicate));
+  e = upper_bound(b, e, v, ref(predicate));
+  return make_pair(b, e);
+}
+
 
 template<typename T>
 auto min(const T& a, const T& b) -> const T& {

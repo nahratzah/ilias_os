@@ -301,6 +301,72 @@ template<typename RandomAccessIterator, typename Predicate>
 void stable_sort(RandomAccessIterator, RandomAccessIterator,
                  Predicate);
 
+template<typename RandomAccessIterator>
+void partial_sort(RandomAccessIterator, RandomAccessIterator,
+                  RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void partial_sort(RandomAccessIterator, RandomAccessIterator,
+                  RandomAccessIterator, Predicate);
+
+template<typename InputIterator, typename RandomAccessIterator>
+RandomAccessIterator partial_sort_copy(InputIterator, InputIterator,
+                                       RandomAccessIterator,
+                                       RandomAccessIterator);
+
+template<typename InputIterator, typename RandomAccessIterator,
+         typename Predicate>
+RandomAccessIterator partial_sort_copy(InputIterator, InputIterator,
+                                       RandomAccessIterator,
+                                       RandomAccessIterator, Predicate);
+
+template<typename InputIterator>
+bool is_sorted(InputIterator, InputIterator);
+
+template<typename InputIterator, typename Predicate>
+bool is_sorted(InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator>
+InputIterator is_sorted_until(InputIterator, InputIterator);
+
+template<typename InputIterator, typename Predicate>
+InputIterator is_sorted_until(InputIterator, InputIterator, Predicate);
+
+template<typename RandomAccessIterator>
+void nth_element(RandomAccessIterator, RandomAccessIterator,
+                 RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void nth_element(RandomAccessIterator, RandomAccessIterator,
+                 RandomAccessIterator, Predicate);
+
+
+template<typename ForwardIterator, typename T>
+ForwardIterator lower_bound(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename T, typename Predicate>
+ForwardIterator lower_bound(ForwardIterator, ForwardIterator, const T&,
+                            Predicate);
+
+template<typename ForwardIterator, typename T>
+ForwardIterator upper_bound(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename T, typename Predicate>
+ForwardIterator upper_bound(ForwardIterator, ForwardIterator, const T&,
+                            Predicate);
+
+template<typename ForwardIterator, typename T>
+pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator,
+                                                   ForwardIterator,
+                                                   const T&);
+
+template<typename ForwardIterator, typename T, typename Predicate>
+pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator,
+                                                   ForwardIterator,
+                                                   const T&,
+                                                   Predicate);
+
+
 
 template<typename T>
 auto min(const T& a, const T& b) -> const T&;
@@ -344,7 +410,20 @@ extern template Type* unique(Type*, Type*);				\
 extern template void reverse(Type*, Type*);				\
 extern template Type* rotate(Type*, Type*, Type*);			\
 extern template void sort(Type*, Type*);				\
-extern template void stable_sort(Type*, Type*);
+extern template void stable_sort(Type*, Type*);				\
+extern template void partial_sort(Type*, Type*, Type*);			\
+extern template Type* partial_sort_copy(Type*, Type*, Type*, Type*);	\
+extern template Type* partial_sort_copy(const Type*, const Type*,	\
+                                        Type*, Type*);			\
+extern template Type* is_sorted_until(Type*, Type*);			\
+extern template const Type* is_sorted_until(const Type*, const Type*);	\
+extern template void nth_element(Type*, Type*, Type*);			\
+extern template Type* lower_bound(Type*, Type*, const Type&);		\
+extern template const Type* lower_bound(const Type*, const Type*,	\
+                                        const Type&);			\
+extern template Type* upper_bound(Type*, Type*, const Type&);		\
+extern template const Type* upper_bound(const Type*, const Type*,	\
+                                        const Type&);
 
 
 #define _EXTERNALIZE_ALL(extern)					\
