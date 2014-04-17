@@ -514,4 +514,68 @@ auto make_move_iterator(Iterator i) -> move_iterator<Iterator> {
 }
 
 
+
+
+template<typename C> auto begin(C& c) -> decltype(c.begin()) {
+  return c.begin();
+}
+template<typename C> auto begin(const C& c) -> decltype(c.begin()) {
+  return c.begin();
+}
+template<typename C> auto end(C& c) -> decltype(c.end()) {
+  return c.end();
+}
+template<typename C> auto end(const C& c) -> decltype(c.end()) {
+  return c.end();
+}
+template<typename T, size_t N> T* begin(T (&array)[N]) {
+  return array;
+}
+template<typename T, size_t N> T* end(T (&array)[N]) {
+  return array + N;
+}
+template<typename C> auto cbegin(const C& c) ->
+    decltype(_namespace(std)::begin(c)) {
+  return _namespace(std)::begin(c);
+}
+template<typename C> auto cend(const C& c) ->
+    decltype(_namespace(std)::end(c)) {
+  return _namespace(std)::end(c);
+}
+template<typename C> auto rbegin(C& c) -> decltype(c.rbegin()) {
+  return c.rbegin();
+}
+template<typename C> auto rbegin(const C& c) -> decltype(c.rbegin()) {
+  return c.rbegin();
+}
+template<typename C> auto rend(C& c) -> decltype(c.rend()) {
+  return c.rend();
+}
+template<typename C> auto rend(const C& c) -> decltype(c.rend()) {
+  return c.rend();
+}
+template<typename T, size_t N> reverse_iterator<T*> begin(T (&array)[N]) {
+  return reverse_iterator<T*>(array + N);
+}
+template<typename T, size_t N> reverse_iterator<T*> end(T (&array)[N]) {
+  return reverse_iterator<T*>(array);
+}
+template<typename E> reverse_iterator<const E*> rbegin(
+    initializer_list<E> il) {
+  return reverse_iterator<const E*>(il.end());
+}
+template<typename E> reverse_iterator<const E*> rend(
+    initializer_list<E> il) {
+  return reverse_iterator<const E*>(il.begin());
+}
+template<typename C> auto crbegin(const C& c) ->
+    decltype(_namespace(std)::rbegin(c)) {
+  return _namespace(std)::rbegin(c);
+}
+template<typename C> auto crend(const C& c) ->
+    decltype(_namespace(std)::rend(c)) {
+  return _namespace(std)::rend(c);
+}
+
+
 _namespace_end(std)
