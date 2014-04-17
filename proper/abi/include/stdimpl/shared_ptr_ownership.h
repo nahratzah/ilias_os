@@ -32,11 +32,11 @@ class shared_ptr_ownership {
 
   long get_shared_refcount() const noexcept;
   long count_ptrs_to_me() const noexcept;
-  static void acquire(shared_ptr_ownership*) noexcept;
-  static void release(shared_ptr_ownership*) noexcept;
-  void shared_ptr_acquire_from_shared_ptr() noexcept;
+  static void acquire(shared_ptr_ownership*, size_t = 1) noexcept;
+  static void release(shared_ptr_ownership*, size_t = 1) noexcept;
+  void shared_ptr_acquire_from_shared_ptr(size_t = 1) noexcept;
   bool shared_ptr_acquire_from_weak_ptr() noexcept;
-  void shared_ptr_release() noexcept;
+  void shared_ptr_release(size_t = 1) noexcept;
 
   template<typename T, typename U>
   auto weak_ptr_convert(U* ptr) noexcept ->

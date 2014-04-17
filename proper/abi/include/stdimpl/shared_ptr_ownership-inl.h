@@ -11,24 +11,24 @@ inline long shared_ptr_ownership::count_ptrs_to_me() const noexcept {
 }
 
 
-inline void shared_ptr_ownership::acquire(shared_ptr_ownership* spd) noexcept {
-  auto old_refcount = spd->refcount_.fetch_add(1, memory_order_acquire);
+inline void shared_ptr_ownership::acquire(shared_ptr_ownership* spd, size_t n) noexcept {
+  auto old_refcount = spd->refcount_.fetch_add(n, memory_order_acquire);
   assert(old_refcount > 0);
 }
 
-inline void shared_ptr_ownership::release(shared_ptr_ownership* spd) noexcept {
-  if (spd->refcount_.fetch_sub(1, memory_order_release) == 1)
+inline void shared_ptr_ownership::release(shared_ptr_ownership* spd, size_t n) noexcept {
+  if (spd->refcount_.fetch_sub(n, memory_order_release) == n)
     destroy_(spd);
 }
 
-inline void shared_ptr_ownership::shared_ptr_acquire_from_shared_ptr()
+inline void shared_ptr_ownership::shared_ptr_acquire_from_shared_ptr(size_t n)
     noexcept {
-  auto old = shared_refcount_.fetch_add(1, memory_order_acquire);
+  auto old = shared_refcount_.fetch_add(n, memory_order_acquire);
   assert(old != 0);
 }
 
-inline void shared_ptr_ownership::shared_ptr_release() noexcept {
-  if (shared_refcount_.fetch_sub(1, memory_order_release) == 1)
+inline void shared_ptr_ownership::shared_ptr_release(size_t n) noexcept {
+  if (shared_refcount_.fetch_sub(n, memory_order_release) == n)
     release_pointee_();
 }
 

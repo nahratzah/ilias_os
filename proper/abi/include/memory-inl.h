@@ -1,4 +1,5 @@
 #include <stdimpl/shared_ptr_ownership.h>
+#include <ilias/hazard.h>
 
 _namespace_begin(std)
 namespace impl {
@@ -1401,6 +1402,12 @@ auto enable_shared_from_this<T>::shared_from_this() const ->
   rv.ptr_ = this;
   rv.ownership_ = ownership_;
   return rv;
+}
+
+
+template<typename T>
+bool atomic_is_lock_free(const shared_ptr<T>*) {
+  return _namespace(ilias)::hazard_is_lock_free();
 }
 
 
