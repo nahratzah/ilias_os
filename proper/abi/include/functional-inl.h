@@ -785,6 +785,28 @@ auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
   return assign(is_special, move(sp), &simple_function_call<decay_t<F>>);
 }
 
+template<typename R, typename... ArgTypes>
+void swap(function<R(ArgTypes...)>& a, function<R(ArgTypes...)>& b) {
+  a.swap(b);
+}
+
+template<typename R, typename... ArgTypes>
+bool operator==(const function<R(ArgTypes...)>& f, nullptr_t) {
+  return !f;
+}
+template<typename R, typename... ArgTypes>
+bool operator==(nullptr_t, const function<R(ArgTypes...)>& f) {
+  return !f;
+}
+
+template<typename R, typename... ArgTypes>
+bool operator!=(const function<R(ArgTypes...)>& f, nullptr_t) {
+  return bool(f);
+}
+template<typename R, typename... ArgTypes>
+bool operator!=(nullptr_t, const function<R(ArgTypes...)>& f) {
+  return bool(f);
+}
 
 
 inline size_t hash<bool>::operator()(bool b) const {
