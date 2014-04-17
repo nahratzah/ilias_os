@@ -140,21 +140,21 @@ template<> struct negate<void> {
 
 
 template<typename T = void> struct logical_and {
-  bool constexpr operator()(const T& x, const T& y) const { return x && y; }
+  constexpr bool operator()(const T& x, const T& y) const { return x && y; }
   using first_argument_type = T;
   using second_argument_type = T;
   using result_type = bool;
 };
 
 template<typename T = void> struct logical_or {
-  bool constexpr operator()(const T& x, const T& y) const { return x || y; }
+  constexpr bool operator()(const T& x, const T& y) const { return x || y; }
   using first_argument_type = T;
   using second_argument_type = T;
   using result_type = bool;
 };
 
 template<typename T = void> struct logical_not {
-  bool constexpr operator()(const T& x) const { return !x; }
+  constexpr bool operator()(const T& x) const { return !x; }
   using argument_type = T;
   using result_type = bool;
 };
