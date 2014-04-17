@@ -116,7 +116,12 @@ bool operator!=(const error_code&, const error_condition&) noexcept;
 bool operator!=(const error_condition&, const error_code&) noexcept;
 bool operator!=(const error_condition&, const error_condition&) noexcept;
 
-template<> struct hash<error_code>;  // XXX
+template<> struct hash<error_code> {
+  using result_type = size_t;
+  using argument_type = error_code;
+
+  size_t operator()(error_code) const;
+};
 
 
 class error_category {

@@ -1,6 +1,7 @@
 #include <system_error>
 #include <string>
 #include <cstdio>
+#include <functional>
 #include <utility>
 #include <new>
 
@@ -162,6 +163,10 @@ system_error::~system_error() noexcept {}
 
 const error_code& system_error::code() const noexcept {
   return ec_;
+}
+
+size_t hash<error_code>::operator()(error_code ec) const {
+  return hash<int>()(ec.value());
 }
 
 

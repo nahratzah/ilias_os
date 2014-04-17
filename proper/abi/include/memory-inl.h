@@ -1666,5 +1666,15 @@ struct shared_ptr<T>::atomic_lock {
   bool locked_ = false;
 };
 
+template<typename T, typename D>
+size_t hash<unique_ptr<T, D>>::operator()(const unique_ptr<T, D>& p) const {
+  return hash<T*>()(p.get());
+}
+
+template<typename T>
+size_t hash<shared_ptr<T>>::operator()(const shared_ptr<T>& p) const {
+  return hash<T*>()(p.get());
+}
+
 
 _namespace_end(std)

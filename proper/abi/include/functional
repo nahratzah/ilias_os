@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <functional-fwd.h>
+#include <hash-fwd.h>
 #include <exception>
 #include <memory>
 #include <type_traits>
@@ -572,26 +573,128 @@ template<typename R, typename... ArgTypes, typename Alloc>
 struct uses_allocator<function<R(ArgTypes...)>, Alloc> : true_type {};
 
 
-template<typename T> struct hash;
-template<> struct hash<bool>;
-template<> struct hash<char>;
-template<> struct hash<signed char>;
-template<> struct hash<unsigned char>;
-template<> struct hash<char16_t>;
-template<> struct hash<char32_t>;
-template<> struct hash<wchar_t>;
-template<> struct hash<short>;
-template<> struct hash<unsigned short>;
-template<> struct hash<int>;
-template<> struct hash<unsigned int>;
-template<> struct hash<long>;
-template<> struct hash<unsigned long>;
-template<> struct hash<long long>;
-template<> struct hash<unsigned long long>;
-template<> struct hash<float>;
-template<> struct hash<double>;
-template<> struct hash<long double>;
-template<typename T> struct hash<T*>;
+template<> struct hash<bool> {
+  using result_type = size_t;
+  using argument_type = bool;
+
+  size_t operator()(bool) const;
+};
+
+template<> struct hash<char> {
+  using result_type = size_t;
+  using argument_type = char;
+
+  size_t operator()(char) const;
+};
+
+template<> struct hash<signed char> {
+  using result_type = size_t;
+  using argument_type = signed char;
+
+  size_t operator()(signed char) const;
+};
+
+template<> struct hash<unsigned char> {
+  using result_type = size_t;
+  using argument_type = unsigned char;
+
+  size_t operator()(unsigned char) const;
+};
+
+/*
+ * char16_t, char32_t are covered by short and int respectively.
+ */
+
+template<> struct hash<wchar_t> {
+  using result_type = size_t;
+  using argument_type = wchar_t;
+
+  size_t operator()(wchar_t) const;
+};
+
+template<> struct hash<short> {
+  using result_type = size_t;
+  using argument_type = short;
+
+  size_t operator()(short) const;
+};
+
+template<> struct hash<unsigned short> {
+  using result_type = size_t;
+  using argument_type = unsigned short;
+
+  size_t operator()(unsigned short) const;
+};
+
+template<> struct hash<int> {
+  using result_type = size_t;
+  using argument_type = int;
+
+  size_t operator()(int) const;
+};
+
+template<> struct hash<unsigned int> {
+  using result_type = size_t;
+  using argument_type = unsigned int;
+
+  size_t operator()(unsigned int) const;
+};
+
+template<> struct hash<long> {
+  using result_type = size_t;
+  using argument_type = long;
+
+  size_t operator()(long) const;
+};
+
+template<> struct hash<unsigned long> {
+  using result_type = size_t;
+  using argument_type = unsigned long;
+
+  size_t operator()(unsigned long) const;
+};
+
+template<> struct hash<long long> {
+  using result_type = size_t;
+  using argument_type = long long;
+
+  size_t operator()(long long) const;
+};
+
+template<> struct hash<unsigned long long> {
+  using result_type = size_t;
+  using argument_type = unsigned long long;
+
+  size_t operator()(unsigned long long) const;
+};
+
+template<> struct hash<float> {
+  using result_type = size_t;
+  using argument_type = float;
+
+  size_t operator()(float) const;
+};
+
+template<> struct hash<double> {
+  using result_type = size_t;
+  using argument_type = double;
+
+  size_t operator()(double) const;
+};
+
+template<> struct hash<long double> {
+  using result_type = size_t;
+  using argument_type = long double;
+
+  size_t operator()(long double) const;
+};
+
+template<typename T> struct hash<T*> {
+  using result_type = size_t;
+  using argument_type = T*;
+
+  size_t operator()(T*) const;
+};
 
 
 _namespace_end(std)

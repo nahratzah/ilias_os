@@ -2,6 +2,7 @@
 #define _MEMORY_
 
 #include <memory-fwd.h>
+#include <hash-fwd.h>
 #include <cdecl.h>
 #include <cstddef>
 #include <atomic>
@@ -830,9 +831,18 @@ bool atomic_compare_exchange_strong(shared_ptr<T>*, shared_ptr<T>*,
                                     shared_ptr<T>);
 
 
-template<typename T> struct hash;
-template<typename T, typename D> struct hash<unique_ptr<T, D>>;
-template<typename T> struct hash<shared_ptr<T>>;
+template<typename T, typename D> struct hash<unique_ptr<T, D>> {
+  using result_type = size_t;
+  using argument_type = unique_ptr<T, D>;
+
+  size_t operator()(const unique_ptr<T, D>&) const;
+};
+template<typename T> struct hash<shared_ptr<T>> {
+  using result_type = size_t;
+  using argument_type = shared_ptr<T>;
+
+  size_t operator()(const shared_ptr<T>&) const;
+};
 
 
 _namespace_end(std)

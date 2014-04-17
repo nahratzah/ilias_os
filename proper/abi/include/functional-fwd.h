@@ -5,7 +5,7 @@
 
 _namespace_begin(std)
 
-template<typename T> class reference_wrapper;
+template<typename> class reference_wrapper;
 
 template<typename T> void ref(const T&&) = delete;
 template<typename T> void cref(const T&&) = delete;

@@ -786,4 +786,59 @@ auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
 }
 
 
+
+inline size_t hash<bool>::operator()(bool b) const {
+  return (b ? 0 : 1);
+}
+
+inline size_t hash<char>::operator()(char c) const {
+#ifdef __CHAR_UNSIGNED__
+  return hash<unsigned char>()(c);
+#else
+  return hash<signed char>()(c);
+#endif
+}
+
+inline size_t hash<signed char>::operator()(signed char c) const {
+  return hash<unsigned char>()(c);
+}
+
+inline size_t hash<unsigned char>::operator()(unsigned char c) const {
+  return hash<size_t>()(c);
+}
+
+inline size_t hash<wchar_t>::operator()(wchar_t c) const {
+#ifdef __WCHAR_UNSIGNED__
+  return hash<unsigned int>()(c);
+#else
+  return hash<int>()(c);
+#endif
+}
+
+inline size_t hash<short>::operator()(short n) const {
+  return hash<unsigned short>()(n);
+}
+
+inline size_t hash<unsigned short>::operator()(unsigned short n) const {
+  return hash<size_t>()(n);
+}
+
+inline size_t hash<int>::operator()(int n) const {
+  return hash<unsigned int>()(n);
+}
+
+inline size_t hash<long>::operator()(long n) const {
+  return hash<unsigned long>()(n);
+}
+
+inline size_t hash<long long>::operator()(long long n) const {
+  return hash<unsigned long long>()(n);
+}
+
+template<typename T>
+size_t hash<T*>::operator()(T* p) const {
+  return hash<uintptr_t>()(reinterpret_cast<uintptr_t>(p));
+}
+
+
 _namespace_end(std)
