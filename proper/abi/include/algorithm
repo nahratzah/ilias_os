@@ -366,6 +366,12 @@ pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator,
                                                    const T&,
                                                    Predicate);
 
+template<typename ForwardIterator, typename T>
+bool binary_search(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename T, typename Predicate>
+bool binary_search(ForwardIterator, ForwardIterator, const T&, Predicate);
+
 
 
 template<typename T>
@@ -423,7 +429,8 @@ extern template const Type* lower_bound(const Type*, const Type*,	\
                                         const Type&);			\
 extern template Type* upper_bound(Type*, Type*, const Type&);		\
 extern template const Type* upper_bound(const Type*, const Type*,	\
-                                        const Type&);
+                                        const Type&);			\
+extern template bool binary_search(Type*, Type*, const Type&);
 
 
 #define _EXTERNALIZE_ALL(extern)					\

@@ -1467,6 +1467,22 @@ pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator b,
   return make_pair(b, e);
 }
 
+template<typename ForwardIterator, typename T>
+bool binary_search(ForwardIterator b, ForwardIterator e, const T& v) {
+  return binary_search(b, e, v, less<void>());
+}
+
+template<typename ForwardIterator, typename T, typename Predicate>
+bool binary_search(ForwardIterator b, ForwardIterator e, const T& v,
+                   Predicate predicate) {
+  using placeholders::_1;
+  using placeholders::_2;
+
+  /* This invokes lower_bound with a <= variation of the predicate. */
+  b = lower_bound(b, e, v, ref(predicate));
+  return !predicate(v, *b);
+}
+
 
 template<typename T>
 auto min(const T& a, const T& b) -> const T& {
