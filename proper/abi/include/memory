@@ -159,6 +159,23 @@ template<typename Alloc> struct allocator_traits {
     return impl::allocator::allocate<pointer>(alloc, move(n), move(hint));
   }
 
+  /*
+   * Extension: resize allocation.
+   * Arguments:
+   * - allocator
+   * - pointer  (which allocation you wish to resize)
+   * - old_n    (number of elements you succesfully requested last time)
+   * - new_n    (number of elements you want to have)
+   *
+   * Does not change addresses.  Returns true if the operation succeeds,
+   * false otherwise.
+   * If the operation fails, no changes will have occured.
+   */
+  static pointer resize(Alloc& alloc, pointer p, size_type old_n,
+                        size_type new_n) {
+    return impl::allocator::resize(alloc, move(p), move(old_n), move(new_n));
+  }
+
   static void deallocate(Alloc& alloc, pointer p, size_type n) noexcept {
     alloc.deallocate(p, n);
   }
@@ -842,6 +859,24 @@ template<typename T> struct hash<shared_ptr<T>> {
   using argument_type = shared_ptr<T>;
 
   size_t operator()(const shared_ptr<T>&) const;
+};
+
+
+/* Extension: allocator for get_temporary_buffer. */
+template<typename T>
+struct temporary_buffer_allocator {
+  using value_type = T;
+  using pointer = T*;
+
+  pointer allocate(size_t);
+  bool resize(pointer, size_t, size_t) noexcept;
+  void deallocate(pointer, size_t) noexcept;
+};
+
+template<>
+struct temporary_buffer_allocator<void> {
+  using value_type = void;
+  using pointer = void*;
 };
 
 

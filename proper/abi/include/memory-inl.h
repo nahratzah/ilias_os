@@ -134,6 +134,7 @@ auto raw_storage_iterator<OutputIterator, T>::operator++(int) ->
 namespace impl {
 
 pair<void*, size_t> temporary_buffer_allocate(size_t, size_t);
+bool temporary_buffer_resize(const void*, size_t) noexcept;
 void temporary_buffer_deallocate(const void*);
 
 } /* namespace std::impl */
@@ -1674,6 +1675,28 @@ size_t hash<unique_ptr<T, D>>::operator()(const unique_ptr<T, D>& p) const {
 template<typename T>
 size_t hash<shared_ptr<T>>::operator()(const shared_ptr<T>& p) const {
   return hash<T*>()(p.get());
+}
+
+
+template<typename T>
+auto temporary_buffer_allocator<T>::allocate(size_t n) -> pointer {
+  if (_predict_false(SIZE_MAX / sizeof(T) < n)) __throw_bad_alloc();
+  void* p;
+  tie(p, ignore) = impl::temporary_buffer_allocate(sizeof(T) * n, alignof(T));
+  if (_predict_false(p == nullptr)) __throw_bad_alloc();
+  return static_cast<pointer>(p);
+}
+
+template<typename T>
+auto temporary_buffer_allocator<T>::resize(pointer p, size_t, size_t n_sz)
+    noexcept -> bool {
+  return impl::temporary_buffer_resize(p, n_sz);
+}
+
+template<typename T>
+auto temporary_buffer_allocator<T>::deallocate(pointer p, size_t)
+    noexcept -> void {
+  impl::temporary_buffer_deallocate(p);
 }
 
 

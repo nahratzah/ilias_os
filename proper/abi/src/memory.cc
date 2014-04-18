@@ -128,10 +128,30 @@ pair<void*, size_t> temporary_buffer_allocate(size_t size, size_t align) {
   return assign;
 }
 
+bool temporary_buffer_resize(const void* p, size_t new_size) noexcept {
+  using placeholders::_1;
+
+  if (p == nullptr) return false;
+  auto assign = find_if(
+      assigned.begin(), assigned.end(),
+      bind(equal_to<const void*>(),
+           bind<const void*>(&temporary_assigned::value_type::first, _1),
+           p));
+  if (assign != assigned.end() && assign->second >= new_size) return true;
+
+  bool succes;
+  tie(succes, ignore) = get_temporary_heap().resize(p, new_size);
+  if (succes && assign != assigned.end())
+    assign->second = new_size;
+
+  return succes;
+}
+
 void temporary_buffer_deallocate(const void* p) {
   using placeholders::_1;
   using placeholders::_2;
 
+  if (p == nullptr) return;
   temporary_buffer_ptr ptr{ const_cast<void*>(p) };
 
   auto assign = find_if(

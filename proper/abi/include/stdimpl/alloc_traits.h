@@ -29,6 +29,7 @@ _MEMBER_FUNCTION_CHECK(construct);
 _MEMBER_FUNCTION_CHECK(destroy);
 _MEMBER_FUNCTION_CHECK(max_size);
 _MEMBER_FUNCTION_CHECK(allocate);
+_MEMBER_FUNCTION_CHECK(resize);
 _MEMBER_FUNCTION_CHECK(select_on_container_copy_construction);
 
 
@@ -108,6 +109,24 @@ auto allocate(Alloc& alloc, Size&& n, T&&)
     enable_if_t<!member_function_check_allocate<Alloc, Size&&, T&&>::value,
                 Result> {
   return alloc.allocate(forward<Size>(n));
+}
+
+template<typename Alloc, typename Pointer, typename Size>
+auto resize(Alloc& alloc, Pointer p, Size old_n, Size new_n)
+    noexcept(noexcept(alloc.resize(alloc, move(p), move(old_n),
+                      move(new_n)))) ->
+    enable_if_t<
+        member_function_check_resize<Alloc, Pointer&&, Size&&, Size&&>::value,
+        bool> {
+  return alloc.resize(alloc, move(p), move(old_n), move(new_n));
+}
+
+template<typename Alloc, typename Pointer, typename Size>
+auto resize(Alloc&, Pointer, Size, Size) noexcept ->
+    enable_if_t<
+        !member_function_check_resize<Alloc, Pointer&&, Size&&, Size&&>::value,
+        bool> {
+  return false;
 }
 
 template<typename Result, typename Alloc>
