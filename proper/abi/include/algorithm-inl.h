@@ -1519,6 +1519,205 @@ void inplace_merge(BidirectionalIterator b, BidirectionalIterator mid,
 }
 
 
+template<typename InputIterator1, typename InputIterator2>
+bool includes(InputIterator1 b1, InputIterator1 e1,
+              InputIterator2 b2, InputIterator2 e2) {
+  return includes(b1, e1, b2, e2, less<void>());
+}
+
+template<typename InputIterator1, typename InputIterator2, typename Predicate>
+bool includes(InputIterator1 b1, InputIterator1 e1,
+              InputIterator2 b2, InputIterator2 e2, Predicate predicate) {
+  using value1_type = typename iterator_traits<InputIterator1>::value_type;
+  using value2_type = typename iterator_traits<InputIterator2>::value_type;
+
+  while (b2 != e2) {
+    if (b1 == e1) return false;
+    value2_type v2 = *b2;
+    value1_type v1 = *b1;
+    while (predicate(v1, v2)) {
+      ++b1;
+      if (b1 == e1) return false;
+      v1 = *b1;
+    }
+    if (!predicate(v2, v1)) return false;
+    ++b2;
+  }
+  return true;
+}
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator set_union(InputIterator1 b1, InputIterator1 e1,
+                         InputIterator2 b2, InputIterator2 e2,
+                         OutputIterator out) {
+  return set_union(b1, e1, b2, e2, out, less<void>());
+}
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator set_union(InputIterator1 b1, InputIterator1 e1,
+                         InputIterator2 b2, InputIterator2 e2,
+                         OutputIterator out, Predicate predicate) {
+  using value1_type = typename iterator_traits<InputIterator1>::value_type;
+  using value2_type = typename iterator_traits<InputIterator2>::value_type;
+
+  /*
+   * Loop initialization requires both collections to be non-empty.
+   * Handle the cases with empty collections first.
+   */
+  if (b1 == e1) return copy(b2, e2, out);
+  if (b2 == e2) return copy(b1, e1, out);
+
+  value1_type v1 = *b1;
+  value2_type v2 = *b2;
+  do {
+    /*
+     * Figure out if *b1 or *b2 is earlier.
+     *
+     * Note that if both are equal, neither will be true;
+     * in which case we must advance both, but only copy 1 of them.
+     *
+     * Note that the loop guard guarantees at least one of the sets
+     * will be non-empty.
+     */
+    const bool pick1 = (b2 == e2 || (b1 != e1 && predicate(v1, v2)));
+    const bool pick2 = (b1 == e1 || (b2 != e2 && predicate(v2, v1)));
+
+    /*
+     * Copy the one that compares as before.
+     * If both are the same, copy v1.
+     */
+    if (!pick2)
+      *out++ = move(v1);
+    else
+      *out++ = move(v2);
+
+    /*
+     * Skip the element that was copied,
+     * if both the same, skip them both.
+     */
+    if (!pick2) ++b1;
+    if (!pick1) ++b2;
+
+    /* Update v1 and v2 according to the skip step above. */
+    if (b1 != e1 && !pick2) v1 = *b1;
+    if (b2 != e2 && !pick1) v2 = *b2;
+  } while (b1 != e1 || b2 != e2);
+  return out;
+}
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator set_intersection(InputIterator1 b1, InputIterator1 e1,
+                                InputIterator2 b2, InputIterator2 e2,
+                                OutputIterator out) {
+  return set_intersection(b1, e1, b2, e2, out, less<void>());
+}
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator set_intersection(InputIterator1 b1, InputIterator1 e1,
+                                InputIterator2 b2, InputIterator2 e2,
+                                OutputIterator out, Predicate predicate) {
+  using value1_type = typename iterator_traits<InputIterator1>::value_type;
+  using value2_type = typename iterator_traits<InputIterator2>::value_type;
+
+  /* Deal with empty sets. */
+  if (b1 == e1 || b2 == e2) return out;
+
+  value1_type v1 = *b1;
+  value2_type v2 = *b2;
+  do {
+    if (predicate(v1, v2)) {
+      /*
+       * v1 before v2: since not equal, skip v1
+       * (which will reach at/after v2 eventually).
+       */
+      ++b1;
+      if (b1 != e1) v1 = *b1;
+    } else if (predicate(v2, v1)) {
+      /*
+       * v2 before v1: since not equal, skip v2
+       * (which will reach at/after v1 eventually).
+       */
+      ++b2;
+      if (b2 != e2) v2 = *b2;
+    } else {
+      /*
+       * v1 equal to v2: copy v1 to output,
+       * increment both iterators.
+       */
+      *out++ = move(v1);
+      ++b1;
+      if (b1 != e1) v1 = *b1;
+      ++b2;
+      if (b2 != e2) v2 = *b2;
+    }
+  } while (b1 != e1 && b2 != e2);
+  return out;
+}
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator set_symmetric_difference(InputIterator1 b1, InputIterator1 e1,
+                                        InputIterator2 b2, InputIterator2 e2,
+                                        OutputIterator out) {
+  return set_symmetric_difference(b1, e1, b2, e2, out, less<void>());
+}
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator set_symmetric_difference(InputIterator1 b1, InputIterator1 e1,
+                                        InputIterator2 b2, InputIterator2 e2,
+                                        OutputIterator out,
+                                        Predicate predicate) {
+  using value1_type = typename iterator_traits<InputIterator1>::value_type;
+  using value2_type = typename iterator_traits<InputIterator2>::value_type;
+
+  /* Deal with empty sets. */
+  if (b1 == e1) return copy(b2, e2, out);
+  if (b2 == e2) return copy(b1, e1, out);
+
+  value1_type v1 = *b1;
+  value2_type v2 = *b2;
+  do {
+    /*
+     * Figure out if *b1 or *b2 is earlier.
+     *
+     * Note that if both are equal, neither will be true;
+     * in which case we must advance both, but copy none of them.
+     *
+     * Note that the loop guard guarantees at least one of the sets
+     * will be non-empty.
+     */
+    const bool pick1 = (b2 == e2 || (b1 != e1 && predicate(v1, v2)));
+    const bool pick2 = (b1 == e1 || (b2 != e2 && predicate(v2, v1)));
+
+    /*
+     * Copy the one that compares as before.
+     * If both are the same, copy none of them.
+     */
+    if (pick1)
+      *out++ = move(v1);
+    else if (pick2)
+      *out++ = move(v2);
+
+    /*
+     * Skip the element that was copied,
+     * if both the same, skip them both.
+     */
+    if (!pick2) ++b1;
+    if (!pick1) ++b2;
+
+    /* Update v1 and v2 according to the skip step above. */
+    if (b1 != e1 && !pick2) v1 = *b1;
+    if (b2 != e2 && !pick1) v2 = *b2;
+  } while (b1 != e1 || b2 != e2);
+  return out;
+}
+
+
 template<typename T>
 auto min(const T& a, const T& b) -> const T& {
   return (a < b ? a : b);

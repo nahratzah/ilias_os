@@ -394,6 +394,50 @@ void inplace_merge(BidirectionalIterator, BidirectionalIterator,
                    BidirectionalIterator, Predicate);
 
 
+template<typename InputIterator1, typename InputIterator2>
+bool includes(InputIterator1, InputIterator1, InputIterator2, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2, typename Predicate>
+bool includes(InputIterator1, InputIterator1, InputIterator2, InputIterator2,
+              Predicate);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator set_union(InputIterator1, InputIterator1,
+                         InputIterator2, InputIterator2,
+                         OutputIterator);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator set_union(InputIterator1, InputIterator1,
+                         InputIterator2, InputIterator2,
+                         OutputIterator, Predicate);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator set_intersection(InputIterator1, InputIterator1,
+                                InputIterator2, InputIterator2,
+                                OutputIterator);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator set_intersection(InputIterator1, InputIterator1,
+                                InputIterator2, InputIterator2,
+                                OutputIterator, Predicate);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator set_symmetric_difference(InputIterator1, InputIterator1,
+                                        InputIterator2, InputIterator2,
+                                        OutputIterator);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator set_symmetric_difference(InputIterator1, InputIterator1,
+                                        InputIterator2, InputIterator2,
+                                        OutputIterator, Predicate);
+
+
 
 
 template<typename T>
@@ -477,7 +521,19 @@ extern template bool is_permutation(const Type*, const Type*,		\
 extern template bool is_permutation(const Type*, const Type*,		\
                                     const Type*);			\
 extern template bool is_permutation(const Type*, const Type*,		\
-                                    const Type*, const Type*);
+                                    const Type*, const Type*);		\
+extern template bool includes(Type*, Type*, Type*, Type*);		\
+extern template bool includes(Type*, Type*,				\
+                              const Type*, const Type*);		\
+extern template bool includes(const Type*, const Type*,			\
+                              Type*, Type*);				\
+extern template bool includes(const Type*, const Type*,			\
+                              const Type*, const Type*);		\
+extern template Type* set_union(Type*, Type*, Type*, Type*, Type*);	\
+extern template Type* set_intersection(Type*, Type*,			\
+                                       Type*, Type*, Type*);		\
+extern template Type* set_symmetric_difference(Type*, Type*,		\
+                                               Type*, Type*, Type*);
 
 
 #define _EXTERNALIZE_ALL(extern)					\
