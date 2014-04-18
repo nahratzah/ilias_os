@@ -514,6 +514,228 @@ auto make_move_iterator(Iterator i) -> move_iterator<Iterator> {
 }
 
 
+template<typename T, typename Char, typename Traits, typename Distance>
+istream_iterator<T, Char, Traits, Distance>::istream_iterator(istream_type& s)
+: in_(&s),
+  value_()
+{
+  ++*this;  // Initialize value_ with data from stream.
+}
+
+template<typename T, typename Char, typename Traits, typename Distance>
+auto istream_iterator<T, Char, Traits, Distance>::operator*() const ->
+    const T& {
+  assert_msg(in_ != nullptr, "Cannot dereference end-of-stream iterator.");
+  return value_;
+}
+
+template<typename T, typename Char, typename Traits, typename Distance>
+auto istream_iterator<T, Char, Traits, Distance>::operator->() const ->
+    const T* {
+  assert_msg(in_ != nullptr, "Cannot dereference end-of-stream iterator.");
+  return &value_;
+}
+
+template<typename T, typename Char, typename Traits, typename Distance>
+auto istream_iterator<T, Char, Traits, Distance>::operator++() ->
+    istream_iterator& {
+  assert_msg(in_ != nullptr, "Cannot step forward past end-of-stream.");
+  *in_ >> value_;
+  if (in_->fail()) in_ = nullptr;  // Become an end-of-stream iterator.
+  return *this;
+}
+
+template<typename T, typename Char, typename Traits, typename Distance>
+auto istream_iterator<T, Char, Traits, Distance>::operator++(int) ->
+    istream_iterator {
+  istream_iterator tmp = *this;
+  ++*this;
+  return tmp;
+}
+
+template<typename T, typename Char, typename Traits, typename Distance>
+auto operator==(const istream_iterator<T, Char, Traits, Distance>& x,
+                const istream_iterator<T, Char, Traits, Distance>& y) -> bool {
+  return x.in_ == y.in_;
+}
+
+template<typename T, typename Char, typename Traits, typename Distance>
+auto operator!=(const istream_iterator<T, Char, Traits, Distance>& x,
+                const istream_iterator<T, Char, Traits, Distance>& y) -> bool {
+  return !(x == y);
+}
+
+
+template<typename T, typename Char, typename Traits>
+ostream_iterator<T, Char, Traits>::ostream_iterator(ostream_type& s)
+: out_(s)
+{}
+
+template<typename T, typename Char, typename Traits>
+ostream_iterator<T, Char, Traits>::ostream_iterator(ostream_type& s,
+                                                    const Char* delim)
+: out_(s),
+  delim_(delim)
+{}
+
+/* This is an extension. */
+template<typename T, typename Char, typename Traits>
+ostream_iterator<T, Char, Traits>::ostream_iterator(
+    ostream_type& s, basic_string_ref<Char, Traits> delim)
+: out_(s),
+  delim_(delim)
+{}
+
+template<typename T, typename Char, typename Traits>
+auto ostream_iterator<T, Char, Traits>::operator=(const T& v) ->
+    ostream_iterator& {
+  *out_ << v;
+  if (!delim_.empty()) *out_ << delim_;
+  return *this;
+}
+
+template<typename T, typename Char, typename Traits>
+auto ostream_iterator<T, Char, Traits>::operator*() ->
+    ostream_iterator& {
+  return *this;
+}
+
+template<typename T, typename Char, typename Traits>
+auto ostream_iterator<T, Char, Traits>::operator++() ->
+    ostream_iterator& {
+  return *this;
+}
+
+template<typename T, typename Char, typename Traits>
+auto ostream_iterator<T, Char, Traits>::operator++(int) ->
+    ostream_iterator& {
+  return *this;
+}
+
+
+template<typename Char, typename Traits>
+istreambuf_iterator<Char, Traits>::istreambuf_iterator(
+    istream_type& s) noexcept
+: istreambuf_iterator(s.rdbuf())
+{}
+
+template<typename Char, typename Traits>
+istreambuf_iterator<Char, Traits>::istreambuf_iterator(
+    streambuf_type* buf) noexcept
+: sbuf_(buf)
+{}
+
+template<typename Char, typename Traits>
+istreambuf_iterator<Char, Traits>::istreambuf_iterator(
+    const impl::istreambuf_iterator_proxy<Char, Traits>& p) noexcept
+: sbuf_(p.sbuf_)
+{}
+
+template<typename Char, typename Traits>
+auto istreambuf_iterator<Char, Traits>::operator*() const -> Char {
+  assert_msg(sbuf_ != nullptr, "Cannot dereference end-of-stream iterator");
+  return sbuf_->sgetc();
+}
+
+template<typename Char, typename Traits>
+auto istreambuf_iterator<Char, Traits>::operator->() const ->
+    impl::istreambuf_iterator_proxy<Char, Traits> {
+  assert_msg(sbuf_ != nullptr, "Cannot dereference end-of-stream iterator");
+  return proxy(sbuf_->sgetc(), sbuf_);
+}
+
+template<typename Char, typename Traits>
+auto istreambuf_iterator<Char, Traits>::operator++() -> istreambuf_iterator& {
+  assert_msg(sbuf_ != nullptr, "Cannot advance beyond end-of-stream");
+  sbuf_->sbumpc();
+  return *this;
+}
+
+template<typename Char, typename Traits>
+auto istreambuf_iterator<Char, Traits>::operator++(int) ->
+    impl::istreambuf_iterator_proxy<Char, Traits> {
+  assert_msg(sbuf_ != nullptr, "Cannot advance beyond end-of-stream");
+  return proxy(sbuf_->sbumpc(), sbuf_);
+}
+
+template<typename Char, typename Traits>
+auto istreambuf_iterator<Char, Traits>::equal(const istreambuf_iterator& b)
+    const -> bool {
+  return bool(sbuf_ == nullptr) == bool(b.sbuf_ == nullptr);
+}
+
+template<typename Char, typename Traits>
+bool operator==(const istreambuf_iterator<Char, Traits>& a,
+                const istreambuf_iterator<Char, Traits>& b) {
+  return a.equal(b);
+}
+
+template<typename Char, typename Traits>
+bool operator!=(const istreambuf_iterator<Char, Traits>& a,
+                const istreambuf_iterator<Char, Traits>& b) {
+  return !a.equal(b);
+}
+
+namespace impl {
+
+template<typename Char, typename Traits>
+auto istreambuf_iterator_proxy<Char, Traits>::operator*() -> Char {
+  return keep_;
+}
+
+template<typename Char, typename Traits>
+auto istreambuf_iterator_proxy<Char, Traits>::operator->() const ->
+    const Char* {
+  return &keep_;
+}
+
+template<typename Char, typename Traits>
+istreambuf_iterator_proxy<Char, Traits>::istreambuf_iterator_proxy(
+    Char ch, basic_streambuf<Char, Traits>* buf)
+: sbuf_(buf),
+  keep_(ch)
+{}
+
+} /* namespace std::impl */
+
+
+template<typename Char, typename Traits>
+ostreambuf_iterator<Char, Traits>::ostreambuf_iterator(ostream_type& s)
+    noexcept
+: ostreambuf_iterator(s.rdbuf())
+{}
+
+template<typename Char, typename Traits>
+ostreambuf_iterator<Char, Traits>::ostreambuf_iterator(streambuf_type* buf)
+    noexcept
+: sbuf_(buf)
+{
+  assert(buf != nullptr);
+}
+
+template<typename Char, typename Traits>
+auto ostreambuf_iterator<Char, Traits>::operator=(Char ch) ->
+    ostreambuf_iterator& {
+  if (!failed())
+    failed_ = traits_type::eq_int_type(sbuf_->sputc(ch), traits_type::eof());
+  return *this;
+}
+
+template<typename Char, typename Traits>
+auto ostreambuf_iterator<Char, Traits>::operator++() -> ostreambuf_iterator& {
+  return *this;
+}
+
+template<typename Char, typename Traits>
+auto ostreambuf_iterator<Char, Traits>::operator++(int) ->
+    ostreambuf_iterator& {
+  return *this;
+}
+
+template<typename Char, typename Traits>
+auto ostreambuf_iterator<Char, Traits>::failed() const noexcept -> bool {
+  return failed_;
+}
 
 
 template<typename C> auto begin(C& c) -> decltype(c.begin()) {

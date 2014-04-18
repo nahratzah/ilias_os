@@ -280,11 +280,127 @@ template<typename Iterator>
 move_iterator<Iterator> make_move_iterator(Iterator);
 
 
-template<typename T, typename Char = char, typename Traits = char_traits<Char>>
-class ostream_iterator;
+template<typename, typename Char = char, typename = char_traits<Char>,
+         typename = ptrdiff_t>
+class istream_iterator;
 
-template<typename Char = char, typename Traits>
-class istreambuf_iterator;
+template<typename T, typename Char, typename Traits, typename Distance>
+bool operator==(const istream_iterator<T, Char, Traits, Distance>&,
+                const istream_iterator<T, Char, Traits, Distance>&);
+template<typename T, typename Char, typename Traits, typename Distance>
+bool operator!=(const istream_iterator<T, Char, Traits, Distance>&,
+                const istream_iterator<T, Char, Traits, Distance>&);
+
+template<typename T, typename Char, typename Traits, typename Distance>
+class istream_iterator
+: public iterator<input_iterator_tag, T, Distance, const T*, const T&>
+{
+  template<typename OT, typename OChar, typename OTraits, typename ODistance>
+  friend bool operator==(const istream_iterator<OT, OChar, OTraits,
+                                                ODistance>&,
+                         const istream_iterator<OT, OChar, OTraits,
+                                                ODistance>&);
+  template<typename OT, typename OChar, typename OTraits, typename ODistance>
+  friend bool operator!=(const istream_iterator<OT, OChar, OTraits,
+                                                ODistance>&,
+                         const istream_iterator<OT, OChar, OTraits,
+                                                ODistance>&);
+
+ public:
+  using char_type = Char;
+  using traits_type = Traits;
+  using istream_type = basic_istream<Char, Traits>;
+
+  constexpr istream_iterator() : value_() {}
+  istream_iterator(istream_type&);
+  istream_iterator(const istream_iterator&) = default;
+  ~istream_iterator() noexcept = default;
+
+  const T& operator*() const;
+  const T* operator->() const;
+  istream_iterator& operator++();
+  istream_iterator operator++(int);
+
+ private:
+  istream_type* in_ = nullptr;
+  T value_;
+};
+
+template<typename T, typename Char = char, typename Traits = char_traits<Char>>
+class ostream_iterator
+: public iterator<output_iterator_tag, void, void, void, void>
+{
+ public:
+  using char_type = Char;
+  using traits_type = Traits;
+  using ostream_type = basic_ostream<Char, Traits>;
+
+  ostream_iterator(ostream_type&);
+  ostream_iterator(ostream_type&, const Char*);
+  ostream_iterator(ostream_type&, basic_string_ref<Char, Traits>);
+  ostream_iterator(const ostream_iterator&) = default;
+  ~ostream_iterator() noexcept = default;
+
+  ostream_iterator& operator=(const T&);
+
+  ostream_iterator& operator*();
+  ostream_iterator& operator++();
+  ostream_iterator& operator++(int);
+
+ private:
+  basic_ostream<Char, Traits>* out_;
+  basic_string_ref<Char, Traits> delim_;
+};
+
+
+namespace impl {
+
+template<typename Char, typename Traits>
+class istreambuf_iterator_proxy {
+  template<typename, typename>
+  friend class _namespace(std)::istreambuf_iterator;
+
+ public:
+  Char operator*();
+  const Char* operator->() const;
+
+ private:
+  istreambuf_iterator_proxy(Char, basic_streambuf<Char, Traits>*);
+
+  basic_streambuf<Char, Traits>* sbuf_ = nullptr;
+  Char keep_;
+};
+
+} /* namespace std::impl */
+
+template<typename Char, typename Traits>
+class istreambuf_iterator
+: public iterator<input_iterator_tag, Char, typename Traits::off_type,
+                  impl::istreambuf_iterator_proxy<Char, Traits>, Char>
+{
+ public:
+  using char_type = Char;
+  using traits_type = Traits;
+  using int_type = typename traits_type::int_type;
+  using streambuf_type = basic_streambuf<Char, Traits>;
+  using istream_type = basic_istream<Char, Traits>;
+
+  constexpr istreambuf_iterator() noexcept = default;
+  istreambuf_iterator(const istreambuf_iterator&) noexcept = default;
+  ~istreambuf_iterator() noexcept = default;
+  istreambuf_iterator(istream_type&) noexcept;
+  istreambuf_iterator(streambuf_type*) noexcept;
+  istreambuf_iterator(const impl::istreambuf_iterator_proxy<Char, Traits>&)
+      noexcept;
+  Char operator*() const;
+  impl::istreambuf_iterator_proxy<Char, Traits> operator->() const;
+  istreambuf_iterator& operator++();
+  impl::istreambuf_iterator_proxy<Char, Traits> operator++(int);
+  bool equal(const istreambuf_iterator&) const;
+
+ private:
+  streambuf_type* sbuf_ = nullptr;
+};
 
 template<typename Char, typename Traits>
 bool operator==(const istreambuf_iterator<Char, Traits>&,
@@ -293,8 +409,30 @@ template<typename Char, typename Traits>
 bool operator!=(const istreambuf_iterator<Char, Traits>&,
                 const istreambuf_iterator<Char, Traits>&);
 
+
 template<typename Char, typename Traits>
-class ostreambuf_iterator;
+class ostreambuf_iterator
+: public iterator<output_iterator_tag, void, void, void, void>
+{
+ public:
+  using char_type = Char;
+  using traits_type = Traits;
+  using streambuf_type = basic_streambuf<Char, Traits>;
+  using ostream_type = basic_ostream<Char, Traits>;
+
+  ostreambuf_iterator(ostream_type&) noexcept;
+  ostreambuf_iterator(streambuf_type*) noexcept;
+  ostreambuf_iterator& operator=(Char);
+
+  ostreambuf_iterator& operator*();
+  ostreambuf_iterator& operator++();
+  ostreambuf_iterator& operator++(int);
+  bool failed() const noexcept;
+
+ private:
+  streambuf_type* sbuf_;
+  bool failed_ = false;
+};
 
 
 template<typename C> auto begin(C& c) -> decltype(c.begin());
