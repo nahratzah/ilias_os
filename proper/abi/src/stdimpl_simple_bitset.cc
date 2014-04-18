@@ -10,14 +10,12 @@ namespace impl {
 
 simple_bitset::simple_bitset(size_type count)
 : len_(count),
-  data_(get<0>(get_temporary_buffer<uintptr_t>((count + bits - 1U) / bits)))
+  data_(count == 0 ?
+        nullptr :
+        get<0>(get_temporary_buffer<uintptr_t>((count + bits - 1U) / bits)))
 {
-  if (len_ != 0 && data_ == nullptr) __throw_bad_alloc();
-  bzero(data_, sizeof(uintptr_t) * ((count + bits - 1U) / bits));
-}
-
-simple_bitset::~simple_bitset() noexcept {
-  return_temporary_buffer(data_);
+  if (data_ != nullptr)
+    bzero(data_, sizeof(uintptr_t) * ((count + bits - 1U) / bits));
 }
 
 bool simple_bitset::all_set() const noexcept {
@@ -30,28 +28,6 @@ bool simple_bitset::all_set() const noexcept {
   return true;
 }
 
-bool simple_bitset::operator[](size_type idx) const noexcept {
-  assert(idx < len_);
-
-  return data_[idx / bits] & (uintptr_t(1) << (idx % bits));
-}
-
-simple_bitset::proxy simple_bitset::operator[](size_type idx) noexcept {
-  assert(idx < len_);
-
-  return proxy(&data_[idx / bits], uintptr_t(1) << (idx % bits));
-}
-
-
-simple_bitset::proxy& simple_bitset::proxy::operator=(bool v) noexcept {
-  assert(elem_);
-
-  if (v)
-    *elem_ |= mask_;
-  else
-    *elem_ &= ~mask_;
-  return *this;
-}
 
 bool exchange(simple_bitset::proxy& self, bool v) noexcept {
   bool rv = self;

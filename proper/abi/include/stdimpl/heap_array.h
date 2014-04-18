@@ -22,6 +22,16 @@ class heap_array {
     ptr_(get<0>(get_temporary_buffer<value_type>(n)))
   {}
 
+  heap_array() = delete;
+  heap_array(const heap_array&) = delete;
+  heap_array& operator=(const heap_array&) = delete;
+
+  heap_array(heap_array&& other) noexcept
+  : max_size_(other.max_size_),
+    size_(other.size_),
+    ptr_(exchange(other.ptr_, nullptr))
+  {}
+
   ~heap_array() noexcept {
     if (*this) {
       while (size_-- > 0)
@@ -48,7 +58,7 @@ class heap_array {
  private:
   const size_t max_size_;
   size_t size_ = 0;
-  const pointer ptr_;
+  pointer ptr_;
 };
 
 

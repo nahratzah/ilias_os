@@ -270,30 +270,8 @@ template<typename ForwardIterator1, typename ForwardIterator2,
 bool is_permutation(ForwardIterator1 b1, ForwardIterator1 e1,
                     ForwardIterator2 b2,
                     BinaryPredicate predicate) {
-  using impl::simple_bitset;
-
-  /* First eliminate anything that is equal. */
-  tie(b1, b2) = mismatch(b1, e1, b2, ref(predicate));
-  if (b1 == e1) return true;  // Everything is equal.
-
-  /* Use a collection to find the remaining items. */
-  auto count = distance(b1, e1);
-  simple_bitset s{ count };
-
-  while (count > 0) {
-    auto found = b1;
-    simple_bitset::size_type off = 0;
-    while (found != e1 && (s[off] || !predicate(*found, *b2))) {
-      ++found;
-      ++off;
-    }
-    if (found == e1) return false;
-    s[off] = true;
-
-    ++b2;
-    --count;
-  }
-  return true;
+  return is_permutation(b1, e1, b2, next(b2, distance(b1, e1)),
+                        ref(predicate));
 }
 
 template<typename ForwardIterator1, typename ForwardIterator2>
@@ -309,6 +287,7 @@ bool is_permutation(ForwardIterator1 b1, ForwardIterator1 e1,
                     ForwardIterator2 b2, ForwardIterator2 e2,
                     BinaryPredicate predicate) {
   using impl::simple_bitset;
+  using placeholders::_1;
 
   if (impl::unequal_distance(b1, e1, b2, e2)) return false;
 
@@ -320,23 +299,39 @@ bool is_permutation(ForwardIterator1 b1, ForwardIterator1 e1,
 
   /* Use a collection to find the remaining items. */
   auto count = distance(b1, e1);
-  if (count != distance(b2, e2)) return false;
-  simple_bitset s{ count };
+  auto s = simple_bitset(count);
 
-  while (count > 0 && b2 != e2) {
-    auto found = b1;
-    simple_bitset::size_type off = 0;
-    while (found != e1 && (s[off] || !predicate(*found, *b2))) {
-      ++found;
-      ++off;
+  if (s) {
+    while (count > 0 && b2 != e2) {
+      auto found = b1;
+      simple_bitset::size_type off = 0;
+      while (found != e1 && (s[off] || !predicate(*found, *b2))) {
+        ++found;
+        ++off;
+      }
+      if (found == e1) return false;
+      s[off] = true;
+
+      ++b2;
+      --count;
     }
-    if (found == e1) return false;
-    s[off] = true;
-
-    ++b2;
-    --count;
+    return count == 0 && b2 == e2;
   }
-  return count == 0 && b2 == e2;
+
+  /*
+   * Insufficient memory to create bitset, use count instead.
+   * This method requires more invocations of the predicate than
+   * the method above;  it is not so bad, unless the predicate is
+   * really expensive to run (yielding a big 'c' component in our
+   * complexity analysis).
+   */
+  for (ForwardIterator1 i = b1; i != e1; ++i) {
+    auto c2 = count_if(b2, e2, bind(ref(predicate), ref(*i), _1));
+    if (c2 == 0) return false;
+    auto c1 = count_if(b1, e1, bind(ref(predicate), ref(*i), _1));
+    if (c1 != c2) return false;
+  }
+  return true;
 }
 
 template<typename ForwardIterator1, typename ForwardIterator2>

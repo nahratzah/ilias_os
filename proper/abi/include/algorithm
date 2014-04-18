@@ -461,7 +461,23 @@ extern template Type* merge(Type*, Type*,				\
                             const Type*, const Type*, Type*);		\
 extern template Type* merge(const Type*, const Type*,			\
                             const Type*, const Type*, Type*);		\
-extern template void inplace_merge(Type*, Type*, Type*);
+extern template void inplace_merge(Type*, Type*, Type*);		\
+extern template bool is_permutation(Type*, Type*,			\
+                                    Type*);				\
+extern template bool is_permutation(Type*, Type*,			\
+                                    Type*, Type*);			\
+extern template bool is_permutation(Type*, Type*,			\
+                                    const Type*);			\
+extern template bool is_permutation(Type*, Type*,			\
+                                    const Type*, const Type*);		\
+extern template bool is_permutation(const Type*, const Type*,		\
+                                    Type*);				\
+extern template bool is_permutation(const Type*, const Type*,		\
+                                    Type*, Type*);			\
+extern template bool is_permutation(const Type*, const Type*,		\
+                                    const Type*);			\
+extern template bool is_permutation(const Type*, const Type*,		\
+                                    const Type*, const Type*);
 
 
 #define _EXTERNALIZE_ALL(extern)					\
