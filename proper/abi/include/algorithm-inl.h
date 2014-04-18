@@ -1,4 +1,5 @@
 #include <stdimpl/heap_array.h>
+#include <stdimpl/heap_support.h>
 
 _namespace_begin(std)
 
@@ -1715,6 +1716,156 @@ OutputIterator set_symmetric_difference(InputIterator1 b1, InputIterator1 e1,
     if (b2 != e2 && !pick1) v2 = *b2;
   } while (b1 != e1 || b2 != e2);
   return out;
+}
+
+
+template<typename RandomAccessIterator>
+void push_heap(RandomAccessIterator b, RandomAccessIterator e) {
+  push_heap(b, e, less<void>());
+}
+
+template<typename RandomAccessIterator, typename Predicate>
+void push_heap(RandomAccessIterator b, RandomAccessIterator e,
+               Predicate predicate) {
+  using namespace _namespace(std)::impl::heap;
+
+  assert(b != e);
+
+  e = prev(e);  // Change e into the inserted element.
+  auto idx = distance(b, e);
+
+  while (idx != 0) {
+    auto parent_idx = elem_parent(idx);
+    RandomAccessIterator parent = b + parent_idx;
+    if (!predicate(*parent, *e)) break;  // GUARD
+
+    iter_swap(parent, e);
+    idx = parent_idx;
+    e = parent;
+  }
+}
+
+/* Fix a single violation of the heap invariant, located at position i. */
+namespace impl {
+
+template<typename RandomAccessIterator, typename Predicate>
+void fix_heap(RandomAccessIterator b, RandomAccessIterator i,
+              RandomAccessIterator e, Predicate predicate) {
+  using namespace _namespace(std)::impl::heap;
+  using _namespace(std)::distance;
+
+  const auto len = distance(b, e);
+
+  for (;;) {
+    const auto c1_idx = elem_child(distance(b, i));
+    const auto c2_idx = elem_child(distance(b, i)) + 1U;
+    if (c1_idx >= len) break;  // GUARD: end of list
+    RandomAccessIterator c1 = next(b, c1_idx);
+    RandomAccessIterator c2 = next(b, c2_idx);
+
+    RandomAccessIterator biggest_child = c1;
+    if (c2 != e && !predicate(c2, c1)) biggest_child = c2;
+    if (!predicate(i, biggest_child)) break;  // GUARD: i at correct position
+
+    iter_swap(i, biggest_child);
+    i = biggest_child;
+  }
+}
+
+} /* namespace std::impl */
+
+template<typename RandomAccessIterator>
+void pop_heap(RandomAccessIterator b, RandomAccessIterator e) {
+  pop_heap(b, e, less<void>());
+}
+
+template<typename RandomAccessIterator, typename Predicate>
+void pop_heap(RandomAccessIterator b, RandomAccessIterator e,
+              Predicate predicate) {
+  assert(b != e);
+
+  e = prev(e);  // Change e into the popped element.
+  iter_swap(b, e);
+  impl::fix_heap(b, b, e, ref(predicate));
+}
+
+template<typename RandomAccessIterator>
+void make_heap(RandomAccessIterator b, RandomAccessIterator e) {
+  make_heap(b, e, less<void>());
+}
+
+template<typename RandomAccessIterator, typename Predicate>
+void make_heap(RandomAccessIterator b, RandomAccessIterator e,
+               Predicate predicate) {
+  if (b == e) return;  // Skip empty set.
+
+  /*
+   * All leaves are already heaps,
+   * start with the first element that has children.
+   */
+  const auto idx = distance(b, e) / 2U - 1U;
+  auto i = next(b, idx);
+  for (;;) {
+    fix_heap(b, i, e, ref(predicate));
+    if (i == b) break;  // GUARD
+    --i;
+  }
+}
+
+template<typename RandomAccessIterator>
+void sort_heap(RandomAccessIterator b, RandomAccessIterator e) {
+  sort_heap(b, e, less<void>());
+}
+
+template<typename RandomAccessIterator, typename Predicate>
+void sort_heap(RandomAccessIterator b, RandomAccessIterator e,
+               Predicate predicate) {
+  while (b != e) {
+    pop_heap(b, e);
+    --e;
+  }
+}
+
+template<typename RandomAccessIterator>
+bool is_heap(RandomAccessIterator b, RandomAccessIterator e) {
+  return is_heap(b, e, less<void>());
+}
+
+template<typename RandomAccessIterator, typename Predicate>
+bool is_heap(RandomAccessIterator b, RandomAccessIterator e,
+             Predicate predicate) {
+  return is_heap_until(b, e, ref(predicate)) == e;
+}
+
+template<typename RandomAccessIterator>
+RandomAccessIterator is_heap_until(RandomAccessIterator b,
+                                   RandomAccessIterator e) {
+  return is_heap_until(b, e, less<void>());
+}
+
+template<typename RandomAccessIterator, typename Predicate>
+RandomAccessIterator is_heap_until(RandomAccessIterator b,
+                                   RandomAccessIterator e,
+                                   Predicate predicate) {
+  using namespace _namespace(std)::impl::heap;
+  using _namespace(std)::distance;
+  using difference_type =
+      typename iterator_traits<RandomAccessIterator>::difference_type;
+
+  const difference_type len = distance(b, e);
+  RandomAccessIterator i = b;
+  for (difference_type idx = 0; idx < (len - 1) / 2; ++idx, ++i) {
+    const auto c1_idx = elem_child(idx);
+    const auto c2_idx = elem_child(idx) + 1U;
+    assert(c1_idx < len);
+    RandomAccessIterator c1 = next(b, c1_idx);
+    RandomAccessIterator c2 = next(b, c2_idx);
+
+    RandomAccessIterator biggest_child = c1;
+    if (c2 != e && !predicate(c2, c1)) biggest_child = c2;
+    if (predicate(i, biggest_child)) return i;  // not a heap
+  }
+  return e;  // all elements except leaves checked (since leaves are trivial)
 }
 
 

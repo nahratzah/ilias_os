@@ -438,6 +438,42 @@ OutputIterator set_symmetric_difference(InputIterator1, InputIterator1,
                                         OutputIterator, Predicate);
 
 
+template<typename RandomAccessIterator>
+void push_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void push_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+void pop_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void pop_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+void make_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void make_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+void sort_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void sort_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+bool is_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+bool is_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+RandomAccessIterator is_heap_until(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+RandomAccessIterator is_heap_until(RandomAccessIterator, RandomAccessIterator,
+                                   Predicate);
 
 
 template<typename T>
@@ -533,7 +569,13 @@ extern template Type* set_union(Type*, Type*, Type*, Type*, Type*);	\
 extern template Type* set_intersection(Type*, Type*,			\
                                        Type*, Type*, Type*);		\
 extern template Type* set_symmetric_difference(Type*, Type*,		\
-                                               Type*, Type*, Type*);
+                                               Type*, Type*, Type*);	\
+extern template void push_heap(Type*, Type*);				\
+extern template void pop_heap(Type*, Type*);				\
+extern template void make_heap(Type*, Type*);				\
+extern template void sort_heap(Type*, Type*);				\
+extern template bool is_heap(Type*, Type*);				\
+extern template Type* is_heap_until(Type*, Type*);
 
 
 #define _EXTERNALIZE_ALL(extern)					\
