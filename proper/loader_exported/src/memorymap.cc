@@ -36,7 +36,10 @@ std::string memorymap::to_string() const {
     values[N_UNITS - 1] = sz;
 
     unsigned int i = N_UNITS;
-    while (i-- > 0) rv += std::format(" %4d %-2s ", values[i], units[i]);
+    while (i-- > 0) {
+      rv += std::format(" %4d %-2.*s ",
+                        values[i], int(units[i].size()), units[i].begin());
+    }
     rv += "\n";
   }
   return rv;
