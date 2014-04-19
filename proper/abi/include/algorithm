@@ -551,6 +551,12 @@ bool next_permutation(BidirectionalIterator, BidirectionalIterator, Compare);
 
 
 #define _EXTERNALIZE(extern, Type)					\
+extern template Type* copy(Type*, Type*, Type*);			\
+extern template Type* copy(const Type*, const Type*, Type*);		\
+extern template Type* move(Type*, Type*, Type*);			\
+extern template Type* move(const Type*, const Type*, Type*);		\
+extern template Type* move_backward(Type*, Type*, Type*);		\
+extern template Type* move_backward(const Type*, const Type*, Type*);	\
 extern template Type* find(Type*, Type*, const Type&);			\
 extern template const Type* find(const Type*, const Type*,		\
                                  const Type&);				\

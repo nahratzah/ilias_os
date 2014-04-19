@@ -504,7 +504,7 @@ template<typename T>
 auto algorithm_move(const T* b, const T* e, T* out) ->
     enable_if_t<is_trivially_copyable<T>::value, T*> {
   const auto delta = e - b;
-  memcpy(out, b, delta * sizeof(T));
+  memmove(out, b, delta * sizeof(T));
   return out + delta;
 }
 
@@ -512,7 +512,7 @@ template<typename T>
 auto algorithm_move(T* b, T* e, T* out) ->
     enable_if_t<is_trivially_copyable<T>::value, T*> {
   const auto delta = e - b;
-  memcpy(out, b, delta * sizeof(T));
+  memmove(out, b, delta * sizeof(T));
   return out + delta;
 }
 
@@ -534,12 +534,39 @@ OutputIterator move(InputIterator b, InputIterator e, OutputIterator out) {
   return impl::algorithm_move(b, e, out);
 }
 
+/* Some specializations for move_backward. */
+namespace impl {
+
+template<typename T>
+auto algorithm_move_backward(const T* b, const T* e, T* out) ->
+    enable_if_t<is_trivially_copyable<T>::value, T*> {
+  const auto delta = e - b;
+  memmove(out - delta, b, delta * sizeof(T));
+  return out + delta;
+}
+
+template<typename T>
+auto algorithm_move_backward(T* b, T* e, T* out) ->
+    enable_if_t<is_trivially_copyable<T>::value, T*> {
+  const auto delta = e - b;
+  memmove(out - delta, b, delta * sizeof(T));
+  return out + delta;
+}
+
+template<typename InputIterator, typename OutputIterator>
+auto algorithm_move_backward(InputIterator b, InputIterator e,
+                             OutputIterator out) -> OutputIterator {
+  while (b != e) *--out = move(*--e);
+  return out;
+}
+
+} /* namespace std::impl */
+
 template<typename BidirectionalIterator1, typename BidirectionalIterator2>
 BidirectionalIterator2 move_backward(BidirectionalIterator1 b,
                                      BidirectionalIterator1 e,
                                      BidirectionalIterator2 out) {
-  while (b != e) *--out = move(*--e);
-  return out;
+  return impl::algorithm_move_backward(b, e, out);
 }
 
 template<typename ForwardIterator1, typename ForwardIterator2>
