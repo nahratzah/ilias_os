@@ -6,15 +6,14 @@
  */
 namespace __cxxabiv1 {
 
-char* __attribute__((weak)) __cxa_demangle(const char* mangled_name, char* buf,
-                                           _TYPES(size_t)* buflen,
+char* __attribute__((weak)) __cxa_demangle(const char*, char*,
+                                           _TYPES(size_t)*,
                                            int* status) noexcept {
   if (status) *status = -1;  // No malloc avaible. :)
   return nullptr;
 }
 
-char* __attribute__((weak)) __cxa_demangle_gnu3(const char* mangled_name)
-    noexcept {
+char* __attribute__((weak)) __cxa_demangle_gnu3(const char*) noexcept {
   return nullptr;
 }
 

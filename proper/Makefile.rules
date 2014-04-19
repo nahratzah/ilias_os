@@ -26,7 +26,8 @@ CFLAGS_64 +=		-target amd64-eabi				\
 			-mno-red-zone
 
 CXXFLAGS +=		${COMPILER_FLAGS}				\
-			-std=c++11
+			-std=c++11					\
+			-W -Wall -Weffc++ -Werror
 CFLAGS +=		${COMPILER_FLAGS}
 LDFLAGS +=		-nostdlib					\
 			-nodefaultlibs

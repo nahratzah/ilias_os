@@ -219,7 +219,7 @@ struct placeholder_type {
                              Tuple>::type;
 };
 template<typename T, typename Args, size_t... ArgIndices>
-auto resolve_argument(const T& v, Args args,
+auto resolve_argument(const T&, Args args,
                       index_sequence<ArgIndices...>) ->
     typename enable_if_t<is_placeholder<T>::value != 0,
                          placeholder_type<T>
@@ -773,7 +773,7 @@ template<typename R, typename... ArgTypes>
 template<typename F, typename Alloc>
 auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
                                                  F&& f,
-                                                 Alloc&& alloc) noexcept ->
+                                                 Alloc&&) noexcept ->
     enable_if_t<(is_trivially_copyable<decay_t<F>>::value &&
                  is_trivially_destructible<decay_t<F>>::value &&
                  sizeof(decay_t<F>) <= sizeof(special_ptr_p_type) &&

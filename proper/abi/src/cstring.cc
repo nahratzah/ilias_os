@@ -254,6 +254,7 @@ const void* memrchr(const void* p, int c, size_t len) noexcept {
 
 void* memccpy(void*__restrict dst, const void*__restrict src, int c,
     size_t len) noexcept {
+  c &= 0xff;
   if (len == 0) return nullptr;  // Reader needs at least 1 readable byte.
   auto r = reader<DIR_FORWARD, uint8_t>(src, len);
 
@@ -284,7 +285,7 @@ void* memccpy(void*__restrict dst, const void*__restrict src, int c,
         --len;
         dst = static_cast<uint8_t*>(dst) + 1U;
 
-        if (rcc == c) return dst;
+        if (rcc == unsigned(c)) return dst;
       }
     }
   }
@@ -422,6 +423,7 @@ size_t strlcat(char*__restrict dst, const char*__restrict src, size_t len)
 }
 
 const char* strchr(const char* s, int c) noexcept {
+  c &= 0xff;
   auto r = reader<DIR_FORWARD, uint8_t>(s);
 
   /* Get reader aligned. */
@@ -441,7 +443,7 @@ const char* strchr(const char* s, int c) noexcept {
     const char* addr = r.addr<char>() - ALIGN;
     for (unsigned int i = 0; i < ALIGN; ++i) {
       auto rcc = consume_bytes(&rc, 1U);
-      if (rcc == c) return addr + i;
+      if (rcc == unsigned(c)) return addr + i;
       if (rcc == CHAR_ZERO) return nullptr;
     }
   }

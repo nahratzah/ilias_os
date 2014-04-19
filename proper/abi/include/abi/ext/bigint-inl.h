@@ -75,8 +75,8 @@ bigint::bigint(
 }
 
 inline bigint::bigint(bigint&& other) noexcept
-: sign_(other.sign_),
-  x_(other.x_)
+: x_(other.x_),
+  sign_(other.sign_)
 {}
 
 inline bigint& bigint::operator=(bigint other) noexcept {

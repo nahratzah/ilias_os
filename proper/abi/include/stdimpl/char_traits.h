@@ -236,7 +236,6 @@ struct traits_tester {
                      no)
       noexcept ->
       const typename CharT::char_type* {
-    const typename CharT::char_type* hi = h + hlen;
     while (hlen-- > 0) {
       if (CharT::find(n, nlen, *h) != nullptr) return h;
       ++h;

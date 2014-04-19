@@ -393,27 +393,45 @@ void iter_swap(stride_iterator x, stride_iterator y) noexcept {
   }
 }
 
-stride_reference ref(const stride_reference& x) noexcept { return x; }
-stride_reference ref(stride_reference&& x) noexcept { return x; }
-const stride_reference cref(const stride_reference& x) noexcept { return x; }
-const stride_reference cref(const stride_reference&& x) noexcept { return x; }
+stride_reference __attribute__((unused)) ref(const stride_reference& x)
+    noexcept {
+  return x;
+}
+stride_reference __attribute__((unused)) ref(stride_reference&& x)
+    noexcept {
+  return x;
+}
+const stride_reference __attribute__((unused)) cref(const stride_reference& x)
+    noexcept {
+  return x;
+}
+const stride_reference __attribute__((unused)) cref(const stride_reference&& x)
+    noexcept {
+  return x;
+}
 
-bool operator==(const stride_iterator& x, const stride_iterator& y) noexcept {
+bool __attribute__((unused)) operator==(const stride_iterator& x,
+                                        const stride_iterator& y) noexcept {
   return (*x).get() == (*y).get();
 }
-bool operator!=(const stride_iterator& x, const stride_iterator& y) noexcept {
+bool __attribute__((unused)) operator!=(const stride_iterator& x,
+                                        const stride_iterator& y) noexcept {
   return !(x == y);
 }
-bool operator<(const stride_iterator& x, const stride_iterator& y) noexcept {
+bool __attribute__((unused)) operator<(const stride_iterator& x,
+                                       const stride_iterator& y) noexcept {
   return (*x).get() < (*y).get();
 }
-bool operator>(const stride_iterator& x, const stride_iterator& y) noexcept {
+bool __attribute__((unused)) operator>(const stride_iterator& x,
+                                       const stride_iterator& y) noexcept {
   return y < x;
 }
-bool operator<=(const stride_iterator& x, const stride_iterator& y) noexcept {
+bool __attribute__((unused)) operator<=(const stride_iterator& x,
+                                        const stride_iterator& y) noexcept {
   return !(y < x);
 }
-bool operator>=(const stride_iterator& x, const stride_iterator& y) noexcept {
+bool __attribute__((unused)) operator>=(const stride_iterator& x,
+                                        const stride_iterator& y) noexcept {
   return !(x < y);
 }
 

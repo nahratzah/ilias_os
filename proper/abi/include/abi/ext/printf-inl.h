@@ -265,7 +265,7 @@ class printf_arg {
 
 template<typename Char, typename Traits>
 int parse_num(std::basic_string_ref<Char, Traits>& sp) noexcept {
-  int rv;
+  int rv = 0;
 
   while (!sp.empty() && sp[0] >= '0' && sp[0] <= '9') {
     (rv *= 10) += (sp[0] - '0');
@@ -416,7 +416,7 @@ int render_int_agnostic(printf_renderer<Char, Traits>& renderer,
   }
 
   /* Figure out how many zeroes to prepend, to reach precision. */
-  if (number.size() < spec.precision)
+  if (spec.precision >= 0 && number.size() < size_t(spec.precision))
     add_leading_zeroes = spec.precision - number.size();
 
   /*
@@ -887,7 +887,9 @@ int render_str<Str>::operator()(printf_renderer<Char, Traits>& renderer,
     v = std::basic_string_ref<Str>(s);
   }
 
-  int pad_len = (v.size() < spec.fieldwidth ? spec.fieldwidth - v.size() : 0);
+  int pad_len = (spec.fieldwidth >= 0 && v.size() < size_t(spec.fieldwidth) ?
+                 spec.fieldwidth - v.size() :
+                 0);
   int error;
 
   /* Print spaces to the left, unless left justifying output. */
@@ -1367,7 +1369,7 @@ int vxprintf(printf_renderer<Char, Traits>& r,
              typename printf_renderer<Char, Traits>::string_type fmt,
              ...) noexcept {
   vxprintf_locals<Char, Traits> locals;
-  int error;
+  int error = 0;
   va_list ap;
   va_start(ap, fmt);
 

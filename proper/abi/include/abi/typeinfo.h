@@ -104,7 +104,7 @@ class __si_class_type_info
                                          const __dyn_cast_request&)
                                            const noexcept override;
 
- private:
+ protected:
   const __class_type_info* __base_type;
 };
 
@@ -127,7 +127,7 @@ class __vmi_class_type_info
                                          const __dyn_cast_request&)
                                            const noexcept override;
 
- private:
+ protected:
   unsigned int __flags;  // XXX lookup per abi: type is arch dependant
   unsigned int __base_count;  // XXX lookup per abi: type is arch dependant
   __base_class_type_info __base_info[1];
@@ -144,7 +144,7 @@ class __pbase_type_info
 
   ~__pbase_type_info() noexcept override;
 
- private:
+ protected:
   unsigned int __flags;
   const _namespace(std)::type_info* __pointee;
 
@@ -181,7 +181,7 @@ class __pointer_to_member_type_info
 
   ~__pointer_to_member_type_info() noexcept override;
 
- private:
+ protected:
   const __class_type_info* __context;  // The 'A' in 'int A::*'.
 };
 

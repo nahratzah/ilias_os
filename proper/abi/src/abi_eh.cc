@@ -183,6 +183,36 @@ void __cxa_throw(void* exc_addr, const std::type_info* ti,
   _Unwind_Reason_Code fail = _Unwind_RaiseException(&exc->unwindHeader);
 
   /* If _Unwind_RaiseException returns, there are serious problems. */
+  switch (fail) {
+  case _URC_NO_REASON:
+    panic("__cxa_throw: no reason (for Unwind_RaiseException to return)");
+    break;
+  case _URC_FOREIGN_EXCEPTION_CAUGHT:
+    panic("__cxa_throw: foreign exception caught");
+    break;
+  case _URC_FATAL_PHASE_2_ERROR:
+    panic("__cxa_throw: fatal phase 2 error");
+    break;
+  case _URC_FATAL_PHASE_1_ERROR:
+    panic("__cxa_throw: fatal phase 1 error");
+    break;
+  case _URC_NORMAL_STOP:
+    panic("__cxa_throw: normal stop");
+    break;
+  case _URC_END_OF_STACK:
+    panic("__cxa_throw: end of stack");
+    break;
+  case _URC_HANDLER_FOUND:
+    panic("__cxa_throw: handler found");
+    break;
+  case _URC_INSTALL_CONTEXT:
+    panic("__cxa_throw: install context");
+    break;
+  case _URC_CONTINUE_UNWIND:
+    panic("__cxa_throw: continue unwind");
+    break;
+  }
+
   (*terminate)();  // XXX report fail
   for (;;);
 }
@@ -217,6 +247,36 @@ void __cxa_rethrow_primary_exception(void* exc_addr) {
   _Unwind_Reason_Code fail = _Unwind_RaiseException(&rv->unwindHeader);
 
   /* If _Unwind_RaiseException returns, there are serious problems. */
+  switch (fail) {
+  case _URC_NO_REASON:
+    panic("__cxa_throw: no reason (for Unwind_RaiseException to return)");
+    break;
+  case _URC_FOREIGN_EXCEPTION_CAUGHT:
+    panic("__cxa_throw: foreign exception caught");
+    break;
+  case _URC_FATAL_PHASE_2_ERROR:
+    panic("__cxa_throw: fatal phase 2 error");
+    break;
+  case _URC_FATAL_PHASE_1_ERROR:
+    panic("__cxa_throw: fatal phase 1 error");
+    break;
+  case _URC_NORMAL_STOP:
+    panic("__cxa_throw: normal stop");
+    break;
+  case _URC_END_OF_STACK:
+    panic("__cxa_throw: end of stack");
+    break;
+  case _URC_HANDLER_FOUND:
+    panic("__cxa_throw: handler found");
+    break;
+  case _URC_INSTALL_CONTEXT:
+    panic("__cxa_throw: install context");
+    break;
+  case _URC_CONTINUE_UNWIND:
+    panic("__cxa_throw: continue unwind");
+    break;
+  }
+
   (*terminate)();  // XXX report fail
   for (;;);
 }
@@ -240,17 +300,20 @@ _Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action actions,
                                          uint64_t exceptionClass,
                                          _Unwind_Exception* exceptionObject,
                                          _Unwind_Context* context) noexcept {
-  panic("TODO: implement %s()", __func__);  // XXX implement
+  using ull = unsigned long long;
+  panic("TODO: implement %s(%i, %i, %#llu, %p, %p)", __func__,
+        version, int(actions), ull(exceptionClass),
+        exceptionObject, context);  // XXX implement
   for (;;);
 }
 
 void _Unwind_Resume(_Unwind_Exception *exception_object) noexcept {
-  panic("TODO: implement %s()", __func__);  // XXX implement
+  panic("TODO: implement %s(%p)", __func__, exception_object);  // XXX implement
   for (;;);
 }
 
 void* __cxa_begin_catch(void* exc_addr) noexcept {
-  panic("TODO: implement %s()", __func__);  // XXX implement
+  panic("TODO: implement %s(%p)", __func__, exc_addr);  // XXX implement
   for (;;);
 
   __cxa_exception* exc = exc2hdr(exc_addr);
@@ -272,7 +335,7 @@ void __cxa_rethrow() noexcept {
 }
 
 _Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *exception_object) noexcept {
-  panic("TODO: implement %s()", __func__);  // XXX implement
+  panic("TODO: implement %s(%p)", __func__, exception_object);  // XXX implement
   for (;;);
 }
 

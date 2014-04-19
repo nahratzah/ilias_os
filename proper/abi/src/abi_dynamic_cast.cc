@@ -8,11 +8,15 @@
 namespace __cxxabiv1 {
 namespace {
 
-template<typename... T> void dprintf(const char* s, T&&... v) noexcept {
 #ifdef _TEST
+template<typename... T> void dprintf(const char* s, T&&... v) noexcept {
   fprintf(stderr, s, _namespace(std)::forward<T>(v)...);
-#endif
 }
+#else
+template<typename... T> void dprintf(const char*, T&&...) noexcept {
+  /* SKIP */
+}
+#endif
 
 const char* str(__has_base_result hbr) noexcept {
   const char* rv;

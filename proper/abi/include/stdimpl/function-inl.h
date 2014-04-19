@@ -18,7 +18,7 @@ auto functor_wrapper_copy_impl_(void* dst, const T& src) ->
 }
 
 template<typename Wrapper, typename T>
-auto functor_wrapper_copy_impl_(void* dst, const T& src) ->
+auto functor_wrapper_copy_impl_(void*, const T&) ->
     enable_if_t<!is_copy_constructible<T>::value, Wrapper*> {
   abi::panic("functor wrapper (%s, for std::function) is not copyable",
       typeid(Wrapper).name());  // XXX: demangle

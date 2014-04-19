@@ -72,7 +72,7 @@ auto construct(Alloc& alloc, T* p, Args&&... args)
 }
 
 template<typename Alloc, typename T, typename... Args>
-auto construct(Alloc& alloc, T* p, Args&&... args)
+auto construct(Alloc&, T* p, Args&&... args)
     noexcept(noexcept(
         new (static_cast<void*>(p)) T(forward<Args>(args)...))) ->
     enable_if_t<!member_function_check_construct<Alloc, T*, Args&&...>::value,
@@ -89,7 +89,7 @@ auto destroy(Alloc& alloc, T* p)
 }
 
 template<typename Alloc, typename T>
-auto destroy(Alloc& alloc, T* p)
+auto destroy(Alloc&, T* p)
     noexcept(noexcept(p->~T())) ->
     enable_if_t<!member_function_check_destroy<Alloc, T*>::value, void> {
   if (p) p->~T();

@@ -179,22 +179,20 @@ auto basic_streambuf<Char, Traits>::imbue(const locale&) -> void {}
 #endif
 
 template<typename Char, typename Traits>
-auto basic_streambuf<Char, Traits>::setbuf(char_type* s, streamsize n) ->
+auto basic_streambuf<Char, Traits>::setbuf(char_type*, streamsize) ->
     basic_streambuf* {
   return this;
 }
 
 template<typename Char, typename Traits>
-auto basic_streambuf<Char, Traits>::seekoff(off_type off,
-                                            ios_base::seekdir way,
-                                            ios_base::openmode which) ->
+auto basic_streambuf<Char, Traits>::seekoff(off_type, ios_base::seekdir,
+                                            ios_base::openmode) ->
     pos_type {
   return pos_type(off_type(-1));
 }
 
 template<typename Char, typename Traits>
-auto basic_streambuf<Char, Traits>::seekpos(pos_type pos,
-                                            ios_base::openmode which) ->
+auto basic_streambuf<Char, Traits>::seekpos(pos_type, ios_base::openmode) ->
     pos_type {
   return pos_type(off_type(-1));
 }
@@ -241,7 +239,7 @@ auto basic_streambuf<Char, Traits>::uflow() -> int_type {
 }
 
 template<typename Char, typename Traits>
-auto basic_streambuf<Char, Traits>::pbackfail(int_type c) -> int_type {
+auto basic_streambuf<Char, Traits>::pbackfail(int_type) -> int_type {
   return traits_type::eof();
 }
 

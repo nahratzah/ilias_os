@@ -96,7 +96,8 @@ auto relptr<T>::assign_(pointer p) -> void {
   const ptrdiff_t diff = reinterpret_cast<const uint8_t*>(p) -
                          reinterpret_cast<uint8_t*>(this);
   uint32_t rel = diff;  // May lose high bits...
-  if (rel != diff) throw std::range_error("relptr: delta too large");
+  if (diff < 0 || rel != size_t(diff))
+    throw std::range_error("relptr: delta too large");
   rel_ = rel;
   return;
 }
@@ -154,7 +155,7 @@ auto relptr_allocator<T>::allocate(size_type n) -> pointer {
 }
 
 template<typename T>
-auto relptr_allocator<T>::deallocate(pointer p, size_type n) -> void {
+auto relptr_allocator<T>::deallocate(pointer p, size_type) -> void {
   ::operator delete(p.get());
 }
 

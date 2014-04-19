@@ -208,8 +208,7 @@ auto equal_support__distance(Iter b, Iter e,
 }
 
 template<typename Iter, typename... Tail>
-auto equal_support__distance(Iter b, Iter e,
-                             Tail&&...) ->
+auto equal_support__distance(Iter, Iter, Tail&&...) ->
     pair<bool, typename iterator_traits<Iter>::difference_type> {
   return make_pair(false, 0);
 }
@@ -1848,7 +1847,7 @@ template<typename RandomAccessIterator, typename Predicate>
 void sort_heap(RandomAccessIterator b, RandomAccessIterator e,
                Predicate predicate) {
   while (b != e) {
-    pop_heap(b, e);
+    pop_heap(b, e, ref(predicate));
     --e;
   }
 }

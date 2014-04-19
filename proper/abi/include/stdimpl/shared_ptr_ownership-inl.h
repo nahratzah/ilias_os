@@ -17,7 +17,7 @@ inline void shared_ptr_ownership::acquire(shared_ptr_ownership* spd, size_t n) n
 }
 
 inline void shared_ptr_ownership::release(shared_ptr_ownership* spd, size_t n) noexcept {
-  if (spd->refcount_.fetch_sub(n, memory_order_release) == n)
+  if (size_t(spd->refcount_.fetch_sub(n, memory_order_release)) == n)
     destroy_(spd);
 }
 
@@ -28,7 +28,7 @@ inline void shared_ptr_ownership::shared_ptr_acquire_from_shared_ptr(size_t n)
 }
 
 inline void shared_ptr_ownership::shared_ptr_release(size_t n) noexcept {
-  if (shared_refcount_.fetch_sub(n, memory_order_release) == n)
+  if (size_t(shared_refcount_.fetch_sub(n, memory_order_release)) == n)
     release_pointee_();
 }
 

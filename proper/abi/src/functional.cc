@@ -113,17 +113,17 @@ size_t hash<unsigned long long>::operator()(unsigned long long n) const {
   return hash_impl(n);
 }
 
-size_t hash<float>::operator()(float n) const {
+size_t hash<float>::operator()(float) const {
   assert_msg(false, "hash<float> needs to be implemented");  // XXX
   return 0;
 }
 
-size_t hash<double>::operator()(double n) const {
+size_t hash<double>::operator()(double) const {
   assert_msg(false, "hash<double> needs to be implemented");  // XXX
   return 0;
 }
 
-size_t hash<long double>::operator()(long double n) const {
+size_t hash<long double>::operator()(long double) const {
   assert_msg(false, "hash<long double> needs to be implemented");  // XXX
   return 0;
 }

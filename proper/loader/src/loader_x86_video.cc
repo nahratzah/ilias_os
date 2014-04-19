@@ -52,7 +52,7 @@ void bios_vprintf(std::string_ref fmt, va_list ap) noexcept {
   };
 
   renderer_impl impl;
-  int error;
+  int error = 0;
   abi::ext::vxprintf_locals<char> locals;
 
   /* Parse fmt, gathering types and collecting specs. */

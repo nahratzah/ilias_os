@@ -132,7 +132,7 @@ auto cons<Nitems, cons_elem<I, Type, B>...>::before_(
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<typename... U>
 auto cons<Nitems, cons_elem<I, Type, B>...>::before_(
-    const cons<Nitems, U...>& v, index_sequence<>) const noexcept
+    const cons<Nitems, U...>&, index_sequence<>) const noexcept
 -> bool {
   return false;
 }
@@ -155,7 +155,7 @@ auto cons<Nitems, cons_elem<I, Type, B>...>::equals_(
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<typename... U>
 auto cons<Nitems, cons_elem<I, Type, B>...>::equals_(
-    const cons<Nitems, U...>& v, index_sequence<>) const noexcept
+    const cons<Nitems, U...>&, index_sequence<>) const noexcept
 -> bool {
   return true;
 }
@@ -176,7 +176,7 @@ auto cons<Nitems, cons_elem<I, Type, B>...>::assign_(
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<typename... U>
 auto cons<Nitems, cons_elem<I, Type, B>...>::assign_(
-    const cons<Nitems, U...>& v, index_sequence<>) noexcept
+    const cons<Nitems, U...>&, index_sequence<>) noexcept
 -> void
 {}
 
@@ -197,7 +197,7 @@ auto cons<Nitems, cons_elem<I, Type, B>...>::assign_(
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<typename... U>
 auto cons<Nitems, cons_elem<I, Type, B>...>::assign_(
-    cons<Nitems, U...>&& v, index_sequence<>) noexcept
+    cons<Nitems, U...>&&, index_sequence<>) noexcept
 -> void
 {}
 
@@ -216,7 +216,7 @@ auto cons<Nitems, cons_elem<I, Type, B>...>::swap_(
 
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
 auto cons<Nitems, cons_elem<I, Type, B>...>::swap_(
-    cons& v, index_sequence<>) noexcept
+    cons&, index_sequence<>) noexcept
 -> void
 {}
 

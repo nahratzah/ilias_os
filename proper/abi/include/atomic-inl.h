@@ -22,7 +22,7 @@ constexpr bool suitable_for_read(memory_order mo) {
   return mo != memory_order_release &&
          mo != memory_order_acq_rel;
 }
-constexpr bool suitable_for_rw(memory_order mo) {
+constexpr bool suitable_for_rw(memory_order) {
   return true;
 }
 constexpr memory_order derive_from_succes(memory_order mo) {

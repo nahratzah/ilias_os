@@ -202,12 +202,12 @@ template<> class tuple<> {
   tuple& operator=(const tuple&) = default;
   tuple& operator=(tuple&&) = default;
 
-  const bool operator==(const tuple&) const noexcept { return true; }
-  const bool operator!=(const tuple&) const noexcept { return false; }
-  const bool operator<(const tuple&) const noexcept { return false; }
-  const bool operator>(const tuple&) const noexcept { return false; }
-  const bool operator<=(const tuple&) const noexcept { return true; }
-  const bool operator>=(const tuple&) const noexcept { return true; }
+  bool operator==(const tuple&) const noexcept { return true; }
+  bool operator!=(const tuple&) const noexcept { return false; }
+  bool operator<(const tuple&) const noexcept { return false; }
+  bool operator>(const tuple&) const noexcept { return false; }
+  bool operator<=(const tuple&) const noexcept { return true; }
+  bool operator>=(const tuple&) const noexcept { return true; }
 
   void swap(tuple&) noexcept {}
 };

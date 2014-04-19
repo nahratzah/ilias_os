@@ -46,7 +46,7 @@ locale ios_base::getloc() const {
 }
 #endif /* __has_include(<locale>) */
 
-bool ios_base::sync_with_stdio(bool sync) {
+bool ios_base::sync_with_stdio(bool /*sync*/) {
   return true; // XXX implement
 }
 

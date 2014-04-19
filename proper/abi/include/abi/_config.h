@@ -65,7 +65,7 @@ inline _namespace(std)::tuple<void*, size_t> heap_malloc(size_t) noexcept {
 #ifdef _LOADER
 using loader::heap_free;
 #else
-inline bool heap_free(void* p, size_t sz) noexcept {
+inline bool heap_free(void*, size_t) noexcept {
   return false;
 }
 #endif
@@ -114,7 +114,7 @@ inline void exit(int) noexcept {
 #ifdef _LOADER
 using loader::panic;
 #else
-inline void panic(const char* fmt, ...) noexcept {
+inline void panic(const char*, ...) noexcept {
   abort();
 }
 #endif

@@ -24,12 +24,12 @@ template<typename T> T* addressof(T& r) noexcept {
 
 template<typename T>
 template<typename U>
-allocator<T>::allocator(const allocator<U>& other) noexcept
+allocator<T>::allocator(const allocator<U>&) noexcept
 : allocator()
 {}
 
 template<typename U>
-allocator<void>::allocator(const allocator<U>& other) noexcept
+allocator<void>::allocator(const allocator<U>&) noexcept
 : allocator()
 {}
 
@@ -45,7 +45,7 @@ auto allocator<T>::address(const_reference x) const noexcept -> const_pointer {
 
 template<typename T>
 auto allocator<T>::allocate(size_type n,
-                            allocator<void>::const_pointer hint) -> pointer {
+                            allocator<void>::const_pointer) -> pointer {
   if (n >= max_size()) __throw_bad_alloc();
   return static_cast<pointer>(::operator new(n * sizeof(value_type)));
 }
@@ -142,7 +142,8 @@ void temporary_buffer_deallocate(const void*);
 template<typename T>
 pair<T*, ptrdiff_t> get_temporary_buffer(ptrdiff_t n) noexcept {
   if (_predict_false(n <= 0)) n = 1;
-  if (_predict_false(SIZE_MAX / sizeof(T) < n)) return make_pair(nullptr, 0);
+  if (_predict_false(SIZE_MAX / sizeof(T) < size_t(n)))
+    return make_pair(nullptr, 0);
 
   void* addr;
   size_t count;
@@ -1060,6 +1061,7 @@ bool operator==(const shared_ptr<T>& a, const shared_ptr<U>& b) noexcept {
 
 template<typename T, typename U>
 bool operator!=(const shared_ptr<T>& a, const shared_ptr<U>& b) noexcept {
+  return !(a == b);
 }
 
 template<typename T, typename U>
@@ -1618,7 +1620,6 @@ struct shared_ptr<T>::atomic_lock {
                   "This algorithm requires atomic version of uintptr_t "
                   "to be sized equally to the non-atomic version...");
 
-    uintptr_t expect = 0;
     while ((atomic_ownership().fetch_or(MASK, memory_order_acquire) & MASK) ==
            MASK);
     locked_ = true;
