@@ -139,20 +139,6 @@ void swap(vector<T, Alloc>& a, vector<T, Alloc>& b)
     noexcept(noexcept(a.swap(b)));
 
 
-extern template class vector<char>;
-extern template class vector<wchar_t>;
-extern template class vector<unsigned char>;
-extern template class vector<signed char>;
-extern template class vector<unsigned short>;
-extern template class vector<short>;
-extern template class vector<unsigned int>;
-extern template class vector<int>;
-extern template class vector<unsigned long>;
-extern template class vector<long>;
-extern template class vector<unsigned long long>;
-extern template class vector<long long>;
-
-
 _namespace_end(std)
 
 #include <vector-inl.h>
