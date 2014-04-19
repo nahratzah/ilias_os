@@ -1,0 +1,704 @@
+#ifndef _FUNCTIONAL_
+#define _FUNCTIONAL_
+
+#include <cdecl.h>
+#include <functional-fwd.h>
+#include <hash-fwd.h>
+#include <exception>
+#include <memory>
+#include <type_traits>
+#include <typeinfo>
+#include <stdimpl/functional_fnhelper.h>
+#include <stdimpl/invoke.h>
+#include <stdimpl/member_check.h>
+#include <stdimpl/functional_comparators.h>
+#include <stdimpl/allocator_cloneable.h>
+#include <stdimpl/function.h>
+
+_namespace_begin(std)
+
+
+template<typename Arg, typename Result> struct unary_function;
+template<typename Arg1, typename Arg2, typename Result> struct binary_function;
+
+template<typename T> class reference_wrapper
+: public impl::fnhelper<T>
+{
+ public:
+  using type = T;
+  /*
+   * The following may be provided by impl::fnhelper<T> as appropriate:
+   * using result_type = ...;
+   * using argument_type = ...;
+   * using first_argument_type = ...;
+   * using second_argument_type = ...;
+   */
+
+  reference_wrapper(type&) noexcept;
+  reference_wrapper(type&&) = delete;  // do not bind to temporary objects
+  reference_wrapper(const reference_wrapper<T>&) noexcept = default;
+  reference_wrapper& operator=(const reference_wrapper&) noexcept = default;
+
+  operator type&() const noexcept;
+  type& get() const noexcept;
+
+  template<typename... Args>
+  auto operator()(Args&&... args) const
+      noexcept(noexcept(impl::invoke(declval<T&>(),
+                                     forward<Args>(args)...))) ->
+      decltype(impl::invoke(declval<T&>(), forward<Args>(args)...)) {
+    return impl::invoke(get(), forward<Args>(args)...);
+  }
+
+ private:
+  type* ref_;
+};
+
+
+template<typename T = void> struct plus {
+  constexpr T operator()(const T& x, const T& y) const { return x + y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = T;
+};
+
+template<typename T = void> struct minus {
+  constexpr T operator()(const T& x, const T& y) const { return x - y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = T;
+};
+
+template<typename T = void> struct multiplies {
+  constexpr T operator()(const T& x, const T& y) const { return x * y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = T;
+};
+
+template<typename T = void> struct divides {
+  constexpr T operator()(const T& x, const T& y) const { return x / y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = T;
+};
+
+template<typename T = void> struct modulus {
+  constexpr T operator()(const T& x, const T& y) const { return x % y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = T;
+};
+
+template<typename T = void> struct negate {
+  constexpr T operator()(const T& x) const { return -x; }
+  using argument_type = T;
+  using result_type = T;
+};
+
+template<> struct plus<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) + forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct minus<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) - forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct multiplies<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) * forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct divides<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) / forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct modulus<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) % forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct negate<void> {
+  template<typename T>
+  constexpr auto operator()(T&& x) const ->
+      decltype(-forward<T>(x));
+  using is_transparent = true_type;
+};
+
+
+template<typename T = void> struct logical_and {
+  constexpr bool operator()(const T& x, const T& y) const { return x && y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = bool;
+};
+
+template<typename T = void> struct logical_or {
+  constexpr bool operator()(const T& x, const T& y) const { return x || y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = bool;
+};
+
+template<typename T = void> struct logical_not {
+  constexpr bool operator()(const T& x) const { return !x; }
+  using argument_type = T;
+  using result_type = bool;
+};
+
+template<> struct logical_and<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) && forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct logical_or<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) || forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct logical_not<void> {
+  template<typename T>
+  constexpr auto operator()(T&& x) const ->
+      decltype(!forward<T>(x));
+  using is_transparent = true_type;
+};
+
+
+template<typename T = void> struct bit_and {
+  constexpr T operator()(const T& x, const T& y) const { return x & y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = T;
+};
+
+template<typename T = void> struct bit_or {
+  constexpr T operator()(const T& x, const T& y) const { return x | y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = T;
+};
+
+template<typename T = void> struct bit_xor {
+  constexpr T operator()(const T& x, const T& y) const { return x ^ y; }
+  using first_argument_type = T;
+  using second_argument_type = T;
+  using result_type = T;
+};
+
+template<typename T = void> struct bit_not {
+  constexpr T operator()(const T& x) const { return ~x; }
+  using argument_type = T;
+  using result_type = T;
+};
+
+template<> struct bit_and<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) & forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct bit_or<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) | forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct bit_xor<void> {
+  template<typename T, typename U>
+  constexpr auto operator()(T&& x, U&& y) const ->
+      decltype(forward<T>(x) ^ forward<U>(y));
+  using is_transparent = true_type;
+};
+
+template<> struct bit_not<void> {
+  template<typename T>
+  constexpr auto operator()(T&& x) const ->
+      decltype(~forward<T>(x));
+  using is_transparent = true_type;
+};
+
+
+template<typename Predicate> class unary_negate {
+ public:
+  using argument_type = typename Predicate::argument_type;
+  using result_type = bool;
+
+  explicit constexpr unary_negate(const Predicate&);
+  constexpr bool operator()(const argument_type&) const;
+
+ private:
+  Predicate pred_;
+};
+
+template<typename Predicate> constexpr unary_negate<Predicate> not1(
+    const Predicate&);
+
+template<typename Predicate> class binary_negate {
+ public:
+  using first_argument_type = typename Predicate::first_argument_type;
+  using second_argument_type = typename Predicate::second_argument_type;
+  using result_type = bool;
+
+  explicit constexpr binary_negate(const Predicate&);
+  constexpr bool operator()(const first_argument_type&,
+                            const second_argument_type&) const;
+
+ private:
+  Predicate pred_;
+};
+
+template<typename Predicate> constexpr binary_negate<Predicate> not2(
+    const Predicate&);
+
+
+template<typename T> struct is_bind_expression
+: public false_type {};
+template<typename T> struct is_placeholder
+: public integral_constant<int, 0> {};
+
+namespace _bind {
+
+template<typename, typename...> class expression;
+template<typename, typename, typename...> class expression_r;
+template<typename> class mem_fn;  // Not a bind expression,
+                                  // just a simple function wrapper.
+
+} /* namespace bind */
+
+template<typename F, typename... BoundArgs>
+auto bind(F&& f, BoundArgs&&... bound_args)
+    noexcept(noexcept(_bind::expression<decay_t<F>, decay_t<BoundArgs>...>(
+        forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
+    _bind::expression<decay_t<F>, decay_t<BoundArgs>...>;
+
+template<typename R, typename F, typename... BoundArgs>
+auto bind(F&& f, BoundArgs&&... bound_args)
+    noexcept(noexcept(
+        _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>(
+            forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
+    _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>;
+
+
+namespace placeholders {
+
+template<int I> struct _placeholder_type_ {};
+
+constexpr _placeholder_type_< 1>  _1 {};
+constexpr _placeholder_type_< 2>  _2 {};
+constexpr _placeholder_type_< 3>  _3 {};
+constexpr _placeholder_type_< 4>  _4 {};
+constexpr _placeholder_type_< 5>  _5 {};
+constexpr _placeholder_type_< 6>  _6 {};
+constexpr _placeholder_type_< 7>  _7 {};
+constexpr _placeholder_type_< 8>  _8 {};
+constexpr _placeholder_type_< 9>  _9 {};
+constexpr _placeholder_type_<10> _10 {};
+constexpr _placeholder_type_<11> _11 {};
+constexpr _placeholder_type_<12> _12 {};
+constexpr _placeholder_type_<13> _13 {};
+constexpr _placeholder_type_<14> _14 {};
+constexpr _placeholder_type_<15> _15 {};
+constexpr _placeholder_type_<16> _16 {};
+constexpr _placeholder_type_<17> _17 {};
+constexpr _placeholder_type_<18> _18 {};
+constexpr _placeholder_type_<19> _19 {};
+constexpr _placeholder_type_<20> _20 {};
+constexpr _placeholder_type_<21> _21 {};
+constexpr _placeholder_type_<22> _22 {};
+constexpr _placeholder_type_<23> _23 {};
+constexpr _placeholder_type_<24> _24 {};
+constexpr _placeholder_type_<25> _25 {};
+constexpr _placeholder_type_<26> _26 {};
+constexpr _placeholder_type_<27> _27 {};
+constexpr _placeholder_type_<28> _28 {};
+constexpr _placeholder_type_<29> _29 {};
+constexpr _placeholder_type_<30> _30 {};
+constexpr _placeholder_type_<31> _31 {};
+constexpr _placeholder_type_<32> _32 {};
+
+} /* namespace std::placeholders */
+
+template<int I> struct is_placeholder<placeholders::_placeholder_type_<I>>
+: public integral_constant<int, I> {};
+
+
+template<typename Fn>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    binder1st;
+
+template<typename Fn, typename T>
+binder1st<Fn> bind1st(const Fn&, const T&)
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+template<typename Fn>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    binder2nd;
+
+template<typename Fn, typename T>
+binder2nd<Fn> bind2nd(const Fn&, const T&)
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+
+template<typename Arg, typename Result>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    pointer_to_unary_function;
+
+template<typename Arg, typename Result>
+pointer_to_unary_function<Arg, Result> ptr_fun(Result (*)(Arg))
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+template<typename Arg1, typename Arg2, typename Result>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    pointer_to_binary_function;
+
+template<typename Arg1, typename Arg2, typename Result>
+pointer_to_binary_function<Arg1, Arg2, Result> ptr_fun(Result (*)(Arg1, Arg2))
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+
+template<typename S, typename T>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    mem_fun_t;
+
+template<typename S, typename T, typename A>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    mem_fun1_t;
+
+template<typename S, typename T>
+mem_fun_t<S, T> mem_fun(S (T::*)())
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+template<typename S, typename T, typename A>
+mem_fun1_t<S, T, A> mem_fun(S (T::*)(A))
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+template<typename S, typename T>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    mem_fun_ref_t;
+template<typename S, typename T, typename A>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    mem_fun1_ref_t;
+
+template<typename S, typename T>
+mem_fun_ref_t<S, T> mem_fun_ref(S (T::*)())
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+template<typename S, typename T, typename A>
+mem_fun1_ref_t<S, T, A> mem_fun_ref(S (T::*)(A))
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+
+template<typename S, typename T>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    const_mem_fun_t;
+
+template<typename S, typename T, typename A>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    const_mem_fun1_t;
+
+template<typename S, typename T>
+const_mem_fun_t<S, T> mem_fun(S (T::*)() const)
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+template<typename S, typename T, typename A>
+const_mem_fun1_t<S, T, A> mem_fun(S (T::*)(A) const)
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+template<typename S, typename T>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    const_mem_fun_ref_t;
+
+template<typename S, typename T, typename A>
+class __attribute__((deprecated("deprecated in C++11, use std::bind instead")))
+    const_mem_fun1_ref_t;
+
+template<typename S, typename T>
+const_mem_fun_ref_t<S, T> mem_fun_ref(S (T::*)() const)
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+template<typename S, typename T, typename A>
+const_mem_fun1_ref_t<S, T, A> mem_fun_ref(S (T::*)(A) const)
+    __attribute__((deprecated("deprecated in C++11, use std::bind instead")));
+
+
+template<typename R, typename T> _bind::mem_fn<R T::*> mem_fn(R T::*);
+
+
+class bad_function_call
+: public exception
+{
+ public:
+  bad_function_call() noexcept;
+  ~bad_function_call() noexcept override;
+
+  const char* what() const noexcept override;
+};
+
+
+template<class> class function;  // Undefined.
+
+template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>
+: public impl::fnhelper<R(ArgTypes...)>
+{
+ public:
+  function() noexcept;
+  function(nullptr_t) noexcept;
+  function(const function&);
+  function(function&&) noexcept;
+  template<typename F> function(F);
+  template<typename A> function(allocator_arg_t, const A&) noexcept;
+  template<typename A> function(allocator_arg_t, const A&, nullptr_t) noexcept;
+  template<typename A> function(allocator_arg_t, const A&, const function&);
+  template<typename A> function(allocator_arg_t, const A&, function&&);
+  template<typename A, typename F> function(allocator_arg_t, const A&, F);
+
+  function& operator=(const function&);
+  function& operator=(function&&);
+  function& operator=(nullptr_t);
+  template<typename F> function& operator=(F&&);
+  template<typename F> function& operator=(reference_wrapper<F>&) noexcept;
+
+  ~function() noexcept;
+
+  void swap(function&) noexcept;
+  template<typename F, typename A> void assign(F&&, const A&);
+
+  explicit operator bool() const noexcept;
+
+  R operator()(ArgTypes...) const;
+
+  const std::type_info& target_type() const noexcept;
+  template<typename T> T* target() noexcept;
+  template<typename T> const T* target() const noexcept;
+
+ private:
+  using functor_wrapper_t =
+      impl::functor_wrapper<R(impl::function_transform_to_ref_t<ArgTypes>...)>;
+  using functor_wrapper_ptr =
+      impl::allocator_cloneable::pointer_type<functor_wrapper_t>;
+
+  using special_ptr_p_type = aligned_union_t<
+      ((sizeof(functor_wrapper_ptr) - sizeof(const type_info*)) /
+       sizeof(const type_info*) * sizeof(const type_info*)),
+      void*,
+      int (function::*),
+      int (function::*)(),
+      uint64_t,
+      uintptr_t,
+      uintmax_t>;
+  using fn_type = R(*)(const special_ptr_p_type&,
+                       impl::function_transform_to_ref_t<ArgTypes>...);
+
+  bool is_special() const noexcept { return fn_ != nullptr; }
+  static R bad_function_call_fn(
+      const special_ptr_p_type&,
+      impl::function_transform_to_ref_t<ArgTypes>...);
+  template<typename Functor> static R simple_function_call(
+      const special_ptr_p_type&,
+      impl::function_transform_to_ref_t<ArgTypes>...);
+
+  struct special_ptr {
+    special_ptr_p_type p;
+    const type_info* ti;
+  };
+
+  union data_type {
+    static_assert(is_pod<special_ptr>::value, "Special case must be a pod.");
+
+    data_type() noexcept;
+    ~data_type() noexcept {}
+
+    fn_type assign(bool, nullptr_t) noexcept;
+    fn_type assign(bool, functor_wrapper_ptr) noexcept;
+    fn_type assign(bool, special_ptr, fn_type) noexcept;
+
+    template<typename F> fn_type assign(bool, F&&);
+
+    template<typename F, typename Alloc>
+    auto assign(bool, F&&, Alloc&&) ->
+        enable_if_t<!(is_trivially_copyable<decay_t<F>>::value &&
+                      is_trivially_destructible<decay_t<F>>::value &&
+                      sizeof(decay_t<F>) <= sizeof(special_ptr_p_type) &&
+                      alignof(special_ptr_p_type) % alignof(F) == 0),
+                    fn_type>;
+
+    template<typename F, typename Alloc>
+    auto assign(bool, F&&, Alloc&&) noexcept ->
+        enable_if_t<(is_trivially_copyable<decay_t<F>>::value &&
+                     is_trivially_destructible<decay_t<F>>::value &&
+                     sizeof(decay_t<F>) <= sizeof(special_ptr_p_type) &&
+                     alignof(special_ptr_p_type) % alignof(F) == 0),
+                    fn_type>;
+
+    special_ptr special;
+    functor_wrapper_ptr functor;
+  };
+
+  fn_type fn_ = nullptr;
+  data_type data_;
+};
+
+template<typename R, typename... ArgTypes>
+void swap(function<R(ArgTypes...)>&, function<R(ArgTypes...)>&);
+
+template<typename R, typename... ArgTypes>
+bool operator==(const function<R(ArgTypes...)>&, nullptr_t);
+template<typename R, typename... ArgTypes>
+bool operator==(nullptr_t, const function<R(ArgTypes...)>&);
+template<typename R, typename... ArgTypes>
+bool operator!=(const function<R(ArgTypes...)>&, nullptr_t);
+template<typename R, typename... ArgTypes>
+bool operator!=(nullptr_t, const function<R(ArgTypes...)>&);
+
+template<typename R, typename... ArgTypes, typename Alloc>
+struct uses_allocator<function<R(ArgTypes...)>, Alloc> : true_type {};
+
+
+template<> struct hash<bool> {
+  using result_type = size_t;
+  using argument_type = bool;
+
+  size_t operator()(bool) const;
+};
+
+template<> struct hash<char> {
+  using result_type = size_t;
+  using argument_type = char;
+
+  size_t operator()(char) const;
+};
+
+template<> struct hash<signed char> {
+  using result_type = size_t;
+  using argument_type = signed char;
+
+  size_t operator()(signed char) const;
+};
+
+template<> struct hash<unsigned char> {
+  using result_type = size_t;
+  using argument_type = unsigned char;
+
+  size_t operator()(unsigned char) const;
+};
+
+/*
+ * char16_t, char32_t are covered by short and int respectively.
+ */
+
+template<> struct hash<wchar_t> {
+  using result_type = size_t;
+  using argument_type = wchar_t;
+
+  size_t operator()(wchar_t) const;
+};
+
+template<> struct hash<short> {
+  using result_type = size_t;
+  using argument_type = short;
+
+  size_t operator()(short) const;
+};
+
+template<> struct hash<unsigned short> {
+  using result_type = size_t;
+  using argument_type = unsigned short;
+
+  size_t operator()(unsigned short) const;
+};
+
+template<> struct hash<int> {
+  using result_type = size_t;
+  using argument_type = int;
+
+  size_t operator()(int) const;
+};
+
+template<> struct hash<unsigned int> {
+  using result_type = size_t;
+  using argument_type = unsigned int;
+
+  size_t operator()(unsigned int) const;
+};
+
+template<> struct hash<long> {
+  using result_type = size_t;
+  using argument_type = long;
+
+  size_t operator()(long) const;
+};
+
+template<> struct hash<unsigned long> {
+  using result_type = size_t;
+  using argument_type = unsigned long;
+
+  size_t operator()(unsigned long) const;
+};
+
+template<> struct hash<long long> {
+  using result_type = size_t;
+  using argument_type = long long;
+
+  size_t operator()(long long) const;
+};
+
+template<> struct hash<unsigned long long> {
+  using result_type = size_t;
+  using argument_type = unsigned long long;
+
+  size_t operator()(unsigned long long) const;
+};
+
+template<> struct hash<float> {
+  using result_type = size_t;
+  using argument_type = float;
+
+  size_t operator()(float) const;
+};
+
+template<> struct hash<double> {
+  using result_type = size_t;
+  using argument_type = double;
+
+  size_t operator()(double) const;
+};
+
+template<> struct hash<long double> {
+  using result_type = size_t;
+  using argument_type = long double;
+
+  size_t operator()(long double) const;
+};
+
+template<typename T> struct hash<T*> {
+  using result_type = size_t;
+  using argument_type = T*;
+
+  size_t operator()(T*) const;
+};
+
+
+_namespace_end(std)
+
+#include <functional-inl.h>
+
+#endif /* _FUNCTIONAL_ */

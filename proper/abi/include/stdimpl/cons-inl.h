@@ -7,16 +7,16 @@ template<typename... U>
 constexpr cons<Nitems, cons_elem<I, Type, B>...>::cons(
     const cons<Nitems, U...>& v)
     noexcept(cons_and(is_nothrow_constructible<cons_elem<I, Type, B>,
-                        decltype(v.template get_value<I>())>::value...))
-: cons_elem<I, Type, B>(v.template get_value<I>())...
+                        decltype(v.template get_value<I>(v))>::value...))
+: cons_elem<I, Type, B>(v.template get_value<I>(v))...
 {}
 
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<typename... U>
 constexpr cons<Nitems, cons_elem<I, Type, B>...>::cons(cons<Nitems, U...>&& v)
     noexcept(cons_and(is_nothrow_constructible<cons_elem<I, Type, B>,
-                        decltype(move(v.template get_value<I>()))>::value...))
-: cons_elem<I, Type, B>(move(v.template get_value<I>()))...
+                        decltype(v.template get_value<I>(move(v)))>::value...))
+: cons_elem<I, Type, B>(v.template get_value<I>(move(v)))...
 {}
 
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
@@ -116,13 +116,17 @@ template<typename... U, size_t Idx0, size_t... Idx>
 auto cons<Nitems, cons_elem<I, Type, B>...>::before_(
     const cons<Nitems, U...>& v, index_sequence<Idx0, Idx...>) const
     noexcept(noexcept(
-        this->template get_value<Idx0>() == v.template get_value<Idx0>() ?
+        (this->template get_value<Idx0>(*this) ==
+         v.template get_value<Idx0>(v)) ?
         this->before_(v, index_sequence<Idx...>()) :
-        this->template get_value<Idx0>() < v.template get_value<Idx0>()))
+        (this->template get_value<Idx0>(*this) <
+         v.template get_value<Idx0>(v))))
 -> bool {
-  return (this->template get_value<Idx0>() == v.template get_value<Idx0>() ?
+  return ((this->template get_value<Idx0>(*this) ==
+           v.template get_value<Idx0>(v)) ?
           this->before_(v, index_sequence<Idx...>()) :
-          this->template get_value<Idx0>() < v.template get_value<Idx0>());
+          (this->template get_value<Idx0>(*this) <
+           v.template get_value<Idx0>(v)));
 }
 
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
@@ -139,10 +143,12 @@ template<typename... U, size_t Idx0, size_t... Idx>
 auto cons<Nitems, cons_elem<I, Type, B>...>::equals_(
     const cons<Nitems, U...>& v, index_sequence<Idx0, Idx...>) const
     noexcept(noexcept(
-        this->template get_value<Idx0>() == v.template get_value<Idx0>() &&
+        this->template get_value<Idx0>(*this) ==
+        v.template get_value<Idx0>(v) &&
         this->equals_(v, index_sequence<Idx...>())))
 -> bool {
-  return (this->template get_value<Idx0>() == v.template get_value<Idx0>() &&
+  return (this->template get_value<Idx0>(*this) ==
+          v.template get_value<Idx0>(v) &&
           this->equals_(v, index_sequence<Idx...>()));
 }
 
@@ -159,11 +165,11 @@ template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<typename... U, size_t Idx0, size_t... Idx>
 auto cons<Nitems, cons_elem<I, Type, B>...>::assign_(
     const cons<Nitems, U...>& v, index_sequence<Idx0, Idx...>)
-    noexcept(noexcept(this->template get_value<Idx0>() =
-                      v.template get_value<Idx0>()) &&
+    noexcept(noexcept(this->template get_value<Idx0>(*this) =
+                      v.template get_value<Idx0>(v)) &&
              noexcept(this->assign_(v, index_sequence<Idx...>())))
 -> void {
-  this->template get_value<Idx0>() = v.template get_value<Idx0>();
+  this->template get_value<Idx0>(*this) = v.template get_value<Idx0>(v);
   this->assign_(v, index_sequence<Idx...>());
 }
 
@@ -180,11 +186,11 @@ template<typename... U, size_t Idx0, size_t... Idx>
 auto cons<Nitems, cons_elem<I, Type, B>...>::assign_(
     cons<Nitems, U...>&& v, index_sequence<Idx0, Idx...>)
     noexcept(noexcept(this->template get_value<Idx0>() =
-                      move(v.template get_value<Idx0>())) &&
+                      v.template get_value<Idx0>(move(v))) &&
              noexcept(this->assign_(forward<cons<Nitems, U...>>(v),
                                     index_sequence<Idx...>())))
 -> void {
-  this->template get_value<Idx0>() = move(v.template get_value<Idx0>());
+  this->template get_value<Idx0>(*this) = v.template get_value<Idx0>(move(v));
   this->assign_(forward<cons<Nitems, U...>>(v), index_sequence<Idx...>());
 }
 
@@ -200,11 +206,11 @@ template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<size_t Idx0, size_t... Idx>
 auto cons<Nitems, cons_elem<I, Type, B>...>::swap_(
     cons& v, index_sequence<Idx0, Idx...>)
-    noexcept(noexcept(swap(this->template get_value<Idx0>(),
-                           v.template get_value<Idx0>())) &&
+    noexcept(noexcept(swap(this->template get_value<Idx0>(*this),
+                           v.template get_value<Idx0>(v))) &&
              noexcept(this->swap_(v, index_sequence<Idx...>())))
 -> void {
-  swap(this->template get_value<Idx0>(), v.template get_value<Idx0>());
+  swap(this->template get_value<Idx0>(*this), v.template get_value<Idx0>(v));
   this->swap_(v, index_sequence<Idx...>());
 }
 

@@ -557,16 +557,20 @@ auto heap::get_stats(stats_collection c) -> stats_collection {
   return all_stats::get_singleton().get_all(move(c));
 }
 
-auto heap::malloc(size_t sz) noexcept -> void* {
+auto heap::malloc(size_t sz, size_t align) noexcept -> void* {
   using _namespace(std)::min;
 
   const size_t args = sz;
-  size_t align = min(size_t(1) << log2_down(sz), alignof(max_align_t));
   void*const rv = global_heap::get_singleton().allocate(sz, align);
   return malloc_result(rv, args);
 }
 
-auto heap::free(void* p) noexcept -> void {
+auto heap::malloc(size_t sz) noexcept -> void* {
+  size_t align = std::min(size_t(1) << log2_down(sz), alignof(max_align_t));
+  return malloc(sz, align);
+}
+
+auto heap::free(const void* p) noexcept -> void {
   using _namespace(std)::tie;
 
   const void* args = p;
@@ -582,7 +586,7 @@ auto heap::free(void* p) noexcept -> void {
   free_result(size, args);
 }
 
-auto heap::resize(void* p, size_t nsz) noexcept ->
+auto heap::resize(const void* p, size_t nsz) noexcept ->
     _namespace(std)::tuple<bool, size_t> {
   using _namespace(std)::make_tuple;
 
@@ -606,7 +610,7 @@ auto heap::malloc_result(void* p, size_t sz) noexcept -> void* {
 }
 
 auto heap::resize_result(_namespace(std)::tuple<bool, size_t> rv,
-                         _namespace(std)::tuple<void*, size_t> args)
+                         _namespace(std)::tuple<const void*, size_t> args)
     noexcept -> _namespace(std)::tuple<bool, size_t> {
   using _namespace(std)::get;
   using _namespace(std)::memory_order_relaxed;

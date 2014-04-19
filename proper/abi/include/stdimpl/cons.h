@@ -15,34 +15,53 @@ struct ignore_t {};
 template<typename T> struct cons_elem_id {};
 
 template<size_t I, typename T, bool = is_empty<T>::value> class cons_elem {
+ private:
+  using copy_type_ = conditional_t<is_reference<T>::value,
+                                   T,
+                                   add_lvalue_reference_t<add_const_t<T>>>;
+  using move_type_ = conditional_t<(is_reference<T>::value ||
+                                    is_const<T>::value),
+                                   T,
+                                   add_rvalue_reference_t<T>>;
+
  public:
   using disambiguator = integral_constant<size_t, I>;
   using id = cons_elem_id<remove_reference_t<T>>;
 
   constexpr cons_elem() : value_() {}
-  constexpr cons_elem(const cons_elem&) = default;
-  constexpr cons_elem(cons_elem&&) = default;
+  constexpr cons_elem(const cons_elem& e) : value_(static_cast<copy_type_>(e.value_)) {}
+  constexpr cons_elem(cons_elem&& e) : value_(static_cast<move_type_>(e.value_)) {}
   constexpr cons_elem(const T& v) : value_(v) {}
   template<typename U>
   constexpr cons_elem(U&& v) : value_(forward<U>(v)) {}
 
   friend auto get_value_(disambiguator, cons_elem& self) noexcept
-  -> T& {
+  -> add_lvalue_reference_t<T> {
     return self.value_;
   }
 
+  friend auto get_value_(disambiguator, cons_elem&& self) noexcept
+  -> add_rvalue_reference_t<T> {
+    return static_cast<add_rvalue_reference_t<T>>(self.value_);
+  }
+
   friend auto get_value_(disambiguator, const cons_elem& self) noexcept
-  -> const T& {
+  -> add_lvalue_reference_t<add_const_t<T>> {
     return self.value_;
   }
 
   friend auto get_value_by_type_(id, cons_elem& self) noexcept
-  -> T& {
+  -> add_lvalue_reference_t<T> {
     return self.value_;
   }
 
+  friend auto get_value_by_type_(id, cons_elem&& self) noexcept
+  -> add_rvalue_reference_t<T> {
+    return static_cast<add_rvalue_reference_t<T>>(self.value_);
+  }
+
   friend auto get_value_by_type_(id, const cons_elem& self) noexcept
-  -> const T& {
+  -> add_lvalue_reference_t<add_const_t<T>> {
     return self.value_;
   }
 
@@ -65,22 +84,32 @@ template<size_t I, typename T> class cons_elem<I, T, true>
   constexpr cons_elem(U&& v) : T(forward<U>(v)) {}
 
   friend auto get_value_(disambiguator, cons_elem& self) noexcept
-  -> T& {
+  -> add_lvalue_reference_t<T> {
     return self;
   }
 
+  friend auto get_value_(disambiguator, cons_elem&& self) noexcept
+  -> add_rvalue_reference_t<T> {
+    return static_cast<add_rvalue_reference_t<T>>(self);
+  }
+
   friend auto get_value_(disambiguator, const cons_elem& self) noexcept
-  -> const T& {
+  -> add_lvalue_reference_t<add_const_t<T>> {
     return self;
   }
 
   friend auto get_value_by_type_(id, cons_elem& self) noexcept
-  -> T& {
+  -> add_lvalue_reference_t<T> {
     return self;
   }
 
+  friend auto get_value_by_type_(id, cons_elem&& self) noexcept
+  -> add_rvalue_reference_t<T> {
+    return static_cast<add_rvalue_reference_t<T>>(self);
+  }
+
   friend auto get_value_by_type_(id, const cons_elem& self) noexcept
-  -> const T& {
+  -> add_lvalue_reference_t<add_const_t<T>> {
     return self;
   }
 
@@ -342,10 +371,10 @@ class cons<Nitems, cons_elem<I, Type, B>...>
 
   template<typename... U> constexpr cons(const cons<Nitems, U...>& v)
       noexcept(cons_and(is_nothrow_constructible<cons_elem<I, Type>,
-                        decltype(v.template get_value<I>())>::value...));
+                        decltype(v.template get_value<I>(v))>::value...));
   template<typename... U> constexpr cons(cons<Nitems, U...>&& v)
       noexcept(cons_and(is_nothrow_constructible<cons_elem<I, Type>,
-                        decltype(move(v.template get_value<I>()))>::value...));
+                        decltype(v.template get_value<I>(move(v)))>::value...));
   template<typename... U> constexpr cons(
       enable_if_t<sizeof...(U) == Nitems, piecewise_construct_t>,
       U&&... v)
@@ -359,8 +388,8 @@ class cons<Nitems, cons_elem<I, Type, B>...>
                                       index_sequence<I...>())));
 
   template<typename... U> bool operator==(const cons<Nitems, U...>& v) const
-      noexcept(noexcept(cons_and((this->template get_value<I>() ==
-                                  v.template get_value<I>())...)));
+      noexcept(noexcept(cons_and((this->template get_value<I>(*this) ==
+                                  v.template get_value<I>(v))...)));
   template<typename... U> bool operator!=(const cons<Nitems, U...>& v) const
       noexcept(noexcept(!(*this == v)));
   template<typename... U> bool operator<(const cons<Nitems, U...>& v) const
@@ -375,24 +404,35 @@ class cons<Nitems, cons_elem<I, Type, B>...>
   void swap_impl(cons& v)
       noexcept(noexcept(this->swap_(v, index_sequence<I...>())));
 
-  template<size_t Idx> auto get_value() noexcept
-  -> decltype(get_value_(integral_constant<size_t, Idx>(), *this)) {
-    return get_value_(integral_constant<size_t, Idx>(), *this);
+  template<size_t Idx> static auto get_value(cons& self) noexcept
+  -> decltype(get_value_(integral_constant<size_t, Idx>(), self)) {
+    return get_value_(integral_constant<size_t, Idx>(), self);
   }
 
-  template<size_t Idx> auto get_value() const noexcept
-  -> decltype(get_value_(integral_constant<size_t, Idx>(), *this)) {
-    return get_value_(integral_constant<size_t, Idx>(), *this);
+  template<size_t Idx> static auto get_value(cons&& self) noexcept
+  -> decltype(get_value_(integral_constant<size_t, Idx>(), move(self))) {
+    return get_value_(integral_constant<size_t, Idx>(), move(self));
   }
 
-  template<typename Idx> auto get_value_by_type() noexcept
-  -> decltype(get_value_by_type_(cons_elem_id<Idx>(), *this)) {
-    return get_value_by_type_(cons_elem_id<Idx>(), *this);
+  template<size_t Idx> static auto get_value(const cons& self) noexcept
+  -> decltype(get_value_(integral_constant<size_t, Idx>(), self)) {
+    return get_value_(integral_constant<size_t, Idx>(), self);
   }
 
-  template<typename Idx> auto get_value_by_type() const noexcept
-  -> decltype(get_value_by_type_(cons_elem_id<Idx>(), *this)) {
-    return get_value_by_type_(cons_elem_id<Idx>(), *this);
+  template<typename Idx> static auto get_value_by_type(cons& self) noexcept
+  -> decltype(get_value_by_type_(cons_elem_id<Idx>(), self)) {
+    return get_value_by_type_(cons_elem_id<Idx>(), self);
+  }
+
+  template<typename Idx> static auto get_value_by_type(cons&& self) noexcept
+  -> decltype(get_value_by_type_(cons_elem_id<Idx>(), move(self))) {
+    return get_value_by_type_(cons_elem_id<Idx>(), move(self));
+  }
+
+  template<typename Idx> static auto get_value_by_type(const cons& self)
+      noexcept
+  -> decltype(get_value_by_type_(cons_elem_id<Idx>(), self)) {
+    return get_value_by_type_(cons_elem_id<Idx>(), self);
   }
 
  private:
@@ -401,9 +441,9 @@ class cons<Nitems, cons_elem<I, Type, B>...>
                index_sequence<Idx0, Idx...> = make_index_sequence<Nitems>())
       const
       noexcept(noexcept(
-          this->template get_value<Idx0>() == v.template get_value<Idx0>() ?
+          this->template get_value<Idx0>(*this) == v.template get_value<Idx0>(v) ?
           this->before_(v, index_sequence<Idx...>()) :
-          this->template get_value<Idx0>() < v.template get_value<Idx0>()));
+          this->template get_value<Idx0>(*this) < v.template get_value<Idx0>(v)));
 
   template<typename... U>
   bool before_(const cons<Nitems, U...>& v, index_sequence<>) const noexcept;
@@ -413,7 +453,7 @@ class cons<Nitems, cons_elem<I, Type, B>...>
                index_sequence<Idx0, Idx...> = make_index_sequence<Nitems>())
       const
       noexcept(noexcept(
-          this->template get_value<Idx0>() == v.template get_value<Idx0>() &&
+          this->template get_value<Idx0>(*this) == v.template get_value<Idx0>(v) &&
           this->equals_(v, index_sequence<Idx...>())));
 
   template<typename... U>
@@ -421,8 +461,8 @@ class cons<Nitems, cons_elem<I, Type, B>...>
 
   template<typename... U, size_t Idx0, size_t... Idx>
   void assign_(const cons<Nitems, U...>& v, index_sequence<Idx0, Idx...>)
-      noexcept(noexcept(this->template get_value<Idx0>() =
-                        v.template get_value<Idx0>()) &&
+      noexcept(noexcept(this->template get_value<Idx0>(*this) =
+                        v.template get_value<Idx0>(v)) &&
                noexcept(this->assign_(v, index_sequence<Idx...>())));
 
   template<typename... U>
@@ -430,8 +470,8 @@ class cons<Nitems, cons_elem<I, Type, B>...>
 
   template<typename... U, size_t Idx0, size_t... Idx>
   void assign_(cons<Nitems, U...>&& v, index_sequence<Idx0, Idx...>)
-      noexcept(noexcept(this->template get_value<Idx0>() =
-                        move(v.template get_value<Idx0>())) &&
+      noexcept(noexcept(this->template get_value<Idx0>(*this) =
+                        v.template get_value<Idx0>(move(v))) &&
                noexcept(this->assign_(forward<cons<Nitems, U...>>(v),
                                       index_sequence<Idx...>())));
 
@@ -440,8 +480,8 @@ class cons<Nitems, cons_elem<I, Type, B>...>
 
   template<size_t Idx0, size_t... Idx>
   void swap_(cons& v, index_sequence<Idx0, Idx...>)
-      noexcept(noexcept(swap(this->template get_value<Idx0>(),
-                             v.template get_value<Idx0>())) &&
+      noexcept(noexcept(swap(this->template get_value<Idx0>(*this),
+                             v.template get_value<Idx0>(v))) &&
                noexcept(this->swap_(v, index_sequence<Idx...>())));
 
   void swap_(cons& v, index_sequence<>) noexcept;

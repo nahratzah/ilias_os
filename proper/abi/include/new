@@ -49,11 +49,17 @@ void* operator new(_namespace(std)::size_t,
                    const _namespace(std)::nothrow_t&) noexcept;
 void operator delete(void*) noexcept;
 void operator delete(void*, const _namespace(std)::nothrow_t&) noexcept;
+void operator delete(void*, size_t) noexcept;
+void operator delete(void*, size_t, const _namespace(std)::nothrow_t&)
+    noexcept;
 void* operator new[](_namespace(std)::size_t);
 void* operator new[](_namespace(std)::size_t,
                      const _namespace(std)::nothrow_t&) noexcept;
 void operator delete[](void*) noexcept;
 void operator delete[](void*, const _namespace(std)::nothrow_t&) noexcept;
+void operator delete[](void*, size_t) noexcept;
+void operator delete[](void*, size_t, const _namespace(std)::nothrow_t&)
+    noexcept;
 
 inline void* operator new(_namespace(std)::size_t, void* p) noexcept {
   return p;

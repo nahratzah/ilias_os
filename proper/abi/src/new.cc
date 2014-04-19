@@ -143,6 +143,15 @@ void __attribute__((weak)) operator delete(
   if (p) no_throw_heap().free(p);
 }
 
+void __attribute__((weak)) operator delete(void* p, size_t sz) noexcept {
+  if (p) throwing_heap().free(p, sz);
+}
+
+void __attribute__((weak)) operator delete(
+    void* p, size_t sz, const std::nothrow_t&) noexcept {
+  if (p) no_throw_heap().free(p, sz);
+}
+
 
 void* __attribute__((weak)) operator new[](std::size_t sz) {
   return new_impl(throwing_array_heap(), sz);
@@ -160,6 +169,15 @@ void __attribute__((weak)) operator delete[](void* p) noexcept {
 void __attribute__((weak)) operator delete[](
     void* p, const std::nothrow_t&) noexcept {
   if (p) no_throw_array_heap().free(p);
+}
+
+void __attribute__((weak)) operator delete[](void* p, size_t sz) noexcept {
+  if (p) throwing_array_heap().free(p, sz);
+}
+
+void __attribute__((weak)) operator delete[](
+    void* p, size_t sz, const std::nothrow_t&) noexcept {
+  if (p) no_throw_array_heap().free(p, sz);
 }
 
 

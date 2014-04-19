@@ -18,7 +18,7 @@ inline constexpr auto char_traits<char>::lt(char_type a, char_type b)
 }
 
 inline auto char_traits<char>::length(const char_type* s) noexcept -> size_t {
-  return strlen(s);
+  return __builtin_strlen(s);
 }
 
 inline auto char_traits<char>::assign(char_type& a, const char_type& b)

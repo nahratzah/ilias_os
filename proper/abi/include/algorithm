@@ -1,78 +1,668 @@
 #ifndef _ALGORITHM_
 #define _ALGORITHM_
 
+#include <cdecl.h>
+#include <cstring>
+#include <functional>
 #include <initializer_list>
+#include <iterator>
+#include <new>
+#include <tuple>
+#include <utility>
+#include <stdimpl/simple_bitset.h>
 
 _namespace_begin(std)
 
-template<typename T>
-auto min(const T& a, const T& b) -> const T& {
-  return (a < b ? a : b);
-}
+
+template<typename InputIterator, class Predicate>
+bool all_of(InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator, class Predicate>
+bool any_of(InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator, class Predicate>
+bool none_of(InputIterator, InputIterator, Predicate);
+
+
+template<typename InputIterator, class Function>
+Function for_each(InputIterator, InputIterator, Function);
+
+template<typename InputIterator, typename T>
+InputIterator find(InputIterator, InputIterator, const T&);
+
+template<typename InputIterator, typename Predicate>
+InputIterator find_if(InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator, typename Predicate>
+InputIterator find_if_not(InputIterator, InputIterator, Predicate);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+ForwardIterator1 find_end(ForwardIterator1, ForwardIterator1,
+                          ForwardIterator2, ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2,
+         typename BinaryPredicate>
+ForwardIterator1 find_end(ForwardIterator1, ForwardIterator1,
+                          ForwardIterator2, ForwardIterator2,
+                          BinaryPredicate);
+
+template<typename InputIterator, typename ForwardIterator>
+InputIterator find_first_of(InputIterator, InputIterator,
+                            ForwardIterator, ForwardIterator);
+
+template<typename InputIterator, typename ForwardIterator,
+         typename BinaryPredicate>
+InputIterator find_first_of(InputIterator, InputIterator,
+                            ForwardIterator, ForwardIterator,
+                            BinaryPredicate);
+
+template<typename ForwardIterator>
+ForwardIterator adjecent_find(ForwardIterator, ForwardIterator);
+
+template<typename ForwardIterator, typename BinaryPredicate>
+ForwardIterator adjecent_find(ForwardIterator, ForwardIterator,
+                              BinaryPredicate);
+
+template<typename InputIterator, typename T>
+typename iterator_traits<InputIterator>::difference_type count(
+    InputIterator, InputIterator, const T&);
+
+template<typename InputIterator, typename Predicate>
+typename iterator_traits<InputIterator>::difference_type count_if(
+    InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator1, typename InputIterator2>
+pair<InputIterator1, InputIterator2> mismatch(InputIterator1, InputIterator1,
+                                              InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename BinaryPredicate>
+pair<InputIterator1, InputIterator2> mismatch(InputIterator1, InputIterator1,
+                                              InputIterator2,
+                                              BinaryPredicate);
+
+template<typename InputIterator1, typename InputIterator2>
+pair<InputIterator1, InputIterator2> mismatch(InputIterator1, InputIterator1,
+                                              InputIterator2, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename BinaryPredicate>
+pair<InputIterator1, InputIterator2> mismatch(InputIterator1, InputIterator1,
+                                              InputIterator2, InputIterator2,
+                                              BinaryPredicate);
+
+template<typename InputIterator1, typename InputIterator2>
+bool equal(InputIterator1, InputIterator1, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename BinaryPredicate>
+bool equal(InputIterator1, InputIterator1, InputIterator2, BinaryPredicate);
+
+template<typename InputIterator1, typename InputIterator2>
+bool equal(InputIterator1, InputIterator1, InputIterator2, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename BinaryPredicate>
+bool equal(InputIterator1, InputIterator1, InputIterator2, InputIterator2,
+           BinaryPredicate);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+bool is_permutation(ForwardIterator1, ForwardIterator1, ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2,
+         typename BinaryPredicate>
+bool is_permutation(ForwardIterator1, ForwardIterator1, ForwardIterator2,
+                    BinaryPredicate);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+bool is_permutation(ForwardIterator1, ForwardIterator1,
+                    ForwardIterator2, ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2,
+         typename BinaryPredicate>
+bool is_permutation(ForwardIterator1, ForwardIterator1,
+                    ForwardIterator2, ForwardIterator2,
+                    BinaryPredicate);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+ForwardIterator1 search(ForwardIterator1, ForwardIterator1,
+                        ForwardIterator2, ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2,
+         typename BinaryPredicate>
+ForwardIterator1 search(ForwardIterator1, ForwardIterator1,
+                        ForwardIterator2, ForwardIterator2,
+                        BinaryPredicate);
+
+template<typename ForwardIterator, class Size, typename T>
+ForwardIterator search_n(ForwardIterator, ForwardIterator, Size, const T&);
+
+template<typename ForwardIterator, class Size, typename T,
+         typename BinaryPredicate>
+ForwardIterator search_n(ForwardIterator, ForwardIterator, Size, const T&,
+                         BinaryPredicate);
+
+
+template<typename InputIterator, typename OutputIterator>
+OutputIterator copy(InputIterator, InputIterator, OutputIterator);
+
+template<typename InputIterator, typename Size, typename OutputIterator>
+OutputIterator copy_n(InputIterator, Size, OutputIterator);
+
+template<typename InputIterator, typename OutputIterator, typename Predicate>
+OutputIterator copy_if(InputIterator, InputIterator, OutputIterator,
+                       Predicate);
+
+template<typename BidirectionalIterator1, typename BidirectionalIterator2>
+BidirectionalIterator2 copy_backward(BidirectionalIterator1,
+                                     BidirectionalIterator1,
+                                     BidirectionalIterator2);
+
+template<typename InputIterator, typename OutputIterator>
+OutputIterator move(InputIterator, InputIterator, OutputIterator);
+
+template<typename BidirectionalIterator1, typename BidirectionalIterator2>
+BidirectionalIterator2 move_backward(BidirectionalIterator1,
+                                     BidirectionalIterator1,
+                                     BidirectionalIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+ForwardIterator2 swap_ranges(ForwardIterator1, ForwardIterator1,
+                             ForwardIterator2);
+
+template<typename ForwardIterator1, typename ForwardIterator2>
+void iter_swap(ForwardIterator1, ForwardIterator2);
+
+template<typename InputIterator, typename OutputIterator,
+         typename UnaryOperation>
+OutputIterator transform(InputIterator, InputIterator,
+                         OutputIterator, UnaryOperation);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename BinaryOperation>
+OutputIterator transform(InputIterator1, InputIterator1,
+                         InputIterator2,
+                         OutputIterator, BinaryOperation);
+
+template<typename ForwardIterator, typename T>
+void replace(ForwardIterator, ForwardIterator, const T&, const T&);
+
+template<typename ForwardIterator, typename Predicate, typename T>
+void replace_if(ForwardIterator, ForwardIterator, Predicate, const T&);
+
+template<typename ForwardIterator, typename OutputIterator, typename T>
+void replace_copy(ForwardIterator, ForwardIterator, OutputIterator,
+                  const T&, const T&);
+
+template<typename ForwardIterator, typename OutputIterator,
+         typename Predicate, typename T>
+void replace_copy_if(ForwardIterator, ForwardIterator, OutputIterator,
+                     Predicate, const T&);
+
+template<typename ForwardIterator, typename T>
+void fill(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename Size, typename T>
+ForwardIterator fill_n(ForwardIterator, Size, const T&);
+
+template<typename OutputIterator, typename Generator>
+void generate(OutputIterator, OutputIterator, Generator);
+
+template<typename OutputIterator, typename Size, typename Generator>
+OutputIterator generate_n(OutputIterator, Size, Generator);
+
+template<typename ForwardIterator, typename T>
+ForwardIterator remove(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename Predicate>
+ForwardIterator remove_if(ForwardIterator, ForwardIterator, Predicate);
+
+template<typename InputIterator, typename OutputIterator, typename T>
+OutputIterator remove_copy(InputIterator, InputIterator, OutputIterator,
+                           const T&);
+
+template<typename InputIterator, typename OutputIterator, typename Predicate>
+OutputIterator remove_copy_if(InputIterator, InputIterator, OutputIterator,
+                              Predicate);
+
+template<typename ForwardIterator>
+ForwardIterator unique(ForwardIterator, ForwardIterator);
+
+template<typename ForwardIterator, typename BinaryPredicate>
+ForwardIterator unique(ForwardIterator, ForwardIterator, BinaryPredicate);
+
+template<typename InputIterator, typename OutputIterator>
+OutputIterator unique_copy(InputIterator, InputIterator, OutputIterator);
+
+template<typename InputIterator, typename OutputIterator,
+         typename BinaryPredicate>
+OutputIterator unique_copy(InputIterator, InputIterator, OutputIterator,
+                           BinaryPredicate);
+
+template<typename BidirectionalIterator>
+void reverse(BidirectionalIterator, BidirectionalIterator);
+
+template<typename BidirectionalIterator, typename OutputIterator>
+OutputIterator reverse(BidirectionalIterator, BidirectionalIterator,
+                       OutputIterator);
+
+template<typename ForwardIterator>
+ForwardIterator rotate(ForwardIterator first, ForwardIterator middle,
+                       ForwardIterator last);
+
+template<typename ForwardIterator, typename OutputIterator>
+OutputIterator rotate_copy(ForwardIterator, ForwardIterator, ForwardIterator,
+                           OutputIterator);
+
+#if 0 // XXX implement once randomization is implemented
+template<typename RandomAccessIterator>
+void random_shuffle(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename RandomNumberGenerator>
+void random_shuffle(RandomAccessIterator, RandomAccessIterator, RandomNumberGenerator&&);
+
+template<typename RandomAccessIterator, typename UniformRandomNumberGenerator>
+void random_shuffle(RandomAccessIterator, RandomAccessIterator, UniformRandomNumberGenerator&&);
+#endif
+
+template<typename InputIterator, typename Predicate>
+bool is_partitioned(InputIterator, InputIterator, Predicate);
+
+template<typename ForwardIterator, typename Predicate>
+ForwardIterator partition(ForwardIterator, ForwardIterator, Predicate);
+
+template<typename BidirectionalIterator, typename Predicate>
+BidirectionalIterator stable_partition(BidirectionalIterator,
+                                       BidirectionalIterator,
+                                       Predicate);
+
+template<typename InputIterator, typename OutputIterator1,
+         typename OutputIterator2, typename Predicate>
+pair<OutputIterator1, OutputIterator2> partition_copy(InputIterator,
+                                                      InputIterator,
+                                                      OutputIterator1,
+                                                      OutputIterator2,
+                                                      Predicate);
+
+template<typename ForwardIterator, typename Predicate>
+ForwardIterator partition_point(ForwardIterator, ForwardIterator, Predicate);
+
+
+template<typename RandomAccessIterator>
+void sort(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void sort(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+void stable_sort(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void stable_sort(RandomAccessIterator, RandomAccessIterator,
+                 Predicate);
+
+template<typename RandomAccessIterator>
+void partial_sort(RandomAccessIterator, RandomAccessIterator,
+                  RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void partial_sort(RandomAccessIterator, RandomAccessIterator,
+                  RandomAccessIterator, Predicate);
+
+template<typename InputIterator, typename RandomAccessIterator>
+RandomAccessIterator partial_sort_copy(InputIterator, InputIterator,
+                                       RandomAccessIterator,
+                                       RandomAccessIterator);
+
+template<typename InputIterator, typename RandomAccessIterator,
+         typename Predicate>
+RandomAccessIterator partial_sort_copy(InputIterator, InputIterator,
+                                       RandomAccessIterator,
+                                       RandomAccessIterator, Predicate);
+
+template<typename InputIterator>
+bool is_sorted(InputIterator, InputIterator);
+
+template<typename InputIterator, typename Predicate>
+bool is_sorted(InputIterator, InputIterator, Predicate);
+
+template<typename InputIterator>
+InputIterator is_sorted_until(InputIterator, InputIterator);
+
+template<typename InputIterator, typename Predicate>
+InputIterator is_sorted_until(InputIterator, InputIterator, Predicate);
+
+template<typename RandomAccessIterator>
+void nth_element(RandomAccessIterator, RandomAccessIterator,
+                 RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void nth_element(RandomAccessIterator, RandomAccessIterator,
+                 RandomAccessIterator, Predicate);
+
+
+template<typename ForwardIterator, typename T>
+ForwardIterator lower_bound(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename T, typename Predicate>
+ForwardIterator lower_bound(ForwardIterator, ForwardIterator, const T&,
+                            Predicate);
+
+template<typename ForwardIterator, typename T>
+ForwardIterator upper_bound(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename T, typename Predicate>
+ForwardIterator upper_bound(ForwardIterator, ForwardIterator, const T&,
+                            Predicate);
+
+template<typename ForwardIterator, typename T>
+pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator,
+                                                   ForwardIterator,
+                                                   const T&);
+
+template<typename ForwardIterator, typename T, typename Predicate>
+pair<ForwardIterator, ForwardIterator> equal_range(ForwardIterator,
+                                                   ForwardIterator,
+                                                   const T&,
+                                                   Predicate);
+
+template<typename ForwardIterator, typename T>
+bool binary_search(ForwardIterator, ForwardIterator, const T&);
+
+template<typename ForwardIterator, typename T, typename Predicate>
+bool binary_search(ForwardIterator, ForwardIterator, const T&, Predicate);
+
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator merge(InputIterator1, InputIterator1,
+                     InputIterator2, InputIterator2,
+                     OutputIterator);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator merge(InputIterator1, InputIterator1,
+                     InputIterator2, InputIterator2,
+                     OutputIterator, Predicate);
+
+template<typename BidirectionalIterator>
+void inplace_merge(BidirectionalIterator, BidirectionalIterator,
+                   BidirectionalIterator);
+
+template<typename BidirectionalIterator, typename Predicate>
+void inplace_merge(BidirectionalIterator, BidirectionalIterator,
+                   BidirectionalIterator, Predicate);
+
+
+template<typename InputIterator1, typename InputIterator2>
+bool includes(InputIterator1, InputIterator1, InputIterator2, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2, typename Predicate>
+bool includes(InputIterator1, InputIterator1, InputIterator2, InputIterator2,
+              Predicate);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator set_union(InputIterator1, InputIterator1,
+                         InputIterator2, InputIterator2,
+                         OutputIterator);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator set_union(InputIterator1, InputIterator1,
+                         InputIterator2, InputIterator2,
+                         OutputIterator, Predicate);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator set_intersection(InputIterator1, InputIterator1,
+                                InputIterator2, InputIterator2,
+                                OutputIterator);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator set_intersection(InputIterator1, InputIterator1,
+                                InputIterator2, InputIterator2,
+                                OutputIterator, Predicate);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator>
+OutputIterator set_symmetric_difference(InputIterator1, InputIterator1,
+                                        InputIterator2, InputIterator2,
+                                        OutputIterator);
+
+template<typename InputIterator1, typename InputIterator2,
+         typename OutputIterator, typename Predicate>
+OutputIterator set_symmetric_difference(InputIterator1, InputIterator1,
+                                        InputIterator2, InputIterator2,
+                                        OutputIterator, Predicate);
+
+
+template<typename RandomAccessIterator>
+void push_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void push_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+void pop_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void pop_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+void make_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void make_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+void sort_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+void sort_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+bool is_heap(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+bool is_heap(RandomAccessIterator, RandomAccessIterator, Predicate);
+
+template<typename RandomAccessIterator>
+RandomAccessIterator is_heap_until(RandomAccessIterator, RandomAccessIterator);
+
+template<typename RandomAccessIterator, typename Predicate>
+RandomAccessIterator is_heap_until(RandomAccessIterator, RandomAccessIterator,
+                                   Predicate);
+
 
 template<typename T>
-auto max(const T& a, const T& b) -> const T& {
-  return (a > b ? a : b);
-}
-
-template<typename T, typename Comp>
-auto min(const T& a, const T& b, Comp cmp) -> const T& {
-  return (cmp(b, a) ? b : a);
-}
-
-template<typename T, typename Comp>
-auto max(const T& a, const T& b, Comp cmp) -> const T& {
-  return (cmp(a, b) ? b : a);
-}
+auto min(const T& a, const T& b) -> const T&;
 
 template<typename T>
-auto min(initializer_list<T> il) -> T {
-  T* ptr = nullptr;
-  for (T& i : il) {
-    if (ptr == nullptr)
-      ptr = &i;
-    else
-      ptr = &min(*ptr, i);
-  }
-  return *ptr;
-}
+auto max(const T& a, const T& b) -> const T&;
+
+template<typename T, typename Comp>
+auto min(const T& a, const T& b, Comp cmp) -> const T&;
+
+template<typename T, typename Comp>
+auto max(const T& a, const T& b, Comp cmp) -> const T&;
 
 template<typename T>
-auto max(initializer_list<T> il) -> T {
-  T* ptr = nullptr;
-  for (T& i : il) {
-    if (ptr == nullptr)
-      ptr = &i;
-    else
-      ptr = &max(*ptr, i);
-  }
-  return *ptr;
-}
+auto min(initializer_list<T> il) -> T;
+
+template<typename T>
+auto max(initializer_list<T> il) -> T;
 
 template<typename T, typename Comp>
-auto min(initializer_list<T> il, Comp cmp) -> T {
-  T* ptr = nullptr;
-  for (T& i : il) {
-    if (ptr == nullptr)
-      ptr = &i;
-    else
-      ptr = &min(*ptr, i, cmp);
-  }
-  return *ptr;
-}
+auto min(initializer_list<T> il, Comp cmp) -> T;
 
 template<typename T, typename Comp>
-auto max(initializer_list<T> il, Comp cmp) -> T {
-  T* ptr = nullptr;
-  for (T& i : il) {
-    if (ptr == nullptr)
-      ptr = &i;
-    else
-      ptr = &max(*ptr, i, cmp);
-  }
-  return *ptr;
-}
+auto max(initializer_list<T> il, Comp cmp) -> T;
+
+template<typename T>
+auto minmax(const T&, const T&) -> pair<const T&, const T&>;
+
+template<typename T, typename Compare>
+auto minmax(const T&, const T&, Compare) -> pair<const T&, const T&>;
+
+template<typename T>
+auto minmax(initializer_list<T>) -> pair<T, T>;
+
+template<typename T, typename Compare>
+auto minmax(initializer_list<T>, Compare) -> pair<T, T>;
+
+template<typename ForwardIterator>
+ForwardIterator min_element(ForwardIterator, ForwardIterator);
+
+template<typename ForwardIterator, typename Compare>
+ForwardIterator min_element(ForwardIterator, ForwardIterator, Compare);
+
+template<typename ForwardIterator>
+ForwardIterator max_element(ForwardIterator, ForwardIterator);
+
+template<typename ForwardIterator, typename Compare>
+ForwardIterator max_element(ForwardIterator, ForwardIterator, Compare);
+
+template<typename ForwardIterator>
+pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator,
+                                                      ForwardIterator);
+
+template<typename ForwardIterator, typename Compare>
+pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator,
+                                                      ForwardIterator,
+                                                      Compare);
+
+
+template<typename InputIterator1, typename InputIterator2>
+bool lexicographical_compare(InputIterator1, InputIterator1,
+                             InputIterator2, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2, typename Compare>
+bool lexicographical_compare(InputIterator1, InputIterator1,
+                             InputIterator2, InputIterator2, Compare);
+
+
+template<typename BidirectionalIterator>
+bool next_permutation(BidirectionalIterator, BidirectionalIterator);
+
+template<typename BidirectionalIterator, typename Compare>
+bool next_permutation(BidirectionalIterator, BidirectionalIterator, Compare);
+
+
+#define _EXTERNALIZE(extern, Type)					\
+extern template Type* copy(Type*, Type*, Type*);			\
+extern template Type* copy(const Type*, const Type*, Type*);		\
+extern template Type* move(Type*, Type*, Type*);			\
+extern template Type* move(const Type*, const Type*, Type*);		\
+extern template Type* move_backward(Type*, Type*, Type*);		\
+extern template Type* move_backward(const Type*, const Type*, Type*);	\
+extern template Type* find(Type*, Type*, const Type&);			\
+extern template const Type* find(const Type*, const Type*,		\
+                                 const Type&);				\
+extern template Type* adjecent_find(Type*, Type*);			\
+extern template const Type* adjecent_find(const Type*, const Type*);	\
+extern template iterator_traits<Type*>::difference_type count(		\
+    Type*, Type*, const Type&);						\
+extern template iterator_traits<const Type*>::difference_type count(	\
+    const Type*, const Type*, const Type&);				\
+extern template void replace(Type*, Type*, const Type&, const Type&);	\
+extern template void fill(Type*, Type*, const Type&);			\
+extern template Type* remove(Type*, Type*, const Type&);		\
+extern template Type* unique(Type*, Type*);				\
+extern template void reverse(Type*, Type*);				\
+extern template Type* rotate(Type*, Type*, Type*);			\
+extern template void sort(Type*, Type*);				\
+extern template void stable_sort(Type*, Type*);				\
+extern template void partial_sort(Type*, Type*, Type*);			\
+extern template Type* partial_sort_copy(Type*, Type*, Type*, Type*);	\
+extern template Type* partial_sort_copy(const Type*, const Type*,	\
+                                        Type*, Type*);			\
+extern template Type* is_sorted_until(Type*, Type*);			\
+extern template const Type* is_sorted_until(const Type*, const Type*);	\
+extern template void nth_element(Type*, Type*, Type*);			\
+extern template Type* lower_bound(Type*, Type*, const Type&);		\
+extern template const Type* lower_bound(const Type*, const Type*,	\
+                                        const Type&);			\
+extern template Type* upper_bound(Type*, Type*, const Type&);		\
+extern template const Type* upper_bound(const Type*, const Type*,	\
+                                        const Type&);			\
+extern template bool binary_search(Type*, Type*, const Type&);		\
+extern template Type* merge(Type*, Type*, Type*,			\
+                            Type*, Type*);				\
+extern template Type* merge(const Type*, const Type*,			\
+                            Type*, Type*, Type*);			\
+extern template Type* merge(Type*, Type*,				\
+                            const Type*, const Type*, Type*);		\
+extern template Type* merge(const Type*, const Type*,			\
+                            const Type*, const Type*, Type*);		\
+extern template void inplace_merge(Type*, Type*, Type*);		\
+extern template bool is_permutation(Type*, Type*,			\
+                                    Type*);				\
+extern template bool is_permutation(Type*, Type*,			\
+                                    Type*, Type*);			\
+extern template bool is_permutation(Type*, Type*,			\
+                                    const Type*);			\
+extern template bool is_permutation(Type*, Type*,			\
+                                    const Type*, const Type*);		\
+extern template bool is_permutation(const Type*, const Type*,		\
+                                    Type*);				\
+extern template bool is_permutation(const Type*, const Type*,		\
+                                    Type*, Type*);			\
+extern template bool is_permutation(const Type*, const Type*,		\
+                                    const Type*);			\
+extern template bool is_permutation(const Type*, const Type*,		\
+                                    const Type*, const Type*);		\
+extern template bool includes(Type*, Type*, Type*, Type*);		\
+extern template bool includes(Type*, Type*,				\
+                              const Type*, const Type*);		\
+extern template bool includes(const Type*, const Type*,			\
+                              Type*, Type*);				\
+extern template bool includes(const Type*, const Type*,			\
+                              const Type*, const Type*);		\
+extern template Type* set_union(Type*, Type*, Type*, Type*, Type*);	\
+extern template Type* set_intersection(Type*, Type*,			\
+                                       Type*, Type*, Type*);		\
+extern template Type* set_symmetric_difference(Type*, Type*,		\
+                                               Type*, Type*, Type*);	\
+extern template void push_heap(Type*, Type*);				\
+extern template void pop_heap(Type*, Type*);				\
+extern template void make_heap(Type*, Type*);				\
+extern template void sort_heap(Type*, Type*);				\
+extern template bool is_heap(Type*, Type*);				\
+extern template Type* is_heap_until(Type*, Type*);			\
+extern template Type* min_element(Type*, Type*);			\
+extern template Type* max_element(Type*, Type*);			\
+extern template pair<Type*, Type*> minmax_element(Type*, Type*);	\
+extern template bool lexicographical_compare(Type*, Type*,		\
+                                             Type*, Type*);		\
+extern template bool next_permutation(Type*, Type*);
+
+
+#define _EXTERNALIZE_ALL(extern)					\
+_EXTERNALIZE(extern, char)						\
+_EXTERNALIZE(extern, wchar_t)						\
+_EXTERNALIZE(extern, signed char)					\
+_EXTERNALIZE(extern, unsigned char)					\
+_EXTERNALIZE(extern, short)						\
+_EXTERNALIZE(extern, unsigned short)					\
+_EXTERNALIZE(extern, int)						\
+_EXTERNALIZE(extern, unsigned int)					\
+_EXTERNALIZE(extern, long)						\
+_EXTERNALIZE(extern, unsigned long)					\
+_EXTERNALIZE(extern, long long)						\
+_EXTERNALIZE(extern, unsigned long long)
+
+_EXTERNALIZE_ALL(extern)
+
+#ifndef _COMPILING_ALGORITHM
+# undef _EXTERNALIZE
+# undef _EXTERNALIZE_ALL
+#endif
+
 
 _namespace_end(std)
+
+#include <algorithm-inl.h>
 
 #endif /* _ALGORITHM_ */

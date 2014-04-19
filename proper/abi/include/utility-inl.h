@@ -108,12 +108,12 @@ constexpr auto make_pair(T1&& f, T2&& s) ->
 }
 
 
-template<typename T1, typename T2> struct tuple_size<pair<T1, T2>>
-: integral_constant<size_t, 2> {};
-template<typename T1, typename T2> struct tuple_element<0, pair<T1, T2>>
-{ using type = T1; };
-template<typename T1, typename T2> struct tuple_element<1, pair<T1, T2>>
-{ using type = T2; };
+template<typename T1, typename T2> class tuple_size<pair<T1, T2>>
+: public integral_constant<size_t, 2> {};
+template<typename T1, typename T2> class tuple_element<0, pair<T1, T2>>
+{ public:  using type = T1; };
+template<typename T1, typename T2> class tuple_element<1, pair<T1, T2>>
+{ public:  using type = T2; };
 
 template<size_t I, class T1, class T2>
 constexpr auto get(pair<T1, T2>& p) noexcept ->
@@ -235,6 +235,8 @@ template<typename T1, typename T2>
 void pair<T1, T2>::swap(pair& o)
     noexcept(noexcept(swap(first, o.first)) &&
              noexcept(swap(second, o.second))) {
+  using _namespace(std)::swap;
+
   swap(first, o.first);
   swap(second, o.second);
 }
