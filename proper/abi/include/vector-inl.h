@@ -1,226 +1,4 @@
 _namespace_begin(std)
-namespace impl {
-
-
-template<typename Vector>
-struct vector_copy_impl_basics<Vector, true> {
-  using vector = Vector;
-  using value_type = typename vector::value_type;
-  using reference = value_type&;
-  using const_reference = const value_type&;
-  using pointer = value_type*;
-  using const_pointer = const value_type*;
-  using size_type = typename vector::size_type;
-  using allocator_type = typename vector::allocator_type;
-
-  static void copy(vector& a, const_pointer p, size_type n) noexcept {
-    assert(a.capacity() >= n);
-    memcpy(a.data(), p, (a.size_ = n) * sizeof(value_type));
-  }
-
-  static void copy_at(pointer dst, const_pointer src, size_type n) noexcept {
-    memcpy(dst, src, n);
-  }
-
-  static void move(vector& a, const_pointer p, size_type n) noexcept {
-    copy(a, p, n);
-  }
-
-  static void assign(vector& a, const_pointer p, size_type n) noexcept {
-    copy(a, p, n);
-  }
-
-  static void move_assign(vector& a, const_pointer p, size_type n) noexcept {
-    copy(a, p, n);
-  }
-
-  static void shift_down(pointer dst, pointer src, size_type n) noexcept {
-    assert(&*dst < &*src);
-    memmove(&*dst, &*src, n * sizeof(value_type));
-  }
-
-  static void shift_up(vector&, size_type n_up, pointer src, size_type n)
-      noexcept {
-    assert(n_up > 0);
-    memmove(src + n_up, src, n * sizeof(value_type));
-  }
-};
-
-template<typename Vector>
-struct vector_copy_impl_basics<Vector, false> {
-  using vector = Vector;
-  using value_type = typename vector::value_type;
-  using reference = typename vector::reference;
-  using const_reference = typename vector::const_reference;
-  using pointer = value_type*;
-  using const_pointer = const value_type*;
-  using size_type = typename vector::size_type;
-  using allocator_type = typename vector::allocator_type;
-
-  static void copy(vector& a, const_pointer p, size_type n) noexcept(noexcept(
-      allocator_traits<allocator_type>::construct(
-          a.get_allocator_(), declval<pointer>(),
-          declval<const value_type>()))) {
-    assert(a.capacity() >= n);
-    for (pointer i = a.heap_, end = a.heap_ + n; i != end; ++i, ++p)
-      allocator_traits<allocator_type>::construct(a.get_allocator_(), i, *p);
-    a.size_ = n;
-  }
-
-  static void copy_at(pointer dst, const_pointer src, size_type n) noexcept(
-      noexcept(declval<reference>() = declval<const_reference>())) {
-    while (n-- > 0) *dst++ = *src++;
-  }
-
-  static void move(vector& a, const_pointer p, size_type n) noexcept(noexcept(
-      allocator_traits<allocator_type>::construct(a.get_allocator_(),
-                                                  declval<pointer>(),
-                                                  move_if_noexcept(
-                                                    declval<value_type>())))) {
-    assert(a.capacity() >= n);
-    for (pointer i = a.heap_, end = a.heap_ + n; i != end; ++i, ++p) {
-      allocator_traits<allocator_type>::construct(a.get_allocator_(),
-                                                  i, move_if_noexcept(*p));
-      ++a.size_;
-    }
-  }
-
-  static void assign(vector& a, const_pointer p, size_type n) noexcept(
-      noexcept(declval<reference>() = declval<const_reference>()) &&
-      noexcept(
-        allocator_traits<allocator_type>::construct(a.get_allocator_(),
-                                                    declval<pointer>(),
-                                                    declval<value_type>())) &&
-      noexcept(
-        allocator_traits<allocator_type>::destroy(a.get_allocator_(),
-                                                  declval<pointer>()))) {
-    assert(a.capacity() >= n);
-    pointer i = a.heap_;
-    pointer i_end = a.heap_ + a.size();
-    pointer p_end = p + n;
-    while (i != i_end && p != p_end) *i++ = *p++;
-    while (p != p_end) {
-      allocator_traits<allocator_type>::construct(a.get_allocator_(),
-                                                  i++, *p++);
-      ++a.size_;
-    }
-    while (a.size_ > n) {
-      allocator_traits<allocator_type>::destroy(a.get_allocator_(),
-                                                &a.heap_[--a.size_]);
-    }
-  }
-
-  static void move_assign(vector& a, const_pointer p, size_type n) noexcept(
-      noexcept(declval<reference>() =
-                   move_if_noexcept(declval<const_reference>())) &&
-      noexcept(allocator_traits<allocator_type>::construct(
-          a.get_allocator_(), declval<pointer>(),
-          move_if_noexcept(declval<value_type>()))) &&
-      noexcept(
-        allocator_traits<allocator_type>::destroy(a.get_allocator_(),
-                                                  declval<pointer>()))) {
-    assert(a.capacity() >= n);
-    pointer i = a.heap_;
-    pointer i_end = a.heap_ + a.size();
-    pointer p_end = p + n;
-    while (i != i_end && p != p_end) *i++ = move_if_noexcept(*p++);
-    while (p != p_end) {
-      allocator_traits<allocator_type>::construct(a.get_allocator_(),
-                                                  i++, move_if_noexcept(*p++));
-      ++a.size_;
-    }
-    while (a.size_ > n) {
-      allocator_traits<allocator_type>::destroy(a.get_allocator_(),
-                                                &a.heap_[--a.size_]);
-    }
-  }
-
-  static void shift_down(pointer dst, pointer src, size_type n) noexcept(
-      noexcept(declval<reference>() =
-                   move_if_noexcept(declval<const_reference>()))) {
-    assert(&*dst < &*src);
-    while (n-- > 0) *dst++ = move_if_noexcept(*src++);
-  }
-
-  static void shift_up(vector& a, size_type n_up, pointer src, size_type n)
-      noexcept(
-          noexcept(allocator_traits<allocator_type>::construct(
-              a.get_allocator_(), declval<pointer>(),
-              move_if_noexcept(declval<value_type>()))) &&
-          noexcept(declval<reference>() =
-                       move_if_noexcept(declval<const_reference>()))) {
-    assert(n_up > 0);
-
-    pointer copy_src = src + n;
-    pointer copy_dst = src + n_up + n;
-
-    while (n > n_up) {
-      --n;
-      --copy_dst;
-      --copy_src;
-      allocator_traits<allocator_type>::construct(
-          a.get_allocator_(), copy_dst, move_if_noexcept(*copy_src));
-    }
-    while (n > 0) {
-      --n;
-      --copy_dst;
-      --copy_src;
-      *copy_dst = move_if_noexcept(*copy_src);
-    }
-  }
-};
-
-
-} /* namespace std::impl */
-
-
-template<typename T, typename Alloc>
-struct vector<T, Alloc>::copy_impl {
-  static void copy(vector& a, initializer_list<value_type> b)
-      noexcept(noexcept(copy_impl_basics::copy(a, b.begin(), b.size()))) {
-    copy_impl_basics::copy(a, b.begin(), b.size());
-  }
-
-  static void copy_at(value_type* dst, const value_type* src, size_type n)
-      noexcept(noexcept(copy_impl_basics::copy_at(dst, src, n))) {
-    copy_impl_basics::copy_at(dst, src, n);
-  }
-
-  static void copy(vector& a, const vector& b)
-      noexcept(noexcept(copy_impl_basics::copy(a, b.data(), b.size()))) {
-    copy_impl_basics::copy(a, b.data(), b.size());
-  }
-
-  static void move(vector& a, vector&& b)
-      noexcept(noexcept(copy_impl_basics::move(a, b.data(), b.size()))) {
-    copy_impl_basics::move(a, b.data(), b.size());
-  }
-
-  static void assign(vector& a, const vector& b)
-      noexcept(noexcept(copy_impl_basics::assign(a, b.data(), b.size()))) {
-    copy_impl_basics::assign(a, b.data(), b.size());
-  }
-
-  static void assign(vector& a, vector&& b)
-      noexcept(noexcept(copy_impl_basics::assign(a, b.data(), b.size()))) {
-    copy_impl_basics::move_assign(a, b.data(), b.size());
-  }
-
-  static void assign(vector& a, initializer_list<value_type> il)
-      noexcept(noexcept(copy_impl_basics::assign(a, il.begin(), il.size()))) {
-    copy_impl_basics::assign(a, il.begin(), il.size());
-  }
-
-  static void shift_down(value_type* dst, value_type* src, size_type n)
-      noexcept(noexcept(noexcept(copy_impl_basics::shift_down(dst, src, n)))) {
-    copy_impl_basics::shift_down(dst, src, n);
-  }
-
-  static void shift_up(vector& a, size_type n_up, value_type* src, size_type n)
-      noexcept(noexcept(copy_impl_basics::shift_up(a, n_up, src, n))) {
-    copy_impl_basics::shift_up(a, n_up, src, n);
-  }
-};
 
 
 template<typename T, typename Alloc>
@@ -248,7 +26,10 @@ template<typename InputIter>
 vector<T, Alloc>::vector(InputIter b, InputIter e, const allocator_type& alloc)
 : vector(alloc)
 {
-  while (b != e) emplace_back(*b++);
+  const auto dist = impl::equal_support__distance(
+      b, e, typename iterator_traits<InputIter>::iterator_category());
+  if (dist.first) reserve(dist.second);
+  copy(b, e, back_inserter(*this));
 }
 
 template<typename T, typename Alloc>
@@ -256,7 +37,7 @@ vector<T, Alloc>::vector(const vector& o)
 : vector(o.get_allocator())
 {
   reserve(o.size());
-  copy_impl::copy(*this, o);
+  copy(o.begin(), o.end(), back_inserter(*this));
 }
 
 template<typename T, typename Alloc>
@@ -276,7 +57,7 @@ vector<T, Alloc>::vector(const vector& o, const allocator_type& alloc)
 : vector(alloc)
 {
   reserve(o.size());
-  copy_impl::copy(*this, o);
+  copy(o.begin(), o.end(), back_inserter(*this));
 }
 
 template<typename T, typename Alloc>
@@ -289,9 +70,11 @@ vector<T, Alloc>::vector(vector&& o, const allocator_type& alloc)
     swap(heap_, o.heap_);
     swap(size_, o.size_);
     swap(avail_, o.avail_);
-  } else
+  } else {
     reserve(o.size());
-    copy_impl::move(*this, move(o));
+    copy(o.begin(), o.end(), back_inserter(*this));
+    o.clear();
+  }
 }
 
 template<typename T, typename Alloc>
@@ -300,7 +83,7 @@ vector<T, Alloc>::vector(initializer_list<value_type> il,
 : vector(alloc)
 {
   reserve(il.size());
-  copy_impl::copy(*this, il);
+  copy(il.begin(), il.end(), back_inserter(*this));
 }
 
 template<typename T, typename Alloc>
@@ -312,21 +95,41 @@ vector<T, Alloc>::~vector() {
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator=(const vector& o) -> vector& {
   reserve(o.size());
-  copy_impl::assign(*this, o);
+  size_type delta = min(o.size(), size());
+  copy(o.begin(), o.begin() + delta, begin());
+  if (delta < o.size())
+    copy(o.begin() + delta, o.end(), back_inserter(*this));
+  else if (delta < size())
+    resize(delta);
   return *this;
 }
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator=(vector&& o) -> vector& {
   reserve(o.size());
-  copy_impl::assign(*this, move(o));
+  if (this->get_allocator_() == o.get_allocator_()) {
+    swap(o);
+    o.clear();
+  } else {
+    size_type delta = min(o.size(), size());
+    move(o.begin(), o.begin() + delta, begin());
+    if (delta < o.size())
+      move(o.begin() + delta, o.end(), back_inserter(*this));
+    else if (delta < size())
+      resize(delta);
+  }
   return *this;
 }
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator=(initializer_list<value_type> il) -> vector& {
   reserve(il.size());
-  copy_impl::assign(*this, il);
+  size_type delta = min(size_type(il.size()), size());
+  move(il.begin(), il.begin() + delta, begin());
+  if (delta < il.size())
+    move(il.begin() + delta, il.end(), back_inserter(*this));
+  else if (delta < size())
+    resize(delta);
   return *this;
 }
 
@@ -352,7 +155,7 @@ auto vector<T, Alloc>::end() const noexcept -> const_iterator {
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::cbegin() const noexcept -> const_iterator {
-  return &*heap_;
+  return begin();
 }
 
 template<typename T, typename Alloc>
@@ -403,20 +206,24 @@ auto vector<T, Alloc>::max_size() const noexcept -> size_type {
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::resize(size_type desired) -> void {
   if (size_ > desired) {
-    if (is_trivially_destructible<value_type>()) {
+    if (is_trivially_destructible<value_type>::value) {
       size_ = desired;
     } else {
       while (size_ > desired)
         allocator_traits<allocator_type>::destroy(this->get_allocator_(),
                                                   &data()[--size_]);
     }
-  } else if (size_ > desired) {
+  } else if (size_ < desired) {
     reserve(desired);
-
-    while (size_ < desired) {
-      allocator_traits<allocator_type>::construct(this->get_allocator_(),
-                                                  &data()[size_]);
-      ++size_;
+    if (is_trivially_constructible<value_type>::value) {
+      bzero(end(), (desired - size_) * sizeof(value_type));
+      size_ = desired;
+    } else {
+      while (size_ < desired) {
+        allocator_traits<allocator_type>::construct(this->get_allocator_(),
+                                                    &data()[size_]);
+        ++size_;
+      }
     }
   }
 }
@@ -431,9 +238,8 @@ auto vector<T, Alloc>::resize(size_type desired, const_reference v) -> void {
         allocator_traits<allocator_type>::destroy(this->get_allocator_(),
                                                   &data()[--size_]);
     }
-  } else if (size_ > desired) {
+  } else if (size_ < desired) {
     reserve(desired);
-
     while (size_ < desired) {
       allocator_traits<allocator_type>::construct(this->get_allocator_(),
                                                   &data()[size_], v);
@@ -456,6 +262,19 @@ template<typename T, typename Alloc>
 auto vector<T, Alloc>::reserve(size_type rsv) -> void {
   if (avail_ < rsv) {
     size_type new_sz = max(rsv, 2 * size());
+
+    /* First, try to use the resize extension. */
+    if (allocator_traits<allocator_type>::resize(this->get_allocator_(),
+                                                 heap_, avail_, new_sz)) {
+      avail_ = new_sz;
+      return;
+    } else if (rsv != new_sz &&
+               allocator_traits<allocator_type>::resize(this->get_allocator_(),
+                                                        heap_, avail_, rsv)) {
+      avail_ = rsv;
+      return;
+    }
+
     vector temp(this->get_allocator_());
     try {
       temp.heap_ = this->allocate_(new_sz);
@@ -466,7 +285,10 @@ auto vector<T, Alloc>::reserve(size_type rsv) -> void {
       temp.heap_ = this->allocate_(new_sz);
       temp.avail_ = new_sz;
     }
-    copy_impl::move(temp, move(*this));
+    if (is_nothrow_move_constructible<value_type>::value)
+      move(begin(), end(), back_inserter(temp));
+    else
+      copy(begin(), end(), back_inserter(temp));
     swap(temp);
   }
 }
@@ -474,22 +296,33 @@ auto vector<T, Alloc>::reserve(size_type rsv) -> void {
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::shrink_to_fit() -> void {
   if (avail_ > size_) {
+    if (allocator_traits<allocator_type>::resize(this->get_allocator_(),
+                                                 heap_, avail_, size_)) {
+      avail_ = size_;
+      return;
+    }
+
     vector temp(this->get_allocator_());
     temp.heap_ = this->allocate_(size());
     temp.avail_ = size();
-    copy_impl::move(temp, move(*this));
+    if (is_nothrow_move_constructible<value_type>::value)
+      move(begin(), end(), back_inserter(temp));
+    else
+      copy(begin(), end(), back_inserter(temp));
     swap(temp);
   }
 }
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator[](size_type idx) noexcept -> reference {
+  assert(idx < size_);
   return data()[idx];
 }
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator[](size_type idx) const noexcept ->
     const_reference {
+  assert(idx < size_);
   return data()[idx];
 }
 
@@ -575,19 +408,23 @@ template<typename T, typename Alloc>
 template<typename... Args>
 auto vector<T, Alloc>::emplace(const_iterator pos_, Args&&... args) ->
     iterator {
-  resize(size() + 1U);
-  iterator pos = begin() + (pos_ - begin());
-  copy_impl::shift_up(*this, 1U, pos, end() - pos);
-  *pos = value_type(forward<Args>(args)...);
-  return pos;
+  assert(begin() <= pos_ && pos_ <= end());
+
+  const auto dist = pos_ - begin();
+  emplace_back(forward<Args>(args)...);
+  rotate(begin() + dist, prev(end()), end());
+  return begin() + dist;
 }
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::insert(const_iterator pos_, const_reference v) ->
     iterator {
+  assert(begin() <= pos_ && pos_ <= end());
+
+  const auto dist = pos_ - begin();
   resize(size() + 1U);
-  iterator pos = begin() + (pos_ - begin());
-  copy_impl::shift_up(*this, 1U, &*pos, end() - pos);
+  iterator pos = begin() + dist;
+  move_backward(pos, prev(end()), end());
   *pos = v;
   return pos;
 }
@@ -595,9 +432,12 @@ auto vector<T, Alloc>::insert(const_iterator pos_, const_reference v) ->
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::insert(const_iterator pos_, value_type&& v) ->
     iterator {
+  assert(begin() <= pos_ && pos_ <= end());
+
+  const auto dist = pos_ - begin();
   resize(size() + 1U);
-  iterator pos = begin() + (pos_ - begin());
-  copy_impl::shift_up(*this, 1U, pos, end() - pos);
+  iterator pos = begin() + dist;
+  move_backward(pos, prev(end()), end());
   *pos = forward<value_type>(v);
   return pos;
 }
@@ -605,12 +445,13 @@ auto vector<T, Alloc>::insert(const_iterator pos_, value_type&& v) ->
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::insert(const_iterator pos_,
                               size_type n, const_reference v) -> iterator {
-  iterator pos = begin() + (pos_ - begin());
-  if (n != 0) {
-    reserve(size() + n);
-    copy_impl::shift_up(*this, n, pos, end() - pos);
-    for (iterator i = pos; n > 0; ++i, --n) *i = v;
-  }
+  assert(begin() <= pos_ && pos_ <= end());
+
+  const auto dist = pos_ - begin();
+  resize(size() + n);
+  auto pos = begin() + dist;
+  move_backward(pos, end() - n, end());
+  fill_n(pos, n, v);
   return pos;
 }
 
@@ -618,23 +459,32 @@ template<typename T, typename Alloc>
 template<typename InputIter>
 auto vector<T, Alloc>::insert(const_iterator pos, InputIter b, InputIter e) ->
     iterator {
-  size_type off = pos - begin();
-  while (b != e) insert(pos++, *b++);
+  assert(begin() <= pos && pos <= end());
+
+  const size_type off = pos - begin();
+  const auto dist = impl::equal_support__distance(
+      b, e, typename iterator_traits<InputIter>::iterator_category());
+  if (!dist.first) {
+    copy(b, e, inserter(*this, begin() + off));
+    return begin() + off;
+  }
+
+  resize(size() + dist.second);
+  move_backward(begin() + off, end() - dist.second, end());
+  copy(b, e, begin() + off);
   return begin() + off;
 }
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::insert(const_iterator pos_,
                               initializer_list<value_type> il) -> iterator {
-  assert(begin() <= pos_ && pos_ < end());
+  assert(begin() <= pos_ && pos_ <= end());
 
-  iterator pos = begin() + (pos_ - begin());
-  if (!il.empty()) {
-    reserve(size() + il.size());
-    copy_impl::shift_up(*this, il.size(), pos, end() - pos);
-    copy_impl::copy_at(pos, il.begin(), il.size());
-  }
-  return pos;
+  const size_type off = pos_ - begin();
+  resize(size() + il.size());
+  move_backward(begin() + off, end() - il.size(), end());
+  copy(il.begin(), il.end(), begin() + off);
+  return begin() + off;
 }
 
 template<typename T, typename Alloc>
@@ -642,21 +492,22 @@ auto vector<T, Alloc>::erase(const_iterator pos_) -> iterator {
   assert(begin() <= pos_ && pos_ < end());
 
   iterator pos = begin() + (pos_ - begin());
-  copy_impl::shift_down(pos, pos + 1U, end() - (pos + 1U));
-  resize(size() - 1U);
-  return begin() + (pos - begin());
+  move(pos + 1, end(), pos);
+  pop_back();
+  return pos;
 }
 
 template<typename T, typename Alloc>
-auto vector<T, Alloc>::erase(const_iterator b, const_iterator e) -> iterator {
-  assert(begin() <= b && b <= e && e <= end());
+auto vector<T, Alloc>::erase(const_iterator b_, const_iterator e_) ->
+    iterator {
+  assert(begin() <= b_ && b_ <= e_ && e_ <= end());
 
-  if (b != e) {
-    copy_impl::shift_down(begin() + (b - begin()),
-                          begin() + (e - begin()), end() - e);
-    resize(size() - (e - b));
-  }
-  return begin() + (b - begin());
+  auto b = begin() + (b_ - begin());
+  auto e = begin() + (e_ - begin());
+
+  move(e, end(), b);
+  resize(size() - (e - b));
+  return b;
 }
 
 template<typename T, typename Alloc>
@@ -672,14 +523,7 @@ auto vector<T, Alloc>::swap(vector& o)
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::clear() noexcept -> void {
-  if (is_trivially_destructible<value_type>()) {
-    size_ = 0;
-  } else {
-    while (size_ > 0) {
-      allocator_traits<allocator_type>::destroy(this->get_allocator_(),
-                                                &data()[--size_]);
-    }
-  }
+  resize(0);
 }
 
 
@@ -687,27 +531,14 @@ template<typename T, typename Alloc>
 bool operator==(const vector<T, Alloc>& a, const vector<T, Alloc>& b) noexcept(
     noexcept(declval<const typename vector<T, Alloc>::value_type>() ==
              declval<const typename vector<T, Alloc>::value_type>())) {
-  auto n = a.size();
-  if (n != b.size()) return false;
-  auto i = a.cbegin();
-  auto j = b.cbegin();
-  while (n-- > 0) if (*i++ != *j++) return false;
-  return true;
+  return equal(a.begin(), a.end(), b.begin(), b.end());
 }
 
 template<typename T, typename Alloc>
 bool operator<(const vector<T, Alloc>& a, const vector<T, Alloc>& b) noexcept(
     noexcept(declval<const typename vector<T, Alloc>::value_type>() <
              declval<const typename vector<T, Alloc>::value_type>())) {
-  auto n = min(a.size(), b.size());
-  auto i = a.cbegin();
-  auto j = b.cbegin();
-  while (n-- > 0) {
-    if (*i != *j) return *i < *j;
-    ++i;
-    ++j;
-  }
-  return a.size() < b.size();
+  return lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
 }
 
 template<typename T, typename Alloc>

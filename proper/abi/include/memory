@@ -156,7 +156,7 @@ template<typename Alloc> struct allocator_traits {
   static pointer allocate(Alloc& alloc, size_type n, const_void_pointer hint)
       noexcept(noexcept(impl::allocator::allocate<pointer>(alloc, move(n),
                                                           move(hint)))) {
-    return impl::allocator::allocate<pointer>(alloc, move(n), move(hint));
+    return impl::allocator::allocate<pointer>(alloc, n, hint);
   }
 
   /*
@@ -171,9 +171,9 @@ template<typename Alloc> struct allocator_traits {
    * false otherwise.
    * If the operation fails, no changes will have occured.
    */
-  static pointer resize(Alloc& alloc, pointer p, size_type old_n,
-                        size_type new_n) {
-    return impl::allocator::resize(alloc, move(p), move(old_n), move(new_n));
+  static bool resize(Alloc& alloc, pointer p, size_type old_n,
+                     size_type new_n) {
+    return impl::allocator::resize(alloc, p, old_n, new_n);
   }
 
   static void deallocate(Alloc& alloc, pointer p, size_type n) noexcept {

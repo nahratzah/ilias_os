@@ -13,22 +13,8 @@
 _namespace_begin(std)
 
 
-namespace impl {
-
-
-template<typename T, bool Memcpy =
-             is_trivially_copyable<typename T::value_type>::value>
-    struct vector_copy_impl_basics;
-
-
-} /* namespace std::impl */
-
-
 template<typename T, typename Alloc = allocator<T>>
 class vector : public impl::alloc_base<Alloc> {
-  friend struct impl::vector_copy_impl_basics<vector, true>;
-  friend struct impl::vector_copy_impl_basics<vector, false>;
-
  public:
   using value_type = T;
   using allocator_type = typename impl::alloc_base<Alloc>::allocator_type;
@@ -116,9 +102,6 @@ class vector : public impl::alloc_base<Alloc> {
   void clear() noexcept;
 
  private:
-  using copy_impl_basics = impl::vector_copy_impl_basics<vector>;
-  struct copy_impl;
-
   pointer heap_;
   size_type avail_;
   size_type size_;
