@@ -2040,4 +2040,52 @@ bool lexicographical_compare(InputIterator1 b1, InputIterator1 e1,
 }
 
 
+template<typename BidirectionalIterator>
+bool next_permutation(BidirectionalIterator b, BidirectionalIterator e) {
+  return next_permutation(b, e, less<void>());
+}
+
+template<typename BidirectionalIterator, typename Compare>
+bool next_permutation(BidirectionalIterator b, BidirectionalIterator e,
+                      Compare comp) {
+  if (b == e || next(b) == e) return false;
+
+  BidirectionalIterator k, next_of_k, l;
+
+  /*
+   * Find the largest k, such that array[k] < array[k + 1].
+   *
+   * If no such index exists, this is the last permutation.
+   * (Note that if this is the last permutation, reversing the sequence
+   * will sort it.)
+   */
+  for (next_of_k = prev(e);
+       next_of_k != b && !comp(*prev(next_of_k), *next_of_k);
+       --next_of_k);
+  if (next_of_k == b) {
+    reverse(b, e);
+    return false;
+  }
+  k = prev(next_of_k);
+
+  /*
+   * Find the largest l, suck that array[k] < array[l].
+   *
+   * Note that we know there exists at least one element for which
+   * array[k] < array[l] holds: k+1.
+   */
+  for (l = prev(e);
+       l != next_of_k && !comp(*k, *l);
+       --l);
+
+  /* Swap array[k] with array[l]. */
+  iter_swap(k, l);
+
+  /* Reverse the sequence array[k + 1 .. e]. */
+  reverse(next_of_k, e);
+
+  return true;
+}
+
+
 _namespace_end(std)

@@ -543,6 +543,13 @@ bool lexicographical_compare(InputIterator1, InputIterator1,
                              InputIterator2, InputIterator2, Compare);
 
 
+template<typename BidirectionalIterator>
+bool next_permutation(BidirectionalIterator, BidirectionalIterator);
+
+template<typename BidirectionalIterator, typename Compare>
+bool next_permutation(BidirectionalIterator, BidirectionalIterator, Compare);
+
+
 #define _EXTERNALIZE(extern, Type)					\
 extern template Type* find(Type*, Type*, const Type&);			\
 extern template const Type* find(const Type*, const Type*,		\
@@ -622,7 +629,8 @@ extern template Type* min_element(Type*, Type*);			\
 extern template Type* max_element(Type*, Type*);			\
 extern template pair<Type*, Type*> minmax_element(Type*, Type*);	\
 extern template bool lexicographical_compare(Type*, Type*,		\
-                                             Type*, Type*);
+                                             Type*, Type*);		\
+extern template bool next_permutation(Type*, Type*);
 
 
 #define _EXTERNALIZE_ALL(extern)					\
