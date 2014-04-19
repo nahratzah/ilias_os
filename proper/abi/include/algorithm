@@ -500,6 +500,48 @@ auto min(initializer_list<T> il, Comp cmp) -> T;
 template<typename T, typename Comp>
 auto max(initializer_list<T> il, Comp cmp) -> T;
 
+template<typename T>
+auto minmax(const T&, const T&) -> pair<const T&, const T&>;
+
+template<typename T, typename Compare>
+auto minmax(const T&, const T&, Compare) -> pair<const T&, const T&>;
+
+template<typename T>
+auto minmax(initializer_list<T>) -> pair<T, T>;
+
+template<typename T, typename Compare>
+auto minmax(initializer_list<T>, Compare) -> pair<T, T>;
+
+template<typename ForwardIterator>
+ForwardIterator min_element(ForwardIterator, ForwardIterator);
+
+template<typename ForwardIterator, typename Compare>
+ForwardIterator min_element(ForwardIterator, ForwardIterator, Compare);
+
+template<typename ForwardIterator>
+ForwardIterator max_element(ForwardIterator, ForwardIterator);
+
+template<typename ForwardIterator, typename Compare>
+ForwardIterator max_element(ForwardIterator, ForwardIterator, Compare);
+
+template<typename ForwardIterator>
+pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator,
+                                                      ForwardIterator);
+
+template<typename ForwardIterator, typename Compare>
+pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator,
+                                                      ForwardIterator,
+                                                      Compare);
+
+
+template<typename InputIterator1, typename InputIterator2>
+bool lexicographical_compare(InputIterator1, InputIterator1,
+                             InputIterator2, InputIterator2);
+
+template<typename InputIterator1, typename InputIterator2, typename Compare>
+bool lexicographical_compare(InputIterator1, InputIterator1,
+                             InputIterator2, InputIterator2, Compare);
+
 
 #define _EXTERNALIZE(extern, Type)					\
 extern template Type* find(Type*, Type*, const Type&);			\
@@ -575,7 +617,12 @@ extern template void pop_heap(Type*, Type*);				\
 extern template void make_heap(Type*, Type*);				\
 extern template void sort_heap(Type*, Type*);				\
 extern template bool is_heap(Type*, Type*);				\
-extern template Type* is_heap_until(Type*, Type*);
+extern template Type* is_heap_until(Type*, Type*);			\
+extern template Type* min_element(Type*, Type*);			\
+extern template Type* max_element(Type*, Type*);			\
+extern template pair<Type*, Type*> minmax_element(Type*, Type*);	\
+extern template bool lexicographical_compare(Type*, Type*,		\
+                                             Type*, Type*);
 
 
 #define _EXTERNALIZE_ALL(extern)					\

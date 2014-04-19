@@ -1937,5 +1937,107 @@ auto max(initializer_list<T> il, Comp cmp) -> T {
   return *ptr;
 }
 
+template<typename T>
+auto minmax(const T& a, const T& b) -> pair<const T&, const T&> {
+  return minmax(a, b, less<T>());
+}
+
+template<typename T, typename Compare>
+auto minmax(const T& a, const T& b, Compare comp) -> pair<const T&, const T&> {
+  return (comp(b, a) ?
+          pair<const T&, const T&>(b, a) :
+          pair<const T&, const T&>(a, b));
+}
+
+template<typename T>
+auto minmax(initializer_list<T> il) -> pair<T, T> {
+  return minmax(il, less<T>());
+}
+
+template<typename T, typename Compare>
+auto minmax(initializer_list<T> il, Compare comp) -> pair<T, T> {
+  assert(il.size() > 0);
+  auto b = il.begin();
+  pair<T, T> rv = pair<T, T>(*b, *b);
+
+  for (b = next(b); b != il.end(); ++b) {
+    if (comp(rv.second, *b))
+      rv.second = *b;
+    else if (comp(*b, rv.first))
+      rv.first = *b;
+  }
+  return rv;
+}
+
+template<typename ForwardIterator>
+ForwardIterator min_element(ForwardIterator b, ForwardIterator e) {
+  return min_element(b, e, less<void>());
+}
+
+template<typename ForwardIterator, typename Predicate>
+ForwardIterator min_element(ForwardIterator b, ForwardIterator e,
+                            Predicate predicate) {
+  if (b == e) return b;
+  ForwardIterator rv = b;
+  while (++b != e) if (predicate(*b, *rv)) rv = b;
+  return rv;
+}
+
+template<typename ForwardIterator>
+ForwardIterator max_element(ForwardIterator b, ForwardIterator e) {
+  return max_element(b, e, less<void>());
+}
+
+template<typename ForwardIterator, typename Predicate>
+ForwardIterator max_element(ForwardIterator b, ForwardIterator e,
+                            Predicate predicate) {
+  if (b == e) return b;
+  ForwardIterator rv = b;
+  while (++b != e) if (predicate(*rv, *b)) rv = b;
+  return rv;
+}
+
+template<typename ForwardIterator>
+pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator b,
+                                                      ForwardIterator e) {
+  return minmax_element(b, e, less<void>());
+}
+
+template<typename ForwardIterator, typename Predicate>
+pair<ForwardIterator, ForwardIterator> minmax_element(ForwardIterator b,
+                                                      ForwardIterator e,
+                                                      Predicate predicate) {
+  pair<ForwardIterator, ForwardIterator> rv = make_pair(b, b);
+  if (b == e) return rv;
+
+  while (++b != e) {
+    if (predicate(*rv.second, *b))
+      rv.second = b;
+    else if (predicate(*b, *rv.first))
+      rv.first = b;
+  }
+  return rv;
+}
+
+
+template<typename InputIterator1, typename InputIterator2>
+bool lexicographical_compare(InputIterator1 b1, InputIterator1 e1,
+                             InputIterator2 b2, InputIterator2 e2) {
+  return lexicographical_compare(b1, e1, b2, e2, less<void>());
+}
+
+template<typename InputIterator1, typename InputIterator2, typename Compare>
+bool lexicographical_compare(InputIterator1 b1, InputIterator1 e1,
+                             InputIterator2 b2, InputIterator2 e2,
+                             Compare comp) {
+  while (b1 != e1 && b2 != e2) {
+    if (comp(*b1, *b2)) return true;
+    if (comp(*b2, *b1)) return false;
+    ++b1;
+    ++b2;
+  }
+  return (b1 == e1 && b2 != e2);
+}
+
 
 _namespace_end(std)
