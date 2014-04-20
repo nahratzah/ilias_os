@@ -1,0 +1,257 @@
+#ifndef _LIST_
+#define _LIST_
+
+#include <cdecl.h>
+#include <initializer_list>
+#include <iterator>
+#include <memory>
+#include <stdimpl/alloc_base.h>
+#include <ilias/linked_list.h>
+
+_namespace_begin(std)
+namespace impl {
+
+template<typename T, typename Tag>
+struct list_elem
+: public _namespace(ilias)::linked_list_element<Tag>
+{
+  list_elem() = default;
+  list_elem(const list_elem&) = default;
+  list_elem& operator=(const list_elem&) = default;
+  template<typename... Args> list_elem(Args&&...);
+
+  T value;
+};
+
+} /* namespace std::impl */
+
+
+template<typename T, typename Alloc = allocator<T>>
+class list
+: private impl::alloc_base<typename allocator_traits<Alloc>::
+      template rebind_alloc<impl::list_elem<T, Alloc>>>
+{
+ private:
+  using elem = impl::list_elem<T, Alloc>;
+  struct deleter;
+  using data_type = _namespace(ilias)::linked_list<elem, Alloc>;
+  using alloc_base = impl::alloc_base<
+      typename allocator_traits<Alloc>::template rebind_alloc<elem>>;
+
+ public:
+  using value_type = T;
+  using allocator_type = Alloc;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = typename allocator_traits<allocator_type>::pointer;
+  using const_pointer =
+      typename allocator_traits<allocator_type>::const_pointer;
+  class iterator;
+  class const_iterator;
+  using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
+  using const_reverse_iterator =
+      _namespace(std)::reverse_iterator<const_iterator>;
+  using size_type = typename allocator_traits<
+      typename alloc_base::allocator_type>::size_type;
+  using difference_type = typename allocator_traits<
+      typename alloc_base::allocator_type>::difference_type;
+
+  explicit list(const allocator_type& = allocator_type());
+  explicit list(size_type, const allocator_type& = allocator_type());
+  list(size_type, const_reference, const allocator_type& = allocator_type());
+  template<typename InputIterator>
+  list(InputIterator, InputIterator, const allocator_type& = allocator_type());
+  list(const list&);
+  list(list&&);
+  list(const list&, const allocator_type&);
+  list(list&&, const allocator_type&);
+  list(initializer_list<T>, const allocator_type& = allocator_type());
+  ~list() noexcept;
+
+  list& operator=(const list&);
+  list& operator=(list&&);
+  list& operator=(initializer_list<T>);
+  template<typename InputIterator>
+  void assign(InputIterator, InputIterator);
+  void assign(initializer_list<T>);
+  allocator_type get_allocator() const noexcept;
+
+  iterator begin() noexcept;
+  const_iterator begin() const noexcept;
+  iterator end() noexcept;
+  const_iterator end() const noexcept;
+  reverse_iterator rbegin() noexcept;
+  const_reverse_iterator rbegin() const noexcept;
+  reverse_iterator rend() noexcept;
+  const_reverse_iterator rend() const noexcept;
+
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+  const_reverse_iterator crbegin() const noexcept;
+  const_reverse_iterator crend() const noexcept;
+
+  bool empty() const noexcept;
+  size_type size() const noexcept;
+  size_type max_size() const noexcept;
+  void resize(size_type);
+  void resize(size_type, const_reference);
+
+  reference front();
+  const_reference front() const;
+  reference back();
+  const_reference back() const;
+
+  template<typename... Args> void emplace_front(Args&&...);
+  void push_front(const_reference);
+  void push_front(value_type&&);
+  void pop_front();
+  template<typename... Args> void emplace_back(Args&&...);
+  void push_back(const_reference);
+  void push_back(value_type&&);
+  void pop_back();
+
+  template<typename... Args> iterator emplace(const_iterator, Args&&...);
+  iterator insert(const_iterator, const_reference);
+  iterator insert(const_iterator, value_type&&);
+  iterator insert(const_iterator, size_type, const_reference);
+  template<typename InputIterator>
+  auto insert(const_iterator, InputIterator, InputIterator) ->
+      enable_if_t<is_base_of<forward_iterator_tag,
+                             typename iterator_traits<
+                                 InputIterator>::iterator_category
+                            >::value,
+                  iterator>;
+  template<typename InputIterator>
+  auto insert(const_iterator, InputIterator, InputIterator) ->
+      enable_if_t<!is_base_of<forward_iterator_tag,
+                              typename iterator_traits<
+                                  InputIterator>::iterator_category
+                            >::value,
+                  iterator>;
+  iterator insert(const_iterator, initializer_list<T>);
+
+  iterator erase(const_iterator);
+  iterator erase(const_iterator, const_iterator);
+  void swap(list&);
+  void clear() noexcept;
+
+  void splice(const_iterator, list&) noexcept;
+  void splice(const_iterator, list&&) noexcept;
+  void splice(const_iterator, list&, const_iterator) noexcept;
+  void splice(const_iterator, list&&, const_iterator) noexcept;
+  void splice(const_iterator, list&, const_iterator, const_iterator) noexcept;
+  void splice(const_iterator, list&&, const_iterator, const_iterator) noexcept;
+
+  void remove(const_reference);
+  template<typename Predicate> void remove_if(Predicate);
+
+  void unique();
+  template<typename BinaryPredicate> void unique(BinaryPredicate);
+
+  void merge(list&);
+  void merge(list&&);
+  template<typename Compare> void merge(list&, Compare);
+  template<typename Compare> void merge(list&&, Compare);
+
+  void sort();
+  template<typename Compare> void sort(Compare);
+
+  void reverse() noexcept;
+
+ private:
+  template<typename... Args>
+  unique_ptr<elem, deleter> construct_(Args&&... args);
+
+  data_type data_;
+  size_type size_ = 0;
+};
+
+template<typename T, typename Alloc>
+class list<T, Alloc>::iterator
+: public _namespace(std)::iterator<typename iterator_traits<
+                                       typename data_type::iterator
+                                     >::iterator_category,
+                                   T,
+                                   typename list<T, Alloc>::difference_type>
+{
+  friend list<T, Alloc>;
+  friend list<T, Alloc>::const_iterator;
+
+ private:
+  iterator(typename data_type::iterator) noexcept;
+
+ public:
+  T& operator*() const noexcept;
+  T* operator->() const noexcept;
+
+  iterator& operator++() noexcept;
+  iterator operator++(int) noexcept;
+  iterator& operator--() noexcept;
+  iterator operator--(int) noexcept;
+
+  bool operator==(const iterator&) const noexcept;
+  bool operator!=(const iterator&) const noexcept;
+  bool operator==(const const_iterator&) const noexcept;
+  bool operator!=(const const_iterator&) const noexcept;
+
+ private:
+  typename data_type::iterator impl_;
+};
+
+template<typename T, typename Alloc>
+class list<T, Alloc>::const_iterator
+: public _namespace(std)::iterator<typename iterator_traits<
+                                       typename data_type::iterator
+                                     >::iterator_category,
+                                   const T,
+                                   typename list<T, Alloc>::difference_type>
+{
+  friend list<T, Alloc>;
+  friend list<T, Alloc>::iterator;
+
+ private:
+  const_iterator(typename data_type::const_iterator) noexcept;
+
+ public:
+  const_iterator(const iterator&) noexcept;
+
+  const T& operator*() const noexcept;
+  const T* operator->() const noexcept;
+
+  const_iterator& operator++() noexcept;
+  const_iterator operator++(int) noexcept;
+  const_iterator& operator--() noexcept;
+  const_iterator operator--(int) noexcept;
+
+  bool operator==(const iterator&) const noexcept;
+  bool operator!=(const iterator&) const noexcept;
+  bool operator==(const const_iterator&) const noexcept;
+  bool operator!=(const const_iterator&) const noexcept;
+
+ private:
+  typename data_type::const_iterator impl_;
+};
+
+
+template<typename T, typename A>
+bool operator==(const list<T, A>&, const list<T, A>&);
+template<typename T, typename A>
+bool operator!=(const list<T, A>&, const list<T, A>&);
+template<typename T, typename A>
+bool operator<(const list<T, A>&, const list<T, A>&);
+template<typename T, typename A>
+bool operator>(const list<T, A>&, const list<T, A>&);
+template<typename T, typename A>
+bool operator<=(const list<T, A>&, const list<T, A>&);
+template<typename T, typename A>
+bool operator>=(const list<T, A>&, const list<T, A>&);
+
+template<typename T, typename A>
+void swap(list<T, A>&, list<T, A>&);
+
+
+_namespace_end(std)
+
+#include <list-inl.h>
+
+#endif /* _LIST_ */
