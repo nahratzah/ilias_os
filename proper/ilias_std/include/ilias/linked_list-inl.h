@@ -127,13 +127,6 @@ inline auto basic_linked_list::splice(iterator i, iterator o_b, iterator o_e)
   p->succ_ = first;
 }
 
-inline auto basic_linked_list::reverse() noexcept -> void {
-  element* e = root_.succ_;
-  do {
-    e = e->pred_ = _namespace(std)::exchange(e->succ_, e->pred_);
-  } while (e != &root_);
-}
-
 inline auto basic_linked_list::begin() const noexcept -> iterator {
   return iterator{ root_.succ_ };
 }
