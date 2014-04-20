@@ -2,7 +2,9 @@
 #include <abi/memory.h>
 #include <abi/panic.h>
 #include <abi/semaphore.h>
+#include <array>
 #include <thread>
+#include <type_traits>
 
 namespace __cxxabiv1 {
 
@@ -10,7 +12,7 @@ namespace __cxxabiv1 {
 namespace {
 
 
-typedef std::atomic<unsigned int> thr_emergency_use_t;
+using thr_emergency_use_t = std::atomic<unsigned int>;
 thread_local thr_emergency_use_t thr_emergency_use;
 
 /* # threads that can use emergency buffers. */
@@ -18,9 +20,8 @@ semaphore emergency_use_threads{ 16U };
 
 class emergency_slot {
  private:
-  struct alignas(max_align_t) emergency_space {
-    uint8_t data_[1024];  // Emergency block space.
-  };
+  using emergency_space =
+      _namespace(std)::aligned_storage_t<1024, alignof(max_align_t)>;
 
  public:
   static constexpr size_t space_size = sizeof(emergency_space);
@@ -56,7 +57,7 @@ bool emergency_slot::release(void* p) noexcept {
 
 
 const unsigned int EMERGENCY_SZ = 64;
-emergency_slot emergency[EMERGENCY_SZ];
+_namespace(std)::array<emergency_slot, EMERGENCY_SZ> emergency;
 
 /* Allocate space from emergency. */
 void* acquire_emergency_space(size_t sz) noexcept {
@@ -65,8 +66,8 @@ void* acquire_emergency_space(size_t sz) noexcept {
   auto use = thr_emergency_use.fetch_add(1U, std::memory_order_acquire);
   if (use <= 4U) {
     if (use == 0U) emergency_use_threads.decrement();  // May block.
-    for (emergency_slot* e = emergency; e != emergency + EMERGENCY_SZ; ++e) {
-      void* addr = e->claim();
+    for (auto& e : emergency) {
+      void* addr = e.claim();
       if (addr) return addr;
     }
   }
@@ -78,8 +79,8 @@ void* acquire_emergency_space(size_t sz) noexcept {
 
 /* Try to release space to emergency. */
 bool release_emergency_space(void* p) noexcept {
-  for (emergency_slot* e = emergency; e != emergency + EMERGENCY_SZ; ++e)
-    if (e->release(p)) return true;
+  for (auto& e : emergency)
+    if (e.release(p)) return true;
   return false;
 }
 
@@ -89,8 +90,8 @@ constexpr size_t header_sz = sizeof(__cxa_exception);
 /* Exception heap. */
 abi::heap& abi_eh_heap() noexcept {
   static _namespace(std)::once_flag once;
-  static _namespace(std)::aligned_storage<sizeof(abi::heap),
-                                          alignof(abi::heap)> store;
+  static _namespace(std)::aligned_storage_t<sizeof(abi::heap),
+                                            alignof(abi::heap)> store;
 
   void* p = &store;
   call_once(once,
@@ -107,8 +108,8 @@ inline __cxa_exception* exc2hdr(void* exc) noexcept {
   return reinterpret_cast<__cxa_exception*>(base);
 }
 
-thread_local _namespace(std)::aligned_storage<sizeof(__cxa_eh_globals),
-                                              alignof(__cxa_eh_globals)>
+thread_local _namespace(std)::aligned_storage_t<sizeof(__cxa_eh_globals),
+                                                alignof(__cxa_eh_globals)>
     cxa_eh_globals;
 
 
