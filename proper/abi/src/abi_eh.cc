@@ -2,6 +2,7 @@
 #include <abi/memory.h>
 #include <abi/panic.h>
 #include <abi/semaphore.h>
+#include <thread>
 
 namespace __cxxabiv1 {
 
@@ -86,7 +87,19 @@ bool release_emergency_space(void* p) noexcept {
 constexpr size_t header_sz = sizeof(__cxa_exception);
 
 /* Exception heap. */
-abi::heap abi_eh_heap{ "abi/exception" };
+abi::heap& abi_eh_heap() noexcept {
+  static _namespace(std)::once_flag once;
+  static _namespace(std)::aligned_storage<sizeof(abi::heap),
+                                          alignof(abi::heap)> store;
+
+  void* p = &store;
+  call_once(once,
+            [](void* p) {
+              new (p) abi::heap{ "abi/exception" };
+            },
+            p);
+  return *static_cast<abi::heap*>(p);
+}
 
 inline __cxa_exception* exc2hdr(void* exc) noexcept {
   if (exc == nullptr) return nullptr;
@@ -94,17 +107,29 @@ inline __cxa_exception* exc2hdr(void* exc) noexcept {
   return reinterpret_cast<__cxa_exception*>(base);
 }
 
+thread_local _namespace(std)::aligned_storage<sizeof(__cxa_eh_globals),
+                                              alignof(__cxa_eh_globals)>
+    cxa_eh_globals;
+
 
 } /* namespace __cxxabiv1::<unnamed> */
 
 
 __cxa_eh_globals* __cxa_get_globals() noexcept {
-  static thread_local __cxa_eh_globals impl{ nullptr, 0 };
-  return &impl;
+  static thread_local _namespace(std)::once_flag cxa_eh_globals_once;
+
+  void* p = &cxa_eh_globals;
+  call_once(cxa_eh_globals_once,
+      [](void* p) {
+        new (p) __cxa_eh_globals{ nullptr, 0 };
+      },
+      p);
+  return static_cast<__cxa_eh_globals*>(p);
 }
 
 __cxa_eh_globals* __cxa_get_globals_fast() noexcept {
-  return __cxa_get_globals();
+  void* p = &cxa_eh_globals;
+  return static_cast<__cxa_eh_globals*>(p);
 }
 
 void* __cxa_allocate_exception(size_t throw_sz) noexcept {
@@ -112,7 +137,7 @@ void* __cxa_allocate_exception(size_t throw_sz) noexcept {
 
   /* Try allocating from heap. */
   __cxa_exception* storage =
-    static_cast<__cxa_exception*>(abi_eh_heap.malloc(sz));
+    static_cast<__cxa_exception*>(abi_eh_heap().malloc(sz));
   if (_predict_true(storage))
     memzero(storage, sz);
   else
@@ -154,7 +179,7 @@ void __cxa_free_exception(void* exc_addr) noexcept {
     /* Release emergency resources. */
     if (_predict_true(!release_emergency_space(exc))) {
       /* Release heap resources. */
-      abi_eh_heap.free(exc);
+      abi_eh_heap().free(exc);
     }
   } while ((exc = next) != nullptr);
 }
