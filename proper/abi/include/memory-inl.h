@@ -1,5 +1,4 @@
 #include <stdimpl/shared_ptr_ownership.h>
-#include <ilias/hazard.h>
 
 _namespace_begin(std)
 namespace impl {
@@ -1410,7 +1409,7 @@ auto enable_shared_from_this<T>::shared_from_this() const ->
 
 template<typename T>
 bool atomic_is_lock_free(const shared_ptr<T>*) {
-  return _namespace(ilias)::hazard_is_lock_free();
+  return ATOMIC_POINTER_LOCK_FREE;
 }
 
 template<typename T>
