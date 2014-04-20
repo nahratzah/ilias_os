@@ -450,5 +450,22 @@ void qsort(void* base, size_t n, size_t stride,
        });
 }
 
+void* bsearch(const void* key, const void* base, size_t n, size_t stride,
+              int (*cmp)(const void*, const void*)) {
+  using placeholders::_1;
+  using placeholders::_2;
+
+  stride_reference key_ = stride_reference(const_cast<void*>(key), stride);
+  stride_iterator b = stride_iterator(
+      static_cast<uint8_t*>(const_cast<void*>(base)), stride);
+  stride_iterator e = b + n;
+  stride_iterator found =
+      lower_bound(b, e, key_,
+                  [cmp](stride_reference x, stride_reference y) -> bool {
+                    return cmp(x.get(), y.get()) < 0;
+                  });
+  return found.get_addr();
+}
+
 
 } /* namespace std */
