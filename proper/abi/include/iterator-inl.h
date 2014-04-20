@@ -42,9 +42,13 @@ auto reverse_iterator<Iterator>::operator->() const -> pointer {
 }
 
 template<typename Iterator>
-auto reverse_iterator<Iterator>::operator[](difference_type n) const
-    noexcept(declval<iterator_type>()[0]) ->
-    decltype(declval<iterator_type>()[0]) {
+auto reverse_iterator<Iterator>::operator[](difference_type n) const ->
+    conditional_t<
+        is_base_of<random_access_iterator_tag,
+                   typename iterator_traits<Iterator>::iterator_category
+                  >::value,
+        typename iterator_traits<Iterator>::reference,
+        void> {
   return i_[-n - 1];
 }
 

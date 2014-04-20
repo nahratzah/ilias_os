@@ -76,9 +76,13 @@ class reverse_iterator
       noexcept(is_nothrow_copy_constructible<iterator_type>::value);
   reference operator*() const;
   pointer operator->() const;
-  auto operator[](difference_type) const
-      noexcept(declval<iterator_type>()[0]) ->
-      decltype(declval<iterator_type>()[0]);
+  auto operator[](difference_type) const ->
+      conditional_t<
+          is_base_of<random_access_iterator_tag,
+                     typename iterator_traits<Iterator>::iterator_category
+                    >::value,
+          typename iterator_traits<Iterator>::reference,
+          void>;
 
   reverse_iterator& operator++();
   reverse_iterator& operator--();
