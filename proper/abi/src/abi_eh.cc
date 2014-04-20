@@ -162,7 +162,7 @@ void __cxa_free_exception(void* exc_addr) noexcept {
   do {
     if (exc->refcount.load(std::memory_order_acquire) != 0U) {
       panic("%s: %s", __func__, "exception reference count != 0");
-      for (;;);
+      __builtin_unreachable();
     }
 
     /*
@@ -240,7 +240,7 @@ void __cxa_throw(void* exc_addr, const std::type_info* ti,
   }
 
   (*terminate)();  // XXX report fail
-  for (;;);
+  __builtin_unreachable();
 }
 
 bool __cxa_uncaught_exception() noexcept {
@@ -250,7 +250,7 @@ bool __cxa_uncaught_exception() noexcept {
 void __cxa_rethrow_primary_exception(void* exc_addr) {
   if (_predict_false(!exc_addr)) {
     std::terminate();
-    for (;;);
+    __builtin_unreachable();
   }
   /* Resolve primary exception. */
   __cxa_exception* exc = exc2hdr(exc_addr);
@@ -304,7 +304,7 @@ void __cxa_rethrow_primary_exception(void* exc_addr) {
   }
 
   (*terminate)();  // XXX report fail
-  for (;;);
+  __builtin_unreachable();
 }
 
 void* __cxa_current_primary_exception() noexcept {
@@ -330,17 +330,17 @@ _Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action actions,
   panic("TODO: implement %s(%i, %i, %#llu, %p, %p)", __func__,
         version, int(actions), ull(exceptionClass),
         exceptionObject, context);  // XXX implement
-  for (;;);
+  __builtin_unreachable();
 }
 
 void _Unwind_Resume(_Unwind_Exception *exception_object) noexcept {
   panic("TODO: implement %s(%p)", __func__, exception_object);  // XXX implement
-  for (;;);
+  __builtin_unreachable();
 }
 
 void* __cxa_begin_catch(void* exc_addr) noexcept {
   panic("TODO: implement %s(%p)", __func__, exc_addr);  // XXX implement
-  for (;;);
+  __builtin_unreachable();
 
   __cxa_exception* exc = exc2hdr(exc_addr);
   ++exc->handlerCount;
@@ -349,7 +349,7 @@ void* __cxa_begin_catch(void* exc_addr) noexcept {
 
 void* __cxa_end_catch(void* exc_addr) noexcept {
   panic("TODO: implement %s()", __func__);  // XXX implement
-  for (;;);
+  __builtin_unreachable();
 
   __cxa_exception* exc = exc2hdr(exc_addr);
   --exc->handlerCount;
@@ -357,12 +357,12 @@ void* __cxa_end_catch(void* exc_addr) noexcept {
 
 void __cxa_rethrow() noexcept {
   panic("TODO: implement %s()", __func__);  // XXX implement
-  for (;;);
+  __builtin_unreachable();
 }
 
 _Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *exception_object) noexcept {
   panic("TODO: implement %s(%p)", __func__, exception_object);  // XXX implement
-  for (;;);
+  __builtin_unreachable();
 }
 
 
