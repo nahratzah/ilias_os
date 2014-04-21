@@ -9,10 +9,10 @@ _namespace_begin(std)
 struct once_flag {
 #ifdef __cplusplus
   atomic<bool> lock = { false };
-  bool done = false;
+  volatile bool done = false;
 #else
   _Atomic(Bool) lock = { false };
-  Bool done = false;
+  volatile Bool done = false;
 #endif
 };
 
