@@ -51,6 +51,7 @@ class basic_linked_list {
   element* unlink_back() noexcept;
   iterator link(iterator, element*) noexcept;
   element* unlink(iterator) noexcept;
+  element* unlink(element*) noexcept;
 
   static void splice(iterator, basic_linked_list&) noexcept;
   static void splice(iterator, iterator, iterator)
@@ -99,9 +100,9 @@ class basic_linked_list::iterator
 };
 
 
-template<typename, typename = void> class linked_list;
+template<typename, class = void> class linked_list;
 
-template<typename Tag = void>
+template<class Tag = void>
 class linked_list_element
 : private basic_linked_list::element
 {
@@ -114,13 +115,10 @@ class linked_list_element
   ~linked_list_element() noexcept = default;
 };
 
-template<typename T, typename Tag>
+template<typename T, class Tag>
 class linked_list
 : private basic_linked_list
 {
- private:
-  using tag_type = Tag;
-
  public:
   using value_type = T;
   using reference = value_type&;
@@ -140,6 +138,7 @@ class linked_list
   pointer unlink_back() noexcept;
   iterator link(const_iterator, pointer) noexcept;
   pointer unlink(const_iterator) noexcept;
+  pointer unlink(const_pointer) noexcept;
 
   reference front() noexcept;
   const_reference front() const noexcept;
@@ -184,7 +183,7 @@ class linked_list
   static pointer up_cast_(element*) noexcept;
 };
 
-template<typename T, typename Tag>
+template<typename T, class Tag>
 class linked_list<T, Tag>::iterator
 : public _namespace(std)::iterator<
     basic_linked_list::iterator::iterator_category, T>
@@ -212,7 +211,7 @@ class linked_list<T, Tag>::iterator
   basic_linked_list::iterator impl_;
 };
 
-template<typename T, typename Tag>
+template<typename T, class Tag>
 class linked_list<T, Tag>::const_iterator
 : public _namespace(std)::iterator<
     basic_linked_list::iterator::iterator_category, const T>
@@ -240,7 +239,7 @@ class linked_list<T, Tag>::const_iterator
   basic_linked_list::iterator impl_;
 };
 
-template<typename T, typename Tag>
+template<typename T, class Tag>
 void swap(linked_list<T, Tag>&, linked_list<T, Tag>&) noexcept;
 
 
