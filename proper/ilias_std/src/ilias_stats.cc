@@ -2,6 +2,7 @@
 #include <abi/linker.h>
 #include <cassert>
 #include <cstring>
+#include <algorithm>
 
 _namespace_begin(ilias)
 
@@ -37,6 +38,16 @@ auto stats_group::deregister_child(basic_stats& child) const noexcept -> void {
 
 
 stats_leaf::~stats_leaf() noexcept {}
+
+auto stats_leaf::path() const ->
+    _namespace(std)::vector<_namespace(std)::string_ref> {
+  _namespace(std)::vector<_namespace(std)::string_ref> rv;
+
+  for (const basic_stats* i = this; i != nullptr; i = i->parent())
+    rv.push_back(i->name());
+  _namespace(std)::reverse(rv.begin(), rv.end());
+  return rv;
+}
 
 auto stats_leaf::init() noexcept -> void {
   auto* p = parent();

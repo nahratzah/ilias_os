@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <string>
 #include <mutex>
+#include <vector>
 #include <ilias/linked_list.h>
 
 _namespace_begin(ilias)
@@ -94,6 +95,8 @@ class stats_leaf
  public:
   stats_leaf(stats_group&, _namespace(std)::string_ref) noexcept;
   ~stats_leaf() noexcept override;
+
+  _namespace(std)::vector<_namespace(std)::string_ref> path() const;
 
  protected:
   void init() noexcept;
