@@ -1,8 +1,13 @@
 #include <memory>
 #include <array>
 #include <mutex>
+#include <stdimpl/stats.h>
+#include <ilias/stats.h>
 #include <abi/ext/log2.h>
 #include <abi/memory.h>
+
+using _namespace(ilias)::global_stats_group;
+using _namespace(ilias)::stats_counter;
 
 _namespace_begin(std)
 
@@ -32,6 +37,8 @@ const char* bad_weak_ptr::what() const noexcept { return "bad_weak_ptr"; }
 
 namespace impl {
 namespace {
+
+global_stats_group cache_group{ &std_stats, "temporary_buffer", {}, {} };
 
 #if defined(_LOADER)
 constexpr size_t N_temporary_storage_cache = 2;
@@ -71,7 +78,10 @@ using temporary_buffer_ptr = unique_ptr<void, temporary_buffer_release>;
 /* Cache a few recently released blocks of memory. */
 using temporary_cache = array<pair<temporary_buffer_ptr, size_t>,
                               N_temporary_storage_cache>;
-thread_local temporary_cache cache;
+temporary_cache& cache() noexcept {
+  static thread_local temporary_cache impl;
+  return impl;
+}
 
 /* Remember a couple of recent assignments. */
 using temporary_assigned = array<pair<void*, size_t>, N_assigned_cache>;
@@ -98,23 +108,35 @@ bool satisfies_constraints(temporary_cache::reference item,
 pair<void*, size_t> temporary_buffer_allocate(size_t size, size_t align) {
   using placeholders::_1;
 
+  static stats_counter cache_hit{ cache_group, "hit" };
+  static stats_counter cache_hit2{ cache_group, "hit_after_resize" };
+  static stats_counter cache_miss{ cache_group, "miss" };
+  static stats_counter cache_alloc{ cache_group, "allocated" };
+
   assert(abi::ext::is_pow2(align));
 
   temporary_cache::iterator match;  // Cache hit.
   pair<void*, size_t> assign;  // Assignment.
 
   /* Search cache for an allocation that matches the request. */
-  match = find_if(cache.begin(), cache.end(),
+  match = find_if(cache().begin(), cache().end(),
                   bind(&satisfies_constraints, _1, size, align, false));
-  if (match == cache.end()) {
-    match = find_if(cache.begin(), cache.end(),
+  if (match != cache().end()) {
+    cache_hit.add();
+  } else {
+    match = find_if(cache().begin(), cache().end(),
                     bind(&satisfies_constraints, _1, size, align, true));
+    if (match != cache().end())
+      cache_hit2.add();
+    else
+      cache_miss.add();
   }
 
-  if (match != cache.end()) {
+  if (match != cache().end()) {
     /* Use found element from cache. */
     assign = make_pair(match->first.release(), match->second);
-    if (next(match) != cache.end()) rotate(match, next(match), cache.end());
+    if (next(match) != cache().end())
+      rotate(match, next(match), cache().end());
   } else {
     /* Allocate from heap. */
     void* addr = get_temporary_heap().malloc(size, align);
@@ -123,6 +145,7 @@ pair<void*, size_t> temporary_buffer_allocate(size_t size, size_t align) {
   }
 
   /* Replace longest autstanding record. */
+  cache_alloc.add();
   move_backward(assigned.begin(), prev(assigned.end()), assigned.end());
   assigned.front() = assign;
   return assign;
@@ -151,8 +174,11 @@ void temporary_buffer_deallocate(const void* p) {
   using placeholders::_1;
   using placeholders::_2;
 
+  static stats_counter cache_alloc{ cache_group, "deallocated" };
+
   if (p == nullptr) return;
   temporary_buffer_ptr ptr{ const_cast<void*>(p) };
+  cache_alloc.add();
 
   auto assign = find_if(
       assigned.begin(), assigned.end(),
@@ -161,8 +187,8 @@ void temporary_buffer_deallocate(const void* p) {
            p));
   if (assign != assigned.end()) {
     /* Place assignment at the front of the cache. */
-    move(cache.begin(), prev(cache.end()), next(cache.begin()));
-    cache.front() = make_pair(move(ptr), assign->second);
+    move(cache().begin(), prev(cache().end()), next(cache().begin()));
+    cache().front() = make_pair(move(ptr), assign->second);
 
     /* Remove assignment. */
     move(next(assign), assigned.end(), assign);
