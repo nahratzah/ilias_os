@@ -1,6 +1,9 @@
 #ifndef _ABI_ABI_H_
 #define _ABI_ABI_H_
 
+#ifdef __cplusplus
+# include <ilias/stats-fwd.h>
+#endif
 
 #ifdef __cplusplus
 #define _TYPES(name)		::abi::name
@@ -136,6 +139,12 @@ typedef enum _ABI_TYPES(buffer_style)	_ABI_TYPES(buffer_style);
 typedef struct _ABI_TYPES(mbstate_t)	_ABI_TYPES(mbstate_t);
 typedef struct _ABI_TYPES(stack32_t)	_ABI_TYPES(stack32_t);
 typedef struct _ABI_TYPES(stack64_t)	_ABI_TYPES(stack64_t);
+#endif
+
+/* Statistics for abi. */
+#ifdef __cplusplus
+extern _namespace(ilias)::global_stats_group abi_group;
+extern _namespace(ilias)::global_stats_group abi_ext_group;
 #endif
 
 typedef _ABI_TYPES(int64_t)		_ABI_TYPES(time_t);

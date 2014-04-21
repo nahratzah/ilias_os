@@ -6,6 +6,7 @@
 #include <abi/panic.h>
 #include <mutex>
 #include <new>
+#include <ilias/stats.h>
 
 namespace __cxxabiv1 {
 namespace ext {
@@ -495,67 +496,11 @@ const size_t global_heap::memory_alloc_space =
 } /* namespace __cxxabiv1::ext::<unnamed> */
 
 
-struct heap::all_stats {
- private:
-  all_stats() = default;
-
- public:
-  static all_stats& get_singleton() noexcept;
-  void do_register(stats_data&) noexcept;
-  void do_deregister(stats_data&) noexcept;
-  stats_collection get_all(stats_collection = stats_collection()) const;
-
- private:
-  mutable semaphore lock_{ 1U };
-  list<heap::stats_data, void> data_;
-};
-
-auto heap::all_stats::get_singleton() noexcept -> heap::all_stats& {
-  _namespace(std)::once_flag guard;
-  _namespace(std)::aligned_storage_t<sizeof(all_stats),
-                                     alignof(all_stats)> data;
-
-  void* data_ptr = reinterpret_cast<void*>(&data);
-  _namespace(std)::call_once(guard,
-                             [](void* ptr) { new (ptr) all_stats; },
-                             data_ptr);
-  return *static_cast<all_stats*>(data_ptr);
-}
-
-auto heap::all_stats::do_register(stats_data& sd) noexcept -> void {
-  semlock l = semlock(lock_);
-  data_.link_back(&sd);
-}
-
-auto heap::all_stats::do_deregister(stats_data& sd) noexcept -> void {
-  semlock l = semlock(lock_);
-  data_.unlink(&sd);
-}
-
-auto heap::all_stats::get_all(stats_collection c) const -> stats_collection {
-  c.clear();
-
-  semlock l = semlock(lock_);
-  for (const auto& i : data_) c.emplace_back(i);
-  return c;
-}
-
-
 heap::heap(_namespace(std)::string_ref name) noexcept
 : stats_(name)
-{
-  all_stats::get_singleton().do_register(stats_);
-}
+{}
 
-heap::~heap() noexcept {
-  all_stats::get_singleton().do_deregister(stats_);
-}
-
-auto heap::get_stats(stats_collection c) -> stats_collection {
-  using _namespace(std)::move;
-
-  return all_stats::get_singleton().get_all(move(c));
-}
+heap::~heap() noexcept {}
 
 auto heap::malloc(size_t sz, size_t align) noexcept -> void* {
   using _namespace(std)::min;
@@ -594,47 +539,27 @@ auto heap::resize(const void* p, size_t nsz) noexcept ->
   return resize_result(global_heap::get_singleton().resize(p, nsz), args);
 }
 
-auto heap::get_stats() -> stats_collection {
-  return all_stats::get_singleton().get_all();
-}
 
-auto heap::malloc_result(void* p, size_t sz) noexcept -> void* {
-  using _namespace(std)::memory_order_relaxed;
+namespace {
 
-  stats_.malloc_calls_.fetch_add(1U, memory_order_relaxed);
-  if (p)
-    stats_.malloc_bytes_.fetch_add(sz, memory_order_relaxed);
-  else
-    stats_.malloc_fail_.fetch_add(1U, memory_order_relaxed);
-  return p;
-}
+_namespace(ilias)::global_stats_group heap_group{
+  &abi_ext_group, "heap", {}, {}
+};
 
-auto heap::resize_result(_namespace(std)::tuple<bool, size_t> rv,
-                         _namespace(std)::tuple<const void*, size_t> args)
-    noexcept -> _namespace(std)::tuple<bool, size_t> {
-  using _namespace(std)::get;
-  using _namespace(std)::memory_order_relaxed;
+} /* namespace abi::ext::<unnamed> */
 
-  auto& old_sz = get<1>(rv);
-  auto& new_sz = get<1>(args);
-
-  stats_.resize_calls_.fetch_add(1U, memory_order_relaxed);
-  if (!get<0>(rv))
-    stats_.resize_fail_.fetch_add(1U, memory_order_relaxed);
-  else if (new_sz > old_sz)
-    stats_.resize_bytes_up_.fetch_add(new_sz - old_sz, memory_order_relaxed);
-  else if (new_sz < old_sz)
-    stats_.resize_bytes_down_.fetch_add(old_sz - new_sz, memory_order_relaxed);
-  return rv;
-}
-
-auto heap::free_result(size_t sz, const void* arg) noexcept -> void {
-  using _namespace(std)::memory_order_relaxed;
-
-  stats_.free_calls_.fetch_add(1U, memory_order_relaxed);
-  if (arg)
-    stats_.free_bytes_.fetch_add(sz, memory_order_relaxed);
-}
+heap::stats_data::stats_data(_namespace(std)::string_ref name) noexcept
+: group(heap_group, name),
+  malloc_calls(group, "malloc_calls"),
+  resize_calls(group, "resize_calls"),
+  free_calls(group, "free_calls"),
+  malloc_bytes(group, "malloc_bytes"),
+  resize_bytes_up(group, "resize_bytes_up"),
+  resize_bytes_down(group, "resize_bytes_down"),
+  free_bytes(group, "free_bytes"),
+  malloc_fail(group, "malloc_fail"),
+  resize_fail(group, "resize_fail")
+{}
 
 
 }} /* namespace __cxxabiv1::ext */

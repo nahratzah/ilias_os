@@ -1,100 +1,45 @@
+#ifndef _ABI_EXT_HEAP_INL_H_
+#define _ABI_EXT_HEAP_INL_H_
+
+#include <abi/ext/heap.h>
+
 namespace __cxxabiv1 {
 namespace ext {
 
 
-inline auto heap::stats_data::malloc_calls() const noexcept -> uintmax_t {
-  return malloc_calls_.load(_namespace(std)::memory_order_relaxed);
+inline auto heap::malloc_result(void* p, size_t sz) noexcept -> void* {
+  stats_.malloc_calls.add();
+  if (p)
+    stats_.malloc_bytes.add(sz);
+  else
+    stats_.malloc_fail.add();
+  return p;
 }
 
-inline auto heap::stats_data::resize_calls() const noexcept -> uintmax_t {
-  return resize_calls_.load(_namespace(std)::memory_order_relaxed);
+inline auto heap::resize_result(_namespace(std)::tuple<bool, size_t> rv,
+                         _namespace(std)::tuple<const void*, size_t> args)
+    noexcept -> _namespace(std)::tuple<bool, size_t> {
+  using _namespace(std)::get;
+
+  auto& old_sz = get<1>(rv);
+  auto& new_sz = get<1>(args);
+
+  stats_.resize_calls.add();
+  if (!get<0>(rv))
+    stats_.resize_fail.add();
+  else if (new_sz > old_sz)
+    stats_.resize_bytes_up.add(new_sz - old_sz);
+  else if (new_sz < old_sz)
+    stats_.resize_bytes_down.add(old_sz - new_sz);
+  return rv;
 }
 
-inline auto heap::stats_data::free_calls() const noexcept -> uintmax_t {
-  return free_calls_.load(_namespace(std)::memory_order_relaxed);
+inline auto heap::free_result(size_t sz, const void* arg) noexcept -> void {
+  stats_.free_calls.add();
+  if (arg) stats_.free_bytes.add(sz);
 }
-
-inline auto heap::stats_data::malloc_bytes() const noexcept -> uintmax_t {
-  return malloc_bytes_.load(_namespace(std)::memory_order_relaxed);
-}
-
-inline auto heap::stats_data::resize_bytes_up() const noexcept -> uintmax_t {
-  return resize_bytes_up_.load(_namespace(std)::memory_order_relaxed);
-}
-
-inline auto heap::stats_data::resize_bytes_down() const noexcept -> uintmax_t {
-  return resize_bytes_down_.load(_namespace(std)::memory_order_relaxed);
-}
-
-inline auto heap::stats_data::free_bytes() const noexcept -> uintmax_t {
-  return free_bytes_.load(_namespace(std)::memory_order_relaxed);
-}
-
-inline auto heap::stats_data::malloc_fail() const noexcept -> uintmax_t {
-  return malloc_fail_.load(_namespace(std)::memory_order_relaxed);
-}
-
-inline auto heap::stats_data::resize_fail() const noexcept -> uintmax_t {
-  return resize_fail_.load(_namespace(std)::memory_order_relaxed);
-}
-
-
-inline auto heap::stats::malloc_calls() const noexcept -> uintmax_t {
-  return malloc_calls_;
-}
-
-inline auto heap::stats::resize_calls() const noexcept -> uintmax_t {
-  return resize_calls_;
-}
-
-inline auto heap::stats::free_calls() const noexcept -> uintmax_t {
-  return free_calls_;
-}
-
-inline auto heap::stats::malloc_bytes() const noexcept -> uintmax_t {
-  return malloc_bytes_;
-}
-
-inline auto heap::stats::resize_bytes_up() const noexcept -> uintmax_t {
-  return resize_bytes_up_;
-}
-
-inline auto heap::stats::resize_bytes_down() const noexcept -> uintmax_t {
-  return resize_bytes_down_;
-}
-
-inline auto heap::stats::free_bytes() const noexcept -> uintmax_t {
-  return free_bytes_;
-}
-
-inline auto heap::stats::malloc_fail() const noexcept -> uintmax_t {
-  return malloc_fail_;
-}
-
-inline auto heap::stats::resize_fail() const noexcept -> uintmax_t {
-  return resize_fail_;
-}
-
-inline auto heap::stats::used() const noexcept -> uintmax_t {
-  return malloc_bytes() +
-         resize_bytes_up() -
-         resize_bytes_down() -
-         free_bytes();
-}
-
-
-inline heap::stats::stats(const stats_data& sd) noexcept
-: name(sd.name),
-  malloc_calls_(sd.malloc_calls()),
-  resize_calls_(sd.resize_calls()),
-  free_calls_(sd.free_calls()),
-  malloc_bytes_(sd.malloc_bytes()),
-  resize_bytes_up_(sd.resize_bytes_up()),
-  resize_bytes_down_(sd.resize_bytes_down()),
-  free_bytes_(sd.free_bytes()),
-  malloc_fail_(sd.malloc_fail()),
-  resize_fail_(sd.resize_fail())
-{}
 
 
 }} /* namespace __cxxabiv1::ext */
+
+#endif /* _ABI_EXT_HEAP_INL_H_ */
