@@ -117,14 +117,13 @@ thread_local _namespace(std)::aligned_storage_t<sizeof(__cxa_eh_globals),
 
 
 __cxa_eh_globals* __cxa_get_globals() noexcept {
-  static thread_local _namespace(std)::once_flag cxa_eh_globals_once;
+  static thread_local bool cxa_eh_globals_once;
 
   void* p = &cxa_eh_globals;
-  call_once(cxa_eh_globals_once,
-      [](void* p) {
-        new (p) __cxa_eh_globals{ nullptr, 0 };
-      },
-      p);
+  if (_predict_false(!cxa_eh_globals_once)) {
+    new (p) __cxa_eh_globals{ nullptr, 0 };
+    cxa_eh_globals_once = true;
+  }
   return static_cast<__cxa_eh_globals*>(p);
 }
 
