@@ -106,7 +106,7 @@ auto hash_set<T, Buckets, Tag>::unlink(const_iterator e) noexcept -> bool {
   iterator s = iterator_to(const_cast<pointer>(&*e));
   ++s;
 
-  if (!unlink(e)) return false;
+  if (!list_.unlink(e)) return false;
 
   for (bucket_idx i = 0U; i <= b; ++i) if (buckets_[i] == e) buckets_[i] = s;
   return true;

@@ -42,9 +42,11 @@ void loader_constructors() noexcept {
   bios_put_str("Running constructors...\n");
   ctor_dtor* i = &start_ctors;
   while (i != &end_ctors) {
+    bios_printf("+++ %p\n", *i);
     if (*i == nullptr || *i == reinterpret_cast<void*>(uintptr_t(-1)))
-      continue;
-    (*i++)();
+      break;
+    (*i)();
+    ++i;
   }
   bios_put_str("Done running constructors...\n");
 }
@@ -55,8 +57,9 @@ void loader_destructors() noexcept {
   bios_put_str("Running destructors...\n");
   ctor_dtor* i = &end_dtors;
   while (i-- != &start_dtors) {
+    bios_printf("--- %p\n", *i);
     if (*i == nullptr || *i == reinterpret_cast<void*>(uintptr_t(-1)))
-      continue;
+      break;
     (*i)();
   }
   bios_put_str("Done running destructors\n");
@@ -65,6 +68,8 @@ void loader_destructors() noexcept {
 void loader_print_endmsg() noexcept {
   bios_put_str("Loader has finished.  Will attempt to halt the system,\n"
                "                      or spin indefinately");
+  asm volatile("hlt");
+  for (;;);
 }
 
 _cdecl_end
