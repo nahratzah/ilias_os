@@ -2,6 +2,9 @@
 #define _STDIMPL_ONCE_FLAG_H_
 
 #include <cdecl.h>
+#ifdef __cplusplus
+# include <atomic>
+#endif
 #include <cstdbool>
 
 _namespace_begin(std)

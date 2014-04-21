@@ -1,3 +1,10 @@
+#ifndef _MUTEX_INL_H_
+#define _MUTEX_INL_H_
+
+#include <atomic>
+#include <utility>
+#include <abi/ext/atomic.h>
+
 _namespace_begin(std)
 
 
@@ -46,3 +53,5 @@ void call_once(once_flag& flag, Callable&& func, Args&&... args)
 
 
 _namespace_end(std)
+
+#endif /* _MUTEX_INL_H_ */

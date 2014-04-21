@@ -4,8 +4,8 @@
 #include <abi/hashcode.h>
 #include <abi/ext/log2.h>
 #include <abi/panic.h>
+#include <mutex>
 #include <new>
-#include <thread>
 
 namespace __cxxabiv1 {
 namespace ext {

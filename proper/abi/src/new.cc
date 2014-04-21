@@ -1,8 +1,8 @@
 #include <new>
-#include <atomic>
-#include <thread>
-#include <abi/memory.h>
 #include <cdecl.h>
+#include <atomic>
+#include <mutex>
+#include <abi/memory.h>
 
 namespace std {
 

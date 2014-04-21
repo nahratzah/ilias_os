@@ -3,7 +3,7 @@
 #include <abi/panic.h>
 #include <abi/semaphore.h>
 #include <array>
-#include <thread>
+#include <mutex>
 #include <type_traits>
 
 namespace __cxxabiv1 {

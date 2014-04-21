@@ -9,8 +9,8 @@
 #include <algorithm>
 #include <functional>
 #include <iterator>
+#include <mutex>
 #include <new>
-#include <thread>
 
 namespace std {
 

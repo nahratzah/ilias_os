@@ -2,9 +2,7 @@
 #define _THREAD_
 
 #include <cdecl.h>
-#include <atomic>
 #include <utility>
-#include <abi/ext/atomic.h>
 #include <stdimpl/once_flag.h>
 
 _namespace_begin(std)
@@ -17,6 +15,6 @@ void call_once(once_flag& flag, Callable&& func, Args&&... args)
 
 _namespace_end(std)
 
-#include <thread-inl.h>
+#include <mutex-inl.h>
 
 #endif /* _THREAD_ */
