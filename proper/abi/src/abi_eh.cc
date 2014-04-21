@@ -1,4 +1,5 @@
 #include <abi/eh.h>
+#include <cdecl.h>
 #include <abi/memory.h>
 #include <abi/panic.h>
 #include <abi/semaphore.h>
@@ -6,11 +7,24 @@
 #include <mutex>
 #include <type_traits>
 
+#if __has_include(<ilias/stats.h>)
+# include <ilias/stats.h>
+#endif
+
 namespace __cxxabiv1 {
 
 /* Anonymous namespace, gathers all emergency exception allocation code. */
 namespace {
 
+
+#if __has_include(<ilias/stats.h>)
+_namespace(ilias)::global_stats_group eh_group{
+  &abi_group, "exception", {}, {}
+};
+_namespace(ilias)::global_stats_group emergency_group{
+  &eh_group, "emergency", {}, {}
+};
+#endif
 
 using thr_emergency_use_t = std::atomic<unsigned int>;
 thread_local thr_emergency_use_t thr_emergency_use;
@@ -41,12 +55,26 @@ void* emergency_slot::claim() noexcept {
                                      std::memory_order_relaxed))
     return nullptr;
 
-  memzero(&space_, space_size);
+#if __has_include(<ilias/stats.h>)
+  static _namespace(ilias)::stats_counter claim_counter{
+    emergency_group, "allocated"
+  };
+  claim_counter.add();
+#endif
+
+  bzero(&space_, space_size);
   return &space_;
 }
 
 bool emergency_slot::release(void* p) noexcept {
   if (_predict_true(p != &space_)) return false;
+
+#if __has_include(<ilias/stats.h>)
+  static _namespace(ilias)::stats_counter claim_counter{
+    emergency_group, "deallocated"
+  };
+  claim_counter.add();
+#endif
 
   thr_emergency_use_t* user = user_.exchange(nullptr,
                                              std::memory_order_release);
@@ -96,7 +124,7 @@ abi::heap& abi_eh_heap() noexcept {
   void* p = &store;
   call_once(once,
             [](void* p) {
-              new (p) abi::heap{ "abi/exception" };
+              new (p) abi::heap{ "exception" };
             },
             p);
   return *static_cast<abi::heap*>(p);
@@ -186,6 +214,11 @@ void __cxa_free_exception(void* exc_addr) noexcept {
 
 void __cxa_throw(void* exc_addr, const std::type_info* ti,
                  void (*destructor)(void*)) noexcept {
+#if __has_include(<ilias/stats.h>)
+  static _namespace(ilias)::stats_counter throw_counter{ eh_group, "throw" };
+  throw_counter.add();
+#endif
+
   /*
    * Note: __cxa_exception of exc_addr was zeroed at allocation.
    * Thus no initializing to zero is required.
