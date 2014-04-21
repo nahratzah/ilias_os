@@ -10,7 +10,7 @@ namespace __cxxabiv1 {
 
 _cdecl_begin
 
-extern void *__dso_handle;
+extern void* __dso_handle;
 
 struct __cxa_guard;
 

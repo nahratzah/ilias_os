@@ -26,7 +26,9 @@ semaphore rtdt_spl{ 1U };
 
 } /* namespace kernel::<unnamed> */
 
-void *__dso_handle = &__dso_handle;
+#if defined(_KERNEL) || defined(_LOADER)
+void* __attribute__((visibility("hidden"))) __dso_handle = &__dso_handle;
+#endif
 
 int __cxa_atexit(void (*fn)(void*) noexcept, void* arg, void* dso_handle)
     noexcept {
