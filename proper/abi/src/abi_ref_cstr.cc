@@ -5,7 +5,7 @@
 namespace __cxxabiv1 {
 
 
-heap ref_cstr_heap{ "abi/ref_cstr" };
+heap ref_cstr_heap{ "ref_cstr" };
 
 ref_cstr::ref_cstr(const char* s) noexcept
 : ref_cstr()

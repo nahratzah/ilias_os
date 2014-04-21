@@ -155,11 +155,17 @@ fn_stack* fn_stack::head_ = nullptr;
 
 ::abi::heap& fn_stack::heap() {
   using _namespace(std)::aligned_storage_t;
+  using _namespace(std)::call_once;
   using ::abi::heap;
 
   static aligned_storage_t<sizeof(heap), alignof(heap)> data;
+  static _namespace(std)::once_flag guard;
+
   void* data_ptr = &data;
-  return *new (data_ptr) heap("abi/atexit");
+  call_once(guard,
+            [](void* p) { new (p) heap("atexit"); },
+            data_ptr);
+  return *static_cast<heap*>(data_ptr);
 }
 
 
@@ -174,7 +180,7 @@ abi::big_heap& c_malloc_heap() noexcept {
 
   void* data_ptr = &data;
   call_once(guard,
-            [](void* ptr) { new (ptr) big_heap("abi/malloc"); },
+            [](void* ptr) { new (ptr) big_heap("malloc"); },
             data_ptr);
   return *static_cast<big_heap*>(data_ptr);
 }

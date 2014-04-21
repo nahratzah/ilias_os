@@ -55,7 +55,7 @@ abi::big_heap& throwing_heap() noexcept {
   void*const impl_ptr = &impl;
 
   call_once(guard,
-            [](void* p) { new (p) abi::big_heap("abi/operator new"); },
+            [](void* p) { new (p) abi::big_heap("operator new"); },
             impl_ptr);
   return *static_cast<abi::big_heap*>(impl_ptr);
 }
