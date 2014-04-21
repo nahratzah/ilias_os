@@ -79,8 +79,4 @@ global_stats_group::operator stats_group&() noexcept {
 }
 
 
-global_stats_group stats_{ nullptr, "stats", {}, {} };
-stats_counter n_stats_{ stats_, "foo" };
-
-
 _namespace_end(ilias)
