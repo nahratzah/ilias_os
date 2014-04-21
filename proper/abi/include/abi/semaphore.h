@@ -15,8 +15,8 @@ class semaphore {
  public:
   using value_type = uint32_t;
 
-  constexpr semaphore() = default;
-  constexpr semaphore(uint32_t v) : a_(v) {};
+  constexpr semaphore() noexcept = default;
+  constexpr semaphore(uint32_t v) noexcept : a_(v) {};
 
   void increment() noexcept;
   void decrement() noexcept;

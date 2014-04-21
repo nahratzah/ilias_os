@@ -8,6 +8,11 @@
 _namespace_begin(std)
 
 
+inline auto mutex::native_handle() -> native_handle_type {
+  return impl_;
+}
+
+
 template<typename Callable, typename... Args>
 void call_once(once_flag& flag, Callable&& func, Args&&... args)
     noexcept(noexcept(func(forward<Args>(args)...))) {

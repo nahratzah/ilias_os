@@ -26,6 +26,7 @@ ABI_SRCS += abi/src/exception.cc
 ABI_SRCS += abi/src/functional.cc
 ABI_SRCS += abi/src/ios.cc
 ABI_SRCS += abi/src/memory.cc
+ABI_SRCS += abi/src/mutex.cc
 ABI_SRCS += abi/src/new.cc
 ABI_SRCS += abi/src/stdexcept.cc
 ABI_SRCS += abi/src/streambuf.cc

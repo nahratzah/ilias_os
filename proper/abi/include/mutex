@@ -2,10 +2,38 @@
 #define _THREAD_
 
 #include <cdecl.h>
+#include <atomic>
 #include <utility>
 #include <stdimpl/once_flag.h>
+#include <abi/semaphore.h>
 
 _namespace_begin(std)
+namespace impl {
+
+struct owner_tag_;
+
+} /* namespace std::impl */
+
+
+class mutex {
+ public:
+  constexpr mutex() noexcept = default;
+  ~mutex() noexcept;
+
+  mutex(const mutex&) = delete;
+  mutex& operator=(const mutex&) = delete;
+
+  void lock();
+  bool try_lock() noexcept;
+  void unlock() noexcept;
+
+  using native_handle_type = abi::semaphore&;
+  native_handle_type native_handle();
+
+ private:
+  atomic<const void*> owner_tag_{ nullptr };
+  abi::semaphore impl_{ 1U };
+};
 
 
 template<typename Callable, typename... Args>
