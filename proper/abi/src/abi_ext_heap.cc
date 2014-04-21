@@ -6,7 +6,10 @@
 #include <abi/panic.h>
 #include <mutex>
 #include <new>
-#include <ilias/stats.h>
+
+#if __has_include(<ilias/stats.h>)
+# include <ilias/stats.h>
+#endif
 
 namespace __cxxabiv1 {
 namespace ext {
@@ -540,6 +543,7 @@ auto heap::resize(const void* p, size_t nsz) noexcept ->
 }
 
 
+#if __has_include(<ilias/stats.h>)
 namespace {
 
 _namespace(ilias)::global_stats_group heap_group{
@@ -560,6 +564,7 @@ heap::stats_data::stats_data(_namespace(std)::string_ref name) noexcept
   malloc_fail(group, "malloc_fail"),
   resize_fail(group, "resize_fail")
 {}
+#endif /* __has_include(<ilias/stats.h>) */
 
 
 }} /* namespace __cxxabiv1::ext */

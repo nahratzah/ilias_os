@@ -1,7 +1,7 @@
 #ifndef _ABI_ABI_H_
 #define _ABI_ABI_H_
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && __has_include(<ilias/stats.h>)
 # include <ilias/stats-fwd.h>
 #endif
 
@@ -142,7 +142,7 @@ typedef struct _ABI_TYPES(stack64_t)	_ABI_TYPES(stack64_t);
 #endif
 
 /* Statistics for abi. */
-#ifdef __cplusplus
+#if defined(__cplusplus) && __has_include(<ilias/stats.h>)
 extern _namespace(ilias)::global_stats_group abi_group;
 extern _namespace(ilias)::global_stats_group abi_ext_group;
 #endif

@@ -4,7 +4,10 @@
 #include <abi/abi.h>
 #include <string>
 #include <tuple>
-#include <ilias/stats.h>
+
+#if __has_include(<ilias/stats.h>)
+# include <ilias/stats.h>
+#endif
 
 namespace __cxxabiv1 {
 namespace ext {
@@ -13,6 +16,7 @@ namespace ext {
 class heap {
  private:
   class stats_data {
+#if __has_include(<ilias/stats.h>)
    private:
     using stats_counter = _namespace(ilias)::stats_counter;
 
@@ -30,6 +34,7 @@ class heap {
     stats_counter free_bytes;  // bytes freeed by free()
     stats_counter malloc_fail;  // count: malloc() returned nullptr
     stats_counter resize_fail;  // count: resize() returned false
+#endif /* __has_include(<ilias/stats.h>) */
   };
 
  public:

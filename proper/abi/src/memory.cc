@@ -2,12 +2,15 @@
 #include <array>
 #include <mutex>
 #include <stdimpl/stats.h>
-#include <ilias/stats.h>
 #include <abi/ext/log2.h>
 #include <abi/memory.h>
 
+#if __has_include(<ilias/stats.h>)
+# include <ilias/stats.h>
+
 using _namespace(ilias)::global_stats_group;
 using _namespace(ilias)::stats_counter;
+#endif
 
 _namespace_begin(std)
 
@@ -38,7 +41,9 @@ const char* bad_weak_ptr::what() const noexcept { return "bad_weak_ptr"; }
 namespace impl {
 namespace {
 
+#if __has_include(<ilias/stats.h>)
 global_stats_group cache_group{ &std_stats, "temporary_buffer", {}, {} };
+#endif
 
 #if defined(_LOADER)
 constexpr size_t N_temporary_storage_cache = 2;
@@ -108,10 +113,12 @@ bool satisfies_constraints(temporary_cache::reference item,
 pair<void*, size_t> temporary_buffer_allocate(size_t size, size_t align) {
   using placeholders::_1;
 
+#if __has_include(<ilias/stats.h>)
   static stats_counter cache_hit{ cache_group, "hit" };
   static stats_counter cache_hit2{ cache_group, "hit_after_resize" };
   static stats_counter cache_miss{ cache_group, "miss" };
   static stats_counter cache_alloc{ cache_group, "allocated" };
+#endif
 
   assert(abi::ext::is_pow2(align));
 
@@ -122,14 +129,18 @@ pair<void*, size_t> temporary_buffer_allocate(size_t size, size_t align) {
   match = find_if(cache().begin(), cache().end(),
                   bind(&satisfies_constraints, _1, size, align, false));
   if (match != cache().end()) {
+#if __has_include(<ilias/stats.h>)
     cache_hit.add();
+#endif
   } else {
     match = find_if(cache().begin(), cache().end(),
                     bind(&satisfies_constraints, _1, size, align, true));
+#if __has_include(<ilias/stats.h>)
     if (match != cache().end())
       cache_hit2.add();
     else
       cache_miss.add();
+#endif
   }
 
   if (match != cache().end()) {
@@ -144,8 +155,11 @@ pair<void*, size_t> temporary_buffer_allocate(size_t size, size_t align) {
     assign = make_pair(addr, size);
   }
 
-  /* Replace longest autstanding record. */
+#if __has_include(<ilias/stats.h>)
   cache_alloc.add();
+#endif
+
+  /* Replace longest autstanding record. */
   move_backward(assigned.begin(), prev(assigned.end()), assigned.end());
   assigned.front() = assign;
   return assign;
@@ -174,11 +188,13 @@ void temporary_buffer_deallocate(const void* p) {
   using placeholders::_1;
   using placeholders::_2;
 
-  static stats_counter cache_alloc{ cache_group, "deallocated" };
-
   if (p == nullptr) return;
   temporary_buffer_ptr ptr{ const_cast<void*>(p) };
+
+#if __has_include(<ilias/stats.h>)
+  static stats_counter cache_alloc{ cache_group, "deallocated" };
   cache_alloc.add();
+#endif
 
   auto assign = find_if(
       assigned.begin(), assigned.end(),
