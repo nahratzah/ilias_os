@@ -1,6 +1,7 @@
 #include <abi/linker.h>
 #include <abi/panic.h>
 #include <abi/ext/atomic.h>
+#include <abi/semaphore.h>
 #include <atomic>
 #include <cassert>
 #include <cstring>

@@ -3,8 +3,6 @@
 
 #include <cdecl.h>
 #include <abi/abi.h>
-#include <abi/semaphore.h>
-
 
 namespace __cxxabiv1 {
 
