@@ -95,15 +95,17 @@ _namespace(std)::vector<bios_memmap_line> bios_memmap_line::bios_read_e820() {
   static const abi::uint32_t magic = 0x534d4150;
   static_assert(sizeof(bios_memmap_line) == 24,
                 "Bios_memmap line size is incorrect.");
+  const uintptr_t bios_accessible_pointer = 0x1000;
 
   _namespace(std)::vector<bios_memmap_line> lines;
-  bios_memmap_line line;
+  bios_memmap_line* line =
+      reinterpret_cast<bios_memmap_line*>(bios_accessible_pointer);
   abi::uint32_t contid = 0;
   abi::uint32_t signature;
   abi::uint32_t bytes;
 
   do {
-    line.acpi30_ext_attr = 1;  /* Ask for valid acpi entry. */
+    line->acpi30_ext_attr = 1;  /* Ask for valid acpi entry. */
     asm volatile (
       "int $0x15"
     : "=a" (signature),
@@ -111,26 +113,29 @@ _namespace(std)::vector<bios_memmap_line> bios_memmap_line::bios_read_e820() {
       "=c" (bytes)
     : "a" (0xe820),
       "b" (contid),
-      "c" (sizeof(line)),
+      "c" (sizeof(*line)),
       "d" (magic),
-      "D" (&line)
+      "D" (line),
+      "S" (0)
     : "cc", "memory"  /* Condition code, memory. */
     );
     bios_printf("int 0x15, function e820 result:\n"
                 "  signature = %#ju (expecting %#ju)\n"
                 "  contid = %#ju\n"
                 "  bytes = %#ju\n"
-                "  line: base=%#ju len=%#ju region_type=%#ju acpi30_ext_attr=%#ju\n",
+                "  line: base=%#ju len=%#ju region_type=%#ju "
+                  "acpi30_ext_attr=%#ju\n",
                 uintmax_t(signature), uintmax_t(magic),
                 uintmax_t(contid),
                 uintmax_t(bytes),
-                uintmax_t(line.base), uintmax_t(line.len),
-                uintmax_t(line.region_type), uintmax_t(line.acpi30_ext_attr));
+                uintmax_t(line->base), uintmax_t(line->len),
+                uintmax_t(line->region_type),
+                uintmax_t(line->acpi30_ext_attr));
     if (signature != magic) return lines;
 
     if (bytes < 20)
-      line.acpi30_ext_attr = 0;  /* BIOS does not fill in acpi field. */
-    lines.push_back(_namespace(std)::move(line));
+      line->acpi30_ext_attr = 0;  /* BIOS does not fill in acpi field. */
+    lines.push_back(_namespace(std)::move(*line));
   } while (contid);
   return lines;
 }
