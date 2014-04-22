@@ -2,8 +2,7 @@
 #define _TYPEINFO_
 
 #include <cdecl.h>
-#include <abi/abi.h>
-#include <abi/hashcode.h>
+#include <cstddef>
 #include <exception>
 
 _namespace_begin(std)
@@ -15,12 +14,12 @@ class type_info {
 
  public:
   virtual ~type_info() noexcept;
-  inline bool operator==(const type_info&) const noexcept;
-  inline bool operator!=(const type_info&) const noexcept;
-  inline bool before(const type_info&) const noexcept;
+  bool operator==(const type_info&) const noexcept;
+  bool operator!=(const type_info&) const noexcept;
+  bool before(const type_info&) const noexcept;
 
-  inline _TYPES(size_t) hash_code() const noexcept;
-  inline const char* name() const noexcept;
+  size_t hash_code() const noexcept;
+  const char* name() const noexcept;
 
   virtual bool __is_pointer_p() const noexcept;
   virtual bool __is_function_p() const noexcept;
