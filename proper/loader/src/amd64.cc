@@ -57,39 +57,13 @@ struct bios_memmap_line {
     return rv;
   }
 
-  /* Read the first memory map line from bios. */
-  template<typename Fn>
-  static bool visit(Fn&& fn)
-      noexcept(noexcept(fn(std::declval<bios_memmap_line>()))) {
-    static const abi::uint32_t magic = 0x534d4150;
+ private:
+  /* Read the memory map lines from bios, using int 0x15, function e820. */
+  static _namespace(std)::vector<bios_memmap_line> bios_read_e820();
 
-    bios_memmap_line line;
-    abi::uint32_t contid = 0;
-    abi::uint32_t signature;
-    abi::uint32_t bytes;
-
-    do {
-      line.acpi30_ext_attr = 1;  /* Ask for valid acpi entry. */
-      asm volatile (
-        "int $0x15"
-      : "=a" (signature),
-        "=b" (contid),
-        "=c" (bytes)
-      : "a" (0xe820),
-        "b" (contid),
-        "c" (sizeof(line)),
-        "d" (magic),
-        "D" (&line)
-      : "cc", "memory"  /* Condition code, memory. */
-      );
-      if (signature != magic)
-        return false;
-      if (bytes < 20)
-        line.acpi30_ext_attr = 0;  /* BIOS does not fill in acpi field. */
-      fn(std::move(line));
-    } while (contid);
-    return true;
-  }
+ public:
+  /* Read the memory map lines from bios. */
+  static _namespace(std)::vector<bios_memmap_line> bios_read();
 
   operator memorymap::range() const noexcept {
     return memorymap::range{ base, len };
@@ -99,15 +73,66 @@ struct bios_memmap_line {
 memorymap amd64_memorymap() {
   bios_put_str("Loading memory map");
   memorymap rv;
-  const bool valid = bios_memmap_line::visit(
-    [&rv](bios_memmap_line l) {
-      if (l.len > 0 && l.free()) rv.push_back(l.align(4096));
-      bios_put_char('.');
-    });
-  if (!valid) throw std::runtime_error("bios map invalid");
+  for (const auto& l : bios_memmap_line::bios_read()) {
+    if (l.len > 0 && l.free()) rv.push_back(l.align(4096));
+    bios_put_char('.');
+  }
 
   rv.shrink_to_fit();
   return rv;
+}
+
+_namespace(std)::vector<bios_memmap_line> bios_memmap_line::bios_read() {
+  _namespace(std)::vector<bios_memmap_line> lines;
+
+  lines = bios_read_e820();
+  if (!lines.empty()) return lines;
+
+  return lines;
+}
+
+_namespace(std)::vector<bios_memmap_line> bios_memmap_line::bios_read_e820() {
+  static const abi::uint32_t magic = 0x534d4150;
+  static_assert(sizeof(bios_memmap_line) == 24,
+                "Bios_memmap line size is incorrect.");
+
+  _namespace(std)::vector<bios_memmap_line> lines;
+  bios_memmap_line line;
+  abi::uint32_t contid = 0;
+  abi::uint32_t signature;
+  abi::uint32_t bytes;
+
+  do {
+    line.acpi30_ext_attr = 1;  /* Ask for valid acpi entry. */
+    asm volatile (
+      "int $0x15"
+    : "=a" (signature),
+      "=b" (contid),
+      "=c" (bytes)
+    : "a" (0xe820),
+      "b" (contid),
+      "c" (sizeof(line)),
+      "d" (magic),
+      "D" (&line)
+    : "cc", "memory"  /* Condition code, memory. */
+    );
+    bios_printf("int 0x15, function e820 result:\n"
+                "  signature = %#ju (expecting %#ju)\n"
+                "  contid = %#ju\n"
+                "  bytes = %#ju\n"
+                "  line: base=%#ju len=%#ju region_type=%#ju acpi30_ext_attr=%#ju\n",
+                uintmax_t(signature), uintmax_t(magic),
+                uintmax_t(contid),
+                uintmax_t(bytes),
+                uintmax_t(line.base), uintmax_t(line.len),
+                uintmax_t(line.region_type), uintmax_t(line.acpi30_ext_attr));
+    if (signature != magic) return lines;
+
+    if (bytes < 20)
+      line.acpi30_ext_attr = 0;  /* BIOS does not fill in acpi field. */
+    lines.push_back(_namespace(std)::move(line));
+  } while (contid);
+  return lines;
 }
 
 
