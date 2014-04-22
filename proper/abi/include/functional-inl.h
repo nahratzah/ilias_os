@@ -810,7 +810,7 @@ bool operator!=(nullptr_t, const function<R(ArgTypes...)>& f) {
 
 
 inline size_t hash<bool>::operator()(bool b) const {
-  return (b ? 0 : 1);
+  return hash<size_t>()(b ? 0 : 1);
 }
 
 inline size_t hash<char>::operator()(char c) const {
