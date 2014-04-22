@@ -28,7 +28,7 @@ auto hash_impl(T n_) noexcept ->
 
   uint32_t hash = 17 * sizeof(T);  // Fixed seed.
 
-  uint32_t k = n_ & 0xffffffff;
+  uint32_t k = n_;
   k *= c1;
   k = (k << r1) | (k >> (32 - r1));
   k *= c2;
@@ -62,7 +62,7 @@ auto hash_impl(T n_) noexcept ->
   unsigned int shift = (sizeof(n_) + sizeof(N) - 1) / sizeof(N);
 
   uint64_t c1 = 0xc6a4a7935bd1e995ULL;
-  uint64_t c2 = 0x1b873593;
+  uint64_t c2 = 0xcc9e2d511b873593ULL;
   uint64_t r1 = 47;
   uint64_t r2 = 13;
   uint64_t m = 5;
@@ -70,7 +70,7 @@ auto hash_impl(T n_) noexcept ->
 
   uint64_t hash = 17 * sizeof(T);  // Fixed seed.
 
-  uint64_t k = n_ & 0xffffffff;
+  uint64_t k = n_;
   k *= c1;
   k = (k << r1) | (k >> (64 - r1));
   k *= c2;
@@ -80,7 +80,7 @@ auto hash_impl(T n_) noexcept ->
 
   for (unsigned int i = 1; i < shift; ++i) {
     n_ >>= (sizeof(T) <= 8 ? 0 : 64);  // Shift, but silence compiler warning.
-    uint32_t rb = n_;
+    uint64_t rb = n_;
     rb *= c1;
     rb = (rb << r1) | (rb >> (64 - r1));
     rb *= c2;
