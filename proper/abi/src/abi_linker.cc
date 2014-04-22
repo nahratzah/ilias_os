@@ -136,7 +136,8 @@ void __cxa_deleted_virtual() noexcept {
 struct __cxa_guard {
   struct impl_t {
     uint8_t mark;  // Must by byte 0.
-    std::atomic<uint8_t> mtx;
+    uint8_t pad_[3];  // Skip 3 bytes.
+    std::atomic<uint32_t> mtx;
   };
 
   union data_t {
@@ -158,7 +159,7 @@ uint8_t* cxa_guard_mark_byte(__cxa_guard* g_) noexcept {
   return &g_->data.impl.mark;
 }
 
-std::atomic<uint8_t>& cxa_guard_mutex(__cxa_guard* g_) noexcept {
+std::atomic<uint32_t>& cxa_guard_mutex(__cxa_guard* g_) noexcept {
   return g_->data.impl.mtx;
 }
 
@@ -167,7 +168,7 @@ std::atomic<uint8_t>& cxa_guard_mutex(__cxa_guard* g_) noexcept {
 int __cxa_guard_acquire(__cxa_guard* g_) noexcept {
   auto& lock = cxa_guard_mutex(g_);
 
-  uint8_t lock_zero = 0;
+  uint32_t lock_zero = 0;
   while (!lock.compare_exchange_weak(lock_zero, 1,
                                      std::memory_order_acquire,
                                      std::memory_order_relaxed)) {
@@ -175,12 +176,13 @@ int __cxa_guard_acquire(__cxa_guard* g_) noexcept {
     abi::ext::pause();
   }
 
-  auto rv = cxa_guard_mark_byte(g_);
+  auto rv = *cxa_guard_mark_byte(g_);
   if (rv) lock.store(0, std::memory_order_relaxed);
   return !rv;
 }
 
 void __cxa_guard_release(__cxa_guard* g_) noexcept {
+  atomic_thread_fence(std::memory_order_seq_cst);
   *cxa_guard_mark_byte(g_) = 1;
   cxa_guard_mutex(g_).store(0, std::memory_order_release);
 }
