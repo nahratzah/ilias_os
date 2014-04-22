@@ -1992,6 +1992,23 @@ auto operator+(basic_string_ref<Char, Traits> a,
 }
 
 
+inline size_t hash<string>::operator()(const string& s) const noexcept {
+  return hash<string_ref>()(s);
+}
+
+inline size_t hash<u16string>::operator()(const u16string& s) const noexcept {
+  return hash<u16string_ref>()(s);
+}
+
+inline size_t hash<u32string>::operator()(const u32string& s) const noexcept {
+  return hash<u32string_ref>()(s);
+}
+
+inline size_t hash<wstring>::operator()(const wstring& s) const noexcept {
+  return hash<wstring_ref>()(s);
+}
+
+
 _namespace_end(std)
 inline namespace literals {
 inline namespace string_literals {

@@ -11,6 +11,7 @@
 #include <memory>
 #include <stdexcept>
 #include <utility>
+#include <hash-fwd.h>
 #include <stdimpl/alloc_base.h>
 #include <stdimpl/char_traits.h>
 
@@ -594,6 +595,49 @@ extern template class basic_string<char>;
 extern template class basic_string<wchar_t>;
 extern template class basic_string<char16_t>;
 extern template class basic_string<char32_t>;
+
+
+template<> struct hash<string> {
+  using result_type = size_t;
+  using argument_type = string;
+  size_t operator()(const string&) const noexcept;
+};
+template<> struct hash<u16string> {
+  using result_type = size_t;
+  using argument_type = u16string;
+  size_t operator()(const u16string&) const noexcept;
+};
+template<> struct hash<u32string> {
+  using result_type = size_t;
+  using argument_type = u32string;
+  size_t operator()(const u32string&) const noexcept;
+};
+template<> struct hash<wstring> {
+  using result_type = size_t;
+  using argument_type = wstring;
+  size_t operator()(const wstring&) const noexcept;
+};
+
+template<> struct hash<string_ref> {
+  using result_type = size_t;
+  using argument_type = string_ref;
+  size_t operator()(string_ref) const noexcept;
+};
+template<> struct hash<u16string_ref> {
+  using result_type = size_t;
+  using argument_type = u16string_ref;
+  size_t operator()(u16string_ref) const noexcept;
+};
+template<> struct hash<u32string_ref> {
+  using result_type = size_t;
+  using argument_type = u32string_ref;
+  size_t operator()(u32string_ref) const noexcept;
+};
+template<> struct hash<wstring_ref> {
+  using result_type = size_t;
+  using argument_type = wstring_ref;
+  size_t operator()(wstring_ref) const noexcept;
+};
 
 
 _namespace_end(std)
