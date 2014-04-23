@@ -9,9 +9,6 @@ namespace loader {
 
 _cdecl_begin
 
-uint32_t mb_magic;
-uint32_t mb_data;
-
 void loader_setup() noexcept {
   try {
     main();
