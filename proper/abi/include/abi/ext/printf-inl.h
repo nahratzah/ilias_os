@@ -288,7 +288,7 @@ int parse_num_spec(std::basic_string_ref<Char, Traits>& sp,
   }
 
   if (_predict_false(sp.empty() || sp[0] < '0' || sp[0] > '9')) {
-    if (is_argfield) {
+    if (*is_argfield) {
       *v = -1;  // auto-select next arg
       return 0;
     }
@@ -296,7 +296,7 @@ int parse_num_spec(std::basic_string_ref<Char, Traits>& sp,
   }
   *v = parse_num(sp);
 
-  if (sp.empty()) return (is_argfield ? EINVAL : 0);
+  if (sp.empty()) return (*is_argfield ? EINVAL : 0);
   if (sp[0] == '$') {
     *is_argidx = !*is_argfield;
     sp = sp.substr(1);
@@ -332,7 +332,7 @@ int render_partial_num_sp(printf_renderer<Char, Traits>& renderer, int pos,
   if (thousand_sep.empty()) return renderer.append(content);
 
   while (pos > 0) {
-    int error;
+    int error = 0;
     int n = (pos - 1) % 3 + 1;  // Number between 1 and 3.
 
     /* Render n numbers, until the first thousand separator. */
@@ -357,7 +357,7 @@ int render_leading_zeroes(printf_renderer<Char, Traits>& renderer,
   int pos = add_leading_zeroes + numsz;
 
   while (add_leading_zeroes > 0) {
-    int error;
+    int error = 0;
     if ((error = render_partial_num_sp(renderer, pos, zeroes, thousand_sep)))
       return error;
     pos -= zeroes.size();
@@ -452,7 +452,7 @@ int render_int_agnostic(printf_renderer<Char, Traits>& renderer,
   /*
    * Conversion complete, we are (finally) ready to print this thing.
    */
-  int error;
+  int error = 0;
 
   /* Print spaces to the left, unless left justifying output. */
   if (!(spec.pff & PFF_LEFT_JUSTIFY) &&
@@ -486,22 +486,20 @@ int render_int_agnostic(printf_renderer<Char, Traits>& renderer,
 template<typename Char, typename Traits>
 printf_len deduce_printf_len(std::basic_string_ref<Char, Traits>& sp)
     noexcept {
-  Char _hh[] = { Char('h'), Char('h') };
-  Char _ll[] = { Char('h'), Char('h') };
-  std::basic_string_ref<Char, Traits> hh(_hh, sizeof(_hh) / sizeof(_hh[0]));
-  std::basic_string_ref<Char, Traits> ll(_ll, sizeof(_ll) / sizeof(_ll[0]));
+  Char _hh[2] = { Char('h'), Char('h') };
+  Char _ll[2] = { Char('l'), Char('l') };
+  const auto hh = std::basic_string_ref<Char, Traits>(_hh, 2);
+  const auto ll = std::basic_string_ref<Char, Traits>(_ll, 2);
 
   if (sp.empty()) return PFL_NONE;
 
-  if (sp.size() >= 2) {
-    if (sp == hh) {
-      sp = sp.substr(2);
-      return PFL_hh;
-    }
-    if (sp == ll) {
-      sp = sp.substr(2);
-      return PFL_ll;
-    }
+  if (sp.starts_with(hh)) {
+    sp = sp.substr(2);
+    return PFL_hh;
+  }
+  if (sp.starts_with(ll)) {
+    sp = sp.substr(2);
+    return PFL_ll;
   }
 
   printf_len rv;
@@ -811,7 +809,7 @@ template<typename Char, typename Traits>
 int render<PFT_CHAR>::operator()(printf_renderer<Char, Traits>& renderer,
                                  char c_arg, printf_spec spec) const noexcept {
   int pad_len = (spec.fieldwidth > 1 ? spec.fieldwidth - 1 : 0);
-  int error;
+  int error = 0;
   char c = c_arg;
 
   /* Print spaces to the left, unless left justifying output. */
@@ -834,7 +832,7 @@ int render<PFT_WINT_T>::operator()(printf_renderer<Char, Traits>& renderer,
                                  wint_t c_arg, printf_spec spec)
     const noexcept {
   int pad_len = (spec.fieldwidth > 1 ? spec.fieldwidth - 1 : 0);
-  int error;
+  int error = 0;
   wchar_t c = c_arg;
 
   /* Print spaces to the left, unless left justifying output. */
@@ -890,7 +888,7 @@ int render_str<Str>::operator()(printf_renderer<Char, Traits>& renderer,
   int pad_len = (spec.fieldwidth >= 0 && v.size() < size_t(spec.fieldwidth) ?
                  spec.fieldwidth - v.size() :
                  0);
-  int error;
+  int error = 0;
 
   /* Print spaces to the left, unless left justifying output. */
   if (!(spec.pff & PFF_LEFT_JUSTIFY) &&
@@ -1351,7 +1349,7 @@ template<typename Char, typename Traits>
 int vxprintf_locals<Char, Traits>::render(
     printf_renderer<Char, Traits>& renderer) noexcept {
   for (int i = 0; i < lit_count; ++i) {
-    int error;
+    int error = 0;
     /* Carbon copy literal data to renderer. */
     if ((error = renderer.append(lit[i]))) return error;
     /* Format argument and send to renderer. */
@@ -1367,11 +1365,9 @@ int vxprintf_locals<Char, Traits>::render(
 template<typename Char, typename Traits>
 int vxprintf(printf_renderer<Char, Traits>& r,
              typename printf_renderer<Char, Traits>::string_type fmt,
-             ...) noexcept {
+             va_list ap) noexcept {
   vxprintf_locals<Char, Traits> locals;
   int error = 0;
-  va_list ap;
-  va_start(ap, fmt);
 
   /* Parse fmt, gathering types and collecting specs. */
   if (!error) error = locals.parse_fmt(fmt);
@@ -1382,7 +1378,6 @@ int vxprintf(printf_renderer<Char, Traits>& r,
   /* Start rendering loop. */
   if (!error) error = locals.render(r);
 
-  va_end(ap);
   return error;
 }
 
