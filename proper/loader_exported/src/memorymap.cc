@@ -12,6 +12,10 @@ const std::string_ref units[] = {
     { "MB", 2 },  // megabytes
     { "GB", 2 },  // gigabytes
     { "TB", 2 },  // terabytes
+    { "PB", 2 },  // petabytes
+    { "EB", 2 },  // exabytes
+    { "ZB", 2 },  // zetabytes
+    { "YB", 2 },  // yottabytes
   };
 
 constexpr unsigned int N_UNITS = sizeof(units) / sizeof(units[0]);
@@ -22,10 +26,10 @@ constexpr unsigned int N_UNITS = sizeof(units) / sizeof(units[0]);
 
 std::string memorymap::to_string() const {
   std::string rv;
-  for (const auto line : *this) {
+  for (const auto& line : *this) {
     unsigned long long base = line.addr;
     unsigned long long top = base + line.len;
-    rv += std::format("%#20llx - %#20llx  ", base, top);
+    rv += std::format("%#18llx - %#18llx  ", base, top);
 
     decltype(line.len) values[N_UNITS];
     auto sz = line.len;
@@ -36,9 +40,13 @@ std::string memorymap::to_string() const {
     values[N_UNITS - 1] = sz;
 
     unsigned int i = N_UNITS;
+    bool printed_nothing = true;
     while (i-- > 0) {
-      rv += std::format(" %4d %-2.*s ",
-                        values[i], int(units[i].size()), units[i].begin());
+      if ((printed_nothing && i == 0) || values[i] != 0) {
+        rv += std::format(" %4jd ", intmax_t(values[i]));
+        rv += units[i];
+        printed_nothing = false;
+      }
     }
     rv += "\n";
   }
