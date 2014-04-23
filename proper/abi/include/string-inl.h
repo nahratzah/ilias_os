@@ -1547,7 +1547,7 @@ template<typename Char, typename Traits>
 constexpr auto basic_string_ref<Char, Traits>::substr(size_type pos,
                                                       size_type n)
     const -> basic_string_ref {
-  if (_predict_false(pos < 0 || pos >= size()))
+  if (_predict_false(pos < 0 || pos > size()))
     throw out_of_range("basic_string_ref::substr");
   basic_string_ref copy = *this;
   copy.s_ += pos;
