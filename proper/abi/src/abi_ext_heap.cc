@@ -211,6 +211,7 @@ auto global_heap::memory::try_split(const void* addr, size_t sz) noexcept ->
   if (!(m_addr >= fp_addr)) return nullptr;
   const size_t off = reinterpret_cast<const uint8_t*>(m_addr) -
                      reinterpret_cast<const uint8_t*>(fp_addr);
+  if (fp_size - off < memory_alloc_space + sz) return nullptr;
 
   /* Create new memory segment. */
   memory* m = new (m_addr) memory(fp_size - off, false);
