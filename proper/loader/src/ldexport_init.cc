@@ -13,9 +13,10 @@ ldexport create() {
   ldexport impl;
 
   if (multiboot::valid()) {
-    for (const auto& line : multiboot::memory_map()) {
+    for (const auto& line : multiboot::memory_map())
       if (line.is_free()) impl.physmem.push_back({ line.base, line.len });
-    }
+
+    impl.cmd_line = multiboot::command_line();
   }
 
   /* Use fallback code is memory map is not available. */

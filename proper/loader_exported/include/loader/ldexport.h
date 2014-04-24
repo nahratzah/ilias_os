@@ -2,7 +2,8 @@
 #define _LOADER_LDEXPORT_H_
 
 #include <loader/memorymap.h>
-#include <iosfwd>
+#include <abi/ext/relptr.h>
+#include <string>
 
 namespace loader {
 
@@ -11,6 +12,8 @@ namespace loader {
 struct ldexport {
  public:
   memorymap physmem;
+  std::basic_string<char, std::char_traits<char>,
+                    abi::ext::relptr_allocator<char>> cmd_line;
 
   std::string to_string() const;
 };

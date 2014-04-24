@@ -1,6 +1,7 @@
 #include <loader/multiboot.h>
 #include <cdecl.h>
 #include <cstdint>
+#include <string>
 #include <vector>
 
 namespace loader {
@@ -104,6 +105,16 @@ std::vector<memory_line> memory_map() {
     }
   }
 
+  return result;
+}
+
+std::string_ref command_line() {
+  assert(valid());
+
+  std::string_ref result;
+  multiboot_info* info = reinterpret_cast<multiboot_info*>(mb_data);
+  const char* cmd_ptr = reinterpret_cast<const char*>(info->cmdline);
+  if (cmd_ptr) result = cmd_ptr;
   return result;
 }
 

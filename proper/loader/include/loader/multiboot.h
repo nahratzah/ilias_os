@@ -2,6 +2,7 @@
 #define _LOADER_MULTIBOOT_H_
 
 #include <vector>
+#include <iosfwd>
 
 namespace loader {
 namespace multiboot {
@@ -20,6 +21,7 @@ struct memory_line {
 bool valid() noexcept;
 
 std::vector<memory_line> memory_map();
+std::string_ref command_line();
 
 
 }} /* namespace loader::multiboot */
