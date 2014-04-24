@@ -315,20 +315,20 @@ template<typename T> struct add_rvalue_reference { using type = T&&; };
 
 template<typename T> struct _make_signed_ll;
 template<typename T> struct _make_signed {
-  using type =
+  using type = typename
       conditional_t<is_integral<T>::value,
-          conditional_t<is_signed<T>::value, T,
-                        typename _make_signed_ll<T>::type>,
+          conditional_t<is_signed<T>::value, identity<T>,
+                        _make_signed_ll<T>>,
           conditional_t<sizeof(T) <= sizeof(signed char),
-              signed char,
+              identity<signed char>,
               conditional_t<sizeof(T) <= sizeof(short),
-                  short,
+                  identity<short>,
                   conditional_t<sizeof(T) <= sizeof(int),
-                      int,
+                      identity<int>,
                       conditional_t<sizeof(T) <= sizeof(long),
-                          long,
+                          identity<long>,
                           enable_if_t<sizeof(T) <= sizeof(long long),
-                              long long>>>>>>;
+                              identity<long long>>>>>>>::type;
 };
 #ifdef __CHAR_UNSIGNED__
 template<> struct _make_signed_ll<char>
@@ -361,20 +361,20 @@ template<typename T> struct make_signed
 
 template<typename T> struct _make_unsigned_ll;
 template<typename T> struct _make_unsigned {
-  using type =
+  using type = typename
       conditional_t<is_integral<T>::value,
-          conditional_t<is_signed<T>::value, T,
-                        typename _make_unsigned_ll<T>::type>,
+          conditional_t<is_signed<T>::value, identity<T>,
+                        _make_unsigned_ll<T>>,
           conditional_t<sizeof(T) <= sizeof(unsigned char),
-              unsigned char,
+              identity<unsigned char>,
               conditional_t<sizeof(T) <= sizeof(unsigned short),
-                  unsigned short,
+                  identity<unsigned short>,
                   conditional_t<sizeof(T) <= sizeof(unsigned int),
-                      unsigned int,
+                      identity<unsigned int>,
                       conditional_t<sizeof(T) <= sizeof(unsigned long),
-                          unsigned long,
+                          identity<unsigned long>,
                           enable_if_t<sizeof(T) <= sizeof(unsigned long long),
-                              unsigned long long>>>>>>;
+                              identity<unsigned long long>>>>>>>::type;
 };
 #ifndef __CHAR_UNSIGNED__
 template<> struct _make_unsigned_ll<char>

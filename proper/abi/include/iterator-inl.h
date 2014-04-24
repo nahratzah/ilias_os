@@ -31,14 +31,12 @@ auto reverse_iterator<Iterator>::base() const
 
 template<typename Iterator>
 auto reverse_iterator<Iterator>::operator*() const -> reference {
-  auto i = i_;
-  return *--i;
+  return *prev(i_);
 }
 
 template<typename Iterator>
 auto reverse_iterator<Iterator>::operator->() const -> pointer {
-  auto i = i_;
-  return &*i_;
+  return &*prev(i_);
 }
 
 template<typename Iterator>

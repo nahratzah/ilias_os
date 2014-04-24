@@ -1,0 +1,5 @@
+INCLUDES += -Ipmap/include
+PMAP_SRCS +=
+
+SRCS += ${PMAP_SRCS}
+SRCS_LOADER += ${PMAP_SRCS}

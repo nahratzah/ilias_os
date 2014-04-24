@@ -9,6 +9,9 @@ include abi/Makefile.inc
 include ilias_std/Makefile.inc
 include loader/Makefile.inc
 include loader_exported/Makefile.inc
+include arch/Makefile.inc
+include pmap/Makefile.inc
+include vm/Makefile.inc
 #include "freestanding/Makefile.inc"
 #include "c_util/Makefile.inc"
 #include "sys/Makefile.inc"

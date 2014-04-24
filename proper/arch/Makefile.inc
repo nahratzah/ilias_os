@@ -1,0 +1,5 @@
+INCLUDES += -Iarch/include
+ARCH_SRCS +=
+
+SRCS += ${ARCH_SRCS}
+SRCS_LOADER += ${ARCH_SRCS}
