@@ -10,6 +10,7 @@
 #include <iterator>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>
 #include <hash-fwd.h>
 #include <stdimpl/alloc_base.h>
@@ -192,6 +193,9 @@ template<> struct char_traits<char32_t> {
 template<typename Char, typename Traits, typename Alloc> class basic_string
 : public impl::alloc_base<Alloc>
 {
+  static_assert(is_trivially_constructible<Char>::value && is_trivially_destructible<Char>::value,
+                "char_type must be trivially constructible, destructible.");
+
  public:
   using allocator_type = typename impl::alloc_base<Alloc>::allocator_type;
   using char_type = Char;
@@ -202,8 +206,8 @@ template<typename Char, typename Traits, typename Alloc> class basic_string
       typename allocator_traits<allocator_type>::const_pointer;
   using reference = value_type&;
   using const_reference = const value_type&;
-  using const_iterator = const_pointer;
-  using iterator = pointer;
+  using const_iterator = const value_type*;
+  using iterator = value_type*;
   using const_reverse_iterator =
       _namespace(std)::reverse_iterator<const_iterator>;
   using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
@@ -397,6 +401,11 @@ template<typename Char, typename Traits, typename Alloc> class basic_string
   static constexpr size_t immed_size = sizeof(pointer) / sizeof(char_type);
 
   union data_t {
+    data_t() noexcept {};
+    data_t(const data_t&) = delete;
+    data_t& operator=(const data_t&) = delete;
+    ~data_t() noexcept {};
+
     pointer s;
     char_type immed[immed_size];
   };
