@@ -19,7 +19,7 @@ template<> struct pair_getter<0> {
 
   template<typename T>
   static constexpr auto get(const T& p) noexcept ->
-      add_const_t<add_lvalue_reference_t<typename T::first_type>> {
+      add_lvalue_reference_t<add_const_t<typename T::first_type>> {
     return p.first;
   }
 
@@ -45,7 +45,7 @@ template<> struct pair_getter<1> {
 
   template<typename T>
   static constexpr auto get(const T& p) noexcept ->
-      add_const_t<add_lvalue_reference_t<typename T::second_type>> {
+      add_lvalue_reference_t<add_const_t<typename T::second_type>> {
     return p.second;
   }
 
