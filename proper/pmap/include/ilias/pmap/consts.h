@@ -65,6 +65,16 @@ constexpr uintptr_t PAGE_SHIFT = page_shift(native_arch);
 static_assert(abi::ext::is_pow2(PAGE_SIZE),
               "Page size must be a power of 2.");
 
+template<typename T>
+constexpr T round_page_down(T v, arch a) noexcept {
+  return v & ~T(page_mask(a));
+}
+
+template<typename T>
+constexpr T round_page_up(T v, arch a) noexcept {
+  return round_page_down(v + page_mask(a), a);
+}
+
 }} /* namespace ilias::pmap */
 
 #endif /* _ILIAS_PMAP_CONSTS_INL_H_ */
