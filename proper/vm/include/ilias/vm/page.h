@@ -8,9 +8,18 @@
 namespace ilias {
 namespace vm {
 
+using ilias::pmap::phys_addr;
+using ilias::pmap::page_no;
+
+namespace tags {
+
+struct free_list {};
+
+} /* namespace ilias::vm::tags */
+
 template<arch Arch>
 class page
-: public linked_list_element<> {
+: public linked_list_element<tags::free_list> {
  public:
   static constexpr size_t PAGE_SIZE = page_size(Arch);
   static constexpr size_t PAGE_MASK = page_mask(Arch);
@@ -25,7 +34,8 @@ class page
 
  private:
   page_no<Arch> pgno_;  // Address of this page.
-  page_no<Arch> free_;  // Number of free pages after this page.
+  page_no<Arch> nfree_;  // Number of free pages starting at this page
+                         // (only has meaning if the page is actually free).
 };
 
 }} /* namespace ilias::vm */
