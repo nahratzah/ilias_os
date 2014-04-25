@@ -57,4 +57,17 @@ std::string cpu_vendor() {
 std::string cpu_vendor() { return ""; }
 #endif
 
+std::string to_string(cpuid_feature_result features) {
+  std::string out;
+
+  for (const auto& f : cpuid_feature_const::all_features) {
+    if (cpuid_feature_present(std::get<0>(f), features)) {
+      if (!out.empty()) out += ", ";
+      out += std::get<1>(f);
+    }
+  }
+
+  return out;
+}
+
 } /* namespace ilias */
