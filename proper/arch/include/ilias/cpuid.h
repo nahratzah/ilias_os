@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <string>
 #include <tuple>
+#include <utility>
 
 namespace ilias {
 
@@ -15,11 +16,11 @@ constexpr bool has_cpuid() noexcept { return false; }
 #endif
 
 #if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
-inline auto cpuid(unsigned long function) noexcept ->
-    std::tuple<unsigned long, unsigned long, unsigned long, unsigned long> {
+inline auto __attribute__((pure)) cpuid(uint32_t function) noexcept ->
+    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> {
   assert(has_cpuid());
 
-  unsigned long a, b, c, d;
+  uint32_t a, b, c, d;
   asm volatile ("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(function));
   return std::make_tuple(a, b, c, d);
 }
@@ -32,16 +33,32 @@ inline auto cpuid(unsigned long function) noexcept ->
 std::string cpu_vendor();
 
 /*
+ * Find the highest supported cpuid function.
+ * Returns 0 if cpuid is not supported.
+ */
+inline auto __attribute__((pure)) cpuid_max_fn() noexcept -> uint32_t {
+  return (has_cpuid() ? std::get<0>(cpuid(0)) : 0);
+}
+
+/*
+ * Find the highest supported cpuid extended function.
+ * Returns 0 if cpuid is not supported.
+ */
+inline auto __attribute__((pure)) cpuid_max_ext_fn() noexcept -> uint32_t {
+  return (has_cpuid() ? std::get<0>(cpuid(0x80000000)) : 0);
+}
+
+/*
  * Mask, field
  * - get<field>(cpuid(...)) & mask
  *   implies the feature is present.
  */
-using cpuid_feature = std::pair<unsigned long, int>;
+using cpuid_feature = std::pair<uint32_t, int>;
 
 /* Tag, used on tuples to identify as cpuid feature tests. */
 struct cpuid_feature_tag {};
 using cpuid_feature_result =
-    std::tuple<unsigned long, unsigned long, unsigned long, unsigned long,
+    std::tuple<uint32_t, uint32_t, uint32_t, uint32_t,
                cpuid_feature_tag>;
 
 inline auto __attribute__((pure)) cpuid_features() noexcept ->
@@ -51,7 +68,7 @@ inline auto __attribute__((pure)) cpuid_features() noexcept ->
 
 inline bool cpuid_feature_present(cpuid_feature f,
                                   cpuid_feature_result r = cpuid_features()) {
-  unsigned long flags;
+  uint32_t flags;
   switch (std::get<1>(f)) {
   default:
     assert_msg(false, "cpuid feature test invalid");
@@ -101,10 +118,14 @@ constexpr cpuid_feature sse4_2   = { 1UL << 20, 2 };
 constexpr cpuid_feature x2apic   = { 1UL << 21, 2 };
 constexpr cpuid_feature movbe    = { 1UL << 22, 2 };
 constexpr cpuid_feature popcnt   = { 1UL << 23, 2 };
+// 24: reserved
 constexpr cpuid_feature aes      = { 1UL << 25, 2 };
 constexpr cpuid_feature xsave    = { 1UL << 26, 2 };
 constexpr cpuid_feature osxsave  = { 1UL << 27, 2 };
 constexpr cpuid_feature avx      = { 1UL << 28, 2 };
+constexpr cpuid_feature f16c     = { 1UL << 30, 2 };
+// 30: reserved
+constexpr cpuid_feature raz      = { 1UL << 31, 2 };  // Guest indicator
 
 constexpr cpuid_feature fpu      = { 1UL <<  0, 3 };
 constexpr cpuid_feature vme      = { 1UL <<  1, 3 };
@@ -155,8 +176,8 @@ constexpr std::initializer_list<std::pair<cpuid_feature, const char*>>
   { etprd    , "ETPRD"   },
   { pdcm     , "PDCM"    },
   { dca      , "DCA"     },
-  { sse4_1   , "SSE4_1"  },
-  { sse4_2   , "SSE4_2"  },
+  { sse4_1   , "SSE4.1"  },
+  { sse4_2   , "SSE4.2"  },
   { x2apic   , "x2APIC"  },
   { movbe    , "MOVBE"   },
   { popcnt   , "POPCNT"  },
@@ -164,6 +185,8 @@ constexpr std::initializer_list<std::pair<cpuid_feature, const char*>>
   { xsave    , "XSAVE"   },
   { osxsave  , "OSXSAVE" },
   { avx      , "AVX"     },
+  { f16c     , "F16C"    },
+  { raz      , "RAZ"     },
 
   { fpu      , "FPU"     },
   { vme      , "VME"     },

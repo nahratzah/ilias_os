@@ -23,9 +23,9 @@ constexpr size_t pointer_size(arch a) noexcept {
 constexpr size_t page_size(arch a) noexcept {
   switch (a) {
   case arch::i386:
-    return 0x1000;
+    return 0x1000;  // 4 kb pages on i386
   case arch::amd64:
-    return 0x1000;
+    return 0x1000;  // 4 kb pages on amd64
   }
 }
 
