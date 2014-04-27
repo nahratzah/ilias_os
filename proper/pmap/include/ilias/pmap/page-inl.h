@@ -126,6 +126,76 @@ bool operator>=(const page_no<A>& a, const phys_addr<A>& b) noexcept {
   return phys_addr<A>(a) >= b;
 }
 
+template<arch A>
+bool operator==(const page_count<A>& a, const page_count<A>& b) noexcept {
+  return a.get() == b.get();
+}
+template<arch A>
+bool operator!=(const page_count<A>& a, const page_count<A>& b) noexcept {
+  return !(a == b);
+}
+template<arch A>
+bool operator<(const page_count<A>& a, const page_count<A>& b) noexcept {
+  return a.get() < b.get();
+}
+template<arch A>
+bool operator>(const page_count<A>& a, const page_count<A>& b) noexcept {
+  return b < a;
+}
+template<arch A>
+bool operator<=(const page_count<A>& a, const page_count<A>& b) noexcept {
+  return !(b < a);
+}
+template<arch A>
+bool operator>=(const page_count<A>& a, const page_count<A>& b) noexcept {
+  return !(a < b);
+}
+
+template<arch A>
+page_count<A> operator-(const page_no<A>& a, const page_no<A>& b) noexcept {
+  return page_count<A>(b.get() - a.get());
+}
+template<arch A>
+page_no<A> operator+(const page_no<A>& a, const page_count<A>& b) noexcept {
+  return page_no<A>(a.get() + b.get());
+}
+template<arch A>
+page_no<A> operator+(const page_count<A>& a, const page_no<A>& b) noexcept {
+  return b + a;
+}
+template<arch A>
+page_no<A> operator-(const page_no<A>& a, const page_count<A>& b) noexcept {
+  return page_no<A>(a.get() - b.get());
+}
+template<arch A>
+page_count<A> operator+(const page_count<A>& a, const page_count<A>& b)
+    noexcept {
+  return page_count<A>(a.get() + b.get());
+}
+template<arch A>
+page_count<A> operator-(const page_count<A>& a, const page_count<A>& b)
+    noexcept {
+  return page_count<A>(a.get() - b.get());
+}
+
+template<arch A>
+page_count<A> operator*(const page_count<A>& a, int b) noexcept {
+  return page_count<A>(a.get() * b);
+}
+template<arch A>
+page_count<A> operator*(int a, const page_count<A>& b) noexcept {
+  return b * a;
+}
+template<arch A>
+page_count<A> operator/(const page_count<A>& a, int b) noexcept {
+  return page_count<A>(a.get() / b);
+}
+template<arch A>
+auto operator/(const page_count<A>& a, const page_count<A>& b) noexcept ->
+    typename page_count<A>::type {
+  return a.get() / b.get();
+}
+
 
 }} /* namespace ilias::pmap */
 

@@ -48,6 +48,22 @@ class page_no {
   type v_ = 0;
 };
 
+template<arch Arch>
+class page_count {
+ public:
+  using type = std::make_signed_t<typename page_no<Arch>::type>;
+
+  constexpr page_count() noexcept = default;
+  explicit constexpr page_count(type v) noexcept : v_(v) {}
+  constexpr page_count(const page_count&) noexcept = default;
+  page_count& operator=(const page_count&) noexcept = default;
+
+  type get() const noexcept { return v_; }
+
+ private:
+  type v_ = 0;
+};
+
 template<arch A>
 bool operator==(const phys_addr<A>&, const phys_addr<A>&) noexcept;
 template<arch A>
@@ -98,6 +114,42 @@ template<arch A>
 bool operator>=(const phys_addr<A>&, const page_no<A>&) noexcept;
 template<arch A>
 bool operator>=(const page_no<A>&, const phys_addr<A>&) noexcept;
+
+template<arch A>
+bool operator==(const page_count<A>&, const page_count<A>&) noexcept;
+template<arch A>
+bool operator!=(const page_count<A>&, const page_count<A>&) noexcept;
+template<arch A>
+bool operator<(const page_count<A>&, const page_count<A>&) noexcept;
+template<arch A>
+bool operator>(const page_count<A>&, const page_count<A>&) noexcept;
+template<arch A>
+bool operator<=(const page_count<A>&, const page_count<A>&) noexcept;
+template<arch A>
+bool operator>=(const page_count<A>&, const page_count<A>&) noexcept;
+
+template<arch A>
+page_count<A> operator-(const page_no<A>&, const page_no<A>&) noexcept;
+template<arch A>
+page_no<A> operator+(const page_no<A>&, const page_count<A>&) noexcept;
+template<arch A>
+page_no<A> operator+(const page_count<A>&, const page_no<A>&) noexcept;
+template<arch A>
+page_no<A> operator-(const page_no<A>&, const page_count<A>&) noexcept;
+template<arch A>
+page_count<A> operator+(const page_count<A>&, const page_count<A>&) noexcept;
+template<arch A>
+page_count<A> operator-(const page_count<A>&, const page_count<A>&) noexcept;
+
+template<arch A>
+page_count<A> operator*(const page_count<A>&, int) noexcept;
+template<arch A>
+page_count<A> operator*(int, const page_count<A>&) noexcept;
+template<arch A>
+page_count<A> operator/(const page_count<A>&, int) noexcept;
+template<arch A>
+auto operator/(const page_count<A>&, const page_count<A>&) noexcept ->
+    typename page_count<A>::type;
 
 
 }} /* namespace ilias::pmap */
