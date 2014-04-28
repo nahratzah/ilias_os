@@ -2,35 +2,23 @@
 #define _ILIAS_PMAP_PMAP_I386_INL_H_
 
 #include <ilias/pmap/pmap_i386.h>
+#include <cassert>
 #include <utility>
 
 namespace ilias {
 namespace pmap {
 
-inline pmap<arch::i386>::pmap() noexcept {
-  static_assert(offsetof(pmap<arch::i386>, pdpe_) == 0,
-                "PDPE must be the first entry in pmap.");
-}
-
-inline pmap<arch::i386>::pmap(pmap&& other) noexcept
-: pmap()
+inline pmap<arch::i386>::pmap(
+    std::shared_ptr<pmap_support<arch::i386>> support) noexcept
+: support_(support)
 {
-  other.swap(*this);
-}
-
-inline auto pmap<arch::i386>::operator=(pmap&& other) noexcept -> pmap& {
-  pmap(std::move(other)).swap(*this);
-  return *this;
-}
-
-inline auto pmap<arch::i386>::swap(pmap& other) noexcept -> void {
-  using std::swap;
-
-  swap(pdpe_, other.pdpe_);
-}
-
-inline auto swap(pmap<arch::i386>& a, pmap<arch::i386>& b) noexcept -> void {
-  a.swap(b);
+  static_assert(alignof(pmap<arch::i386>) >= (1 << 5),
+                "PMAP requires strict alignment "
+                "(lowest 5 bits in PDPE pointer are essentially zero).");
+  static_assert(offsetof(pmap<arch::i386>, pdpe_) % (1 << 5) == 0,
+                "PDPE must be properly aligned.");
+  assert_msg(reinterpret_cast<uintptr_t>(this) % (1 << 5) == 0,
+             "Mis-aligned pmap.");
 }
 
 }} /* namespace ilias::pmap */

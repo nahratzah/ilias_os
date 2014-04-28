@@ -13,22 +13,14 @@ namespace pmap {
 
 /* PMAP, using PAE mode. */
 template<>
-class alignas(2U << 5) pmap<arch::i386> {
+class pmap<arch::i386> {
  public:
-  pmap() noexcept;
+  pmap(std::shared_ptr<pmap_support<arch::i386>>) noexcept;
   pmap(const pmap&) = delete;
-  pmap(pmap&&) noexcept;
   pmap& operator=(const pmap&) = delete;
-  pmap& operator=(pmap&&) noexcept;
   ~pmap() noexcept;
 
-  void swap(pmap&) noexcept;
-
-  /* Externally provided. */
-  static page_no<arch::i386> allocate_page();
-  static void deallocate_page(page_no<arch::i386>) noexcept;
-  static vpage_no<arch::i386> map_page(page_no<arch::i386>);
-  static void unmap_page(vpage_no<arch::i386>) noexcept;
+  void clear() noexcept;
 
   phys_addr<arch::i386> virt_to_phys(vaddr<arch::i386>) const;
   std::tuple<page_no<arch::i386>, size_t, uintptr_t> virt_to_page(
@@ -62,12 +54,23 @@ class alignas(2U << 5) pmap<arch::i386> {
   using pdp_record = x86_shared::pdp_record;
   using pte_record = x86_shared::pte_record;
 
-  using pdpe = std::array<pdpe_record, 4>;
+  struct alignas(1 << 5) pdpe
+  : public std::array<pdpe_record, 4>
+  {
+    constexpr pdpe() noexcept
+    : std::array<pdpe_record, 4>{{{ 0 }, { 0 }, { 0 }, { 0 }}}
+    {}
+
+    constexpr pdpe(const pdpe&) noexcept = default;
+    pdpe& operator=(const pdpe&) noexcept = default;
+  };
+
   using pdp = std::array<pdp_record, 512>;
   using pte = std::array<pte_record, 512>;
 
   /* Variables start here. */
-  pdpe pdpe_ = {{{ 0 }, { 0 }, { 0 }, { 0 }}};
+  pdpe pdpe_;
+  const std::shared_ptr<pmap_support<arch::i386>> support_;
 
   static_assert(sizeof(pdpe) == 4 * 8,
                 "PDPE table has wrong size.");
@@ -76,8 +79,6 @@ class alignas(2U << 5) pmap<arch::i386> {
   static_assert(sizeof(pte) == 4 * 1024,
                 "PTE table has wrong size.");
 };
-
-void swap(pmap<arch::i386>&, pmap<arch::i386>&) noexcept;
 
 }} /* namespace ilias::pmap */
 

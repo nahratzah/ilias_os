@@ -3,6 +3,7 @@
 
 #include <ilias/arch.h>
 #include <ilias/pmap/page.h>
+#include <ilias/pmap/pmap.h>
 
 namespace ilias {
 namespace pmap {
@@ -11,7 +12,7 @@ namespace pmap {
 template<arch Arch = native_arch>
 class page_ptr {
  public:
-  page_ptr() noexcept;
+  page_ptr() noexcept = default;
   page_ptr(const page_ptr&) = delete;
   page_ptr(page_ptr&&) noexcept;
   explicit page_ptr(page_no<Arch>) noexcept;
@@ -23,17 +24,17 @@ class page_ptr {
 
   explicit operator bool() const noexcept;
   bool is_allocated() const noexcept;
-  void set_allocated() noexcept;
+  void set_allocated(std::shared_ptr<pmap_support<Arch>>) noexcept;
 
   page_no<Arch> get() const noexcept;
   page_no<Arch> release() noexcept;
 
-  static page_ptr allocate();
+  static page_ptr allocate(std::shared_ptr<pmap_support<Arch>>);
 
  private:
   page_no<Arch> pgno_;
-  bool release_on_destruction_ : 1;
-  bool valid_ : 1;
+  std::shared_ptr<pmap_support<Arch>> release_on_destruction_;
+  bool valid_ = false;
 };
 
 template<arch Arch>
@@ -46,7 +47,8 @@ template<typename T, arch Arch> using pmap_mapped_ptr =
     std::unique_ptr<T, unmap_page_deleter<T, Arch>>;
 
 template<typename T, arch Arch>
-auto pmap_map_page(page_no<Arch>) -> pmap_mapped_ptr<T, Arch>;
+auto pmap_map_page(page_no<Arch>, std::shared_ptr<pmap_support<Arch>>) ->
+    pmap_mapped_ptr<T, Arch>;
 
 
 }} /* namespace ilias::pmap */
