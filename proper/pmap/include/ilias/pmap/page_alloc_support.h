@@ -33,7 +33,7 @@ class page_ptr {
 
  private:
   page_no<Arch> pgno_;
-  pmap_support<Arch>* release_on_destruction_;
+  pmap_support<Arch>* release_on_destruction_ = nullptr;
   bool valid_ = false;
 };
 

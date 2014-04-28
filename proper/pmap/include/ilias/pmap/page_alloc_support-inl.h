@@ -21,7 +21,8 @@ void swap(page_ptr<Arch>& a, page_ptr<Arch>& b) noexcept {
 template<arch Arch>
 page_ptr<Arch>::page_ptr(page_ptr&& other) noexcept
 : pgno_(other.pgno_),
-  release_on_destruction_(std::move(other.release_on_destruction_)),
+  release_on_destruction_(std::exchange(other.release_on_destruction_,
+                                        nullptr)),
   valid_(std::exchange(other.valid_, false))
 {}
 
@@ -137,7 +138,8 @@ auto pmap_map_page(page_no<Arch> pg, pmap_support<Arch>& support) ->
     pmap_mapped_ptr<T, Arch> {
   vaddr<Arch> vaddr = support.map_page(pg);
   uintptr_t addr = vaddr.get();
-  return pmap_mapped_ptr<T, Arch>(reinterpret_cast<T*>(addr), &support);
+  return pmap_mapped_ptr<T, Arch>(reinterpret_cast<T*>(addr),
+                                  unmap_page_deleter<T, Arch>(&support));
 }
 
 

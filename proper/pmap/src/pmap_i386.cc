@@ -92,7 +92,7 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
   page_ptr<arch::i386> pte_ptr;
 
   /* Resolve pdpe offset. */
-  const uintptr_t pdpe_off = (p & pdpe_mask) >> pdpe_addr_offset;
+  const uint32_t pdpe_off = (p & pdpe_mask) >> pdpe_addr_offset;
   p &= ~pdpe_mask;
 
   /* Resolve pde. */
@@ -102,6 +102,9 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
   else
     pdp_ptr = page_ptr<arch::i386>(page_no<arch::i386>(pdpe_value.page_no()));
   auto mapped_pdp = pmap_map_page<pdp>(pdp_ptr.get(), support_);
+  /* Clear PDP if it was newly allocated. */
+  if (pte_ptr.is_allocated())
+    std::fill(mapped_pdp->begin(), mapped_pdp->end(), pdp_record{ 0 });
 
   /* Resolve pde offset. */
   const uintptr_t pdp_off = (p & pdp_mask) >> pdp_addr_offset;
@@ -114,6 +117,9 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
   else
     pte_ptr = page_ptr<arch::i386>(page_no<arch::i386>(pdp_value.page_no()));
   auto mapped_pte = pmap_map_page<pte>(pte_ptr.get(), support_);
+  /* Clear PTE if it was newly allocated. */
+  if (pte_ptr.is_allocated())
+    std::fill(mapped_pte->begin(), mapped_pte->end(), pte_record{ 0 });
 
   /* Resolve pte offset. */
   const uintptr_t pte_off = (p & pte_mask) >> pte_addr_offset;
@@ -127,22 +133,30 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
   }
 
   /* Assign page entry. */
-  pte_value.v_ = 0;
-  pte_value.p(true);
-  pte_value.page_no(pg.get());
+  {
+    pte_record new_pte_value{ 0 };
+    new_pte_value.page_no(pg.get());
+    new_pte_value.p(true);
+    assert(new_pte_value.valid());
+    pte_value = new_pte_value;
+  }
 
   /* Assign pte to pdp, iff newly allocated. */
   if (pte_ptr.is_allocated()) {
-    pdp_value.v_ = 0;
-    pdp_value.p(true);
-    pdp_value.page_no(pte_ptr.release().get());
+    pdp_record new_pdp_value{ 0 };
+    new_pdp_value.page_no(pte_ptr.release().get());
+    new_pdp_value.p(true);
+    assert(new_pdp_value.valid());
+    pdp_value = new_pdp_value;
   }
 
   /* Assign pdp to pdpe, iff newly allocated. */
   if (pdp_ptr.is_allocated()) {
-    pdpe_value.v_ = 0;
-    pdpe_value.p(true);
-    pdpe_value.page_no(pdp_ptr.release().get());
+    pdpe_record new_pdpe_value{ 0 };
+    new_pdpe_value.page_no(pdp_ptr.release().get());
+    new_pdpe_value.p(true);
+    assert(new_pdpe_value.valid());
+    pdpe_value = new_pdpe_value;
   }
 
   return;

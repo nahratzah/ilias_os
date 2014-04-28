@@ -43,12 +43,12 @@ class pmap<arch::i386> {
   static constexpr unsigned int pdpe_addr_offset = pdp_addr_offset +
                                                    pdp_offset_bits;
 
-  static constexpr uint64_t pdpe_mask =
-      uint64_t(0) - (uint64_t(1) << pdpe_addr_offset);
-  static constexpr uint64_t pdp_mask =
-      (uint64_t(1) << pdpe_addr_offset) - (uint64_t(1) << pdp_addr_offset);
+  static constexpr uint32_t pdpe_mask =
+      uint32_t(0) - (uint32_t(1) << pdpe_addr_offset);
+  static constexpr uint32_t pdp_mask =
+      (uint32_t(1) << pdpe_addr_offset) - (uint32_t(1) << pdp_addr_offset);
   static constexpr uintptr_t pte_mask =
-      (uint64_t(1) << pdp_addr_offset) - (uint64_t(1) << pte_addr_offset);
+      (uint32_t(1) << pdp_addr_offset) - (uint32_t(1) << pte_addr_offset);
 
   using pdpe_record = x86_shared::pdpe_record;
   using pdp_record = x86_shared::pdp_record;
