@@ -10,7 +10,9 @@ namespace ilias {
 namespace pmap {
 
 template<arch> class phys_addr;
+template<arch> class vaddr;
 template<arch> class page_no;
+template<arch> class vpage_no;
 
 /* Physical address. */
 template<arch Arch>
@@ -30,7 +32,25 @@ class phys_addr {
   type v_ = 0;
 };
 
-/* Page number. */
+/* Virtual address. */
+template<arch Arch>
+class vaddr {
+ public:
+  using type = std::make_unsigned_t<char[pointer_size(Arch)]>;
+
+  constexpr vaddr() noexcept = default;
+  explicit constexpr vaddr(type v) noexcept : v_(v) {}
+  constexpr vaddr(const vpage_no<Arch>&) noexcept;
+  constexpr vaddr(const vaddr&) noexcept = default;
+  vaddr& operator=(const vaddr&) noexcept = default;
+
+  type get() const noexcept { return v_; }
+
+ private:
+  type v_ = 0;
+};
+
+/* Physical page number. */
 template<arch Arch>
 class page_no {
  public:
@@ -41,6 +61,24 @@ class page_no {
   constexpr page_no(const phys_addr<Arch>&);
   constexpr page_no(const page_no&) noexcept = default;
   page_no& operator=(const page_no&) noexcept = default;
+
+  type get() const noexcept { return v_; }
+
+ private:
+  type v_ = 0;
+};
+
+/* Virtual page number. */
+template<arch Arch>
+class vpage_no {
+ public:
+  using type = std::make_unsigned_t<char[pointer_size(Arch)]>;
+
+  constexpr vpage_no() noexcept = default;
+  explicit constexpr vpage_no(type v) noexcept : v_(v) {}
+  constexpr vpage_no(const vaddr<Arch>&);
+  constexpr vpage_no(const vpage_no&) noexcept = default;
+  vpage_no& operator=(const vpage_no&) noexcept = default;
 
   type get() const noexcept { return v_; }
 
@@ -78,6 +116,19 @@ template<arch A>
 bool operator>=(const phys_addr<A>&, const phys_addr<A>&) noexcept;
 
 template<arch A>
+bool operator==(const vaddr<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator!=(const vaddr<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator<(const vaddr<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator>(const vaddr<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator<=(const vaddr<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator>=(const vaddr<A>&, const vaddr<A>&) noexcept;
+
+template<arch A>
 bool operator==(const page_no<A>&, const page_no<A>&) noexcept;
 template<arch A>
 bool operator!=(const page_no<A>&, const page_no<A>&) noexcept;
@@ -89,6 +140,19 @@ template<arch A>
 bool operator<=(const page_no<A>&, const page_no<A>&) noexcept;
 template<arch A>
 bool operator>=(const page_no<A>&, const page_no<A>&) noexcept;
+
+template<arch A>
+bool operator==(const vpage_no<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator!=(const vpage_no<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator<(const vpage_no<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator>(const vpage_no<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator<=(const vpage_no<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator>=(const vpage_no<A>&, const vpage_no<A>&) noexcept;
 
 template<arch A>
 bool operator==(const phys_addr<A>&, const page_no<A>&) noexcept;
@@ -116,6 +180,31 @@ template<arch A>
 bool operator>=(const page_no<A>&, const phys_addr<A>&) noexcept;
 
 template<arch A>
+bool operator==(const vaddr<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator==(const vpage_no<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator!=(const vaddr<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator!=(const vpage_no<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator<(const vaddr<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator<(const vpage_no<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator>(const vaddr<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator>(const vpage_no<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator<=(const vaddr<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator<=(const vpage_no<A>&, const vaddr<A>&) noexcept;
+template<arch A>
+bool operator>=(const vaddr<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+bool operator>=(const vpage_no<A>&, const vaddr<A>&) noexcept;
+
+template<arch A>
 bool operator==(const page_count<A>&, const page_count<A>&) noexcept;
 template<arch A>
 bool operator!=(const page_count<A>&, const page_count<A>&) noexcept;
@@ -136,6 +225,16 @@ template<arch A>
 page_no<A> operator+(const page_count<A>&, const page_no<A>&) noexcept;
 template<arch A>
 page_no<A> operator-(const page_no<A>&, const page_count<A>&) noexcept;
+
+template<arch A>
+page_count<A> operator-(const vpage_no<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+vpage_no<A> operator+(const vpage_no<A>&, const page_count<A>&) noexcept;
+template<arch A>
+vpage_no<A> operator+(const page_count<A>&, const vpage_no<A>&) noexcept;
+template<arch A>
+vpage_no<A> operator-(const vpage_no<A>&, const page_count<A>&) noexcept;
+
 template<arch A>
 page_count<A> operator+(const page_count<A>&, const page_count<A>&) noexcept;
 template<arch A>
@@ -156,6 +255,7 @@ auto operator/(const page_count<A>&, const page_count<A>&) noexcept ->
 
 /*
  * Phys_addr and page_no will hash to the same value, if they are equal.
+ * Vaddr and vpage_no will hash to the same value, if they are equal.
  */
 namespace std {
 
@@ -167,10 +267,31 @@ struct hash<ilias::pmap::phys_addr<A>> {
 };
 
 template<ilias::arch A>
+struct hash<ilias::pmap::vaddr<A>> {
+  using result_type = size_t;
+  using argument_type = ilias::pmap::vaddr<A>;
+  size_t operator()(const ilias::pmap::vaddr<A>&) const noexcept;
+};
+
+template<ilias::arch A>
 struct hash<ilias::pmap::page_no<A>> {
   using result_type = size_t;
   using argument_type = ilias::pmap::page_no<A>;
   size_t operator()(const ilias::pmap::page_no<A>&) const noexcept;
+};
+
+template<ilias::arch A>
+struct hash<ilias::pmap::vpage_no<A>> {
+  using result_type = size_t;
+  using argument_type = ilias::pmap::vpage_no<A>;
+  size_t operator()(const ilias::pmap::vpage_no<A>&) const noexcept;
+};
+
+template<ilias::arch A>
+struct hash<ilias::pmap::page_count<A>> {
+  using result_type = size_t;
+  using argument_type = ilias::pmap::page_count<A>;
+  size_t operator()(const ilias::pmap::page_count<A>&) const noexcept;
 };
 
 } /* namespace std */

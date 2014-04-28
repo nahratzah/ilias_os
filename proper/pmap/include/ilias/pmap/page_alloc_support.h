@@ -23,6 +23,7 @@ class page_ptr {
 
   explicit operator bool() const noexcept;
   bool is_allocated() const noexcept;
+  void set_allocated() noexcept;
 
   page_no<Arch> get() const noexcept;
   page_no<Arch> release() noexcept;
@@ -37,6 +38,15 @@ class page_ptr {
 
 template<arch Arch>
 void swap(page_ptr<Arch>& a, page_ptr<Arch>& b) noexcept;
+
+
+template<typename T, arch Arch> struct unmap_page_deleter;
+
+template<typename T, arch Arch> using pmap_mapped_ptr =
+    std::unique_ptr<T, unmap_page_deleter<T, Arch>>;
+
+template<typename T, arch Arch>
+auto pmap_map_page(page_no<Arch>) -> pmap_mapped_ptr<T, Arch>;
 
 
 }} /* namespace ilias::pmap */

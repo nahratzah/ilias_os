@@ -17,6 +17,12 @@ constexpr phys_addr<Arch>::phys_addr(const page_no<Arch>& pgno) noexcept
 
 
 template<arch Arch>
+constexpr vaddr<Arch>::vaddr(const vpage_no<Arch>& pgno) noexcept
+: v_(pgno.get() << page_shift(Arch))
+{}
+
+
+template<arch Arch>
 constexpr page_no<Arch>::page_no(const phys_addr<Arch>& pa)
 : v_(pa.get() >> page_shift(Arch))
 {
@@ -24,6 +30,17 @@ constexpr page_no<Arch>::page_no(const phys_addr<Arch>& pa)
     throw std::invalid_argument("Physical address is not page aligned.");
   if (pa.get() > std::numeric_limits<type>::max())
     throw std::out_of_range("Physical address too large.");
+}
+
+
+template<arch Arch>
+constexpr vpage_no<Arch>::vpage_no(const vaddr<Arch>& va)
+: v_(va.get() >> page_shift(Arch))
+{
+  if ((va.get() & page_mask(Arch)) != 0)
+    throw std::invalid_argument("Virtual address is not page aligned.");
+  if (va.get() > std::numeric_limits<type>::max())
+    throw std::out_of_range("Virtual address too large.");
 }
 
 
@@ -53,6 +70,31 @@ bool operator>=(const phys_addr<A>& a, const phys_addr<A>& b) noexcept {
 }
 
 template<arch A>
+bool operator==(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+  return a.get() == b.get();
+}
+template<arch A>
+bool operator!=(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+  return !(a == b);
+}
+template<arch A>
+bool operator<(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+  return a.get() < b.get();
+}
+template<arch A>
+bool operator>(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+  return b < a;
+}
+template<arch A>
+bool operator<=(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+  return !(b < a);
+}
+template<arch A>
+bool operator>=(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+  return !(a < b);
+}
+
+template<arch A>
 bool operator==(const page_no<A>& a, const page_no<A>& b) noexcept {
   return a.get() == b.get();
 }
@@ -74,6 +116,31 @@ bool operator<=(const page_no<A>& a, const page_no<A>& b) noexcept {
 }
 template<arch A>
 bool operator>=(const page_no<A>& a, const page_no<A>& b) noexcept {
+  return !(a < b);
+}
+
+template<arch A>
+bool operator==(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+  return a.get() == b.get();
+}
+template<arch A>
+bool operator!=(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+  return !(a == b);
+}
+template<arch A>
+bool operator<(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+  return a.get() < b.get();
+}
+template<arch A>
+bool operator>(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+  return b < a;
+}
+template<arch A>
+bool operator<=(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+  return !(b < a);
+}
+template<arch A>
+bool operator>=(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
   return !(a < b);
 }
 
@@ -127,6 +194,55 @@ bool operator>=(const page_no<A>& a, const phys_addr<A>& b) noexcept {
 }
 
 template<arch A>
+bool operator==(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+  return a == vaddr<A>(b);
+}
+template<arch A>
+bool operator==(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+  return vaddr<A>(a) == b;
+}
+template<arch A>
+bool operator!=(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+  return a != vaddr<A>(b);
+}
+template<arch A>
+bool operator!=(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+  return vaddr<A>(a) != b;
+}
+template<arch A>
+bool operator<(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+  return a < vaddr<A>(b);
+}
+template<arch A>
+bool operator<(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+  return vaddr<A>(a) < b;
+}
+template<arch A>
+bool operator>(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+  return a > vaddr<A>(b);
+}
+template<arch A>
+bool operator>(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+  return vaddr<A>(a) > b;
+}
+template<arch A>
+bool operator<=(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+  return a <= vaddr<A>(b);
+}
+template<arch A>
+bool operator<=(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+  return vaddr<A>(a) <= b;
+}
+template<arch A>
+bool operator>=(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+  return a >= vaddr<A>(b);
+}
+template<arch A>
+bool operator>=(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+  return vaddr<A>(a) >= b;
+}
+
+template<arch A>
 bool operator==(const page_count<A>& a, const page_count<A>& b) noexcept {
   return a.get() == b.get();
 }
@@ -167,6 +283,24 @@ template<arch A>
 page_no<A> operator-(const page_no<A>& a, const page_count<A>& b) noexcept {
   return page_no<A>(a.get() - b.get());
 }
+
+template<arch A>
+page_count<A> operator-(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+  return page_count<A>(b.get() - a.get());
+}
+template<arch A>
+vpage_no<A> operator+(const vpage_no<A>& a, const page_count<A>& b) noexcept {
+  return vpage_no<A>(a.get() + b.get());
+}
+template<arch A>
+vpage_no<A> operator+(const page_count<A>& a, const vpage_no<A>& b) noexcept {
+  return b + a;
+}
+template<arch A>
+vpage_no<A> operator-(const vpage_no<A>& a, const page_count<A>& b) noexcept {
+  return vpage_no<A>(a.get() - b.get());
+}
+
 template<arch A>
 page_count<A> operator+(const page_count<A>& a, const page_count<A>& b)
     noexcept {
@@ -209,9 +343,27 @@ auto hash<ilias::pmap::phys_addr<A>>::operator()(
 }
 
 template<ilias::arch A>
+auto hash<ilias::pmap::vaddr<A>>::operator()(
+    const ilias::pmap::vaddr<A>& va) const noexcept -> size_t {
+  return hash<typename ilias::pmap::vaddr<A>::type>()(va.get());
+}
+
+template<ilias::arch A>
 auto hash<ilias::pmap::page_no<A>>::operator()(
     const ilias::pmap::page_no<A>& pg) const noexcept -> size_t {
-  return hash<ilias::pmap::phys_addr<A>>()(pg.get());
+  return hash<ilias::pmap::phys_addr<A>>()(pg);
+}
+
+template<ilias::arch A>
+auto hash<ilias::pmap::vpage_no<A>>::operator()(
+    const ilias::pmap::vpage_no<A>& pg) const noexcept -> size_t {
+  return hash<ilias::pmap::vaddr<A>>()(pg);
+}
+
+template<ilias::arch A>
+auto hash<ilias::pmap::page_count<A>>::operator()(
+    const ilias::pmap::page_count<A>& c) const noexcept -> size_t {
+  return hash<typename ilias::pmap::page_count<A>::type>()(c.get());
 }
 
 } /* namespace std */
