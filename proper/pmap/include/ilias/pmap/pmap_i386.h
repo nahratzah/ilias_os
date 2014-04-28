@@ -15,7 +15,7 @@ namespace pmap {
 template<>
 class pmap<arch::i386> {
  public:
-  pmap(std::shared_ptr<pmap_support<arch::i386>>) noexcept;
+  pmap(pmap_support<arch::i386>&) noexcept;
   pmap(const pmap&) = delete;
   pmap& operator=(const pmap&) = delete;
   ~pmap() noexcept;
@@ -70,7 +70,7 @@ class pmap<arch::i386> {
 
   /* Variables start here. */
   pdpe pdpe_;
-  const std::shared_ptr<pmap_support<arch::i386>> support_;
+  pmap_support<arch::i386>& support_;
 
   static_assert(sizeof(pdpe) == 4 * 8,
                 "PDPE table has wrong size.");

@@ -24,16 +24,16 @@ class page_ptr {
 
   explicit operator bool() const noexcept;
   bool is_allocated() const noexcept;
-  void set_allocated(std::shared_ptr<pmap_support<Arch>>) noexcept;
+  void set_allocated(pmap_support<Arch>&) noexcept;
 
   page_no<Arch> get() const noexcept;
   page_no<Arch> release() noexcept;
 
-  static page_ptr allocate(std::shared_ptr<pmap_support<Arch>>);
+  static page_ptr allocate(pmap_support<Arch>&);
 
  private:
   page_no<Arch> pgno_;
-  std::shared_ptr<pmap_support<Arch>> release_on_destruction_;
+  pmap_support<Arch>* release_on_destruction_;
   bool valid_ = false;
 };
 
@@ -47,7 +47,7 @@ template<typename T, arch Arch> using pmap_mapped_ptr =
     std::unique_ptr<T, unmap_page_deleter<T, Arch>>;
 
 template<typename T, arch Arch>
-auto pmap_map_page(page_no<Arch>, std::shared_ptr<pmap_support<Arch>>) ->
+auto pmap_map_page(page_no<Arch>, pmap_support<Arch>&) ->
     pmap_mapped_ptr<T, Arch>;
 
 

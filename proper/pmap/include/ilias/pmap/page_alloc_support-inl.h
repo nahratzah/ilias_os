@@ -66,13 +66,11 @@ auto page_ptr<Arch>::is_allocated() const noexcept -> bool {
 }
 
 template<arch Arch>
-auto page_ptr<Arch>::set_allocated(std::shared_ptr<pmap_support<Arch>> support)
+auto page_ptr<Arch>::set_allocated(pmap_support<Arch>& support)
     noexcept -> void {
-  assert(support);
-
   assert(valid_);
   assert(!release_on_destruction_);
-  release_on_destruction_ = move(support);
+  release_on_destruction_ = &support;
 }
 
 template<arch Arch>
@@ -90,14 +88,12 @@ auto page_ptr<Arch>::release() noexcept -> page_no<Arch> {
 }
 
 template<arch Arch>
-auto page_ptr<Arch>::allocate(std::shared_ptr<pmap_support<Arch>> support) ->
+auto page_ptr<Arch>::allocate(pmap_support<Arch>& support) ->
     page_ptr {
-  assert(support);
-
   page_ptr result;
-  result.pgno_ = support->allocate_page();
+  result.pgno_ = support.allocate_page();
   result.valid_ = true;
-  result.release_on_destruction_ = support;
+  result.release_on_destruction_ = &support;
   return result;
 }
 
@@ -118,8 +114,8 @@ struct unmap_page_deleter {
     return *this;
   }
 
-  unmap_page_deleter(std::shared_ptr<pmap_support<Arch>> support) noexcept
-  : support_(std::move(support))
+  unmap_page_deleter(pmap_support<Arch>* support) noexcept
+  : support_(support)
   {
     assert(support_);
   }
@@ -133,18 +129,15 @@ struct unmap_page_deleter {
   }
 
  private:
-  std::shared_ptr<pmap_support<Arch>> support_;
+  pmap_support<Arch>* support_ = nullptr;
 };
 
 template<typename T, arch Arch>
-auto pmap_map_page(page_no<Arch> pg,
-                   std::shared_ptr<pmap_support<Arch>> support) ->
+auto pmap_map_page(page_no<Arch> pg, pmap_support<Arch>& support) ->
     pmap_mapped_ptr<T, Arch> {
-  assert(support);
-
-  vaddr<Arch> vaddr = support->map_page(pg);
+  vaddr<Arch> vaddr = support.map_page(pg);
   uintptr_t addr = vaddr.get();
-  return pmap_mapped_ptr<T, Arch>(reinterpret_cast<T*>(addr), move(support));
+  return pmap_mapped_ptr<T, Arch>(reinterpret_cast<T*>(addr), &support);
 }
 
 

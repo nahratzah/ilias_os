@@ -8,8 +8,7 @@
 namespace ilias {
 namespace pmap {
 
-inline pmap<arch::i386>::pmap(
-    std::shared_ptr<pmap_support<arch::i386>> support) noexcept
+inline pmap<arch::i386>::pmap(pmap_support<arch::i386>& support) noexcept
 : support_(support)
 {
   static_assert(alignof(pmap<arch::i386>) >= (1 << 5),
