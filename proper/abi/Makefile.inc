@@ -36,6 +36,7 @@ ABI_SRCS += abi/src/typeinfo.cc
 ABI_SRCS += abi/src/stdimpl_allocator_cloneable.cc
 ABI_SRCS += abi/src/stdimpl_simple_bitset.cc
 ABI_SRCS += abi/src/stdimpl_stats.cc
+ABI_SRCS += abi/src/stdimpl_shared_ptr_ownership.cc
 
 SRCS_32 += abi/i386/divdi3.s
 SRCS_32 += abi/i386/moddi3.s

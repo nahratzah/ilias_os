@@ -581,7 +581,7 @@ template<typename T> class shared_ptr {
   template<typename Y, typename A, typename... Args>
   friend shared_ptr<Y> allocate_shared(const A&, Args&&...);
   template<typename D, typename Y>
-  friend D* get_deleter(const shared_ptr<Y>&);
+  friend D* get_deleter(const shared_ptr<Y>&) noexcept;
 
   template<typename Y>
   friend shared_ptr<Y> atomic_load_explicit(const shared_ptr<Y>*,

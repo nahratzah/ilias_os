@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <atomic>
+#include <memory>
 #include <typeinfo>
 
 _namespace_begin(std)
