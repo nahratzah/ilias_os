@@ -32,6 +32,44 @@ constexpr page_no<Arch>::page_no(const phys_addr<Arch>& pa)
     throw std::out_of_range("Physical address too large.");
 }
 
+template<arch Arch>
+auto page_no<Arch>::operator++() noexcept -> page_no& {
+  ++v_;
+  return *this;
+}
+
+template<arch Arch>
+auto page_no<Arch>::operator++(int) noexcept -> page_no {
+  page_no tmp = *this;
+  ++*this;
+  return tmp;
+}
+
+template<arch Arch>
+auto page_no<Arch>::operator--() noexcept -> page_no& {
+  --v_;
+  return *this;
+}
+
+template<arch Arch>
+auto page_no<Arch>::operator--(int) noexcept -> page_no {
+  page_no tmp = *this;
+  --*this;
+  return tmp;
+}
+
+template<arch Arch>
+auto page_no<Arch>::operator+=(page_count<Arch> c) noexcept -> page_no& {
+  v_ += c.get();
+  return *this;
+}
+
+template<arch Arch>
+auto page_no<Arch>::operator-=(page_count<Arch> c) noexcept -> page_no& {
+  v_ -= c.get();
+  return *this;
+}
+
 
 template<arch Arch>
 constexpr vpage_no<Arch>::vpage_no(const vaddr<Arch>& va)
@@ -41,6 +79,44 @@ constexpr vpage_no<Arch>::vpage_no(const vaddr<Arch>& va)
     throw std::invalid_argument("Virtual address is not page aligned.");
   if (va.get() > std::numeric_limits<type>::max())
     throw std::out_of_range("Virtual address too large.");
+}
+
+template<arch Arch>
+auto vpage_no<Arch>::operator++() noexcept -> vpage_no& {
+  ++v_;
+  return *this;
+}
+
+template<arch Arch>
+auto vpage_no<Arch>::operator++(int) noexcept -> vpage_no {
+  vpage_no tmp = *this;
+  ++*this;
+  return tmp;
+}
+
+template<arch Arch>
+auto vpage_no<Arch>::operator--() noexcept -> vpage_no& {
+  --v_;
+  return *this;
+}
+
+template<arch Arch>
+auto vpage_no<Arch>::operator--(int) noexcept -> vpage_no {
+  vpage_no tmp = *this;
+  --*this;
+  return tmp;
+}
+
+template<arch Arch>
+auto vpage_no<Arch>::operator+=(page_count<Arch> c) noexcept -> vpage_no& {
+  v_ += c.get();
+  return *this;
+}
+
+template<arch Arch>
+auto vpage_no<Arch>::operator-=(page_count<Arch> c) noexcept -> vpage_no& {
+  v_ -= c.get();
+  return *this;
 }
 
 

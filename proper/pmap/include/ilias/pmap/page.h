@@ -13,6 +13,7 @@ template<arch> class phys_addr;
 template<arch> class vaddr;
 template<arch> class page_no;
 template<arch> class vpage_no;
+template<arch> class page_count;
 
 /* Physical address. */
 template<arch Arch>
@@ -64,6 +65,14 @@ class page_no {
 
   type get() const noexcept { return v_; }
 
+  page_no& operator++() noexcept;
+  page_no operator++(int) noexcept;
+  page_no& operator--() noexcept;
+  page_no operator--(int) noexcept;
+
+  page_no& operator+=(page_count<Arch>) noexcept;
+  page_no& operator-=(page_count<Arch>) noexcept;
+
  private:
   type v_ = 0;
 };
@@ -81,6 +90,14 @@ class vpage_no {
   vpage_no& operator=(const vpage_no&) noexcept = default;
 
   type get() const noexcept { return v_; }
+
+  vpage_no& operator++() noexcept;
+  vpage_no operator++(int) noexcept;
+  vpage_no& operator--() noexcept;
+  vpage_no operator--(int) noexcept;
+
+  vpage_no& operator+=(page_count<Arch>) noexcept;
+  vpage_no& operator-=(page_count<Arch>) noexcept;
 
  private:
   type v_ = 0;
