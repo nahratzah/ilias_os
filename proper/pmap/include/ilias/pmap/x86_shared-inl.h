@@ -273,6 +273,26 @@ inline auto pdp_record::valid() const noexcept -> bool {
          (!ps() || (page_no() & ((0x1ULL << 9) - 1U)) == page_no());
 }
 
+inline auto pdp_record::convert(const pte_record& r) noexcept ->
+    pdp_record {
+  pdp_record rv{ 0 };
+  rv.page_no(r.page_no());
+  rv.p(r.p());
+  rv.rw(r.rw());
+  rv.us(r.us());
+  rv.pwt(r.pwt());
+  rv.pcd(r.pcd());
+  rv.a(r.a());
+  rv.d(r.d());
+  rv.ps(true);
+  rv.g(r.g());
+  for (unsigned int i = 0; i < AVL_COUNT && i < pte_record::AVL_COUNT; ++i)
+    rv.avl(r.avl(i), i);
+  rv.nx(r.nx());
+  rv.pat(r.pat());
+  return rv;
+}
+
 
 inline auto pte_record::page_no() const noexcept -> uint64_t {
   constexpr auto pg_shift = page_shift(arch::i386);
@@ -440,6 +460,27 @@ inline auto pte_record::valid() const noexcept -> bool {
   constexpr uint64_t mask = entry_mask | flag_mask;
 
   return (v_ & mask) == v_;
+}
+
+inline auto pte_record::convert(const pdp_record& r) noexcept ->
+    pte_record {
+  assert_msg(r.ps(), "Cannot convert non-page PDP to PTE.");
+
+  pte_record rv{ 0 };
+  rv.page_no(r.page_no());
+  rv.p(r.p());
+  rv.rw(r.rw());
+  rv.us(r.us());
+  rv.pwt(r.pwt());
+  rv.pcd(r.pcd());
+  rv.a(r.a());
+  rv.d(r.d());
+  rv.pat(r.pat());
+  rv.g(r.g());
+  for (unsigned int i = 0; i < AVL_COUNT && i < pdp_record::AVL_COUNT; ++i)
+    rv.avl(r.avl(i), i);
+  rv.nx(r.nx());
+  return rv;
 }
 
 

@@ -9,6 +9,11 @@ namespace pmap {
 namespace x86_shared {
 
 
+struct pdpe_record;
+struct pdp_record;
+struct pte_record;
+
+
 struct pdpe_record {
   uint64_t v_;
 
@@ -101,6 +106,9 @@ struct pdp_record {
 
   /* Check if the entry is valid. */
   auto valid() const noexcept -> bool;
+
+  /* Conversion. */
+  static auto convert(const pte_record&) noexcept -> pdp_record;
 };
 
 static_assert(sizeof(pdp_record) == 8,
@@ -163,6 +171,9 @@ struct pte_record {
 
   /* Check if the entry is valid. */
   auto valid() const noexcept -> bool;
+
+  /* Conversion. */
+  static auto convert(const pdp_record&) noexcept -> pte_record;
 };
 
 static_assert(sizeof(pte_record) == 8,
