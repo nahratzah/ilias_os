@@ -1,10 +1,10 @@
 #include <ilias/pmap/pmap_i386.h>
-#include <algorithm>
 #include <abi/ext/log2.h>
 #include <ilias/pmap/page_alloc.h>
 #include <ilias/pmap/page_alloc_support.h>
-#include <new>
+#include <algorithm>
 #include <tuple>
+#include <utility>
 
 namespace ilias {
 namespace pmap {
@@ -87,7 +87,7 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
 
 auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
     void {
-  auto p = va.get();
+  auto p = vaddr<arch::i386>(va).get();
   page_ptr<arch::i386> pdp_ptr;
   page_ptr<arch::i386> pte_ptr;
 
@@ -160,6 +160,128 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
   }
 
   return;
+}
+
+auto pmap<arch::i386>::unmap(vpage_no<arch::i386> va,
+                             page_count<arch::i386> c) noexcept -> void {
+  using std::none_of;
+  using std::min;
+  using std::next;
+  using std::fill;
+  using std::fill_n;
+  using std::generate;
+
+  auto p = vaddr<arch::i386>(va).get();
+  const uint32_t pdpe_off = (p & pdpe_mask) >> pdpe_addr_offset;
+  p &= ~pdpe_mask;
+
+  auto pdpe_iter = next(pdpe_.begin(), pdpe_off);
+  while (pdpe_iter != pdpe_.end() && c > page_count<arch::i386>(0)) {
+    /* Resolve pde offset. */
+    const uintptr_t pdp_off = (p & pdp_mask) >> pdp_addr_offset;
+    p &= ~pdp_mask;
+
+    if (!pdpe_iter->p()) {
+      // 512 * 512 == pdp::size() * pte::size()
+      c -= page_count<arch::i386>((512 - pdp_off) * 512);
+      continue;
+    }
+
+    /*
+     * Maybe mark this page for destruction
+     * (decided at the end of the loop).
+     */
+    auto pdp_ptr =
+        page_ptr<arch::i386>(page_no<arch::i386>(pdpe_iter->page_no()));
+
+    /* Map the page, to descend. */
+    auto mapped_pdp = pmap_map_page<pdp>(pdp_ptr.get(), support_);
+
+    auto pdp_iter = next(mapped_pdp->begin(), pdp_off);
+    while (pdp_iter != mapped_pdp->end() && c > page_count<arch::i386>(0)) {
+      /* Resolve pte offset. */
+      const uintptr_t pte_off = (p & pte_mask) >> pte_addr_offset;
+      p &= ~pte_mask;
+
+      if (!pdp_iter->p()) {
+        // 512 == pte::size()
+        c -= page_count<arch::i386>(512 - pte_off);
+        p += 512;  // pte_mask was subtracted above.
+        continue;
+      }
+
+      /* If this is a big page... */
+      if (pdp_iter->ps()) {
+        bool unmap_entirely = (pte_off == 0 &&
+                               c >= page_count<arch::i386>(512));
+
+        if (!unmap_entirely) {
+          /* part of the big page remains in existence:
+           * transfer the remaining part to a new page level. */
+          try {
+            auto new_pdp_ptr = page_ptr<arch::i386>::allocate(support_);
+            auto mapped_new_pdp = pmap_map_page<pte>(new_pdp_ptr.get(),
+                                                     support_);
+            pte_record pg = pte_record::convert(*pdp_iter);
+            std::generate(mapped_new_pdp->begin(), mapped_new_pdp->end(),
+                          [&pg]() {
+                            pte_record rv = pg;
+                            page_no<arch::i386> pgno(pg.page_no());
+                            ++pgno;
+                            pg.page_no(pgno.get());
+                            return rv;
+                          });
+            std::fill_n(next(mapped_new_pdp->begin(), pte_off),
+                        next(mapped_new_pdp->begin(),
+                             min(size_t(pte_off + c.get()), size_t(512))),
+                        pte_record{ 0 });
+            pdp_iter->ps(false);
+            pdp_iter->page_no(
+                page_no<arch::i386>(new_pdp_ptr.release()).get());
+          } catch (...) {
+            /* Error recovery: unmap the whole thing and
+             * let the fault handler sort it out. */
+            unmap_entirely = true;  // Handled by if-statement.
+          }
+        }
+
+        if (unmap_entirely) {
+          /* the big page is entirely removed:
+           * invalidate pdp entry and continue. */
+          pdp_iter->p(false);
+        }
+      } else { /* Descend into pte record. */
+        auto pte_ptr =
+            page_ptr<arch::i386>(page_no<arch::i386>(pdp_iter->page_no()));
+        auto mapped_pte = pmap_map_page<pte>(pte_ptr.get(), support_);
+
+        std::fill_n(next(mapped_pte->begin(), pte_off),
+                    next(mapped_pte->begin(),
+                         min(size_t(pte_off + c.get()), size_t(512))),
+                    pte_record{ 0 });
+
+        /* Remove mapping if page becomes empty. */
+        if (none_of(mapped_pte->begin(), mapped_pte->end(),
+                    [](pte_record r) { return r.p(); })) {
+          pdp_iter->p(false);
+          pte_ptr.set_allocated(support_);
+        }
+      }
+
+      c -= page_count<arch::i386>(512 - pte_off);
+      p += 512;
+      ++pdp_iter;
+    }
+
+    /* Remove mapping if page becomes empty. */
+    if (none_of(mapped_pdp->begin(), mapped_pdp->end(),
+                [](pdp_record r) { return r.p(); })) {
+      pdpe_iter->p(false);
+      pdp_ptr.set_allocated(support_);
+    }
+
+    ++pdpe_iter;
+  }
 }
 
 

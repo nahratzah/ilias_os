@@ -26,8 +26,8 @@ class pmap<arch::i386> {
   std::tuple<page_no<arch::i386>, size_t, uintptr_t> virt_to_page(
       vaddr<arch::i386>) const;
   void map(vpage_no<arch::i386>, page_no<arch::i386>);
-  void unmap(vaddr<arch::i386>,
-             page_count<arch::i386> = page_count<arch::i386>(1));
+  void unmap(vpage_no<arch::i386>,
+             page_count<arch::i386> = page_count<arch::i386>(1)) noexcept;
 
   static constexpr std::array<size_t, 2> N_PAGES = {{ 1, 1 << 9 }};
 
