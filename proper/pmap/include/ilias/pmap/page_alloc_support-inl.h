@@ -137,9 +137,9 @@ template<typename T, arch Arch>
 auto pmap_map_page(page_no<Arch> pg, pmap_support<Arch>& support) ->
     pmap_mapped_ptr<T, Arch> {
   vaddr<Arch> vaddr = support.map_page(pg);
-  uintptr_t addr = vaddr.get();
-  return pmap_mapped_ptr<T, Arch>(reinterpret_cast<T*>(addr),
-                                  unmap_page_deleter<T, Arch>(&support));
+  return pmap_mapped_ptr<T, Arch>(
+      static_cast<T*>(reinterpret_cast<void*>(uintptr_t(vaddr.get()))),
+      unmap_page_deleter<T, Arch>(&support));
 }
 
 

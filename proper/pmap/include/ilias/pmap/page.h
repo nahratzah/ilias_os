@@ -115,6 +115,14 @@ class page_count {
 
   type get() const noexcept { return v_; }
 
+  page_count& operator++() noexcept;
+  page_count operator++(int) noexcept;
+  page_count& operator--() noexcept;
+  page_count operator--(int) noexcept;
+
+  page_count& operator+=(page_count) noexcept;
+  page_count& operator-=(page_count) noexcept;
+
  private:
   type v_ = 0;
 };

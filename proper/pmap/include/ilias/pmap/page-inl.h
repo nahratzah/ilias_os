@@ -120,6 +120,45 @@ auto vpage_no<Arch>::operator-=(page_count<Arch> c) noexcept -> vpage_no& {
 }
 
 
+template<arch Arch>
+auto page_count<Arch>::operator++() noexcept -> page_count& {
+  ++v_;
+  return *this;
+}
+
+template<arch Arch>
+auto page_count<Arch>::operator++(int) noexcept -> page_count {
+  page_count tmp = *this;
+  ++*this;
+  return tmp;
+}
+
+template<arch Arch>
+auto page_count<Arch>::operator--() noexcept -> page_count& {
+  --v_;
+  return *this;
+}
+
+template<arch Arch>
+auto page_count<Arch>::operator--(int) noexcept -> page_count {
+  page_count tmp = *this;
+  --*this;
+  return tmp;
+}
+
+template<arch Arch>
+auto page_count<Arch>::operator+=(page_count c) noexcept -> page_count& {
+  v_ += c.get();
+  return *this;
+}
+
+template<arch Arch>
+auto page_count<Arch>::operator-=(page_count c) noexcept -> page_count& {
+  v_ -= c.get();
+  return *this;
+}
+
+
 template<arch A>
 bool operator==(const phys_addr<A>& a, const phys_addr<A>& b) noexcept {
   return a.get() == b.get();
