@@ -12,7 +12,7 @@ namespace pmap {
 
 template<arch Arch> class pmap_support {
  public:
-  virtual ~pmap_support() noexcept = 0;
+  virtual ~pmap_support() noexcept {}
 
   virtual vpage_no<Arch> map_page(page_no<Arch>) = 0;
   virtual void unmap_page(vpage_no<Arch>) noexcept = 0;

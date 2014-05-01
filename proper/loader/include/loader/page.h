@@ -3,6 +3,7 @@
 
 #include <ilias/arch.h>
 #include <ilias/pmap/page.h>
+#include <ilias/pmap/pmap.h>
 #include <vector>
 
 namespace loader {
@@ -24,17 +25,23 @@ class page {
 };
 
 template<ilias::arch Arch>
-class page_allocator {
+class page_allocator
+: public ilias::pmap::pmap_support<Arch>
+{
  public:
   page_allocator() = default;
+  ~page_allocator() noexcept override {}
 
   void add_range(uint64_t phys_addr, uint64_t len);
   void shrink_to_fit() noexcept { data_.shrink_to_fit(); }
 
-  ilias::pmap::page_no<Arch> allocate();
-  void deallocate(ilias::pmap::page_no<Arch>) noexcept;
+  ilias::pmap::page_no<Arch> allocate_page() override;
+  void deallocate_page(ilias::pmap::page_no<Arch>) noexcept override;
   bool mark_in_use(ilias::pmap::page_no<Arch>, ilias::pmap::page_no<Arch>)
       noexcept;
+
+  ilias::pmap::vpage_no<Arch> map_page(ilias::pmap::page_no<Arch>) override;
+  void unmap_page(ilias::pmap::vpage_no<Arch>) noexcept override;
 
  private:
   struct comparator;

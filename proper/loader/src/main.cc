@@ -5,6 +5,7 @@
 #include <ilias/pmap/page.h>
 #include <ilias/pmap/consts.h>
 #include <ilias/cpuid.h>
+#include <ilias/pmap/pmap_i386.h>
 
 namespace loader {
 
@@ -27,8 +28,8 @@ void main() {
     auto addr = ilias::pmap::round_page_up(range.addr, ilias::arch::i386);
     auto end = ilias::pmap::round_page_down(range.addr + range.len,
                                             ilias::arch::i386);
-    if (end > addr)
-    pga.add_range(addr, end - addr);
+    if (end > 0x100000000ULL) end = 0x100000000ULL;  // Truncate to 4GB.
+    if (end > addr) pga.add_range(addr, end - addr);
   }
   pga.shrink_to_fit();
 
@@ -42,6 +43,9 @@ void main() {
     pga.mark_in_use(ilias::pmap::phys_addr<ilias::arch::i386>(start),
                     ilias::pmap::phys_addr<ilias::arch::i386>(end));
   }
+
+  /* Create pmap for loader. */
+  ilias::pmap::pmap<ilias::native_arch> loader_pmap{ pga };
 }
 
 } /* namespace loader */

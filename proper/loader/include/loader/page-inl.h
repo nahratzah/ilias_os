@@ -49,7 +49,7 @@ auto page_allocator<Arch>::add_range(uint64_t phys_addr, uint64_t len) ->
 }
 
 template<ilias::arch Arch>
-auto page_allocator<Arch>::allocate() -> ilias::pmap::page_no<Arch> {
+auto page_allocator<Arch>::allocate_page() -> ilias::pmap::page_no<Arch> {
   using std::placeholders::_1;
 
   auto found = std::find_if(data_.rbegin(), data_.rend(),
@@ -60,7 +60,7 @@ auto page_allocator<Arch>::allocate() -> ilias::pmap::page_no<Arch> {
 }
 
 template<ilias::arch Arch>
-auto page_allocator<Arch>::deallocate(ilias::pmap::page_no<Arch> pgno)
+auto page_allocator<Arch>::deallocate_page(ilias::pmap::page_no<Arch> pgno)
     noexcept -> void {
   auto found = std::lower_bound(data_.begin(), data_.end(), pgno,
                                 comparator());
@@ -80,6 +80,20 @@ auto page_allocator<Arch>::mark_in_use(ilias::pmap::page_no<Arch> b,
                               comparator());
   std::for_each(d_b, d_e, std::bind(&page<Arch>::mark_in_use, _1));
   return d_b != d_e;
+}
+
+template<ilias::arch Arch>
+auto page_allocator<Arch>::map_page(ilias::pmap::page_no<Arch> pg) ->
+    ilias::pmap::vpage_no<Arch> {
+  if (pg.get() > (0xffffffff >> ilias::pmap::page_shift(Arch)))
+    throw std::range_error("Physical page cannot be mapped.");
+  return ilias::pmap::vpage_no<Arch>(pg.get());
+}
+
+template<ilias::arch Arch>
+auto page_allocator<Arch>::unmap_page(ilias::pmap::vpage_no<Arch>) noexcept ->
+    void {
+  return;
 }
 
 
