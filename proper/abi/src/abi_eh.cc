@@ -139,14 +139,13 @@ inline __cxa_exception* exc2hdr(void* exc) noexcept {
 thread_local _namespace(std)::aligned_storage_t<sizeof(__cxa_eh_globals),
                                                 alignof(__cxa_eh_globals)>
     cxa_eh_globals;
+thread_local bool cxa_eh_globals_once;
 
 
 } /* namespace __cxxabiv1::<unnamed> */
 
 
 __cxa_eh_globals* __cxa_get_globals() noexcept {
-  static thread_local bool cxa_eh_globals_once;
-
   void* p = &cxa_eh_globals;
   if (_predict_false(!cxa_eh_globals_once)) {
     new (p) __cxa_eh_globals{ nullptr, 0 };
@@ -156,6 +155,7 @@ __cxa_eh_globals* __cxa_get_globals() noexcept {
 }
 
 __cxa_eh_globals* __cxa_get_globals_fast() noexcept {
+  assert(cxa_eh_globals_once);
   void* p = &cxa_eh_globals;
   return static_cast<__cxa_eh_globals*>(p);
 }
