@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <ilias/arch.h>
 #include <ilias/pmap/consts.h>
+#include <algorithm>
 #include <functional>
 
 namespace ilias {
@@ -105,8 +106,14 @@ class vpage_no {
 
 template<arch Arch>
 class page_count {
+ private:
+  /* Ensure we are large enough to hold the virtual and physical page count. */
+  static constexpr auto _bytes_ = (pointer_size(Arch) >= page_no_size(Arch) ?
+                                   pointer_size(Arch) :
+                                   page_no_size(Arch));
+
  public:
-  using type = std::make_signed_t<typename page_no<Arch>::type>;
+  using type = std::make_signed_t<char[_bytes_]>;
 
   constexpr page_count() noexcept = default;
   explicit constexpr page_count(type v) noexcept : v_(v) {}
@@ -122,6 +129,8 @@ class page_count {
 
   page_count& operator+=(page_count) noexcept;
   page_count& operator-=(page_count) noexcept;
+
+  explicit operator bool() const noexcept { return v_ != 0; }
 
  private:
   type v_ = 0;
