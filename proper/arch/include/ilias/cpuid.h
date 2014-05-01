@@ -10,19 +10,18 @@
 namespace ilias {
 
 #if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
-bool has_cpuid() noexcept;
+bool has_cpuid() noexcept __attribute__((const));
 #else
 constexpr bool has_cpuid() noexcept { return false; }
 #endif
 
 #if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
-inline auto __attribute__((pure)) cpuid(uint32_t function) noexcept ->
+inline auto __attribute__((const)) cpuid(uint32_t function) noexcept ->
     std::tuple<uint32_t, uint32_t, uint32_t, uint32_t> {
   assert(has_cpuid());
 
   uint32_t a, b, c, d;
-  asm volatile ("cpuid" :
-                "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(function), "c"(0));
+  asm ("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(function), "c"(0));
   return std::make_tuple(a, b, c, d);
 }
 #endif
@@ -37,7 +36,7 @@ std::string cpu_vendor();
  * Find the highest supported cpuid function.
  * Returns 0 if cpuid is not supported.
  */
-inline auto __attribute__((pure)) cpuid_max_fn() noexcept -> uint32_t {
+inline auto __attribute__((const)) cpuid_max_fn() noexcept -> uint32_t {
   return (has_cpuid() ? std::get<0>(cpuid(0)) : 0);
 }
 
@@ -45,7 +44,7 @@ inline auto __attribute__((pure)) cpuid_max_fn() noexcept -> uint32_t {
  * Find the highest supported cpuid extended function.
  * Returns 0 if cpuid is not supported.
  */
-inline auto __attribute__((pure)) cpuid_max_ext_fn() noexcept -> uint32_t {
+inline auto __attribute__((const)) cpuid_max_ext_fn() noexcept -> uint32_t {
   return (has_cpuid() ? std::get<0>(cpuid(0x80000000)) : 0);
 }
 

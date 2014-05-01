@@ -5,22 +5,22 @@
 namespace ilias {
 
 #if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
-bool has_cpuid() noexcept {
+bool __attribute__((const)) has_cpuid() noexcept {
   long supported;
   long clobber;
 
-  asm volatile (
-      "pushf\n"
-      "pop %0\n"
-      "mov %0, %1\n"
-      "mov $0x200000, %0\n"
-      "push %0\n"
-      "popf\n"
-      "pushf\n"
-      "pop %0\n"
-      "xor %1, %0\n"
-      "push %1\n"
-      "popf\n"
+  asm (
+      "pushf\n\t"
+      "pop %0\n\t"
+      "mov %0, %1\n\t"
+      "mov $0x200000, %0\n\t"
+      "push %0\n\t"
+      "popf\n\t"
+      "pushf\n\t"
+      "pop %0\n\t"
+      "xor %1, %0\n\t"
+      "push %1\n\t"
+      "popf"
       : "=r"(supported), "=r"(clobber)
       :
       : "memory"
