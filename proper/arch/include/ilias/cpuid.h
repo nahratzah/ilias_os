@@ -21,7 +21,8 @@ inline auto __attribute__((pure)) cpuid(uint32_t function) noexcept ->
   assert(has_cpuid());
 
   uint32_t a, b, c, d;
-  asm volatile ("cpuid" : "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(function));
+  asm volatile ("cpuid" :
+                "=a"(a), "=b"(b), "=c"(c), "=d"(d) : "a"(function), "c"(0));
   return std::make_tuple(a, b, c, d);
 }
 #endif
