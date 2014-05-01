@@ -34,8 +34,8 @@ class page
 
  private:
   page_no<Arch> pgno_;  // Address of this page.
-  page_no<Arch> nfree_;  // Number of free pages starting at this page
-                         // (only has meaning if the page is actually free).
+  page_count<Arch> nfree_;  // Number of free pages starting at this page
+                            // (only has meaning if the page is actually free).
 };
 
 }} /* namespace ilias::vm */
