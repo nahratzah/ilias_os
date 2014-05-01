@@ -15,7 +15,7 @@ extern "C" char kernel_end;
 
 
 /* Set up page allocator so it tracks all pages below 4GB. */
-void setup_page_allocator(page_allocator<ilias::native_arch> pga,
+void setup_page_allocator(page_allocator<ilias::native_arch>& pga,
                           const ldexport& lde) {
   /* Track all pages. */
   for (const auto& range : lde.physmem) {
@@ -40,16 +40,17 @@ void setup_page_allocator(page_allocator<ilias::native_arch> pga,
 
 /* Map all pages from the loader into the page map. */
 void setup_loader_pmap(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
+  using ilias::pmap::vaddr;
   using ilias::pmap::vpage_no;
   using ilias::pmap::page_no;
   using ilias::pmap::round_page_down;
   using ilias::pmap::round_page_up;
   using ilias::native_arch;
 
-  const auto end = vpage_no<native_arch>(
+  const auto end = vaddr<native_arch>(
       round_page_up(reinterpret_cast<uintptr_t>(&kernel_end),
                     native_arch));
-  for (auto start = vpage_no<native_arch>(
+  for (vpage_no<native_arch> start = vaddr<native_arch>(
            round_page_down(reinterpret_cast<uintptr_t>(&kernel_start),
                            native_arch));
        start != end;

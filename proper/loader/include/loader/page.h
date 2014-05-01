@@ -30,6 +30,8 @@ class page_allocator
 {
  public:
   page_allocator() = default;
+  page_allocator(const page_allocator&) = delete;
+  page_allocator& operator=(const page_allocator&) = delete;
   ~page_allocator() noexcept override {}
 
   void add_range(uint64_t phys_addr, uint64_t len);

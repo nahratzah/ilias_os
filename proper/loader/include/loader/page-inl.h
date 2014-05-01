@@ -30,22 +30,20 @@ struct page_allocator<Arch>::comparator {
 
 
 template<ilias::arch Arch>
-auto page_allocator<Arch>::add_range(uint64_t phys_addr, uint64_t len) ->
+auto page_allocator<Arch>::add_range(uint64_t base, uint64_t len) ->
     void {
-  auto off = phys_addr & ilias::pmap::page_mask(Arch);
-  if (off != 0) {
-    if (len <= off) return;
-    len -= off;
-    phys_addr += ilias::pmap::page_size(Arch) - off;
-  }
+  using ilias::pmap::round_page_up;
+  using ilias::pmap::round_page_down;
+  using ilias::pmap::page_no;
+  using ilias::pmap::phys_addr;
 
-  len &= ilias::pmap::page_mask(Arch);
-  if (len == 0) return;
+  auto s = phys_addr<Arch>(round_page_up(base, Arch));
+  auto e = phys_addr<Arch>(round_page_down(base + len, Arch));
 
-  uint64_t pa_end = phys_addr + len;
-  for (uint64_t i = phys_addr; i != pa_end; ++i)
-    data_.emplace_back(ilias::pmap::phys_addr<Arch>(i));
-  std::sort(data_.begin(), data_.end(), comparator());
+  bool need_sort = (!data_.empty() && data_.back().address() >= s);
+  for (auto i = page_no<Arch>(s); i != e && data_.size() <= 2048; ++i)
+    data_.emplace_back(i);
+  if (need_sort) std::sort(data_.begin(), data_.end(), comparator());
 }
 
 template<ilias::arch Arch>
