@@ -10,7 +10,7 @@ void enable_paging(pmap::pmap<native_arch>& p) {
   uintptr_t pmap_ptr = reinterpret_cast<uintptr_t>(p.get_pmap_ptr());
   const void* gdt_ptr = gdt.get_gdt_ptr();
 
-  assert((pmap_ptr & ((1U << 5) - 1U)) == 0);
+  assert((pmap_ptr % (1U << 5)) == 0);
   constexpr uint32_t cr4_pae_flag = 1U << 5;
   constexpr uint32_t cr4_pse_flag = 1U << 4;  // Actually ignored in PAE.
   constexpr uint32_t cr4_pge_flag = 1U << 7;  // Page-global enable.
