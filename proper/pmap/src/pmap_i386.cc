@@ -103,7 +103,7 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     pdp_ptr = page_ptr<arch::i386>(page_no<arch::i386>(pdpe_value.page_no()));
   auto mapped_pdp = pmap_map_page<pdp>(pdp_ptr.get(), support_);
   /* Clear PDP if it was newly allocated. */
-  if (pte_ptr.is_allocated())
+  if (pdp_ptr.is_allocated())
     std::fill(mapped_pdp->begin(), mapped_pdp->end(), pdp_record{ 0 });
 
   /* Resolve pde offset. */
@@ -137,8 +137,9 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     pte_record new_pte_value{ 0 };
     new_pte_value.page_no(pg.get());
     new_pte_value.p(true);
+    new_pte_value = new_pte_value.combine(perm);
     assert(new_pte_value.valid());
-    pte_value = new_pte_value.combine(perm);
+    pte_value = new_pte_value;
   }
 
   /* Assign pte to pdp, iff newly allocated. */
@@ -146,11 +147,13 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     pdp_record new_pdp_value{ 0 };
     new_pdp_value.page_no(pte_ptr.release().get());
     new_pdp_value.p(true);
+    new_pdp_value = new_pdp_value.combine(perm);
     assert(new_pdp_value.valid());
-    pdp_value = new_pdp_value.combine(perm);
+    pdp_value = new_pdp_value;
   } else {
-    pdp_record new_pdp_value = pdp_value;
-    pdp_value = new_pdp_value.combine(perm);
+    pdp_record new_pdp_value = pdp_value.combine(perm);
+    assert(new_pdp_value.valid());
+    pdp_value = new_pdp_value;
   }
 
   /* Assign pdp to pdpe, iff newly allocated. */
@@ -158,11 +161,13 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     pdpe_record new_pdpe_value{ 0 };
     new_pdpe_value.page_no(pdp_ptr.release().get());
     new_pdpe_value.p(true);
+    new_pdpe_value = new_pdpe_value.combine(perm);
     assert(new_pdpe_value.valid());
-    pdpe_value = new_pdpe_value.combine(perm);
+    pdpe_value = new_pdpe_value;
   } else {
-    pdpe_record new_pdpe_value = pdpe_value;
-    pdpe_value = new_pdpe_value.combine(perm);
+    pdpe_record new_pdpe_value = pdpe_value.combine(perm);
+    assert(new_pdpe_value.valid);
+    pdpe_value = new_pdpe_value;
   }
 
   return;
