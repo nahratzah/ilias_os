@@ -6,6 +6,8 @@
 #include <ilias/pmap/consts.h>
 #include <ilias/cpuid.h>
 #include <ilias/pmap/pmap_i386.h>
+#include <ilias/i386/paging.h>
+#include <mutex>
 
 namespace loader {
 
@@ -13,6 +15,7 @@ namespace loader {
 extern "C" char kernel_start;
 extern "C" char kernel_end;
 
+namespace {
 
 /* Set up page allocator so it tracks all pages below 4GB. */
 void setup_page_allocator(page_allocator<ilias::native_arch>& pga,
@@ -66,6 +69,60 @@ void setup_loader_pmap(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
   }
 }
 
+/*
+ * Create and initialize page allocator.
+ *
+ * This is created using a manual call-once construct, since it must
+ * outlive the lifetime of its associated pmaps.
+ */
+page_allocator<ilias::native_arch>& get_pga() {
+  using store_t =
+      std::aligned_storage_t<sizeof(page_allocator<ilias::native_arch>),
+                             alignof(page_allocator<ilias::native_arch>)>;
+  using std::once_flag;
+  using std::call_once;
+
+  static once_flag guard;
+  static store_t store;
+
+  void* impl = &store;
+  call_once(guard,
+            [](void* p) {
+              new (p) page_allocator<ilias::native_arch>();
+            },
+            impl);
+  return *static_cast<page_allocator<ilias::native_arch>*>(impl);
+}
+
+/*
+ * Create loader pmap.
+ *
+ * It is created using a manual call-once construct, since destroying this
+ * is going to have disastrous consequences (potentially).  I.e. being unable
+ * to load addresses in the failure path of the loader.
+ */
+ilias::pmap::pmap<ilias::native_arch>& get_pmap(
+    page_allocator<ilias::native_arch>& pga) {
+  using store_t =
+      std::aligned_storage_t<sizeof(ilias::pmap::pmap<ilias::native_arch>),
+                             alignof(ilias::pmap::pmap<ilias::native_arch>)>;
+  using std::once_flag;
+  using std::call_once;
+
+  static once_flag guard;
+  static store_t store;
+
+  void* impl = &store;
+  call_once(guard,
+            [](void* p, page_allocator<ilias::native_arch>& pga) {
+              new (p) ilias::pmap::pmap<ilias::native_arch>(pga);
+            },
+            impl, pga);
+  return *static_cast<ilias::pmap::pmap<ilias::native_arch>*>(impl);
+}
+
+} /* namespace loader::<unnamed> */
+
 
 void main() {
   bios_printf("CPU vendor: %s\n", (ilias::has_cpuid() ?
@@ -77,15 +134,20 @@ void main() {
   bios_put_str(lde.to_string());
 
   /* Initialize our page allocator. */
-  page_allocator<ilias::native_arch> pga;
+  page_allocator<ilias::native_arch>& pga = get_pga();
   uintptr_t lim = 2 * reinterpret_cast<uintptr_t>(&kernel_end);
   if (lim < 32 * 1024 * 1024) lim = 32 * 1024 * 1024;
   setup_page_allocator(pga, lde, 1024 * 1024, lim);
   punch_loader(pga);
 
   /* Create pmap for loader. */
-  ilias::pmap::pmap<ilias::native_arch> loader_pmap{ pga };
+  ilias::pmap::pmap<ilias::native_arch>& loader_pmap = get_pmap(pga);
   setup_loader_pmap(loader_pmap);
+
+  /* Enable paging. */
+  bios_put_str("Trying to enable paging... ");
+  ilias::i386::enable_paging(loader_pmap);
+  bios_put_str("Succes!\n");
 }
 
 } /* namespace loader */
