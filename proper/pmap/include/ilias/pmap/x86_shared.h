@@ -40,6 +40,7 @@ struct pdpe_record {
 
   /* Check if the entry is valid. */
   auto valid() const noexcept -> bool;
+  auto combine(const permission&) const noexcept -> pdpe_record;
 };
 
 static_assert(sizeof(pdpe_record) == 8,
@@ -109,6 +110,7 @@ struct pdp_record {
 
   /* Conversion. */
   static auto convert(const pte_record&) noexcept -> pdp_record;
+  auto combine(const permission&) const noexcept -> pdp_record;
 };
 
 static_assert(sizeof(pdp_record) == 8,
@@ -174,6 +176,7 @@ struct pte_record {
 
   /* Conversion. */
   static auto convert(const pdp_record&) noexcept -> pte_record;
+  auto combine(const permission&) const noexcept -> pte_record;
 };
 
 static_assert(sizeof(pte_record) == 8,

@@ -88,6 +88,11 @@ inline auto pdpe_record::valid() const noexcept -> bool {
   return (v_ & mask) == v_;
 }
 
+inline auto pdpe_record::combine(const permission&) const noexcept ->
+    pdpe_record {
+  return *this;
+}
+
 
 inline auto pdp_record::page_no() const noexcept -> uint64_t {
   constexpr auto pg_shift = page_shift(arch::i386);
@@ -293,6 +298,18 @@ inline auto pdp_record::convert(const pte_record& r) noexcept ->
   return rv;
 }
 
+inline auto pdp_record::combine(const permission& perm) const noexcept ->
+    pdp_record {
+  pdp_record rv = *this;
+  if (!perm.read && !perm.write && !perm.exec) rv.p(false);
+  rv.rw(perm.write);
+  rv.nx(rv.p() && rv.ps() && !perm.exec);
+  rv.g(rv.p() && rv.ps() && perm.global);
+  rv.pcd(rv.p() && rv.ps() && perm.no_cache_read);
+  rv.pwt(rv.p() && rv.ps() && perm.no_cache_write);
+  return rv;
+}
+
 
 inline auto pte_record::page_no() const noexcept -> uint64_t {
   constexpr auto pg_shift = page_shift(arch::i386);
@@ -480,6 +497,18 @@ inline auto pte_record::convert(const pdp_record& r) noexcept ->
   for (unsigned int i = 0; i < AVL_COUNT && i < pdp_record::AVL_COUNT; ++i)
     rv.avl(r.avl(i), i);
   rv.nx(r.nx());
+  return rv;
+}
+
+inline auto pte_record::combine(const permission& perm) const noexcept ->
+    pte_record {
+  pte_record rv = *this;
+  if (!perm.read && !perm.write && !perm.exec) rv.p(false);
+  rv.rw(perm.write);
+  rv.nx(rv.p() && !perm.exec);
+  rv.g(rv.p() && perm.global);
+  rv.pcd(rv.p() && perm.no_cache_read);
+  rv.pwt(rv.p() && perm.no_cache_write);
   return rv;
 }
 

@@ -25,7 +25,7 @@ class pmap<arch::i386> {
   phys_addr<arch::i386> virt_to_phys(vaddr<arch::i386>) const;
   std::tuple<page_no<arch::i386>, size_t, uintptr_t> virt_to_page(
       vaddr<arch::i386>) const;
-  void map(vpage_no<arch::i386>, page_no<arch::i386>);
+  void map(vpage_no<arch::i386>, page_no<arch::i386>, permission);
   void unmap(vpage_no<arch::i386>,
              page_count<arch::i386> = page_count<arch::i386>(1)) noexcept;
 

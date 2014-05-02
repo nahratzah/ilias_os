@@ -52,6 +52,7 @@ struct permission {
   static constexpr permission RO() noexcept;
   static constexpr permission RW() noexcept;
   static constexpr permission RX() noexcept;
+  static constexpr permission RWX() noexcept;
   static constexpr permission UNCACHED() noexcept;
 
   bool read : 1;

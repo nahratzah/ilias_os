@@ -85,8 +85,8 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
   return std::make_tuple(pg, 1, p);
 }
 
-auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
-    void {
+auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
+                           permission perm) -> void {
   auto p = vaddr<arch::i386>(va).get();
   page_ptr<arch::i386> pdp_ptr;
   page_ptr<arch::i386> pte_ptr;
@@ -138,7 +138,7 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
     new_pte_value.page_no(pg.get());
     new_pte_value.p(true);
     assert(new_pte_value.valid());
-    pte_value = new_pte_value;
+    pte_value = new_pte_value.combine(perm);
   }
 
   /* Assign pte to pdp, iff newly allocated. */
@@ -147,7 +147,10 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
     new_pdp_value.page_no(pte_ptr.release().get());
     new_pdp_value.p(true);
     assert(new_pdp_value.valid());
-    pdp_value = new_pdp_value;
+    pdp_value = new_pdp_value.combine(perm);
+  } else {
+    pdp_record new_pdp_value = pdp_value;
+    pdp_value = new_pdp_value.combine(perm);
   }
 
   /* Assign pdp to pdpe, iff newly allocated. */
@@ -156,7 +159,10 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg) ->
     new_pdpe_value.page_no(pdp_ptr.release().get());
     new_pdpe_value.p(true);
     assert(new_pdpe_value.valid());
-    pdpe_value = new_pdpe_value;
+    pdpe_value = new_pdpe_value.combine(perm);
+  } else {
+    pdpe_record new_pdpe_value = pdpe_value;
+    pdpe_value = new_pdpe_value.combine(perm);
   }
 
   return;

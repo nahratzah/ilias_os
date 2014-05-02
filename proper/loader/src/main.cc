@@ -54,6 +54,7 @@ void setup_loader_pmap(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
   using ilias::pmap::page_no;
   using ilias::pmap::round_page_down;
   using ilias::pmap::round_page_up;
+  using ilias::pmap::permission;
   using ilias::native_arch;
 
   const auto end = vaddr<native_arch>(
@@ -65,7 +66,7 @@ void setup_loader_pmap(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
        start != end;
        ++start) {
     auto pg = page_no<native_arch>(start.get());  // One-to-one mapping.
-    loader_pmap.map(start, pg);
+    loader_pmap.map(start, pg, permission::RWX());
   }
 }
 
