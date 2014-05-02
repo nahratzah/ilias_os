@@ -166,7 +166,7 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     pdpe_value = new_pdpe_value;
   } else {
     pdpe_record new_pdpe_value = pdpe_value.combine(perm);
-    assert(new_pdpe_value.valid);
+    assert(new_pdpe_value.valid());
     pdpe_value = new_pdpe_value;
   }
 
