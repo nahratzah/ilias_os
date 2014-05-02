@@ -80,7 +80,7 @@ void main() {
   page_allocator<ilias::native_arch> pga;
   uintptr_t lim = 2 * reinterpret_cast<uintptr_t>(&kernel_end);
   if (lim < 32 * 1024 * 1024) lim = 32 * 1024 * 1024;
-  setup_page_allocator(pga, lde, 0x1000, lim);
+  setup_page_allocator(pga, lde, 1024 * 1024, lim);
   punch_loader(pga);
 
   /* Create pmap for loader. */
