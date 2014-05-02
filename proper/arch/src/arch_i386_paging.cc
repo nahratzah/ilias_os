@@ -39,9 +39,7 @@ void enable_paging(pmap::pmap<native_arch>& p) {
        * Push jump to label 0 on the stack, in order to use lret instruction
        * to fix up the code segment.
        */
-      "\tpushl %3\n"
-      "\tpushl 1f\n"
-      "\tlret\n"
+      "\tjmpl %3, $1f\n"
       "\tnop\n"
       "1:\n"
 
@@ -55,8 +53,8 @@ void enable_paging(pmap::pmap<native_arch>& p) {
       "\tmovl %%eax, %%cr0\n"
   :
   :   "r"(pmap_ptr), "a"(gdt_ptr), "r"(cr4_flags),
-      "i"(uint16_t(gdt_idx::kernel_code)),
-      "i"(uint16_t(gdt_idx::kernel_data))
+      "i"(uint16_t(gdt_idx::kernel_code) << 3),
+      "i"(uint16_t(gdt_idx::kernel_data) << 3)
   :   "eax");
 }
 
