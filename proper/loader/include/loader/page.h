@@ -4,6 +4,7 @@
 #include <ilias/arch.h>
 #include <ilias/pmap/page.h>
 #include <ilias/pmap/pmap.h>
+#include <climits>
 #include <vector>
 
 namespace loader {
@@ -11,17 +12,20 @@ namespace loader {
 template<ilias::arch Arch>
 class page {
  public:
-  page() noexcept : pgno_(0) {}
-  page(ilias::pmap::page_no<Arch> pgno) noexcept : pgno_(pgno) {}
+  page() noexcept;
+  page(ilias::pmap::page_no<Arch>) noexcept;
 
-  ilias::pmap::page_no<Arch> address() const noexcept { return pgno_; }
-  bool is_free() const noexcept { return free_; }
-  void mark_in_use() noexcept { free_ = false; }
-  void mark_as_free() noexcept { free_ = true; }
+  ilias::pmap::page_no<Arch> address() const noexcept;
+  bool is_free() const noexcept;
+  void mark_in_use() noexcept;
+  void mark_as_free() noexcept;
 
  private:
-  ilias::pmap::page_no<Arch> pgno_;
-  bool free_ = true;
+  using type = typename ilias::pmap::page_no<Arch>::type;
+  static constexpr unsigned int type_bits = sizeof(type) * CHAR_BIT - 1U;
+
+  bool free_ : 1;
+  type pgno_ : type_bits;
 };
 
 template<ilias::arch Arch>

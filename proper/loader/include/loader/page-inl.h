@@ -9,6 +9,39 @@ namespace loader {
 
 
 template<ilias::arch Arch>
+page<Arch>::page() noexcept
+: free_(true),
+  pgno_(true)
+{}
+
+template<ilias::arch Arch>
+page<Arch>::page(ilias::pmap::page_no<Arch> pgno) noexcept
+: free_(true),
+  pgno_(pgno.get())
+{}
+
+template<ilias::arch Arch>
+auto page<Arch>::address() const noexcept -> ilias::pmap::page_no<Arch> {
+  return ilias::pmap::page_no<Arch>(pgno_);
+}
+
+template<ilias::arch Arch>
+auto page<Arch>::is_free() const noexcept -> bool {
+  return free_;
+}
+
+template<ilias::arch Arch>
+auto page<Arch>::mark_in_use() noexcept -> void {
+  free_ = false;
+}
+
+template<ilias::arch Arch>
+auto page<Arch>::mark_as_free() noexcept -> void {
+  free_ = true;
+}
+
+
+template<ilias::arch Arch>
 struct page_allocator<Arch>::comparator {
  private:
   const ilias::pmap::page_no<Arch>&
