@@ -113,8 +113,10 @@ std::string_ref command_line() {
 
   std::string_ref result;
   multiboot_info* info = reinterpret_cast<multiboot_info*>(mb_data);
-  const char* cmd_ptr = reinterpret_cast<const char*>(info->cmdline);
-  if (cmd_ptr) result = cmd_ptr;
+  if (info->flags & (1U << 2)) {
+    const char* cmd_ptr = reinterpret_cast<const char*>(info->cmdline);
+    if (cmd_ptr) result = cmd_ptr;
+  }
   return result;
 }
 
