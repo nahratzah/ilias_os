@@ -16,26 +16,32 @@ extern "C" char kernel_end;
 
 /* Set up page allocator so it tracks all pages below 4GB. */
 void setup_page_allocator(page_allocator<ilias::native_arch>& pga,
-                          const ldexport& lde) {
+                          const ldexport& lde,
+                          uint64_t base, uint64_t limit) {
+  base = ilias::pmap::round_page_up(base, ilias::native_arch);
+  limit = ilias::pmap::round_page_down(limit, ilias::native_arch);
+  if (_predict_false(base >= limit)) return;
+
   /* Track all pages. */
   for (const auto& range : lde.physmem) {
     auto addr = ilias::pmap::round_page_up(range.addr, ilias::native_arch);
     auto end = ilias::pmap::round_page_down(range.addr + range.len,
                                             ilias::native_arch);
-    if (end > 0x100000000ULL) end = 0x100000000ULL;  // Truncate to 4GB.
+    if (addr < base) addr = base;
+    if (end > limit) end = limit;
     if (end > addr) pga.add_range(addr, end - addr);
   }
   pga.shrink_to_fit();
+}
 
-  /* Punch out the loader, so it won't get allocated in. */
-  {
-    uintptr_t start = reinterpret_cast<uintptr_t>(&kernel_start);
-    uintptr_t end = reinterpret_cast<uintptr_t>(&kernel_end);
-    start = ilias::pmap::round_page_down(start, ilias::native_arch);
-    end = ilias::pmap::round_page_up(end, ilias::native_arch);
-    pga.mark_in_use(ilias::pmap::phys_addr<ilias::native_arch>(start),
-                    ilias::pmap::phys_addr<ilias::native_arch>(end));
-  }
+/* Punch out the loader, so it won't get allocated in. */
+void punch_loader(page_allocator<ilias::native_arch>& pga) {
+  uintptr_t start = reinterpret_cast<uintptr_t>(&kernel_start);
+  uintptr_t end = reinterpret_cast<uintptr_t>(&kernel_end);
+  start = ilias::pmap::round_page_down(start, ilias::native_arch);
+  end = ilias::pmap::round_page_up(end, ilias::native_arch);
+  pga.mark_in_use(ilias::pmap::phys_addr<ilias::native_arch>(start),
+                  ilias::pmap::phys_addr<ilias::native_arch>(end));
 }
 
 /* Map all pages from the loader into the page map. */
@@ -70,9 +76,12 @@ void main() {
   ldexport& lde = ldexport_get();
   bios_put_str(lde.to_string());
 
-  /* Initialize our page map. */
+  /* Initialize our page allocator. */
   page_allocator<ilias::native_arch> pga;
-  setup_page_allocator(pga, lde);
+  uintptr_t lim = 2 * reinterpret_cast<uintptr_t>(&kernel_end);
+  if (lim < 32 * 1024 * 1024) lim = 32 * 1024 * 1024;
+  setup_page_allocator(pga, lde, 0x1000, lim);
+  punch_loader(pga);
 
   /* Create pmap for loader. */
   ilias::pmap::pmap<ilias::native_arch> loader_pmap{ pga };
