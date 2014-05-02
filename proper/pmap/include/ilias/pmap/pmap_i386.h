@@ -31,6 +31,8 @@ class pmap<arch::i386> {
 
   static constexpr std::array<size_t, 2> N_PAGES = {{ 1, 1 << 9 }};
 
+  const void* get_pmap_ptr() const noexcept { return &pdpe_; }
+
  private:
   static constexpr unsigned int offset_bits = 12;
   static constexpr unsigned int pte_offset_bits = 9;
