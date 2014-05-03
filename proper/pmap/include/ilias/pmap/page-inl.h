@@ -160,288 +160,326 @@ auto page_count<Arch>::operator-=(page_count c) noexcept -> page_count& {
 
 
 template<arch A>
-bool operator==(const phys_addr<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator==(const phys_addr<A>& a, const phys_addr<A>& b)
+    noexcept {
   return a.get() == b.get();
 }
 template<arch A>
-bool operator!=(const phys_addr<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator!=(const phys_addr<A>& a, const phys_addr<A>& b)
+    noexcept {
   return !(a == b);
 }
 template<arch A>
-bool operator<(const phys_addr<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator<(const phys_addr<A>& a, const phys_addr<A>& b)
+    noexcept {
   return a.get() < b.get();
 }
 template<arch A>
-bool operator>(const phys_addr<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator>(const phys_addr<A>& a, const phys_addr<A>& b)
+    noexcept {
   return b < a;
 }
 template<arch A>
-bool operator<=(const phys_addr<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator<=(const phys_addr<A>& a, const phys_addr<A>& b)
+    noexcept {
   return !(b < a);
 }
 template<arch A>
-bool operator>=(const phys_addr<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator>=(const phys_addr<A>& a, const phys_addr<A>& b)
+    noexcept {
   return !(a < b);
 }
 
 template<arch A>
-bool operator==(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator==(const vaddr<A>& a, const vaddr<A>& b) noexcept {
   return a.get() == b.get();
 }
 template<arch A>
-bool operator!=(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator!=(const vaddr<A>& a, const vaddr<A>& b) noexcept {
   return !(a == b);
 }
 template<arch A>
-bool operator<(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator<(const vaddr<A>& a, const vaddr<A>& b) noexcept {
   return a.get() < b.get();
 }
 template<arch A>
-bool operator>(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator>(const vaddr<A>& a, const vaddr<A>& b) noexcept {
   return b < a;
 }
 template<arch A>
-bool operator<=(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator<=(const vaddr<A>& a, const vaddr<A>& b) noexcept {
   return !(b < a);
 }
 template<arch A>
-bool operator>=(const vaddr<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator>=(const vaddr<A>& a, const vaddr<A>& b) noexcept {
   return !(a < b);
 }
 
 template<arch A>
-bool operator==(const page_no<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator==(const page_no<A>& a, const page_no<A>& b) noexcept {
   return a.get() == b.get();
 }
 template<arch A>
-bool operator!=(const page_no<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator!=(const page_no<A>& a, const page_no<A>& b) noexcept {
   return !(a == b);
 }
 template<arch A>
-bool operator<(const page_no<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator<(const page_no<A>& a, const page_no<A>& b) noexcept {
   return a.get() < b.get();
 }
 template<arch A>
-bool operator>(const page_no<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator>(const page_no<A>& a, const page_no<A>& b) noexcept {
   return b < a;
 }
 template<arch A>
-bool operator<=(const page_no<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator<=(const page_no<A>& a, const page_no<A>& b) noexcept {
   return !(b < a);
 }
 template<arch A>
-bool operator>=(const page_no<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator>=(const page_no<A>& a, const page_no<A>& b) noexcept {
   return !(a < b);
 }
 
 template<arch A>
-bool operator==(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator==(const vpage_no<A>& a, const vpage_no<A>& b)
+    noexcept {
   return a.get() == b.get();
 }
 template<arch A>
-bool operator!=(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator!=(const vpage_no<A>& a, const vpage_no<A>& b)
+    noexcept {
   return !(a == b);
 }
 template<arch A>
-bool operator<(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator<(const vpage_no<A>& a, const vpage_no<A>& b)
+    noexcept {
   return a.get() < b.get();
 }
 template<arch A>
-bool operator>(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator>(const vpage_no<A>& a, const vpage_no<A>& b)
+    noexcept {
   return b < a;
 }
 template<arch A>
-bool operator<=(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator<=(const vpage_no<A>& a, const vpage_no<A>& b)
+    noexcept {
   return !(b < a);
 }
 template<arch A>
-bool operator>=(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator>=(const vpage_no<A>& a, const vpage_no<A>& b)
+    noexcept {
   return !(a < b);
 }
 
 template<arch A>
-bool operator==(const phys_addr<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator==(const phys_addr<A>& a, const page_no<A>& b)
+    noexcept {
   return a == phys_addr<A>(b);
 }
 template<arch A>
-bool operator==(const page_no<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator==(const page_no<A>& a, const phys_addr<A>& b)
+    noexcept {
   return phys_addr<A>(a) == b;
 }
 template<arch A>
-bool operator!=(const phys_addr<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator!=(const phys_addr<A>& a, const page_no<A>& b)
+    noexcept {
   return a != phys_addr<A>(b);
 }
 template<arch A>
-bool operator!=(const page_no<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator!=(const page_no<A>& a, const phys_addr<A>& b)
+    noexcept {
   return phys_addr<A>(a) != b;
 }
 template<arch A>
-bool operator<(const phys_addr<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator<(const phys_addr<A>& a, const page_no<A>& b)
+    noexcept {
   return a < phys_addr<A>(b);
 }
 template<arch A>
-bool operator<(const page_no<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator<(const page_no<A>& a, const phys_addr<A>& b)
+    noexcept {
   return phys_addr<A>(a) < b;
 }
 template<arch A>
-bool operator>(const phys_addr<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator>(const phys_addr<A>& a, const page_no<A>& b)
+    noexcept {
   return a > phys_addr<A>(b);
 }
 template<arch A>
-bool operator>(const page_no<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator>(const page_no<A>& a, const phys_addr<A>& b)
+    noexcept {
   return phys_addr<A>(a) > b;
 }
 template<arch A>
-bool operator<=(const phys_addr<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator<=(const phys_addr<A>& a, const page_no<A>& b)
+    noexcept {
   return a <= phys_addr<A>(b);
 }
 template<arch A>
-bool operator<=(const page_no<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator<=(const page_no<A>& a, const phys_addr<A>& b)
+    noexcept {
   return phys_addr<A>(a) <= b;
 }
 template<arch A>
-bool operator>=(const phys_addr<A>& a, const page_no<A>& b) noexcept {
+constexpr bool operator>=(const phys_addr<A>& a, const page_no<A>& b)
+    noexcept {
   return a >= phys_addr<A>(b);
 }
 template<arch A>
-bool operator>=(const page_no<A>& a, const phys_addr<A>& b) noexcept {
+constexpr bool operator>=(const page_no<A>& a, const phys_addr<A>& b)
+    noexcept {
   return phys_addr<A>(a) >= b;
 }
 
 template<arch A>
-bool operator==(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator==(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
   return a == vaddr<A>(b);
 }
 template<arch A>
-bool operator==(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator==(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
   return vaddr<A>(a) == b;
 }
 template<arch A>
-bool operator!=(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator!=(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
   return a != vaddr<A>(b);
 }
 template<arch A>
-bool operator!=(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator!=(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
   return vaddr<A>(a) != b;
 }
 template<arch A>
-bool operator<(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator<(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
   return a < vaddr<A>(b);
 }
 template<arch A>
-bool operator<(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator<(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
   return vaddr<A>(a) < b;
 }
 template<arch A>
-bool operator>(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator>(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
   return a > vaddr<A>(b);
 }
 template<arch A>
-bool operator>(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator>(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
   return vaddr<A>(a) > b;
 }
 template<arch A>
-bool operator<=(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator<=(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
   return a <= vaddr<A>(b);
 }
 template<arch A>
-bool operator<=(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator<=(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
   return vaddr<A>(a) <= b;
 }
 template<arch A>
-bool operator>=(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
+constexpr bool operator>=(const vaddr<A>& a, const vpage_no<A>& b) noexcept {
   return a >= vaddr<A>(b);
 }
 template<arch A>
-bool operator>=(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
+constexpr bool operator>=(const vpage_no<A>& a, const vaddr<A>& b) noexcept {
   return vaddr<A>(a) >= b;
 }
 
 template<arch A>
-bool operator==(const page_count<A>& a, const page_count<A>& b) noexcept {
+constexpr bool operator==(const page_count<A>& a, const page_count<A>& b)
+    noexcept {
   return a.get() == b.get();
 }
 template<arch A>
-bool operator!=(const page_count<A>& a, const page_count<A>& b) noexcept {
+constexpr bool operator!=(const page_count<A>& a, const page_count<A>& b)
+    noexcept {
   return !(a == b);
 }
 template<arch A>
-bool operator<(const page_count<A>& a, const page_count<A>& b) noexcept {
+constexpr bool operator<(const page_count<A>& a, const page_count<A>& b)
+    noexcept {
   return a.get() < b.get();
 }
 template<arch A>
-bool operator>(const page_count<A>& a, const page_count<A>& b) noexcept {
+constexpr bool operator>(const page_count<A>& a, const page_count<A>& b)
+    noexcept {
   return b < a;
 }
 template<arch A>
-bool operator<=(const page_count<A>& a, const page_count<A>& b) noexcept {
+constexpr bool operator<=(const page_count<A>& a, const page_count<A>& b)
+    noexcept {
   return !(b < a);
 }
 template<arch A>
-bool operator>=(const page_count<A>& a, const page_count<A>& b) noexcept {
+constexpr bool operator>=(const page_count<A>& a, const page_count<A>& b)
+    noexcept {
   return !(a < b);
 }
 
 template<arch A>
-page_count<A> operator-(const page_no<A>& a, const page_no<A>& b) noexcept {
+constexpr page_count<A> operator-(const page_no<A>& a, const page_no<A>& b)
+    noexcept {
   return page_count<A>(b.get() - a.get());
 }
 template<arch A>
-page_no<A> operator+(const page_no<A>& a, const page_count<A>& b) noexcept {
+constexpr page_no<A> operator+(const page_no<A>& a, const page_count<A>& b)
+    noexcept {
   return page_no<A>(a.get() + b.get());
 }
 template<arch A>
-page_no<A> operator+(const page_count<A>& a, const page_no<A>& b) noexcept {
+constexpr page_no<A> operator+(const page_count<A>& a, const page_no<A>& b)
+    noexcept {
   return b + a;
 }
 template<arch A>
-page_no<A> operator-(const page_no<A>& a, const page_count<A>& b) noexcept {
+constexpr page_no<A> operator-(const page_no<A>& a, const page_count<A>& b)
+    noexcept {
   return page_no<A>(a.get() - b.get());
 }
 
 template<arch A>
-page_count<A> operator-(const vpage_no<A>& a, const vpage_no<A>& b) noexcept {
+constexpr page_count<A> operator-(const vpage_no<A>& a, const vpage_no<A>& b)
+    noexcept {
   return page_count<A>(b.get() - a.get());
 }
 template<arch A>
-vpage_no<A> operator+(const vpage_no<A>& a, const page_count<A>& b) noexcept {
+constexpr vpage_no<A> operator+(const vpage_no<A>& a, const page_count<A>& b)
+    noexcept {
   return vpage_no<A>(a.get() + b.get());
 }
 template<arch A>
-vpage_no<A> operator+(const page_count<A>& a, const vpage_no<A>& b) noexcept {
+constexpr vpage_no<A> operator+(const page_count<A>& a, const vpage_no<A>& b)
+    noexcept {
   return b + a;
 }
 template<arch A>
-vpage_no<A> operator-(const vpage_no<A>& a, const page_count<A>& b) noexcept {
+constexpr vpage_no<A> operator-(const vpage_no<A>& a, const page_count<A>& b)
+    noexcept {
   return vpage_no<A>(a.get() - b.get());
 }
 
 template<arch A>
-page_count<A> operator+(const page_count<A>& a, const page_count<A>& b)
-    noexcept {
+constexpr page_count<A> operator+(const page_count<A>& a,
+                                  const page_count<A>& b) noexcept {
   return page_count<A>(a.get() + b.get());
 }
 template<arch A>
-page_count<A> operator-(const page_count<A>& a, const page_count<A>& b)
-    noexcept {
+constexpr page_count<A> operator-(const page_count<A>& a,
+                                  const page_count<A>& b) noexcept {
   return page_count<A>(a.get() - b.get());
 }
 
 template<arch A>
-page_count<A> operator*(const page_count<A>& a, int b) noexcept {
+constexpr page_count<A> operator*(const page_count<A>& a, int b) noexcept {
   return page_count<A>(a.get() * b);
 }
 template<arch A>
-page_count<A> operator*(int a, const page_count<A>& b) noexcept {
+constexpr page_count<A> operator*(int a, const page_count<A>& b) noexcept {
   return b * a;
 }
 template<arch A>
-page_count<A> operator/(const page_count<A>& a, int b) noexcept {
+constexpr page_count<A> operator/(const page_count<A>& a, int b) noexcept {
   return page_count<A>(a.get() / b);
 }
 template<arch A>
-auto operator/(const page_count<A>& a, const page_count<A>& b) noexcept ->
-    typename page_count<A>::type {
+constexpr auto operator/(const page_count<A>& a, const page_count<A>& b)
+    noexcept -> typename page_count<A>::type {
   return a.get() / b.get();
 }
 
