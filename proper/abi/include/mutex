@@ -15,6 +15,14 @@ struct owner_tag_;
 } /* namespace std::impl */
 
 
+struct defer_lock_t {};
+struct try_to_lock_t {};
+struct adopt_lock_t {};
+constexpr defer_lock_t defer_lock{};
+constexpr try_to_lock_t try_to_lock{};
+constexpr adopt_lock_t adopt_lock{};
+
+
 class mutex {
  public:
   constexpr mutex() noexcept = default;
@@ -39,6 +47,74 @@ class mutex {
 template<typename Callable, typename... Args>
 void call_once(once_flag& flag, Callable&& func, Args&&... args)
     noexcept(noexcept(func(forward<Args>(args)...)));
+
+
+template<typename Mutex>
+class lock_guard {
+ public:
+  using mutex_type = Mutex;
+
+  explicit lock_guard(mutex_type&);
+  lock_guard(mutex_type&, adopt_lock_t);
+  ~lock_guard() noexcept;
+
+  lock_guard(const lock_guard&) = delete;
+  lock_guard& operator=(const lock_guard&) = delete;
+
+ private:
+  mutex_type& m_;
+};
+
+
+template<typename Mutex>
+class unique_lock {
+ public:
+  using mutex_type = Mutex;
+
+  unique_lock() noexcept = default;
+  explicit unique_lock(mutex_type&);
+  unique_lock(mutex_type&, defer_lock_t) noexcept;
+  unique_lock(mutex_type&, try_to_lock_t);
+  unique_lock(mutex_type&, adopt_lock_t);
+#if 0 // XXX implement chrono for this
+  template<typename Clock, typename Duration>
+  unique_lock(mutex_type&, const chrono::time_point<Clock, Duration>&);
+  template<typename Rep, typename Period>
+  unique_lock(mutex_type&, const chrono::period<Rep, Period>&);
+#endif
+  ~unique_lock() noexcept;
+
+  unique_lock(const unique_lock&) = delete;
+  unique_lock& operator=(const unique_lock&) = delete;
+
+  unique_lock(unique_lock&&) noexcept;
+  unique_lock& operator=(unique_lock&&) noexcept;
+
+  void lock();
+  bool try_lock();
+#if 0 // XXX implement chrono for this
+  template<typename Rep, typename Period>
+  bool try_lock_for(const chrono::duration<Rep, Period>&);
+  template<typename Clock, typename Duration>
+  bool try_lock_until(const chrono::time_point<Clock, Duration>&);
+#endif
+
+  void unlock();
+
+  void swap(unique_lock&) noexcept;
+  mutex_type* release() noexcept;
+
+  bool owns_lock() const noexcept;
+  explicit operator bool() const noexcept;
+  mutex_type* mutex() const noexcept;
+
+ private:
+  mutex_type* m_ = nullptr;
+  bool locked_ = false;
+};
+
+template<typename Mutex>
+void swap(unique_lock<Mutex>&, unique_lock<Mutex>&) noexcept;
 
 
 _namespace_end(std)
