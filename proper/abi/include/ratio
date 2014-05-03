@@ -1,0 +1,152 @@
+#ifndef _RATIO_
+#define _RATIO_
+
+#include <cdecl.h>
+#include <cstdint>
+#include <stdimpl/gcd.h>
+
+_namespace_begin(std)
+
+
+template<intmax_t N, intmax_t D = 1> class ratio {
+ public:
+  static constexpr intmax_t num = impl::sign(D) * N / impl::gcd(N, D);
+  static constexpr intmax_t den = impl::abs(D) / impl::gcd(N, D);
+  using type = ratio<num, den>;
+
+  static_assert(N != INTMAX_MIN || -INTMAX_MAX == INTMAX_MIN,
+                "ill-formed program: absolute value of num "
+                "is not representable by intmax_t");
+  static_assert(D != INTMAX_MIN || -INTMAX_MAX == INTMAX_MIN,
+                "ill-formed program: absolute value of den "
+                "is not representable by intmax_t");
+  static_assert(D != 0,
+                "ill-formed program: denominator may not be zero");
+};
+
+static_assert(ratio<2, 4>::num == 1, "2/4 = 1/2");
+static_assert(ratio<2, 4>::den == 2, "2/4 = 1/2");
+
+
+/* Ratio addition. */
+template<class R1, class R2> using ratio_add =
+    typename ratio<(  R1::num * (impl::lcm(R1::den, R2::den) / R1::den)
+                    +
+                      R2::num * (impl::lcm(R1::den, R2::den) / R2::den)),
+                    impl::lcm(R1::den, R2::den)>::type;
+
+static_assert(ratio_add<ratio<1, 3>, ratio<1, 6>>::num == 1,
+              "1/3 + 1/6 == 1/2");
+static_assert(ratio_add<ratio<1, 3>, ratio<1, 6>>::den == 2,
+              "1/3 + 1/6 == 1/2");
+
+
+/* Ratio subtraction. */
+template<class R1, class R2> using ratio_subtract =
+    typename ratio<(  R1::num * (impl::lcm(R1::den, R2::den) / R1::den)
+                    -
+                      R2::num * (impl::lcm(R1::den, R2::den) / R2::den)),
+                    impl::lcm(R1::den, R2::den)>::type;
+
+static_assert(ratio_subtract<ratio<1, 2>, ratio<1, 6>>::num == 1,
+              "1/2 - 1/6 == 1/3");
+static_assert(ratio_subtract<ratio<1, 2>, ratio<1, 6>>::den == 3,
+              "1/2 - 1/6 == 1/3");
+
+
+/* Ratio multiplication. */
+template<class R1, class R2> using ratio_multiply =
+    typename ratio<(  (R1::num / impl::gcd(R1::num, R2::den))
+                    *
+                      (R2::num / impl::gcd(R2::num, R1::den))),
+                   (  (R2::den / impl::gcd(R1::num, R2::den))
+                    *
+                      (R1::den / impl::gcd(R2::num, R1::den)))>::type;
+
+static_assert(ratio_multiply<ratio<1, 3>, ratio<3, 2>>::num == 1,
+              "1/3 * 3/2 == 1/2");
+static_assert(ratio_multiply<ratio<1, 3>, ratio<3, 2>>::den == 2,
+              "1/3 * 3/2 == 1/2");
+
+
+/* Ratio division. */
+template<class R1, class R2> using ratio_divide =
+    typename ratio_multiply<R1, ratio<R2::den, R2::num>>::type;
+
+static_assert(ratio_divide<ratio<1, 2>, ratio<3, 2>>::num == 1,
+              "1/2 / 3/2 == 1/3");
+static_assert(ratio_divide<ratio<1, 2>, ratio<3, 2>>::den == 3,
+              "1/2 / 3/2 == 1/3");
+
+
+/* Ensure overflow works. */
+static_assert(ratio_add<ratio<1, INTMAX_MAX>,
+                        ratio<1, INTMAX_MAX>>::num == 2,
+              "1/MAX + 1/MAX == 2/MAX");
+static_assert(ratio_add<ratio<1, INTMAX_MAX>,
+                        ratio<1, INTMAX_MAX>>::den == INTMAX_MAX,
+              "1/MAX+1/MAX == 2/MAX");
+static_assert(ratio_multiply<ratio<1, INTMAX_MAX>,
+                             ratio<INTMAX_MAX, 2>>::num == 1,
+              "1/MAX * MAX/2 == 1/2");
+static_assert(ratio_multiply<ratio<1, INTMAX_MAX>,
+                             ratio<INTMAX_MAX, 2>>::den == 2,
+              "1/MAX * MAX/2 == 1/2");
+
+
+template<class R1, class R2> struct ratio_equal
+: integral_constant<bool, (R1::num == R2::num && R1::den == R2::den)>
+{};
+template<class R1, class R2> struct ratio_not_equal
+: integral_constant<bool, !ratio_equal<R1, R2>::value>
+{};
+template<class R1, class R2> struct ratio_less
+: integral_constant<bool, (R1::num *
+                           (impl::lcm(R1::den, R2::den) / R1::den)) ==
+                          (R2::num *
+                           (impl::lcm(R1::den, R2::den) / R2::den))>
+{};
+template<class R1, class R2> struct ratio_less_equal
+: integral_constant<bool, !ratio_less<R2, R1>::value>
+{};
+template<class R1, class R2> struct ratio_greater
+: integral_constant<bool, ratio_less<R2, R1>::value>
+{};
+template<class R1, class R2> struct ratio_greater_equal
+: integral_constant<bool, !ratio_less<R1, R2>::value>
+{};
+
+
+#if (INT_MAX / 1000000000000 >= 1000000000000)
+using yocto = ratio<1, 1000000000000000000000000>;  // 10 ^ -24
+#endif
+#if (INT_MAX /    1000000000 >= 1000000000000)
+using zepto = ratio<1,    1000000000000000000000>;  // 10 ^ -21
+#endif
+using atto  = ratio<1,       1000000000000000000>;  // 10 ^ -18
+using femto = ratio<1,          1000000000000000>;  // 10 ^ -15
+using pico  = ratio<1,             1000000000000>;  // 10 ^ -12
+using nano  = ratio<1,                1000000000>;  // 10 ^  -9
+using micro = ratio<1,                   1000000>;  // 10 ^  -6
+using milli = ratio<1,                      1000>;  // 10 ^  -3
+using centi = ratio<1,                       100>;  // 10 ^  -2
+using deci  = ratio<1,                        10>;  // 10 ^  -1
+using deca  = ratio<                       10>;     // 10 ^   1
+using hecto = ratio<                      100>;     // 10 ^   2
+using kilo  = ratio<                     1000>;     // 10 ^   3
+using mega  = ratio<                  1000000>;     // 10 ^   6
+using giga  = ratio<               1000000000>;     // 10 ^   9
+using tera  = ratio<            1000000000000>;     // 10 ^  12
+using peta  = ratio<         1000000000000000>;     // 10 ^  15
+using exa   = ratio<      1000000000000000000>;     // 10 ^  18
+#if (INT_MAX /    1000000000 >= 1000000000000)
+using zetta = ratio<   1000000000000000000000>;     // 10 ^  21
+#endif
+#if (INT_MAX / 1000000000000 >= 1000000000000)
+using yotta = ratio<1000000000000000000000000>;     // 10 ^  24
+#endif
+
+
+_namespace_end(std)
+
+#endif /* _RATIO_ */
