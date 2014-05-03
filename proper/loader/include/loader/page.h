@@ -33,7 +33,7 @@ class page_allocator
 : public ilias::pmap::pmap_support<Arch>
 {
  public:
-  page_allocator() = default;
+  page_allocator() noexcept : ilias::pmap::pmap_support<Arch>(true) {}
   page_allocator(const page_allocator&) = delete;
   page_allocator& operator=(const page_allocator&) = delete;
   ~page_allocator() noexcept override {}

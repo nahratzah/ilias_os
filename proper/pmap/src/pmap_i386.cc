@@ -137,6 +137,7 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     pte_record new_pte_value{ 0 };
     new_pte_value.page_no(pg.get());
     new_pte_value.p(true);
+    new_pte_value.us(support_.userspace);
     new_pte_value = new_pte_value.combine(perm);
     assert(new_pte_value.valid());
     pte_value = new_pte_value;
@@ -147,6 +148,7 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     pdp_record new_pdp_value{ 0 };
     new_pdp_value.page_no(pte_ptr.release().get());
     new_pdp_value.p(true);
+    new_pdp_value.us(support_.userspace);
     new_pdp_value = new_pdp_value.combine(perm);
     assert(new_pdp_value.valid());
     pdp_value = new_pdp_value;

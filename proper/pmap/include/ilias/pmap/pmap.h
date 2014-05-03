@@ -12,12 +12,16 @@ namespace pmap {
 
 template<arch Arch> class pmap_support {
  public:
+  pmap_support(bool userspace) noexcept : userspace(userspace) {}
   virtual ~pmap_support() noexcept {}
 
   virtual vpage_no<Arch> map_page(page_no<Arch>) = 0;
   virtual void unmap_page(vpage_no<Arch>) noexcept = 0;
   virtual page_no<Arch> allocate_page() = 0;
   virtual void deallocate_page(page_no<Arch>) noexcept = 0;
+
+  /* Set if the pmap controls a userspace map. */
+  const bool userspace;
 };
 
 template<arch> class pmap;  // Undefined.
