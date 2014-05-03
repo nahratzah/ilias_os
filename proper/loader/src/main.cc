@@ -58,7 +58,7 @@ void setup_loader_pmap(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
   using ilias::native_arch;
 
   const auto end = vaddr<native_arch>(
-      round_page_up(reinterpret_cast<uintptr_t>(&kernel_end),
+      round_page_up(reinterpret_cast<uintptr_t>(&kernel_end) - 1U,
                     native_arch));
   for (vpage_no<native_arch> start = vaddr<native_arch>(
            round_page_down(reinterpret_cast<uintptr_t>(&kernel_start),
@@ -67,6 +67,30 @@ void setup_loader_pmap(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
        ++start) {
     auto pg = page_no<native_arch>(start.get());  // One-to-one mapping.
     loader_pmap.map(start, pg, permission::RWX());
+  }
+}
+
+/* Map vram into pmap. */
+void setup_loader_vram(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
+  using ilias::pmap::vaddr;
+  using ilias::pmap::vpage_no;
+  using ilias::pmap::page_no;
+  using ilias::pmap::round_page_down;
+  using ilias::pmap::round_page_up;
+  using ilias::pmap::permission;
+  using ilias::native_arch;
+
+  uintptr_t vram_begin, vram_end;
+  std::tie(vram_begin, vram_end) = vram_ram();
+
+  const auto end = vaddr<native_arch>(round_page_up(vram_end - 1U,
+                                                    native_arch));
+  for (vpage_no<native_arch> start =
+           vaddr<native_arch>(round_page_down(vram_begin, native_arch));
+       start != end;
+       ++start) {
+    auto pg = page_no<native_arch>(start.get());  // One-to-one mapping.
+    loader_pmap.map(start, pg, permission::RW() | permission::UNCACHED());
   }
 }
 
@@ -144,6 +168,7 @@ void main() {
   /* Create pmap for loader. */
   ilias::pmap::pmap<ilias::native_arch>& loader_pmap = get_pmap(pga);
   setup_loader_pmap(loader_pmap);
+  setup_loader_vram(loader_pmap);
 
   /* Enable paging. */
   bios_put_str("Trying to enable paging... ");

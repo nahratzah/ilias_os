@@ -19,21 +19,33 @@ struct alignas(2) vram_char {
 static_assert(sizeof(vram_char) == 2, "Video ram character size must be 2.");
 static_assert(alignof(vram_char) <= 2, "Video ram character "
                                        "alignment constraint.");
+constexpr uintptr_t vram_addr = 0xb8000;
+constexpr size_t vram_lines = 25;
+constexpr size_t vram_columns = 80;
 
 
 } /* namespace loader::<unnamed> */
 
 
+std::tuple<uintptr_t, uintptr_t> vram_ram() noexcept {
+  constexpr auto vram_char_count = vram_lines * vram_columns;
+  return std::make_tuple(vram_addr,
+                         vram_addr + sizeof(vram_char) * vram_char_count);
+}
+
 void bios_put_char(char ch) noexcept {
-  vram_char*const video_ram = reinterpret_cast<vram_char*>(0xb8000);
+  vram_char*const video_ram = reinterpret_cast<vram_char*>(vram_addr);
   static uint32_t video_off = 0;
 
   if (ch != '\n') {
-    if (video_off == 80 * 25)
-      memmove(video_ram, video_ram + 80, 24 * 80 * sizeof(vram_char));
+    if (video_off == vram_columns * vram_lines) {
+      memmove(video_ram, video_ram + vram_columns,
+              (vram_lines - 1U) * vram_columns * sizeof(vram_char));
+      video_off -= vram_columns;
+    }
     video_ram[video_off++] = vram_char{ ch, white_on_blue };
   } else {
-    while (video_off % 80 != 0)
+    while (video_off % vram_columns != 0)
       video_ram[video_off++] = vram_char{ ' ', gray_on_black };
   }
 }
