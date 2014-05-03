@@ -2,6 +2,7 @@
 #define _CTIME_
 
 #include <cstddef_misc/null.h>
-#include <time_misc/tm.h>
+#include <ctime_misc/tm.h>
+#include <ctime_misc/time_t.h>
 
 #endif /* _CTIME_ */

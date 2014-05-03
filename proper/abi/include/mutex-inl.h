@@ -4,6 +4,7 @@
 #include <atomic>
 #include <utility>
 #include <abi/ext/atomic.h>
+#include <chrono>
 #include <system_error>
 
 _namespace_begin(std)
@@ -101,7 +102,6 @@ unique_lock<Mutex>::unique_lock(mutex_type& m, adopt_lock_t)
   locked_(true)
 {}
 
-#if 0 // XXX implement chrono for this
 template<typename Mutex>
 template<typename Clock, typename Duration>
 unique_lock<Mutex>::unique_lock(
@@ -117,7 +117,6 @@ unique_lock<Mutex>::unique_lock(mutex_type& m,
 : m_(&m),
   locked_(m_->try_lock_for(rel_time))
 {}
-#endif
 
 template<typename Mutex>
 unique_lock<Mutex>::unique_lock(unique_lock&& o) noexcept
@@ -154,11 +153,10 @@ auto unique_lock<Mutex>::try_lock() -> bool {
   return locked_ = m_->try_lock();
 }
 
-#if 0 // XXX implement chrono for this
 template<typename Mutex>
 template<typename Clock, typename Duration>
 auto unique_lock<Mutex>::try_lock_until(
-    const chrono::time_point<Clock, Duration>& abs_time) noexcept -> bool {
+    const chrono::time_point<Clock, Duration>& abs_time) -> bool {
   if (_predict_false(m_ == nullptr))
     throw system_error(make_error_code(errc::operation_not_permitted));
   if (_predict_false(locked_))
@@ -169,14 +167,13 @@ auto unique_lock<Mutex>::try_lock_until(
 template<typename Mutex>
 template<typename Rep, typename Period>
 auto unique_lock<Mutex>::try_lock_for(
-    const chrono::duration<Rep, Period>& rel_time) noexcept -> bool {
+    const chrono::duration<Rep, Period>& rel_time) -> bool {
   if (_predict_false(m_ == nullptr))
     throw system_error(make_error_code(errc::operation_not_permitted));
   if (_predict_false(locked_))
     throw system_error(make_error_code(errc::resource_deadlock_would_occur));
   return locked_ = m_->try_lock_for(rel_time);
 }
-#endif
 
 template<typename Mutex>
 auto unique_lock<Mutex>::unlock() -> void {

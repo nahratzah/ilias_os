@@ -1,7 +1,7 @@
-#ifndef _TIME_MISC_TM_H_
-#define _TIME_MISC_TM_H_
+#ifndef _CTIME_MISC_TM_H_
+#define _CTIME_MISC_TM_H_
 
-#include <time_misc/tm_fwd.h>
+#include <ctime_misc/tm_fwd.h>
 #include <cdecl.h>
 
 _namespace_begin(std)
@@ -20,4 +20,4 @@ struct tm {
 
 _namespace_end(std)
 
-#endif /* _TIME_MISC_TM_H_ */
+#endif /* _CTIME_MISC_TM_H_ */

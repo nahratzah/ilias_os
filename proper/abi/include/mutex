@@ -6,6 +6,7 @@
 #include <utility>
 #include <stdimpl/once_flag.h>
 #include <abi/semaphore.h>
+#include <chrono>
 
 _namespace_begin(std)
 namespace impl {
@@ -76,12 +77,10 @@ class unique_lock {
   unique_lock(mutex_type&, defer_lock_t) noexcept;
   unique_lock(mutex_type&, try_to_lock_t);
   unique_lock(mutex_type&, adopt_lock_t);
-#if 0 // XXX implement chrono for this
   template<typename Clock, typename Duration>
   unique_lock(mutex_type&, const chrono::time_point<Clock, Duration>&);
   template<typename Rep, typename Period>
-  unique_lock(mutex_type&, const chrono::period<Rep, Period>&);
-#endif
+  unique_lock(mutex_type&, const chrono::duration<Rep, Period>&);
   ~unique_lock() noexcept;
 
   unique_lock(const unique_lock&) = delete;
@@ -92,12 +91,10 @@ class unique_lock {
 
   void lock();
   bool try_lock();
-#if 0 // XXX implement chrono for this
   template<typename Rep, typename Period>
   bool try_lock_for(const chrono::duration<Rep, Period>&);
   template<typename Clock, typename Duration>
   bool try_lock_until(const chrono::time_point<Clock, Duration>&);
-#endif
 
   void unlock();
 
