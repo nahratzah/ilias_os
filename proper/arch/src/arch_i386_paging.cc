@@ -6,7 +6,7 @@ namespace ilias {
 namespace i386 {
 
 
-void enable_paging(pmap::pmap<native_arch>& p) {
+void enable_paging(const gdt_t& gdt, pmap::pmap<native_arch>& p) {
   uintptr_t pmap_ptr = reinterpret_cast<uintptr_t>(p.get_pmap_ptr());
   const void* gdt_ptr = gdt.get_gdt_ptr();
 

@@ -6,6 +6,7 @@
 #include <ilias/pmap/consts.h>
 #include <ilias/cpuid.h>
 #include <ilias/pmap/pmap_i386.h>
+#include <ilias/i386/gdt.h>
 #include <ilias/i386/paging.h>
 #include <mutex>
 
@@ -172,7 +173,7 @@ void main() {
 
   /* Enable paging. */
   bios_put_str("Trying to enable paging... ");
-  ilias::i386::enable_paging(loader_pmap);
+  ilias::i386::enable_paging(ilias::i386::gdt, loader_pmap);
   bios_put_str("Succes!\n");
 }
 
