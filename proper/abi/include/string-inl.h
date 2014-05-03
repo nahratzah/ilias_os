@@ -2072,7 +2072,6 @@ inline size_t hash<wstring>::operator()(const wstring& s) const noexcept {
 }
 
 
-_namespace_end(std)
 inline namespace literals {
 inline namespace string_literals {
 
@@ -2094,4 +2093,5 @@ inline _namespace(std)::u32string operator"" s(const char32_t* s, size_t l) {
 }
 
 
-}} /* namespace literals::string_literals */
+}} /* namespace std::literals::string_literals */
+_namespace_end(std)
