@@ -33,6 +33,13 @@ class pmap<arch::i386> {
 
   const void* get_pmap_ptr() const noexcept { return &pdpe_; }
 
+  /* Worst case, the pmap requires this many pages to hold its information. */
+  static constexpr page_count<arch::i386> worst_case_npages =
+      page_count<arch::i386>(4 /* PDP */ + 4 * 512 /* PTE */);
+  static constexpr vpage_no<arch::i386> kva_map_self =
+      vpage_no<arch::i386>(0xffffffff >> page_shift(arch::i386)) -
+      worst_case_npages;
+
  private:
   static constexpr unsigned int offset_bits = 12;
   static constexpr unsigned int pte_offset_bits = 9;
