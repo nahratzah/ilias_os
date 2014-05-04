@@ -4,6 +4,7 @@
 #include <cdecl.h>
 #include <cstdint>
 #include <stdimpl/gcd.h>
+#include <type_traits>
 
 _namespace_begin(std)
 
