@@ -51,6 +51,10 @@ recursive_mutex::~recursive_mutex() noexcept {
 
 auto recursive_mutex::lock() -> void {
   if (owner_tag_.load(memory_order_relaxed) == &impl::owner_tag) {
+    if (_predict_false(recurs_ + 1U == 0U)) {
+      throw system_error(make_error_code(
+          errc::resource_unavailable_try_again));
+    }
     recurs_++;
     return;
   }
@@ -65,6 +69,10 @@ auto recursive_mutex::lock() -> void {
 
 auto recursive_mutex::try_lock() noexcept -> bool {
   if (owner_tag_.load(memory_order_relaxed) == &impl::owner_tag) {
+    if (_predict_false(recurs_ + 1U == 0U)) {
+      throw system_error(make_error_code(
+          errc::resource_unavailable_try_again));
+    }
     recurs_++;
     return true;
   }
