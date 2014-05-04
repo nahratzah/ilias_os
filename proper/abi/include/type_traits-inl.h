@@ -463,15 +463,14 @@ template<typename T> struct common_type<T> { using type = decay_t<T>; };
 template<typename T, typename U> struct common_type<T, U>
 {
  private:
-  static add_rvalue_reference<T> vt();  // declval<T>()
-  static add_rvalue_reference<U> vu();  // declval<U>()
+  static add_rvalue_reference_t<T> vt();  // declval<T>()
+  static add_rvalue_reference_t<U> vu();  // declval<U>()
 
  public:
   using type = decay_t<decltype(true ? vt() : vu())>;
 };
 template<typename T, typename U, typename... V> struct common_type<T, U, V...>
 {
- private:
  public:
   using type = common_type_t<common_type_t<T, U>, V...>;
 };
