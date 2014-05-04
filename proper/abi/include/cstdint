@@ -18,6 +18,10 @@ typedef _TYPES(uint32_t)	uint32_t;
 typedef _TYPES(int32_t)		int32_t;
 typedef _TYPES(uint64_t)	uint64_t;
 typedef _TYPES(int64_t)		int64_t;
+#if _USE_INT128
+typedef _TYPES(uint128_t)	uint128_t;
+typedef _TYPES(int128_t)	int128_t;
+#endif
 typedef _TYPES(uintmax_t)	uintmax_t;
 typedef _TYPES(intmax_t)	intmax_t;
 typedef _TYPES(sig_atomic_t)	sig_atomic_t;
@@ -57,6 +61,10 @@ using std::uint32_t;
 using std::int32_t;
 using std::uint64_t;
 using std::int64_t;
+#if _USE_INT128
+using std::uint128_t;
+using std::int128_t;
+#endif
 using std::uintmax_t;
 using std::intmax_t;
 using std::sig_atomic_t;
@@ -104,10 +112,17 @@ using std::u_int64_t;
 #define INT32_MAX		INT_MAX
 #define INT64_MIN		LLONG_MIN
 #define INT64_MAX		LLONG_MAX
+#if _USE_INT128
+# define INT128_MIN		(-INT128_MAX - 1)
+# define INT128_MAX		((int128_t(INT64_MAX) << 64) | UINT64_MAX)
+#endif
 #define UINT8_MAX		UCHAR_MAX
 #define UINT16_MAX		USHRT_MAX
 #define UINT32_MAX		UINT_MAX
 #define UINT64_MAX		ULLONG_MAX
+#if _USE_INT128
+# define UINT128_MAX		(uint128_t(-1))
+#endif
 
 #define INT_FAST8_MIN		SCHAR_MIN
 #define INT_FAST8_MAX		SCHAR_MAX

@@ -24,6 +24,10 @@
 namespace __cxxabiv1 {
 #endif
 
+#if __SIZEOF_INT128__
+# define _USE_INT128	1
+#endif
+
 const unsigned int _ABI_VALUE(bits_per_byte) = 8;
 
 
@@ -31,11 +35,17 @@ typedef unsigned char		_ABI_TYPES(uint8_t);
 typedef unsigned short		_ABI_TYPES(uint16_t);
 typedef unsigned int		_ABI_TYPES(uint32_t);
 typedef unsigned long long	_ABI_TYPES(uint64_t);
+#if _USE_INT128
+typedef unsigned __int128	_ABI_TYPES(uint128_t);
+#endif
 
 typedef signed char		_ABI_TYPES(int8_t);
 typedef signed short		_ABI_TYPES(int16_t);
 typedef signed int		_ABI_TYPES(int32_t);
 typedef signed long long	_ABI_TYPES(int64_t);
+#if _USE_INT128
+typedef signed __int128		_ABI_TYPES(int128_t);
+#endif
 
 /* Pointer magic. */
 #ifdef __LP64__
