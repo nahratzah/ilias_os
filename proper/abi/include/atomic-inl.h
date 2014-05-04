@@ -353,6 +353,10 @@ _ATOMIC_INTEGRAL(long)
 _ATOMIC_INTEGRAL(unsigned long)
 _ATOMIC_INTEGRAL(long long)
 _ATOMIC_INTEGRAL(unsigned long long)
+#if _USE_INT128
+_ATOMIC_INTEGRAL(int128_t)
+_ATOMIC_INTEGRAL(uint128_t)
+#endif
 
 #undef _ATOMIC_GENERIC
 #undef _ATOMIC_ARITHMATIC
