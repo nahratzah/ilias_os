@@ -86,9 +86,6 @@ struct global_stats_group final {
   _namespace(std)::once_flag init_;
 };
 
-static_assert(_namespace(std)::is_pod<global_stats_group>::value,
-              "Global stats group must be a POD type.");
-
 class stats_leaf
 : public basic_stats
 {

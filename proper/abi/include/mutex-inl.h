@@ -4,6 +4,7 @@
 #include <atomic>
 #include <utility>
 #include <abi/ext/atomic.h>
+#include <abi/linker.h>
 #include <chrono>
 #include <system_error>
 
@@ -18,6 +19,9 @@ inline auto mutex::native_handle() -> native_handle_type {
 template<typename Callable, typename... Args>
 void call_once(once_flag& flag, Callable&& func, Args&&... args)
     noexcept(noexcept(func(forward<Args>(args)...))) {
+  const volatile uint8_t* done =
+      reinterpret_cast<const uint8_t*>(&flag.guard_);
+
   /* Special lock for flag. */
   class once_flag_lock {
    public:
@@ -26,33 +30,44 @@ void call_once(once_flag& flag, Callable&& func, Args&&... args)
     once_flag_lock& operator=(const once_flag_lock&) = delete;
 
     once_flag_lock(once_flag& flag) noexcept
-    : flag_(flag)
-    {
-      while (flag_.lock.exchange(true, memory_order_relaxed))
-        abi::ext::pause();
-      atomic_thread_fence(memory_order_acquire);
-    }
+    : flag_(flag),
+      acquired_(abi::__cxa_guard_acquire(
+          reinterpret_cast<abi::__cxa_guard*>(&flag.guard_)))
+    {}
 
     ~once_flag_lock() noexcept {
-      atomic_thread_fence(memory_order_acq_rel);
-      if (succes_) flag_.done = true;
-      flag_.lock.exchange(false, memory_order_release);
+      if (!acquired_) {
+        /* SKIP */
+      } else if (succes_) {
+        __cxa_guard_release(
+            reinterpret_cast<abi::__cxa_guard*>(&flag_.guard_));
+      } else {
+        __cxa_guard_abort(
+            reinterpret_cast<abi::__cxa_guard*>(&flag_.guard_));
+      }
     }
 
     void commit() noexcept {
+      assert(acquired_);
       succes_ = true;
     }
 
+    explicit operator bool() const noexcept {
+      return acquired_;
+    }
+
    private:
-    bool succes_ = false;
     once_flag& flag_;
+    bool acquired_ = false;
+    bool succes_ = false;
   };
 
 
-  if (_predict_true(flag.done)) return;
+  if (_predict_true(*done)) return;
 
   once_flag_lock lck{ flag };
-  if (!flag.done) {
+  if (lck) {
+    assert(!*done);
     func(forward<Args>(args)...);
     lck.commit();
   }

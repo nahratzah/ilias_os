@@ -2,26 +2,26 @@
 #define _STDIMPL_ONCE_FLAG_H_
 
 #include <cdecl.h>
+#include <cstdint>
 #ifdef __cplusplus
-# include <atomic>
 # include <type_traits>
 #endif
-#include <cstdbool>
 
 _namespace_begin(std)
 
 struct once_flag {
+  uint64_t guard_ = 0;
+
 #ifdef __cplusplus
-  atomic<bool> lock;
-  volatile bool done;
-#else
-  _Atomic(Bool) lock;
-  volatile Bool done;
+  constexpr once_flag() noexcept = default;
+  once_flag(const once_flag&) = delete;
+  once_flag& operator=(const once_flag&) = delete;
 #endif
 };
 
 #ifdef __cplusplus
-static_assert(is_pod<once_flag>::value, "Once flag should be a POD type.");
+static_assert(is_trivially_destructible<once_flag>::value,
+              "Once flag must be trivially destructible.");
 #endif
 
 _namespace_end(std)
