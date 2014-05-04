@@ -1,0 +1,35 @@
+#ifndef _TYPE_INDEX_
+#define _TYPE_INDEX_
+
+#include <cdecl.h>
+#include <cstddef>
+#include <typeinfo>
+#include <hash-fwd.h>
+
+_namespace_begin(std)
+
+class type_index {
+ public:
+  type_index(const type_info&) noexcept;
+  bool operator==(const type_index&) const noexcept;
+  bool operator!=(const type_index&) const noexcept;
+  bool operator<(const type_index&) const noexcept;
+  bool operator<=(const type_index&) const noexcept;
+  bool operator>(const type_index&) const noexcept;
+  bool operator>=(const type_index&) const noexcept;
+  size_t hash_code() const noexcept;
+  const char* name() const noexcept;
+
+ private:
+  const type_info* target_ = nullptr;
+};
+
+template<> struct hash<type_index> {
+  using result_type = size_t;
+  using argument_type = type_index;
+  size_t operator()(const type_index&) const noexcept;
+};
+
+_namespace_end(std)
+
+#endif /* _TYPE_INDEX_ */
