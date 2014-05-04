@@ -16,14 +16,6 @@ struct owner_tag_;
 } /* namespace std::impl */
 
 
-struct defer_lock_t {};
-struct try_to_lock_t {};
-struct adopt_lock_t {};
-constexpr defer_lock_t defer_lock{};
-constexpr try_to_lock_t try_to_lock{};
-constexpr adopt_lock_t adopt_lock{};
-
-
 class mutex {
  public:
   constexpr mutex() noexcept = default;
@@ -44,10 +36,37 @@ class mutex {
   abi::semaphore impl_{ 1U };
 };
 
+class recursive_mutex {
+ public:
+  recursive_mutex() noexcept = default;
+  ~recursive_mutex() noexcept;
 
-template<typename Callable, typename... Args>
-void call_once(once_flag& flag, Callable&& func, Args&&... args)
-    noexcept(noexcept(func(forward<Args>(args)...)));
+  recursive_mutex(const recursive_mutex&) = delete;
+  recursive_mutex& operator=(const recursive_mutex&) = delete;
+
+  void lock();
+  bool try_lock() noexcept;
+  void unlock() noexcept;
+
+  using native_handle_type = abi::semaphore&;
+  native_handle_type native_handle();
+
+ private:
+  atomic<const void*> owner_tag_{ nullptr };
+  unsigned int recurs_{ 0 };
+  abi::semaphore impl_{ 1U };
+};
+
+class timed_mutex;
+class recursive_timed_mutex;
+
+
+struct defer_lock_t {};
+struct try_to_lock_t {};
+struct adopt_lock_t {};
+constexpr defer_lock_t defer_lock{};
+constexpr try_to_lock_t try_to_lock{};
+constexpr adopt_lock_t adopt_lock{};
 
 
 template<typename Mutex>
@@ -112,6 +131,11 @@ class unique_lock {
 
 template<typename Mutex>
 void swap(unique_lock<Mutex>&, unique_lock<Mutex>&) noexcept;
+
+
+template<typename Callable, typename... Args>
+void call_once(once_flag& flag, Callable&& func, Args&&... args)
+    noexcept(noexcept(func(forward<Args>(args)...)));
 
 
 _namespace_end(std)

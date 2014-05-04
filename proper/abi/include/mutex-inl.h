@@ -16,61 +16,8 @@ inline auto mutex::native_handle() -> native_handle_type {
 }
 
 
-template<typename Callable, typename... Args>
-void call_once(once_flag& flag, Callable&& func, Args&&... args)
-    noexcept(noexcept(func(forward<Args>(args)...))) {
-  const volatile uint8_t* done =
-      reinterpret_cast<const uint8_t*>(&flag.guard_);
-
-  /* Special lock for flag. */
-  class once_flag_lock {
-   public:
-    once_flag_lock() = delete;
-    once_flag_lock(const once_flag_lock&) = delete;
-    once_flag_lock& operator=(const once_flag_lock&) = delete;
-
-    once_flag_lock(once_flag& flag) noexcept
-    : flag_(flag),
-      acquired_(abi::__cxa_guard_acquire(
-          reinterpret_cast<abi::__cxa_guard*>(&flag.guard_)))
-    {}
-
-    ~once_flag_lock() noexcept {
-      if (!acquired_) {
-        /* SKIP */
-      } else if (succes_) {
-        __cxa_guard_release(
-            reinterpret_cast<abi::__cxa_guard*>(&flag_.guard_));
-      } else {
-        __cxa_guard_abort(
-            reinterpret_cast<abi::__cxa_guard*>(&flag_.guard_));
-      }
-    }
-
-    void commit() noexcept {
-      assert(acquired_);
-      succes_ = true;
-    }
-
-    explicit operator bool() const noexcept {
-      return acquired_;
-    }
-
-   private:
-    once_flag& flag_;
-    bool acquired_ = false;
-    bool succes_ = false;
-  };
-
-
-  if (_predict_true(*done)) return;
-
-  once_flag_lock lck{ flag };
-  if (lck) {
-    assert(!*done);
-    func(forward<Args>(args)...);
-    lck.commit();
-  }
+inline auto recursive_mutex::native_handle() -> native_handle_type {
+  return impl_;
 }
 
 
@@ -230,6 +177,64 @@ auto unique_lock<Mutex>::mutex() const noexcept -> mutex_type* {
 template<typename Mutex>
 void swap(unique_lock<Mutex>& a, unique_lock<Mutex>& b) noexcept {
   a.swap(b);
+}
+
+
+template<typename Callable, typename... Args>
+void call_once(once_flag& flag, Callable&& func, Args&&... args)
+    noexcept(noexcept(func(forward<Args>(args)...))) {
+  const volatile uint8_t* done =
+      reinterpret_cast<const uint8_t*>(&flag.guard_);
+
+  /* Special lock for flag. */
+  class once_flag_lock {
+   public:
+    once_flag_lock() = delete;
+    once_flag_lock(const once_flag_lock&) = delete;
+    once_flag_lock& operator=(const once_flag_lock&) = delete;
+
+    once_flag_lock(once_flag& flag) noexcept
+    : flag_(flag),
+      acquired_(abi::__cxa_guard_acquire(
+          reinterpret_cast<abi::__cxa_guard*>(&flag.guard_)))
+    {}
+
+    ~once_flag_lock() noexcept {
+      if (!acquired_) {
+        /* SKIP */
+      } else if (succes_) {
+        __cxa_guard_release(
+            reinterpret_cast<abi::__cxa_guard*>(&flag_.guard_));
+      } else {
+        __cxa_guard_abort(
+            reinterpret_cast<abi::__cxa_guard*>(&flag_.guard_));
+      }
+    }
+
+    void commit() noexcept {
+      assert(acquired_);
+      succes_ = true;
+    }
+
+    explicit operator bool() const noexcept {
+      return acquired_;
+    }
+
+   private:
+    once_flag& flag_;
+    bool acquired_ = false;
+    bool succes_ = false;
+  };
+
+
+  if (_predict_true(*done)) return;
+
+  once_flag_lock lck{ flag };
+  if (lck) {
+    assert(!*done);
+    func(forward<Args>(args)...);
+    lck.commit();
+  }
 }
 
 
