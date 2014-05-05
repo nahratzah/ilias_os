@@ -40,6 +40,17 @@ class pmap<arch::i386> {
       vpage_no<arch::i386>(0xffffffff >> page_shift(arch::i386)) -
       worst_case_npages;
 
+  /*
+   * The memory range that this pmap can manage.
+   *
+   * Note that this uses array semantics: the second item points at the
+   * first unmanageble page.
+   * Also note that if the pmap is a kernel map (support_.userspace == false)
+   * the pmap may reduce the manageble range to accomodate its own tracking.
+   */
+  std::tuple<vpage_no<arch::i386>, vpage_no<arch::i386>> managed_range()
+      const noexcept;
+
  private:
   /*
    * Since the kernel pmap maps itself, these functions calculate the mapped

@@ -22,6 +22,16 @@ inline pmap<arch::i386>::pmap(pmap_support<arch::i386>& support) noexcept
              "Mis-aligned pmap.");
 }
 
+inline auto pmap<arch::i386>::managed_range() const noexcept ->
+    std::tuple<vpage_no<arch::i386>, vpage_no<arch::i386>> {
+  vpage_no<arch::i386> top = kva_map_self;
+  if (support_.userspace) {
+    uint32_t top_addr = (0xffffffffU >> page_shift(arch::i386));
+    top = vpage_no<arch::i386>(top_addr + 1U);
+  }
+  return std::make_tuple(vpage_no<arch::i386>(0), top);
+}
+
 constexpr auto pmap<arch::i386>::kva_pdp_entry(unsigned int pdpe_idx) ->
     vpage_no<arch::i386> {
   if (pdpe_idx >= N_PDPE)
