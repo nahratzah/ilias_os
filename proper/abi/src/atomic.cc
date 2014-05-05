@@ -273,54 +273,72 @@ struct maybe_lockfree<uint128_t, int> {
     return true;
   }
 
-  static bool fetch_and(uint128_t* atom, uint128_t src, int model,
+  static bool fetch_and(uint128_t* atom, uint128_t src, int,
                         uint128_t* dst) noexcept {
     if (!is_lock_free(sizeof(*atom), atom)) return false;
 
-    bool succes;
-    *dst = 0;
-    uint128_t assign = (*dst & src);
-
-    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
-         !succes;
-         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
-      assign = (*dst & src);
-    }
-
+    uint64_t rdx;
+    uint64_t rax;
+    uint64_t rcx = src >> 64;
+    uint64_t rbx = src;
+    asm volatile("\n"
+      "0:\n"
+      "\tmov %3, %%rcx\n"
+      "\tmov %4, %%rbx\n"
+      "\tand %%rdx, %%rcx\n"
+      "\tand %%rax, %%rbx\n"
+      "\tcmpxchg16b %2\n"
+      "\tjne 0b"
+    : "=a"(rax), "=d"(rdx)
+    : "m"(*atom), "X"(rcx), "X"(rbx)
+    : "cc", "memory", "rcx", "rbx");
+    *dst = ((uint128_t(rdx) << 64) | rax);
     return true;
   }
 
-  static bool fetch_or(uint128_t* atom, uint128_t src, int model,
+  static bool fetch_or(uint128_t* atom, uint128_t src, int,
                        uint128_t* dst) noexcept {
     if (!is_lock_free(sizeof(*atom), atom)) return false;
 
-    bool succes;
-    *dst = 0;
-    uint128_t assign = (*dst | src);
-
-    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
-         !succes;
-         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
-      assign = (*dst | src);
-    }
-
+    uint64_t rdx;
+    uint64_t rax;
+    uint64_t rcx = src >> 64;
+    uint64_t rbx = src;
+    asm volatile("\n"
+      "0:\n"
+      "\tmov %3, %%rcx\n"
+      "\tmov %4, %%rbx\n"
+      "\tor %%rdx, %%rcx\n"
+      "\tor %%rax, %%rbx\n"
+      "\tcmpxchg16b %2\n"
+      "\tjne 0b"
+    : "=a"(rax), "=d"(rdx)
+    : "m"(*atom), "X"(rcx), "X"(rbx)
+    : "cc", "memory", "rcx", "rbx");
+    *dst = ((uint128_t(rdx) << 64) | rax);
     return true;
   }
 
-  static bool fetch_xor(uint128_t* atom, uint128_t src, int model,
+  static bool fetch_xor(uint128_t* atom, uint128_t src, int,
                         uint128_t* dst) noexcept {
     if (!is_lock_free(sizeof(*atom), atom)) return false;
 
-    bool succes;
-    *dst = 0;
-    uint128_t assign = (*dst ^ src);
-
-    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
-         !succes;
-         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
-      assign = (*dst ^ src);
-    }
-
+    uint64_t rdx;
+    uint64_t rax;
+    uint64_t rcx = src >> 64;
+    uint64_t rbx = src;
+    asm volatile("\n"
+      "0:\n"
+      "\tmov %3, %%rcx\n"
+      "\tmov %4, %%rbx\n"
+      "\txor %%rdx, %%rcx\n"
+      "\txor %%rax, %%rbx\n"
+      "\tcmpxchg16b %2\n"
+      "\tjne 0b"
+    : "=a"(rax), "=d"(rdx)
+    : "m"(*atom), "X"(rcx), "X"(rbx)
+    : "cc", "memory", "rcx", "rbx");
+    *dst = ((uint128_t(rdx) << 64) | rax);
     return true;
   }
 
