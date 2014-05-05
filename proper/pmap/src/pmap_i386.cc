@@ -167,6 +167,8 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     new_pte_value.p(true);
     new_pte_value.us(support_.userspace);
     new_pte_value = new_pte_value.combine(perm);
+    for (unsigned int i = 0; i < pte_record::AVL_COUNT; ++i)
+      new_pte_value.avl(pte_value.avl(i), i);
     assert(new_pte_value.valid());
     pte_value = new_pte_value;
   }
@@ -178,6 +180,8 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     new_pdp_value.p(true);
     new_pdp_value.us(support_.userspace);
     new_pdp_value = new_pdp_value.combine(perm);
+    for (unsigned int i = 0; i < pdp_record::AVL_COUNT; ++i)
+      new_pdp_value.avl(pdp_value.avl(i), i);
     assert(new_pdp_value.valid());
     pdp_value = new_pdp_value;
   } else {
@@ -192,6 +196,8 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     new_pdpe_value.page_no(pdp_ptr.release().get());
     new_pdpe_value.p(true);
     new_pdpe_value = new_pdpe_value.combine(perm);
+    for (unsigned int i = 0; i < pdpe_record::AVL_COUNT; ++i)
+      new_pdpe_value.avl(pdpe_value.avl(i), i);
     assert(new_pdpe_value.valid());
     pdpe_value = new_pdpe_value;
   } else {
@@ -269,6 +275,9 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
                             pg.page_no(pgno.get());
                             return rv;
                           });
+            pte_record fill_pg{ 0 };
+            for (unsigned int i = 0; i < pte_record::AVL_COUNT; ++i)
+              fill_pg.avl(pg.avl(i), i);
             std::fill(next(mapped_new_pdp->begin(), pte_off),
                       next(mapped_new_pdp->begin(),
                            min(size_t(pte_off + c.get()), size_t(N_PDP))),
@@ -293,14 +302,18 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
             page_ptr<arch::i386>(page_no<arch::i386>(pdp_iter->page_no()));
         auto mapped_pte = pmap_map_page<pte>(pte_ptr.get(), support_);
 
-        std::fill(next(mapped_pte->begin(), pte_off),
-                  next(mapped_pte->begin(),
-                       min(size_t(pte_off + c.get()), size_t(N_PTE))),
-                  pte_record{ 0 });
+        std::for_each(next(mapped_pte->begin(), pte_off),
+                      next(mapped_pte->begin(),
+                           min(size_t(pte_off + c.get()), size_t(N_PTE))),
+                      [](pte_record& r) {
+                        r.p(false);
+                      });
 
         /* Remove mapping if page becomes empty. */
         if (none_of(mapped_pte->begin(), mapped_pte->end(),
-                    [](pte_record r) { return r.p(); })) {
+                    [](pte_record r) {
+                      return r.p() || r.avl(AVL_CRITICAL);
+                    })) {
           pdp_iter->p(false);
           pte_ptr.set_allocated(support_);
         }
@@ -313,7 +326,9 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
 
     /* Remove mapping if page becomes empty. */
     if (none_of(mapped_pdp->begin(), mapped_pdp->end(),
-                [](pdp_record r) { return r.p(); })) {
+                [](pdp_record r) {
+                  return r.p() || r.avl(AVL_CRITICAL);
+                })) {
       pdpe_iter->p(false);
       pdp_ptr.set_allocated(support_);
     }

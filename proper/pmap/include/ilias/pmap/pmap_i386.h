@@ -92,6 +92,12 @@ class pmap<arch::i386> {
       page_count<arch::i386>(N_PDPE + N_PDPE * N_PDP);
   static const vpage_no<arch::i386> kva_map_self;
 
+  /*
+   * Use AVL bit 0 to mark pte's/pdp's as critical.
+   * Critical pte's/pdp's won't be garbage collected during unmap.
+   */
+  static const unsigned int AVL_CRITICAL = 0;
+
   /* Declare our record types. */
   using pdpe_record = x86_shared::pdpe_record;
   using pdp_record = x86_shared::pdp_record;
