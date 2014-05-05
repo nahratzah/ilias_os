@@ -18,6 +18,7 @@
 #pragma redefine_extname __atomic_store_c __atomic_store
 #pragma redefine_extname __atomic_exchange_c __atomic_exchange
 #pragma redefine_extname __atomic_compare_exchange_c __atomic_compare_exchange
+#pragma redefine_extname __atomic_is_lock_free_c __atomic_is_lock_free
 
 using std::memory_order_acquire;
 using std::memory_order_release;
@@ -87,12 +88,12 @@ struct is_lock_free_t<8>
 template<>
 struct is_lock_free_t<16> {
   bool operator()() const noexcept {
-    uint32_t d;
+    uint32_t c;
     asm("cpuid"
-    :   "=d"(d)
-    :   "a"(1), "d"(0)
-    :   "eax", "ebx", "ecx");
-    return (d & (1U << 8));  // CPUID feature: cx8.
+    :   "=c"(c)
+    :   "a"(1), "c"(0)
+    :   "eax", "ebx", "edx");
+    return (c & (1U << 13));  // CPUID feature: cmpxchg16b.
   }
 
   operator bool() const noexcept {
@@ -105,21 +106,21 @@ struct is_lock_free_t<16> {
 /* Fallback case for maybe_lockfree. */
 template<typename T, typename = int>
 struct maybe_lockfree {
-  static constexpr bool load(int, const void*, void*, int) noexcept {
+  static constexpr bool load(size_t, const void*, void*, int) noexcept {
     return false;
   }
 
-  static constexpr bool store(int, void*, const void*, int) noexcept {
+  static constexpr bool store(size_t, void*, const void*, int) noexcept {
     return false;
   }
 
-  static bool constexpr exchange(int, void*, const void*, void*, int)
+  static bool constexpr exchange(size_t, void*, const void*, void*, int)
       noexcept {
     return false;
   }
 
-  static bool constexpr cmp_exchange(int, void*, void*, const void*, int, int,
-                                     bool*) noexcept {
+  static bool constexpr cmp_exchange(size_t, void*, void*, const void*,
+                                     int, int, bool*) noexcept {
     return false;
   }
 
@@ -142,65 +143,191 @@ struct maybe_lockfree {
   static constexpr bool fetch_xor(T*, T, int, T*) noexcept {
     return false;
   }
+
+  static constexpr bool is_lock_free(size_t, const void*) noexcept {
+    return false;
+  }
 };
 
 /* uint128 specialization for maybe_lockfree. */
-#if 0 // _USE_INT128
+#if _USE_INT128 && (defined(__amd64__) || defined(__x86_64__))
 # define MAYBE_OP_128(invocation)					\
   (maybe_lockfree<uint128_t>::invocation)
 
 template<>
 struct maybe_lockfree<uint128_t, int> {
-  static bool load(int sz, const void* atom, void* dst, int model) noexcept {
-    if (sz != sizeof(uint128_t) || !is_lock_free_t<sizeof(uint128_t)>())
-      return false;
-    ...
+  static bool load(size_t sz, const void* atom, void* dst, int) noexcept {
+    if (!is_lock_free(sz, atom)) return false;
+
+    uint128_t* dst_ = static_cast<uint128_t*>(dst);
+
+    uint64_t rdx = 0;
+    uint64_t rax = 0;
+    asm("lock cmpxchg16b %2"
+    : "=d"(rdx), "=a"(rax)
+    : "m"(*static_cast<const uint128_t*>(atom)),
+      "a"(0), "b"(0), "c"(0), "d"(0)
+    : "cc");
+    *dst_ = ((uint128_t(rdx) << 64) | rax);
+    return true;
   }
 
-  static bool store(int sz, void* atom, const void* src, int model) noexcept {
-    if (sz != sizeof(uint128_t) || !is_lock_free_t<sizeof(uint128_t)>())
-      return false;
-    ...
+  static bool store(size_t sz, void* atom, const void* src, int) noexcept {
+    if (!is_lock_free(sz, atom)) return false;
+
+    const uint128_t* src_ = static_cast<const uint128_t*>(src);
+
+    uint64_t rcx = *src_ >> 64;
+    uint64_t rbx = *src_;
+    asm volatile("\n"
+      "0:\n"
+      "\tlock cmpxchg16b %0\n"
+      "\tjne 0b\n"
+    :
+    : "m"(*static_cast<uint128_t*>(atom)), "c"(rcx), "b"(rbx)
+    : "cc", "rax", "rdx", "memory");
+    return true;
   }
 
-  static bool exchange(int sz, void* atom, const void* src, void* dst,
-                       int model) noexcept {
-    if (sz != sizeof(uint128_t) || !is_lock_free_t<sizeof(uint128_t)>())
-      return false;
-    ...
+  static bool exchange(size_t sz, void* atom, const void* src, void* dst,
+                       int) noexcept {
+    if (!is_lock_free(sz, atom)) return false;
+
+    const uint128_t* src_ = static_cast<const uint128_t*>(src);
+    uint128_t* dst_ = static_cast<uint128_t*>(dst);
+
+    uint64_t rdx;
+    uint64_t rax;
+    uint64_t rcx = *src_ >> 64;
+    uint64_t rbx = *src_;
+    asm volatile("\n"
+      "0:\n"
+      "\tlock cmpxchg16b %2\n"
+      "\tjne 0b\n"
+    : "=d"(rdx), "=a"(rax)
+    : "m"(*static_cast<uint128_t*>(atom)), "c"(rcx), "b"(rbx)
+    : "cc", "memory");
+    *dst_ = ((uint128_t(rdx) << 64) | rax);
+    return true;
   }
 
-  static bool cmp_exchange(int sz, void* atom,
+  static bool cmp_exchange(size_t sz, void* atom,
                            void* expect, const void* desired,
-                           int succes, int fail, bool* rv) noexcept {
-    if (sz != sizeof(uint128_t) || !is_lock_free_t<sizeof(uint128_t)>())
-      return false;
-    ...
+                           int, int, bool* rv) noexcept {
+    if (!is_lock_free(sz, atom)) return false;
+
+    uint128_t* expect_ = static_cast<uint128_t*>(expect);
+    const uint128_t* desired_ = static_cast<const uint128_t*>(desired);
+    uint64_t rdx = *expect_ >> 64;
+    uint64_t rax = *expect_;
+    uint64_t rcx = *desired_ >> 64;
+    uint64_t rbx = *desired_;
+    static_assert(sizeof(bool) == sizeof(char),
+                  "Assembler below depends on this, to set *rv.");
+    asm volatile(
+        "lock cmpxchg16b %3\n"  // set ZF if equal, clear ZF if not equal
+      "\tmovb $0, %2\n"
+      "\tjne 0f\n"
+      "\tmovb $1, %2\n"
+      "0:"
+    : "=d"(rdx), "=a"(rax), "=X"(*rv)
+    : "m"(*static_cast<uint128_t*>(atom)),
+      "d"(rdx), "a"(rax), "c"(rcx), "b"(rbx)
+    : "cc", "memory");
+    if (!*rv)
+      *expect_ = ((uint128_t(rdx) << 64) | rax);
+    return true;
   }
 
-  static bool fetch_add(T* atom, T src, int model, T* dst) noexcept {
-    if (!is_lock_free_t<sizeof(uint128_t)>()) return false;
-    ...
+  static bool fetch_add(uint128_t* atom, uint128_t src, int model,
+                        uint128_t* dst) noexcept {
+    if (!is_lock_free(sizeof(*atom), atom)) return false;
+
+    bool succes;
+    *dst = 0;
+    uint128_t assign = *dst + src;
+
+    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
+         !succes;
+         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
+      assign = *dst + src;
+    }
+
+    return true;
   }
 
-  static bool fetch_sub(T* atom, T src, int model, T* dst) noexcept {
-    if (!is_lock_free_t<sizeof(uint128_t)>()) return false;
-    ...
+  static bool fetch_sub(uint128_t* atom, uint128_t src, int model,
+                        uint128_t* dst) noexcept {
+    if (!is_lock_free(sizeof(*atom), atom)) return false;
+
+    bool succes;
+    *dst = 0;
+    uint128_t assign = *dst - src;
+
+    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
+         !succes;
+         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
+      assign = *dst - src;
+    }
+
+    return true;
   }
 
-  static bool fetch_and(T* atom, T src, int model, T* dst) noexcept {
-    if (!is_lock_free_t<sizeof(uint128_t)>()) return false;
-    ...
+  static bool fetch_and(uint128_t* atom, uint128_t src, int model,
+                        uint128_t* dst) noexcept {
+    if (!is_lock_free(sizeof(*atom), atom)) return false;
+
+    bool succes;
+    *dst = 0;
+    uint128_t assign = (*dst & src);
+
+    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
+         !succes;
+         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
+      assign = (*dst & src);
+    }
+
+    return true;
   }
 
-  static bool fetch_or(T* atom, T src, int model, T* dst) noexcept {
-    if (!is_lock_free_t<sizeof(uint128_t)>()) return false;
-    ...
+  static bool fetch_or(uint128_t* atom, uint128_t src, int model,
+                       uint128_t* dst) noexcept {
+    if (!is_lock_free(sizeof(*atom), atom)) return false;
+
+    bool succes;
+    *dst = 0;
+    uint128_t assign = (*dst | src);
+
+    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
+         !succes;
+         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
+      assign = (*dst | src);
+    }
+
+    return true;
   }
 
-  static bool fetch_xor(T* atom, T src, int model, T* dst) noexcept {
-    if (!is_lock_free_t<sizeof(uint128_t)>()) return false;
-    ...
+  static bool fetch_xor(uint128_t* atom, uint128_t src, int model,
+                        uint128_t* dst) noexcept {
+    if (!is_lock_free(sizeof(*atom), atom)) return false;
+
+    bool succes;
+    *dst = 0;
+    uint128_t assign = (*dst ^ src);
+
+    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
+         !succes;
+         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
+      assign = (*dst ^ src);
+    }
+
+    return true;
+  }
+
+  static bool is_lock_free(size_t sz, const void* atom) noexcept {
+    return is_lock_free_t<sizeof(uint128_t)>() &&
+           sz == sizeof(uint128_t) &&
+           reinterpret_cast<uintptr_t>(atom) % 16 == 0;
   }
 };
 #else // _USE_INT128
@@ -210,7 +337,7 @@ struct maybe_lockfree<uint128_t, int> {
 /* Implementation for guaranteed lockfree code. */
 template<typename T>
 struct maybe_lockfree<T, enable_if_t<is_lock_free_t<sizeof(T)>::value, int>> {
-  static bool load(int sz, const void* atom, void* dst, int model) noexcept {
+  static bool load(size_t sz, const void* atom, void* dst, int model) noexcept {
     if (sz != sizeof(T)) return false;
 
     T* dst_ = reinterpret_cast<T*>(dst);
@@ -220,7 +347,7 @@ struct maybe_lockfree<T, enable_if_t<is_lock_free_t<sizeof(T)>::value, int>> {
     return true;
   }
 
-  static bool store(int sz, void* atom, const void* src, int model) noexcept {
+  static bool store(size_t sz, void* atom, const void* src, int model) noexcept {
     if (sz != sizeof(T)) return false;
 
     const T* src_ = reinterpret_cast<const T*>(src);
@@ -230,7 +357,7 @@ struct maybe_lockfree<T, enable_if_t<is_lock_free_t<sizeof(T)>::value, int>> {
     return true;
   }
 
-  static bool exchange(int sz, void* atom, const void* src, void* dst,
+  static bool exchange(size_t sz, void* atom, const void* src, void* dst,
                        int model) noexcept {
     if (sz != sizeof(T)) return false;
 
@@ -242,7 +369,7 @@ struct maybe_lockfree<T, enable_if_t<is_lock_free_t<sizeof(T)>::value, int>> {
     return true;
   }
 
-  static bool cmp_exchange(int sz, void* atom,
+  static bool cmp_exchange(size_t sz, void* atom,
                            void* expect, const void* desired,
                            int succes, int fail, bool* rv) noexcept {
     if (sz != sizeof(T)) return false;
@@ -289,6 +416,10 @@ struct maybe_lockfree<T, enable_if_t<is_lock_free_t<sizeof(T)>::value, int>> {
 
     *dst = __c11_atomic_fetch_xor(atom_, src, model);
     return true;
+  }
+
+  static bool is_lock_free(size_t sz, const void*) noexcept {
+    return (sz == sizeof(T));
   }
 };
 
@@ -394,67 +525,127 @@ T fetch_xor(T* atom, T src, int model) noexcept {
 
 _cdecl_begin
 
-void __atomic_load_c(int sz, const void* atom, void* dst, int model) noexcept {
+void __atomic_load_c(size_t sz, const void* atom, void* dst, int model) noexcept {
   if (!MAYBE_OP(load(sz, atom, dst, model)))
     do_locked(atom, &memcpy, dst, atom, sz);
 }
 
 uint8_t __atomic_load_1(const uint8_t* atom, int model) noexcept {
   uint8_t dst;
-  __atomic_load_c(sizeof(*atom), atom, &dst, model);
+  if (!maybe_lockfree<uint8_t>::load(sizeof(*atom), atom, &dst, model)) {
+    do_locked(atom,
+              [](uint8_t* dst, const uint8_t* src) {
+                *dst = *src;
+              },
+              &dst, atom);
+  }
   return dst;
 }
 uint16_t __atomic_load_2(const uint16_t* atom, int model) noexcept {
   uint16_t dst;
-  __atomic_load_c(sizeof(*atom), atom, &dst, model);
+  if (!maybe_lockfree<uint16_t>::load(sizeof(*atom), atom, &dst, model)) {
+    do_locked(atom,
+              [](uint16_t* dst, const uint16_t* src) {
+                *dst = *src;
+              },
+              &dst, atom);
+  }
   return dst;
 }
 uint32_t __atomic_load_4(const uint32_t* atom, int model) noexcept {
   uint32_t dst;
-  __atomic_load_c(sizeof(*atom), atom, &dst, model);
+  if (!maybe_lockfree<uint32_t>::load(sizeof(*atom), atom, &dst, model)) {
+    do_locked(atom,
+              [](uint32_t* dst, const uint32_t* src) {
+                *dst = *src;
+              },
+              &dst, atom);
+  }
   return dst;
 }
 uint64_t __atomic_load_8(const uint64_t* atom, int model) noexcept {
   uint64_t dst;
-  __atomic_load_c(sizeof(*atom), atom, &dst, model);
+  if (!maybe_lockfree<uint64_t>::load(sizeof(*atom), atom, &dst, model)) {
+    do_locked(atom,
+              [](uint64_t* dst, const uint64_t* src) {
+                *dst = *src;
+              },
+              &dst, atom);
+  }
   return dst;
 }
 #if _USE_INT128
 uint128_t __atomic_load_16(const uint128_t* atom, int model) noexcept {
   uint128_t dst;
-  __atomic_load_c(sizeof(*atom), atom, &dst, model);
+  if (!maybe_lockfree<uint128_t>::load(sizeof(*atom), atom, &dst, model)) {
+    do_locked(atom,
+              [](uint128_t* dst, const uint128_t* src) {
+                *dst = *src;
+              },
+              &dst, atom);
+  }
   return dst;
 }
 #endif
 
 
-void __atomic_store_c(int sz, void* atom, const void* src, int model)
+void __atomic_store_c(size_t sz, void* atom, const void* src, int model)
     noexcept {
   if (!MAYBE_OP(store(sz, atom, src, model)))
     do_locked(atom, &memcpy, atom, src, sz);
 }
 
 void __atomic_store_1(uint8_t* atom, const uint8_t src, int model) noexcept {
-  __atomic_store_c(sizeof(*atom), atom, &src, model);
+  if (!maybe_lockfree<uint8_t>::store(sizeof(*atom), atom, &src, model)) {
+    do_locked(atom,
+              [](uint8_t* dst, const uint8_t* src) {
+                *dst = *src;
+              },
+              atom, &src);
+  }
 }
 void __atomic_store_2(uint16_t* atom, const uint16_t src, int model) noexcept {
-  __atomic_store_c(sizeof(*atom), atom, &src, model);
+  if (!maybe_lockfree<uint16_t>::store(sizeof(*atom), atom, &src, model)) {
+    do_locked(atom,
+              [](uint16_t* dst, const uint16_t* src) {
+                *dst = *src;
+              },
+              atom, &src);
+  }
 }
 void __atomic_store_4(uint32_t* atom, const uint32_t src, int model) noexcept {
-  __atomic_store_c(sizeof(*atom), atom, &src, model);
+  if (!maybe_lockfree<uint32_t>::store(sizeof(*atom), atom, &src, model)) {
+    do_locked(atom,
+              [](uint32_t* dst, const uint32_t* src) {
+                *dst = *src;
+              },
+              atom, &src);
+  }
 }
 void __atomic_store_8(uint64_t* atom, const uint64_t src, int model) noexcept {
-  __atomic_store_c(sizeof(*atom), atom, &src, model);
+  if (!maybe_lockfree<uint64_t>::store(sizeof(*atom), atom, &src, model)) {
+    do_locked(atom,
+              [](uint64_t* dst, const uint64_t* src) {
+                *dst = *src;
+              },
+              atom, &src);
+  }
 }
 #if _USE_INT128
 void __atomic_store_16(uint128_t* atom, const uint128_t src, int model)
     noexcept {
-  __atomic_store_c(sizeof(*atom), atom, &src, model);
+  if (!maybe_lockfree<uint128_t>::store(sizeof(*atom), atom, &src, model)) {
+    do_locked(atom,
+              [](uint128_t* dst, const uint128_t* src) {
+                *dst = *src;
+              },
+              atom, &src);
+  }
 }
 #endif
 
 
-void __atomic_exchange_c(int sz, void* atom, const void* src, void* dst,
+void __atomic_exchange_c(size_t sz, void* atom, const void* src, void* dst,
                          int model) noexcept {
   if (!MAYBE_OP(exchange(sz, atom, src, dst, model))) {
     do_locked(atom,
@@ -468,41 +659,76 @@ void __atomic_exchange_c(int sz, void* atom, const void* src, void* dst,
 
 uint8_t __atomic_exchange_1(uint8_t* atom, uint8_t src, int model) noexcept {
   uint8_t rv;
-  __atomic_exchange_c(sizeof(*atom), atom, &src, &rv, model);
+  if (!maybe_lockfree<uint8_t>::exchange(sizeof(*atom), atom, &src, &rv, model)) {
+    do_locked(atom,
+              [](uint8_t* atom, const uint8_t* src, uint8_t* dst) {
+                *dst = *atom;
+                *atom = *src;
+              },
+              atom, &src, &rv);
+  }
   return rv;
 }
 uint16_t __atomic_exchange_2(uint16_t* atom, uint16_t src, int model)
     noexcept {
   uint16_t rv;
-  __atomic_exchange_c(sizeof(*atom), atom, &src, &rv, model);
+  if (!maybe_lockfree<uint16_t>::exchange(sizeof(*atom), atom, &src, &rv, model)) {
+    do_locked(atom,
+              [](uint16_t* atom, const uint16_t* src, uint16_t* dst) {
+                *dst = *atom;
+                *atom = *src;
+              },
+              atom, &src, &rv);
+  }
   return rv;
 }
 uint32_t __atomic_exchange_4(uint32_t* atom, uint32_t src, int model)
     noexcept {
   uint32_t rv;
-  __atomic_exchange_c(sizeof(*atom), atom, &src, &rv, model);
+  if (!maybe_lockfree<uint32_t>::exchange(sizeof(*atom), atom, &src, &rv, model)) {
+    do_locked(atom,
+              [](uint32_t* atom, const uint32_t* src, uint32_t* dst) {
+                *dst = *atom;
+                *atom = *src;
+              },
+              atom, &src, &rv);
+  }
   return rv;
 }
 uint64_t __atomic_exchange_8(uint64_t* atom, uint64_t src, int model)
     noexcept {
   uint64_t rv;
-  __atomic_exchange_c(sizeof(*atom), atom, &src, &rv, model);
+  if (!maybe_lockfree<uint64_t>::exchange(sizeof(*atom), atom, &src, &rv, model)) {
+    do_locked(atom,
+              [](uint64_t* atom, const uint64_t* src, uint64_t* dst) {
+                *dst = *atom;
+                *atom = *src;
+              },
+              atom, &src, &rv);
+  }
   return rv;
 }
 #if _USE_INT128
 uint128_t __atomic_exchange_16(uint128_t* atom, uint128_t src, int model)
     noexcept {
   uint128_t rv;
-  __atomic_exchange_c(sizeof(*atom), atom, &src, &rv, model);
+  if (!maybe_lockfree<uint128_t>::exchange(sizeof(*atom), atom, &src, &rv, model)) {
+    do_locked(atom,
+              [](uint128_t* atom, const uint128_t* src, uint128_t* dst) {
+                *dst = *atom;
+                *atom = *src;
+              },
+              atom, &src, &rv);
+  }
   return rv;
 }
 #endif
 
 
-int __atomic_compare_exchange_c(int sz, void* atom,
+int __atomic_compare_exchange_c(size_t sz, void* atom,
                                 void* expect, const void* desired,
                                 int succes, int fail) noexcept {
-  bool rv = 0;
+  bool rv;
   if (!MAYBE_OP(cmp_exchange(sz, atom, expect, desired, succes, fail, &rv))) {
     do_locked(atom,
               [](void* atom, void* expect, const void* desired, int sz,
@@ -519,35 +745,105 @@ int __atomic_compare_exchange_c(int sz, void* atom,
   return (rv ? 1 : 0);
 }
 
-int __atomic_compare_excange_1(uint8_t* atom, uint8_t* expect, uint8_t desired,
+int __atomic_compare_exchange_1(uint8_t* atom, uint8_t* expect, uint8_t desired,
                                int succes, int fail) noexcept {
-  return __atomic_compare_exchange_c(sizeof(*atom), atom, expect, &desired,
-                                     succes, fail);
+  bool rv;
+  if (!maybe_lockfree<uint8_t>::cmp_exchange(sizeof(*atom), atom,
+                                             expect, &desired, succes, fail,
+                                             &rv)) {
+    do_locked(atom,
+              [](uint8_t* atom, uint8_t* expect, const uint8_t* desired,
+                 bool* rv) {
+                *rv = (atom == expect);
+                if (*rv)
+                  *atom = *desired;
+                else
+                  *expect = *atom;
+              },
+              atom, expect, &desired, &rv);
+  }
+  return (rv ? 1 : 0);
 }
-int __atomic_compare_excange_2(uint16_t* atom,
+int __atomic_compare_exchange_2(uint16_t* atom,
                                uint16_t* expect, uint16_t desired,
                                int succes, int fail) noexcept {
-  return __atomic_compare_exchange_c(sizeof(*atom), atom, expect, &desired,
-                                     succes, fail);
+  bool rv;
+  if (!maybe_lockfree<uint16_t>::cmp_exchange(sizeof(*atom), atom,
+                                              expect, &desired, succes, fail,
+                                              &rv)) {
+    do_locked(atom,
+              [](uint16_t* atom, uint16_t* expect, const uint16_t* desired,
+                 bool* rv) {
+                *rv = (atom == expect);
+                if (*rv)
+                  *atom = *desired;
+                else
+                  *expect = *atom;
+              },
+              atom, expect, &desired, &rv);
+  }
+  return (rv ? 1 : 0);
 }
-int __atomic_compare_excange_4(uint32_t* atom,
+int __atomic_compare_exchange_4(uint32_t* atom,
                                uint32_t* expect, uint32_t desired,
                                int succes, int fail) noexcept {
-  return __atomic_compare_exchange_c(sizeof(*atom), atom, expect, &desired,
-                                     succes, fail);
+  bool rv;
+  if (!maybe_lockfree<uint32_t>::cmp_exchange(sizeof(*atom), atom,
+                                              expect, &desired, succes, fail,
+                                              &rv)) {
+    do_locked(atom,
+              [](uint32_t* atom, uint32_t* expect, const uint32_t* desired,
+                 bool* rv) {
+                *rv = (atom == expect);
+                if (*rv)
+                  *atom = *desired;
+                else
+                  *expect = *atom;
+              },
+              atom, expect, &desired, &rv);
+  }
+  return (rv ? 1 : 0);
 }
-int __atomic_compare_excange_8(uint64_t* atom,
+int __atomic_compare_exchange_8(uint64_t* atom,
                                uint64_t* expect, uint64_t desired,
                                int succes, int fail) noexcept {
-  return __atomic_compare_exchange_c(sizeof(*atom), atom, expect, &desired,
-                                     succes, fail);
+  bool rv;
+  if (!maybe_lockfree<uint64_t>::cmp_exchange(sizeof(*atom), atom,
+                                              expect, &desired, succes, fail,
+                                              &rv)) {
+    do_locked(atom,
+              [](uint64_t* atom, uint64_t* expect, const uint64_t* desired,
+                 bool* rv) {
+                *rv = (atom == expect);
+                if (*rv)
+                  *atom = *desired;
+                else
+                  *expect = *atom;
+              },
+              atom, expect, &desired, &rv);
+  }
+  return (rv ? 1 : 0);
 }
 #if _USE_INT128
-int __atomic_compare_excange_16(uint128_t* atom,
+int __atomic_compare_exchange_16(uint128_t* atom,
                                 uint128_t* expect, uint128_t desired,
                                 int succes, int fail) noexcept {
-  return __atomic_compare_exchange_c(sizeof(*atom), atom, expect, &desired,
-                                     succes, fail);
+  bool rv;
+  if (!maybe_lockfree<uint128_t>::cmp_exchange(sizeof(*atom), atom,
+                                               expect, &desired, succes, fail,
+                                               &rv)) {
+    do_locked(atom,
+              [](uint128_t* atom, uint128_t* expect, const uint128_t* desired,
+                 bool* rv) {
+                *rv = (atom == expect);
+                if (*rv)
+                  *atom = *desired;
+                else
+                  *expect = *atom;
+              },
+              atom, expect, &desired, &rv);
+  }
+  return (rv ? 1 : 0);
 }
 #endif
 
@@ -641,5 +937,9 @@ uint128_t __atomic_fetch_xor_16(uint128_t* atom, uint128_t src, int model) {
   return fetch_xor(atom, src, model);
 }
 #endif
+
+int __atomic_is_lock_free_c(size_t sz, const void* atom) noexcept {
+  return (MAYBE_OP(is_lock_free(sz, atom)) ? 1 : 0);
+}
 
 _cdecl_end
