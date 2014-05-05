@@ -124,9 +124,10 @@ struct unmap_page_deleter {
   static_assert(sizeof(T) == page_size(Arch), "Not a page.");
 
   void operator()(T* p) const noexcept {
-    assert(support_);
-    uintptr_t int_p = reinterpret_cast<uintptr_t>(p);
-    support_->unmap_page(vaddr<Arch>(int_p));
+    if (support_) {
+      uintptr_t int_p = reinterpret_cast<uintptr_t>(p);
+      support_->unmap_page(vaddr<Arch>(int_p));
+    }
   }
 
  private:
@@ -140,6 +141,15 @@ auto pmap_map_page(page_no<Arch> pg, pmap_support<Arch>& support) ->
   return pmap_mapped_ptr<T, Arch>(
       static_cast<T*>(reinterpret_cast<void*>(uintptr_t(vaddr.get()))),
       unmap_page_deleter<T, Arch>(&support));
+}
+
+template<typename T, arch Arch>
+auto pmap_map_page(vpage_no<Arch> vpg) noexcept ->
+    pmap_mapped_ptr<T, Arch> {
+  vaddr<Arch> vaddr = vpg;
+  return pmap_mapped_ptr<T, Arch>(
+      static_cast<T*>(reinterpret_cast<void*>(uintptr_t(vaddr.get()))),
+      unmap_page_deleter<T, Arch>());
 }
 
 

@@ -4,12 +4,13 @@
 #include <ilias/arch.h>
 #include <ilias/pmap/page.h>
 #include <ilias/pmap/pmap.h>
+#include <ilias/pmap/page_alloc_support-fwd.h>
 
 namespace ilias {
 namespace pmap {
 
 
-template<arch Arch = native_arch>
+template<arch Arch>
 class page_ptr {
  public:
   page_ptr() noexcept = default;
@@ -43,11 +44,12 @@ void swap(page_ptr<Arch>& a, page_ptr<Arch>& b) noexcept;
 
 template<typename T, arch Arch> struct unmap_page_deleter;
 
-template<typename T, arch Arch> using pmap_mapped_ptr =
-    std::unique_ptr<T, unmap_page_deleter<T, Arch>>;
-
 template<typename T, arch Arch>
 auto pmap_map_page(page_no<Arch>, pmap_support<Arch>&) ->
+    pmap_mapped_ptr<T, Arch>;
+
+template<typename T, arch Arch>
+auto pmap_map_page(vpage_no<Arch>) noexcept ->
     pmap_mapped_ptr<T, Arch>;
 
 
