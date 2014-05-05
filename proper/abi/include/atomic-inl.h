@@ -42,7 +42,7 @@ constexpr atomic<T>::atomic(T v) noexcept : v_(v) {}			\
 									\
 Template								\
 auto atomic<T>::is_lock_free() const noexcept -> bool {			\
-  return __c11_atomic_is_lock_free(sizeof(v_));				\
+  return __atomic_is_lock_free(sizeof(v_), &v_);			\
 }									\
 Template								\
 auto atomic<T>::is_lock_free() const volatile noexcept -> bool {	\
