@@ -163,11 +163,12 @@ struct maybe_lockfree<uint128_t, int> {
 
     uint64_t rdx = 0;
     uint64_t rax = 0;
-    asm("lock cmpxchg16b %2"
+    asm("mov %%rax, %%rbx\n"
+      "\tmov %%rdx, %%rcx\n"
+      "\tlock cmpxchg16b %2"
     : "=d"(rdx), "=a"(rax)
-    : "m"(*static_cast<const uint128_t*>(atom)),
-      "a"(0), "b"(0), "c"(0), "d"(0)
-    : "cc");
+    : "m"(*static_cast<const uint128_t*>(atom))
+    : "cc", "rcx", "rbx");
     *dst_ = ((uint128_t(rdx) << 64) | rax);
     return true;
   }
@@ -236,37 +237,49 @@ struct maybe_lockfree<uint128_t, int> {
     return true;
   }
 
-  static bool fetch_add(uint128_t* atom, uint128_t src, int model,
+  static bool fetch_add(uint128_t* atom, uint128_t src, int,
                         uint128_t* dst) noexcept {
     if (!is_lock_free(sizeof(*atom), atom)) return false;
 
-    bool succes;
-    *dst = 0;
-    uint128_t assign = *dst + src;
-
-    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
-         !succes;
-         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
-      assign = *dst + src;
-    }
-
+    uint64_t rdx;
+    uint64_t rax;
+    uint64_t rcx = src >> 64;
+    uint64_t rbx = src;
+    asm volatile("\n"
+      "0:\n"
+      "\tmov %%rdx, %%rcx\n"
+      "\tmov %%rax, %%rbx\n"
+      "\tadd %4, %%rbx\n"
+      "\tadc %3, %%rcx\n"
+      "\tcmpxchg16b %2\n"
+      "\tjne 0b"
+    : "=a"(rax), "=d"(rdx)
+    : "m"(*atom), "X"(rcx), "X"(rbx)
+    : "cc", "memory", "rcx", "rbx");
+    *dst = ((uint128_t(rdx) << 64) | rax);
     return true;
   }
 
-  static bool fetch_sub(uint128_t* atom, uint128_t src, int model,
+  static bool fetch_sub(uint128_t* atom, uint128_t src, int,
                         uint128_t* dst) noexcept {
     if (!is_lock_free(sizeof(*atom), atom)) return false;
 
-    bool succes;
-    *dst = 0;
-    uint128_t assign = *dst - src;
-
-    for (cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes);
-         !succes;
-         cmp_exchange(sizeof(*atom), atom, dst, &assign, 0, model, &succes)) {
-      assign = *dst - src;
-    }
-
+    uint64_t rdx;
+    uint64_t rax;
+    uint64_t rcx = src >> 64;
+    uint64_t rbx = src;
+    asm volatile("\n"
+      "0:\n"
+      "\tmov %%rdx, %%rcx\n"
+      "\tmov %%rax, %%rbx\n"
+      "\tsub %4, %%rbx\n"
+      "\tsbb %3, %%rcx\n"
+      "\tcmpxchg16b %2\n"
+      "\tjne 0b"
+    : "=a"(rax), "=d"(rdx)
+    : "m"(*atom), "X"(rcx), "X"(rbx)
+    : "cc", "memory", "rcx", "rbx");
+    *dst = ((uint128_t(rdx) << 64) | rax);
     return true;
   }
 
