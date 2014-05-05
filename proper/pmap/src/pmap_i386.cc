@@ -10,6 +10,11 @@ namespace ilias {
 namespace pmap {
 
 
+const vpage_no<arch::i386> pmap<arch::i386>::kva_map_self =
+    vpage_no<arch::i386>(0xffffffff >> page_shift(arch::i386)) -
+    worst_case_npages;
+
+
 pmap<arch::i386>::~pmap() noexcept {
   clear();
 }
@@ -85,8 +90,31 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
   return std::make_tuple(pg, 1, p);
 }
 
-auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
+auto pmap<arch::i386>::map(vpage_no<arch::i386> va,
+                           page_no<arch::i386> pa,
                            permission perm) -> void {
+  vpage_no<arch::i386> lo, hi;
+  std::tie(lo, hi) = managed_range();
+  if (va < lo || va >= hi)
+    throw std::out_of_range("va outside of managed range");
+  map_(va, pa, perm);
+}
+
+auto pmap<arch::i386>::unmap(vpage_no<arch::i386> va,
+                             page_count<arch::i386> npg) -> void {
+  const auto va_end = va + npg;
+  if (va_end < va)
+    throw std::length_error("too many pages: va wraps around");
+
+  vpage_no<arch::i386> lo, hi;
+  std::tie(lo, hi) = managed_range();
+  if (va < lo || va_end > hi)
+    throw std::out_of_range("va outside of managed range");
+  unmap_(va, npg);
+}
+
+auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
+                            permission perm) -> void {
   auto p = vaddr<arch::i386>(va).get();
   page_ptr<arch::i386> pdp_ptr;
   page_ptr<arch::i386> pte_ptr;
@@ -175,8 +203,8 @@ auto pmap<arch::i386>::map(vpage_no<arch::i386> va, page_no<arch::i386> pg,
   return;
 }
 
-auto pmap<arch::i386>::unmap(vpage_no<arch::i386> va,
-                             page_count<arch::i386> c) noexcept -> void {
+auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
+                              page_count<arch::i386> c) noexcept -> void {
   using std::none_of;
   using std::min;
   using std::next;

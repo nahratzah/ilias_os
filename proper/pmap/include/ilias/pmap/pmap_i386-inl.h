@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <utility>
 #include <stdexcept>
+#include <tuple>
 
 namespace ilias {
 namespace pmap {
@@ -32,7 +33,7 @@ inline auto pmap<arch::i386>::managed_range() const noexcept ->
   return std::make_tuple(vpage_no<arch::i386>(0), top);
 }
 
-constexpr auto pmap<arch::i386>::kva_pdp_entry(unsigned int pdpe_idx) ->
+inline auto pmap<arch::i386>::kva_pdp_entry(unsigned int pdpe_idx) ->
     vpage_no<arch::i386> {
   if (pdpe_idx >= N_PDPE)
     throw std::out_of_range("pdpe");
@@ -40,8 +41,8 @@ constexpr auto pmap<arch::i386>::kva_pdp_entry(unsigned int pdpe_idx) ->
   return kva_map_self + page_count<arch::i386>(pdpe_idx);
 }
 
-constexpr auto pmap<arch::i386>::kva_pte_entry(unsigned pdpe_idx,
-                                               unsigned int pdp_idx) ->
+inline auto pmap<arch::i386>::kva_pte_entry(unsigned pdpe_idx,
+                                            unsigned int pdp_idx) ->
     vpage_no<arch::i386> {
   if (pdpe_idx >= N_PDPE)
     throw std::out_of_range("pdpe");
@@ -54,12 +55,12 @@ constexpr auto pmap<arch::i386>::kva_pte_entry(unsigned pdpe_idx,
          page_count<arch::i386>(pdp_idx);
 }
 
-constexpr auto pmap<arch::i386>::kva_pdp_entry(vaddr<arch::i386> va) ->
+inline auto pmap<arch::i386>::kva_pdp_entry(vaddr<arch::i386> va) ->
     vpage_no<arch::i386> {
   return kva_pdp_entry((va.get() & pdpe_mask) >> pdpe_addr_offset);
 }
 
-constexpr auto pmap<arch::i386>::kva_pte_entry(vaddr<arch::i386> va) ->
+inline auto pmap<arch::i386>::kva_pte_entry(vaddr<arch::i386> va) ->
     vpage_no<arch::i386> {
   return kva_pte_entry((va.get() & pdpe_mask) >> pdpe_addr_offset,
                        (va.get() & pdp_mask) >> pdp_addr_offset);

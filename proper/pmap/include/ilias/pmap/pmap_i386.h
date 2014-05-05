@@ -25,10 +25,17 @@ class pmap<arch::i386> {
   phys_addr<arch::i386> virt_to_phys(vaddr<arch::i386>) const;
   std::tuple<page_no<arch::i386>, size_t, uintptr_t> virt_to_page(
       vaddr<arch::i386>) const;
+
   void map(vpage_no<arch::i386>, page_no<arch::i386>, permission);
   void unmap(vpage_no<arch::i386>,
-             page_count<arch::i386> = page_count<arch::i386>(1)) noexcept;
+             page_count<arch::i386> = page_count<arch::i386>(1));
 
+ private:
+  void map_(vpage_no<arch::i386>, page_no<arch::i386>, permission);
+  void unmap_(vpage_no<arch::i386>,
+              page_count<arch::i386> = page_count<arch::i386>(1)) noexcept;
+
+ public:
   static constexpr std::array<size_t, 2> N_PAGES = {{ 1, 1 << 9 }};
 
   const void* get_pmap_ptr() const noexcept { return &pdpe_; }
@@ -36,9 +43,7 @@ class pmap<arch::i386> {
   /* Worst case, the pmap requires this many pages to hold its information. */
   static constexpr page_count<arch::i386> worst_case_npages =
       page_count<arch::i386>(4 /* PDP */ + 4 * 512 /* PTE */);
-  static constexpr vpage_no<arch::i386> kva_map_self =
-      vpage_no<arch::i386>(0xffffffff >> page_shift(arch::i386)) -
-      worst_case_npages;
+  static const vpage_no<arch::i386> kva_map_self;
 
   /*
    * The memory range that this pmap can manage.
@@ -56,11 +61,10 @@ class pmap<arch::i386> {
    * Since the kernel pmap maps itself, these functions calculate the mapped
    * addresses of the pte/pdp.
    */
-  static constexpr vpage_no<arch::i386> kva_pdp_entry(unsigned int);
-  static constexpr vpage_no<arch::i386> kva_pte_entry(unsigned int,
-                                                      unsigned int);
-  static constexpr vpage_no<arch::i386> kva_pdp_entry(vaddr<arch::i386>);
-  static constexpr vpage_no<arch::i386> kva_pte_entry(vaddr<arch::i386>);
+  static vpage_no<arch::i386> kva_pdp_entry(unsigned int);
+  static vpage_no<arch::i386> kva_pte_entry(unsigned int, unsigned int);
+  static vpage_no<arch::i386> kva_pdp_entry(vaddr<arch::i386>);
+  static vpage_no<arch::i386> kva_pte_entry(vaddr<arch::i386>);
 
   static constexpr unsigned int offset_bits = 12;
   static constexpr unsigned int pte_offset_bits = 9;
