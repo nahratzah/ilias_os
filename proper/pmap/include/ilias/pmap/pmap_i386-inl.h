@@ -27,8 +27,8 @@ inline auto pmap<arch::i386>::managed_range() const noexcept ->
     std::tuple<vpage_no<arch::i386>, vpage_no<arch::i386>> {
   vpage_no<arch::i386> top = kva_map_self;
   if (support_.userspace) {
-    uint32_t top_addr = (0xffffffffU >> page_shift(arch::i386));
-    top = vpage_no<arch::i386>(top_addr + 1U);
+    const auto shift = pdpe_offset_bits + pdp_offset_bits + pte_offset_bits;
+    top = vpage_no<arch::i386>(1U << shift);
   }
   return std::make_tuple(vpage_no<arch::i386>(0), top);
 }

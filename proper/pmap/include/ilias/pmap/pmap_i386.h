@@ -40,11 +40,6 @@ class pmap<arch::i386> {
 
   const void* get_pmap_ptr() const noexcept { return &pdpe_; }
 
-  /* Worst case, the pmap requires this many pages to hold its information. */
-  static constexpr page_count<arch::i386> worst_case_npages =
-      page_count<arch::i386>(4 /* PDP */ + 4 * 512 /* PTE */);
-  static const vpage_no<arch::i386> kva_map_self;
-
   /*
    * The memory range that this pmap can manage.
    *
@@ -66,21 +61,20 @@ class pmap<arch::i386> {
   static vpage_no<arch::i386> kva_pdp_entry(vaddr<arch::i386>);
   static vpage_no<arch::i386> kva_pte_entry(vaddr<arch::i386>);
 
+  /* Number of bits describing indices for each level. */
   static constexpr unsigned int offset_bits = 12;
   static constexpr unsigned int pte_offset_bits = 9;
   static constexpr unsigned int pdp_offset_bits = 9;
   static constexpr unsigned int pdpe_offset_bits = 2;
 
+  /* Shifts for converting addresses to page-table indices. */
   static constexpr unsigned int pte_addr_offset = offset_bits;
   static constexpr unsigned int pdp_addr_offset = pte_addr_offset +
                                                   pte_offset_bits;
   static constexpr unsigned int pdpe_addr_offset = pdp_addr_offset +
                                                    pdp_offset_bits;
 
-  static constexpr unsigned int N_PDPE = 1U << pdpe_offset_bits;
-  static constexpr unsigned int N_PDP = 1U << pdp_offset_bits;
-  static constexpr unsigned int N_PTE = 1U << pte_offset_bits;
-
+  /* Masks for converting addresses to page-table indices. */
   static constexpr uint32_t pdpe_mask =
       uint32_t(0) - (uint32_t(1) << pdpe_addr_offset);
   static constexpr uint32_t pdp_mask =
@@ -88,10 +82,25 @@ class pmap<arch::i386> {
   static constexpr uintptr_t pte_mask =
       (uint32_t(1) << pdp_addr_offset) - (uint32_t(1) << pte_addr_offset);
 
+  /* Number of records in each level. */
+  static constexpr unsigned int N_PDPE = 1U << pdpe_offset_bits;
+  static constexpr unsigned int N_PDP = 1U << pdp_offset_bits;
+  static constexpr unsigned int N_PTE = 1U << pte_offset_bits;
+
+  /* Worst case, the pmap requires this many pages to hold its information. */
+  static constexpr page_count<arch::i386> worst_case_npages =
+      page_count<arch::i386>(N_PDPE + N_PDPE * N_PDP);
+  static const vpage_no<arch::i386> kva_map_self;
+
+  /* Declare our record types. */
   using pdpe_record = x86_shared::pdpe_record;
   using pdp_record = x86_shared::pdp_record;
   using pte_record = x86_shared::pte_record;
 
+  /*
+   * Declare PDPE level (which has a strict alignment requirement,
+   * due to the lower bits in the pointer being flags.
+   */
   struct alignas(1 << 5) pdpe
   : public std::array<pdpe_record, N_PDPE>
   {
@@ -100,6 +109,7 @@ class pmap<arch::i386> {
     pdpe& operator=(const pdpe&) noexcept = default;
   };
 
+  /* Declare types for PDP and PTE levels. */
   using pdp = std::array<pdp_record, N_PDP>;
   using pte = std::array<pte_record, N_PTE>;
 
@@ -107,12 +117,31 @@ class pmap<arch::i386> {
   pdpe pdpe_;
   pmap_support<arch::i386>& support_;
 
+  /*
+   * Verify that everything behaves as planned.
+   */
   static_assert(sizeof(pdpe) == 4 * 8,
                 "PDPE table has wrong size.");
   static_assert(sizeof(pdp) == 4 * 1024,
                 "PDP table has wrong size.");
   static_assert(sizeof(pte) == 4 * 1024,
                 "PTE table has wrong size.");
+
+  /*
+   * Rigorous validation of masks.
+   */
+  static_assert((pdpe_mask | pdp_mask | pte_mask | page_mask(arch::i386)) ==
+                0xffffffffU,
+                "Masks must connect and describe the entire address space.");
+  static_assert((pdpe_mask & pdp_mask) == 0 &&
+                (pdp_mask & pte_mask) == 0 &&
+                (pte_mask & page_mask(arch::i386)) == 0,
+                "Masks may not overlap.");
+  static_assert(pdpe_mask > pdp_mask && pdp_mask > pte_mask &&
+                pte_mask > page_mask(arch::i386),
+                "Masks must be ordered: PDPE > PDP > PTE > page_mask.");
+  static_assert(offset_bits == page_shift(arch::i386),
+                "Page shift or offset_bits are wrong.");
 };
 
 }} /* namespace ilias::pmap */
