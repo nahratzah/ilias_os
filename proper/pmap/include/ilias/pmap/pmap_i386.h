@@ -12,8 +12,7 @@ namespace ilias {
 namespace pmap {
 
 /* PMAP, using PAE mode. */
-template<>
-class pmap<arch::i386> {
+template<> class pmap<arch::i386> final {
  public:
   pmap(pmap_support<arch::i386>&) noexcept;
   pmap(const pmap&) = delete;
