@@ -70,7 +70,7 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
 
   /* Resolve pdp. */
   const pdp_record pdp_value =
-      (*pmap_map_page<pdp>(pdp_addr, support_))[pdp_off];
+      (*map_pdp(pdp_addr, va))[pdp_off];
   if (_predict_false(!pdp_value.p())) throw efault(va.get());
   const auto pte_addr = page_no<arch::i386>(pdp_value.page_no());
 
@@ -83,7 +83,7 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
 
   /* Resolve pte. */
   const pte_record pte_value =
-      (*pmap_map_page<pte>(pte_addr, support_))[pte_off];
+      (*map_pte(pte_addr, va))[pte_off];
   if (_predict_false(!pte_value.p())) throw efault(va.get());
   const auto pg = page_no<arch::i386>(pte_value.page_no());
 
@@ -129,7 +129,7 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     pdp_ptr = page_ptr<arch::i386>::allocate(support_);
   else
     pdp_ptr = page_ptr<arch::i386>(page_no<arch::i386>(pdpe_value.page_no()));
-  auto mapped_pdp = pmap_map_page<pdp>(pdp_ptr.get(), support_);
+  auto mapped_pdp = map_pdp(pdp_ptr.get(), va);
   /* Clear PDP if it was newly allocated. */
   if (pdp_ptr.is_allocated())
     std::fill(mapped_pdp->begin(), mapped_pdp->end(), pdp_record{ 0 });
@@ -144,7 +144,7 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
     pte_ptr = page_ptr<arch::i386>::allocate(support_);
   else
     pte_ptr = page_ptr<arch::i386>(page_no<arch::i386>(pdp_value.page_no()));
-  auto mapped_pte = pmap_map_page<pte>(pte_ptr.get(), support_);
+  auto mapped_pte = map_pte(pte_ptr.get(), va);
   /* Clear PTE if it was newly allocated. */
   if (pte_ptr.is_allocated())
     std::fill(mapped_pte->begin(), mapped_pte->end(), pte_record{ 0 });
@@ -239,7 +239,7 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
         page_ptr<arch::i386>(page_no<arch::i386>(pdpe_iter->page_no()));
 
     /* Map the page, to descend. */
-    auto mapped_pdp = pmap_map_page<pdp>(pdp_ptr.get(), support_);
+    auto mapped_pdp = map_pdp(pdp_ptr.get(), pdpe_off);
 
     auto pdp_iter = next(mapped_pdp->begin(), pdp_off);
     while (pdp_iter != mapped_pdp->end() && c > page_count<arch::i386>(0)) {
@@ -264,8 +264,8 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
            * transfer the remaining part to a new page level. */
           try {
             auto new_pdp_ptr = page_ptr<arch::i386>::allocate(support_);
-            auto mapped_new_pdp = pmap_map_page<pte>(new_pdp_ptr.get(),
-                                                     support_);
+            auto mapped_new_pdp = map_pte(new_pdp_ptr.get(),
+                                          pdpe_off, pdp_off);
             pte_record pg = pte_record::convert(*pdp_iter);
             std::generate(mapped_new_pdp->begin(), mapped_new_pdp->end(),
                           [&pg]() {
@@ -300,7 +300,7 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
       } else { /* Descend into pte record. */
         auto pte_ptr =
             page_ptr<arch::i386>(page_no<arch::i386>(pdp_iter->page_no()));
-        auto mapped_pte = pmap_map_page<pte>(pte_ptr.get(), support_);
+        auto mapped_pte = map_pte(pte_ptr.get(), pdp_off, pte_off);
 
         std::for_each(next(mapped_pte->begin(), pte_off),
                       next(mapped_pte->begin(),
@@ -335,6 +335,35 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
 
     ++pdpe_iter;
   }
+}
+
+auto pmap<arch::i386>::map_pdp(page_no<arch::i386> pg, vaddr<arch::i386> va)
+    const -> pmap_mapped_ptr<pdp, arch::i386> {
+  if (kva_map_self_enabled_)
+    return pmap_map_page<pdp>(kva_pdp_entry(va));
+  return pmap_map_page<pdp>(pg, support_);
+}
+
+auto pmap<arch::i386>::map_pte(page_no<arch::i386> pg, vaddr<arch::i386> va)
+    const -> pmap_mapped_ptr<pte, arch::i386> {
+  if (kva_map_self_enabled_)
+    return pmap_map_page<pte>(kva_pte_entry(va));
+  return pmap_map_page<pte>(pg, support_);
+}
+
+auto pmap<arch::i386>::map_pdp(page_no<arch::i386> pg, unsigned int pdpe_idx)
+    const -> pmap_mapped_ptr<pdp, arch::i386> {
+  if (kva_map_self_enabled_)
+    return pmap_map_page<pdp>(kva_pdp_entry(pdpe_idx));
+  return pmap_map_page<pdp>(pg, support_);
+}
+
+auto pmap<arch::i386>::map_pte(page_no<arch::i386> pg,
+                               unsigned int pdpe_idx, unsigned int pdp_idx)
+    const -> pmap_mapped_ptr<pte, arch::i386> {
+  if (kva_map_self_enabled_)
+    return pmap_map_page<pte>(kva_pte_entry(pdpe_idx, pdp_idx));
+  return pmap_map_page<pte>(pg, support_);
 }
 
 

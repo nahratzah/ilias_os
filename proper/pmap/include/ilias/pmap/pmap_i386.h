@@ -5,6 +5,7 @@
 #include <ilias/pmap/page.h>
 #include <ilias/pmap/pmap.h>
 #include <ilias/pmap/x86_shared.h>
+#include <ilias/pmap/page_alloc_support-fwd.h>
 #include <array>
 #include <tuple>
 
@@ -118,9 +119,23 @@ template<> class pmap<arch::i386> final {
   using pdp = std::array<pdp_record, N_PDP>;
   using pte = std::array<pte_record, N_PTE>;
 
+  /*
+   * Page mapping wrapper, which uses the kva_{pdp,pte}_entry addresses if the
+   * page_map is a kernel pmap.
+   */
+  auto map_pdp(page_no<arch::i386>, vaddr<arch::i386>) const ->
+      pmap_mapped_ptr<pdp, arch::i386>;
+  auto map_pte(page_no<arch::i386>, vaddr<arch::i386>) const ->
+      pmap_mapped_ptr<pte, arch::i386>;
+  auto map_pdp(page_no<arch::i386>, unsigned int) const ->
+      pmap_mapped_ptr<pdp, arch::i386>;
+  auto map_pte(page_no<arch::i386>, unsigned int, unsigned int) const ->
+      pmap_mapped_ptr<pte, arch::i386>;
+
   /* Variables start here. */
   pdpe pdpe_;
   pmap_support<arch::i386>& support_;
+  bool kva_map_self_enabled_ = false;
 
   /*
    * Verify that everything behaves as planned.
