@@ -226,10 +226,7 @@ struct maybe_lockfree<uint128_t, int> {
                   "Assembler below depends on this, to set *rv.");
     asm volatile(
         "lock cmpxchg16b %3\n"  // set ZF if equal, clear ZF if not equal
-      "\tmovb $0, %2\n"
-      "\tjne 0f\n"
-      "\tmovb $1, %2\n"
-      "0:"
+      "\tsete %2\n"
     : "=d"(rdx), "=a"(rax), "=X"(*rv)
     : "m"(*static_cast<uint128_t*>(atom)),
       "d"(rdx), "a"(rax), "c"(rcx), "b"(rbx)
