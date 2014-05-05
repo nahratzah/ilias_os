@@ -41,6 +41,16 @@ class pmap<arch::i386> {
       worst_case_npages;
 
  private:
+  /*
+   * Since the kernel pmap maps itself, these functions calculate the mapped
+   * addresses of the pte/pdp.
+   */
+  static constexpr vpage_no<arch::i386> kva_pdp_entry(unsigned int);
+  static constexpr vpage_no<arch::i386> kva_pte_entry(unsigned int,
+                                                      unsigned int);
+  static constexpr vpage_no<arch::i386> kva_pdp_entry(vaddr<arch::i386>);
+  static constexpr vpage_no<arch::i386> kva_pte_entry(vaddr<arch::i386>);
+
   static constexpr unsigned int offset_bits = 12;
   static constexpr unsigned int pte_offset_bits = 9;
   static constexpr unsigned int pdp_offset_bits = 9;
@@ -51,6 +61,10 @@ class pmap<arch::i386> {
                                                   pte_offset_bits;
   static constexpr unsigned int pdpe_addr_offset = pdp_addr_offset +
                                                    pdp_offset_bits;
+
+  static constexpr unsigned int N_PDPE = 1U << pdpe_offset_bits;
+  static constexpr unsigned int N_PDP = 1U << pdp_offset_bits;
+  static constexpr unsigned int N_PTE = 1U << pte_offset_bits;
 
   static constexpr uint32_t pdpe_mask =
       uint32_t(0) - (uint32_t(1) << pdpe_addr_offset);
@@ -64,18 +78,15 @@ class pmap<arch::i386> {
   using pte_record = x86_shared::pte_record;
 
   struct alignas(1 << 5) pdpe
-  : public std::array<pdpe_record, 4>
+  : public std::array<pdpe_record, N_PDPE>
   {
-    constexpr pdpe() noexcept
-    : std::array<pdpe_record, 4>{{{ 0 }, { 0 }, { 0 }, { 0 }}}
-    {}
-
-    constexpr pdpe(const pdpe&) noexcept = default;
+    pdpe() noexcept;
+    pdpe(const pdpe&) noexcept = default;
     pdpe& operator=(const pdpe&) noexcept = default;
   };
 
-  using pdp = std::array<pdp_record, 512>;
-  using pte = std::array<pte_record, 512>;
+  using pdp = std::array<pdp_record, N_PDP>;
+  using pte = std::array<pte_record, N_PTE>;
 
   /* Variables start here. */
   pdpe pdpe_;
