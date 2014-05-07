@@ -5,15 +5,18 @@
 #include <ilias/pmap/page.h>
 #include <ilias/pmap/pmap.h>
 #include <ilias/pmap/x86_shared.h>
-#include <ilias/pmap/page_alloc_support-fwd.h>
+#include <ilias/pmap/page_alloc_support.h>
 #include <array>
 #include <tuple>
 
 namespace ilias {
 namespace pmap {
 
+
 /* PMAP, using PAE mode. */
 template<> class pmap<arch::i386> final {
+  friend pmap_map<pmap<arch::i386>>;
+
  public:
   pmap(pmap_support<arch::i386>&) noexcept;
   pmap(const pmap&) = delete;
@@ -60,6 +63,9 @@ template<> class pmap<arch::i386> final {
   static vpage_no<arch::i386> kva_pte_entry(unsigned int, unsigned int);
   static vpage_no<arch::i386> kva_pdp_entry(vaddr<arch::i386>);
   static vpage_no<arch::i386> kva_pte_entry(vaddr<arch::i386>);
+
+  /* Alignment constraint (pageno) for large pages at PDP level. */
+  static constexpr uint64_t lp_pdp_pgno_align = 1ULL << 9;
 
   /* Number of bits describing indices for each level. */
   static constexpr unsigned int offset_bits = 12;
@@ -163,6 +169,49 @@ template<> class pmap<arch::i386> final {
   static_assert(offset_bits == page_shift(arch::i386),
                 "Page shift or offset_bits are wrong.");
 };
+
+template<> class pmap_map<pmap<arch::i386>> {
+ private:
+  static constexpr auto N_PDPE = pmap<arch::i386>::N_PDPE;
+  static constexpr auto N_PDP = pmap<arch::i386>::N_PDP;
+  static constexpr auto N_PTE = pmap<arch::i386>::N_PTE;
+
+  static constexpr auto pdpe_addr_offset = pmap<arch::i386>::pdpe_addr_offset;
+  static constexpr auto pdp_addr_offset = pmap<arch::i386>::pdp_addr_offset;
+  static constexpr auto pte_addr_offset = pmap<arch::i386>::pte_addr_offset;
+  static constexpr auto pdpe_mask = pmap<arch::i386>::pdpe_mask;
+  static constexpr auto pdp_mask = pmap<arch::i386>::pdp_mask;
+  static constexpr auto pte_mask = pmap<arch::i386>::pte_mask;
+
+  using pdpe_record = pmap<arch::i386>::pdpe_record;
+  using pdp_record = pmap<arch::i386>::pdp_record;
+  using pte_record = pmap<arch::i386>::pte_record;
+  using pdpe = pmap<arch::i386>::pdpe;
+  using pdp = pmap<arch::i386>::pdp;
+  using pte = pmap<arch::i386>::pte;
+
+ public:
+  pmap_map() noexcept = default;
+  pmap_map(pmap<arch::i386>&, vpage_no<arch::i386>, vpage_no<arch::i386>);
+
+  void push_back(page_no<arch::i386>, permission,
+                 page_count<arch::i386> = page_count<arch::i386>(1));
+  void commit();
+  page_count<arch::i386> size() const noexcept;
+
+ private:
+  void load_pdp_ptr_(size_t) const;
+  void load_pte_ptr_(size_t, size_t) const;
+  bool pte_is_lp_convertible(size_t, size_t) const;
+
+  pmap<arch::i386>* pmap_ = nullptr;
+  vpage_no<arch::i386> va_start_{}, va_end_{}, va_{};
+
+  /* The pointers for PDP and PTE are cached between calls. */
+  mutable pmap_mapped_ptr<pmap<arch::i386>::pdp, arch::i386> pdp_ptr_;
+  mutable pmap_mapped_ptr<pmap<arch::i386>::pte, arch::i386> pte_ptr_;
+};
+
 
 }} /* namespace ilias::pmap */
 

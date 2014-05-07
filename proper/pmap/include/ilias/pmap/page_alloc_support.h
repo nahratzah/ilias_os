@@ -4,10 +4,17 @@
 #include <ilias/arch.h>
 #include <ilias/pmap/page.h>
 #include <ilias/pmap/pmap.h>
-#include <ilias/pmap/page_alloc_support-fwd.h>
+#include <memory>
 
 namespace ilias {
 namespace pmap {
+
+
+template<arch Arch = native_arch> class page_ptr;
+template<typename T, arch Arch> struct unmap_page_deleter;
+
+template<typename T, arch Arch> using pmap_mapped_ptr =
+    std::unique_ptr<T, unmap_page_deleter<T, Arch>>;
 
 
 template<arch Arch>

@@ -346,4 +346,162 @@ auto pmap<arch::i386>::map_pte(page_no<arch::i386> pg,
 }
 
 
+auto pmap_map<pmap<arch::i386>>::push_back(page_no<arch::i386> pg,
+                                           permission perm,
+                                           page_count<arch::i386> npg) ->
+    void {
+  using x86_shared::PT_AVL;
+
+  auto pdpe_idx = (vaddr<arch::i386>(va_).get() & pdpe_mask) >>
+                  pdpe_addr_offset;
+  auto pdp_idx = (vaddr<arch::i386>(va_).get() & pdp_mask) >>
+                 pdp_addr_offset;
+  auto pte_idx = (vaddr<arch::i386>(va_).get() & pte_mask) >>
+                 pte_addr_offset;
+
+  if (npg < page_count<arch::i386>(0))
+    throw std::invalid_argument("cannot map negative page count");
+
+  while (npg > page_count<arch::i386>(0)) {
+    pmap_->pdpe_[pdpe_idx] = pmap_->pdpe_[pdpe_idx].combine(perm);
+
+    /*
+     * We can map this in as a large page if:
+     * - the vaddr is large-page-aligned (pte_idx == 0)
+     * - the number of pages is sufficient (npg >= N_PTE)
+     * - the physical page is large-page-aligned (pg % align == 0)
+     * - there is no PDP (!pdpe.p()), or
+     *   there is no PTE (pte_is_lp_convertible()), or
+     *   the AVL bits on all the entries in the PTE are equal
+     *   (pte_is_lp_convirtible()).
+     */
+    if (pte_idx == 0 && npg >= page_count<arch::i386>(N_PTE) &&
+        pg.get() % pmap<arch::i386>::lp_pdp_pgno_align == 0 &&
+        (!pmap_->pdpe_[pdpe_idx].p() ||
+         pte_is_lp_convertible(pdpe_idx, pdp_idx))) {
+      if (!pdp_ptr_) load_pdp_ptr_(pdpe_idx);
+
+      page_ptr<arch::i386> old;
+      if ((*pdp_ptr_)[pdp_idx].p() && !(*pdp_ptr_)[pdp_idx].ps())
+        old = page_ptr<arch::i386>((*pdp_ptr_)[pdp_idx].address());
+      (*pdp_ptr_)[pdp_idx] = pdp_record::create(
+          pg, (*pdp_ptr_)[pdp_idx].flags() & PT_AVL).combine(perm);
+      if (old)
+        old.set_allocated(pmap_->support_);
+
+      va_ += page_count<arch::i386>(N_PTE);
+      pte_ptr_ = nullptr;
+      if (++pdp_idx == N_PDP) {
+        pdp_idx = 0;
+        ++pdpe_idx;
+        pdp_ptr_ = nullptr;
+        npg -= page_count<arch::i386>(N_PTE);
+        pg += page_count<arch::i386>(N_PTE);
+      }
+    } else {
+      if (!pdp_ptr_) load_pdp_ptr_(pdpe_idx);
+      (*pdp_ptr_)[pdp_idx] = (*pdp_ptr_)[pdp_idx].combine(perm);
+
+      if (!pte_ptr_) load_pte_ptr_(pdpe_idx, pdp_idx);
+      do {
+        (*pte_ptr_)[pte_idx] = pte_record::create(
+            pg, (*pte_ptr_)[pte_idx].flags() & PT_AVL).combine(perm);
+        npg -= page_count<arch::i386>(1);
+        pg += page_count<arch::i386>(1);
+      } while (++pte_idx != N_PTE && npg > page_count<arch::i386>(0));
+
+      if (pte_idx == N_PTE) {
+        pte_idx = 0;
+        if (++pdp_idx == N_PDP) {
+          pdp_idx = 0;
+          ++pdpe_idx;
+          pdp_ptr_ = nullptr;
+        }
+        pte_ptr_ = nullptr;
+      }
+    }
+  }
+}
+
+bool pmap_map<pmap<arch::i386>>::pte_is_lp_convertible(size_t pdpe_idx,
+                                                       size_t pdp_idx)
+    const {
+  using x86_shared::PT_AVL;
+  using std::bind;
+  using std::placeholders::_1;
+  using std::next;
+  using std::all_of;
+
+  if (!pdp_ptr_) load_pdp_ptr_(pdpe_idx);
+
+  if (!(*pdp_ptr_)[pdp_idx].p()) return true;
+  return all_of(next(pte_ptr_->begin()), pte_ptr_->end(),
+                bind([](const pte_record& x, const pte_record& y) {
+                       return (x.flags() & PT_AVL) == (y.flags() & PT_AVL);
+                     },
+                     _1, *pte_ptr_->begin()));
+}
+
+auto pmap_map<pmap<arch::i386>>::load_pdp_ptr_(size_t pdpe_idx) const -> void {
+  using x86_shared::PT_AVL;
+
+  assert(pdpe_idx < N_PDPE);
+
+  page_ptr<arch::i386> pdp_pg;
+  pdp_ptr_ = nullptr;
+  pdp_pg = (pmap_->pdpe_[pdpe_idx].p() ?
+            page_ptr<arch::i386>(pmap_->pdpe_[pdpe_idx].address()) :
+            page_ptr<arch::i386>::allocate(pmap_->support_));
+  pdp_ptr_ = pmap_->map_pdp(pdp_pg.get(), pdpe_idx);
+  if (pdp_pg.is_allocated()) {
+    std::fill(pdp_ptr_->begin(), pdp_ptr_->end(),
+              pdp_record::create(nullptr,
+                                 pmap_->pdpe_[pdpe_idx].flags() & PT_AVL));
+    pmap_->pdpe_[pdpe_idx] =
+        pdpe_record::create(pdp_pg.get(),
+                            pmap_->pdpe_[pdpe_idx].flags() & PT_AVL);
+    pdp_pg.release();
+  }
+}
+
+auto pmap_map<pmap<arch::i386>>::load_pte_ptr_(size_t pdpe_idx, size_t pdp_idx)
+    const -> void {
+  using std::bind;
+  using x86_shared::PT_AVL;
+
+  assert(pdpe_idx < N_PDPE);
+  assert(pdp_idx < N_PDP);
+
+  page_ptr<arch::i386> pte_pg;
+  pte_ptr_ = nullptr;
+  if (!pdp_ptr_) load_pdp_ptr_(pdpe_idx);
+  pte_pg = ((*pdp_ptr_)[pdp_idx].p() ?
+            page_ptr<arch::i386>((*pdp_ptr_)[pdp_idx].address()) :
+            page_ptr<arch::i386>::allocate(pmap_->support_));
+  pte_ptr_ = pmap_->map_pte(pte_pg.get(), pdpe_idx, pdp_idx);
+  if (pte_pg.is_allocated()) {
+    /*
+     * If the PDP already holds a page, split it up into smaller pages.
+     */
+    if ((*pdp_ptr_)[pdp_idx].p()) {
+      page_no<arch::i386> pgi = (*pdp_ptr_)[pdp_idx].address();
+      std::generate(pte_ptr_->begin(), pte_ptr_->end(),
+                    bind([&pgi](const x86_shared::flags& fl) {
+                           return pte_record::create(pgi++, fl);
+                         },
+                         (*pdp_ptr_)[pdp_idx].flags()));
+    } else {
+      std::fill(pte_ptr_->begin(), pte_ptr_->end(),
+                pte_record::create(nullptr,
+                                   (*pdp_ptr_)[pdp_idx].flags() & PT_AVL));
+    }
+
+    (*pdp_ptr_)[pdp_idx] =
+        pdp_record::create(pte_pg.get(),
+                           (*pdp_ptr_)[pdp_idx].flags() & PT_AVL);
+    pte_pg.release();
+  }
+}
+
+
 }} /* namespace ilias::pmap */

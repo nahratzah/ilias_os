@@ -25,6 +25,7 @@ template<arch Arch> class pmap_support {
 };
 
 template<arch> class pmap;  // Undefined.
+template<typename> class pmap_map;  // Undefined.
 
 class efault : public std::system_error {
  public:

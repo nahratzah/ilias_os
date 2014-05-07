@@ -11,6 +11,7 @@
 namespace ilias {
 namespace pmap {
 
+
 inline pmap<arch::i386>::pmap(pmap_support<arch::i386>& support) noexcept
 : support_(support)
 {
@@ -41,7 +42,7 @@ inline auto pmap<arch::i386>::kva_pdp_entry(unsigned int pdpe_idx) ->
   return kva_map_self + page_count<arch::i386>(pdpe_idx);
 }
 
-inline auto pmap<arch::i386>::kva_pte_entry(unsigned pdpe_idx,
+inline auto pmap<arch::i386>::kva_pte_entry(unsigned int pdpe_idx,
                                             unsigned int pdp_idx) ->
     vpage_no<arch::i386> {
   if (pdpe_idx >= N_PDPE)
@@ -72,6 +73,32 @@ inline pmap<arch::i386>::pdpe::pdpe() noexcept
 {
   std::fill_n(begin(), size(), pdpe_record{ 0 });
 }
+
+
+inline pmap_map<pmap<arch::i386>>::pmap_map(pmap<arch::i386>& pmap,
+                                            vpage_no<arch::i386> va_begin,
+                                            vpage_no<arch::i386> va_end)
+: pmap_(&pmap),
+  va_start_(va_begin),
+  va_end_(va_end),
+  va_(va_begin)
+{
+  vpage_no<arch::i386> lo, hi;
+  std::tie(lo, hi) = pmap_->managed_range();
+
+  if (va_begin < lo)
+    throw std::out_of_range("va_begin");
+  if (va_end > hi)
+    throw std::out_of_range("va_end");
+  if (va_begin > va_end)
+    throw std::range_error("pre-condition not met: va_begin <= va_end");
+}
+
+inline auto pmap_map<pmap<arch::i386>>::size() const noexcept ->
+    page_count<arch::i386> {
+  return va_end_ - va_start_;
+}
+
 
 }} /* namespace ilias::pmap */
 
