@@ -24,8 +24,7 @@ auto pmap<arch::i386>::clear() noexcept -> void {
     if (!pdpe_value.p()) continue;  // Skip non-present entries.
 
     /* Mark this page for destruction. */
-    auto pdp_ptr =
-        page_ptr<arch::i386>(page_no<arch::i386>(pdpe_value.page_no()));
+    auto pdp_ptr = page_ptr<arch::i386>(pdpe_value.address());
     pdp_ptr.set_allocated(support_);
 
     /* Process all mapped pdp entries. */
@@ -35,8 +34,7 @@ auto pmap<arch::i386>::clear() noexcept -> void {
       if (pdp_value.ps()) continue;  // Leaf node.
 
       /* Mark this page for destruction. */
-      auto pte_ptr =
-          page_ptr<arch::i386>(page_no<arch::i386>(pdp_value.page_no()));
+      auto pte_ptr = page_ptr<arch::i386>(pdp_value.address());
       pte_ptr.set_allocated(support_);
     }
   }
@@ -62,7 +60,7 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
   /* Resolve pdpe. */
   const pdpe_record pdpe_value = pdpe_[pdpe_off];
   if (_predict_false(!pdpe_value.p())) throw efault(va.get());
-  const auto pdp_addr = page_no<arch::i386>(pdpe_value.page_no());
+  const page_no<arch::i386> pdp_addr = pdpe_value.address();
 
   /* Resolve pdp offset. */
   const uintptr_t pdp_off = (p & pdp_mask) >> pdp_addr_offset;
@@ -72,7 +70,7 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
   const pdp_record pdp_value =
       (*map_pdp(pdp_addr, va))[pdp_off];
   if (_predict_false(!pdp_value.p())) throw efault(va.get());
-  const auto pte_addr = page_no<arch::i386>(pdp_value.page_no());
+  const page_no<arch::i386> pte_addr = pdp_value.address();
 
   if (pdp_value.ps())
     return std::make_tuple(pte_addr, (1U << (pte_offset_bits)), p);
@@ -85,7 +83,7 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
   const pte_record pte_value =
       (*map_pte(pte_addr, va))[pte_off];
   if (_predict_false(!pte_value.p())) throw efault(va.get());
-  const auto pg = page_no<arch::i386>(pte_value.page_no());
+  const page_no<arch::i386> pg = pte_value.address();
 
   return std::make_tuple(pg, 1, p);
 }
@@ -115,6 +113,8 @@ auto pmap<arch::i386>::unmap(vpage_no<arch::i386> va,
 
 auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
                             permission perm) -> void {
+  using namespace x86_shared;
+
   auto p = vaddr<arch::i386>(va).get();
   page_ptr<arch::i386> pdp_ptr;
   page_ptr<arch::i386> pte_ptr;
@@ -128,7 +128,7 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
   if (!pdpe_value.p())
     pdp_ptr = page_ptr<arch::i386>::allocate(support_);
   else
-    pdp_ptr = page_ptr<arch::i386>(page_no<arch::i386>(pdpe_value.page_no()));
+    pdp_ptr = page_ptr<arch::i386>(pdpe_value.address());
   auto mapped_pdp = map_pdp(pdp_ptr.get(), va);
   /* Clear PDP if it was newly allocated. */
   if (pdp_ptr.is_allocated())
@@ -143,7 +143,7 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
   if (!pdp_value.p())
     pte_ptr = page_ptr<arch::i386>::allocate(support_);
   else
-    pte_ptr = page_ptr<arch::i386>(page_no<arch::i386>(pdp_value.page_no()));
+    pte_ptr = page_ptr<arch::i386>(pdp_value.address());
   auto mapped_pte = map_pte(pte_ptr.get(), va);
   /* Clear PTE if it was newly allocated. */
   if (pte_ptr.is_allocated())
@@ -155,35 +155,24 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
 
   /* Resolve page entry. */
   pte_record& pte_value = (*mapped_pte)[pte_off];
-  if (pte_value.p()) {
-    if (pte_value.page_no() == pg.get()) return;
-    throw efault(va.get());
-  }
 
   /* Assign page entry. */
   {
-    pte_record new_pte_value{ 0 };
-    new_pte_value.page_no(pg.get());
-    new_pte_value.p(true);
-    new_pte_value.us(support_.userspace);
-    new_pte_value = new_pte_value.combine(perm);
-    for (unsigned int i = 0; i < pte_record::AVL_COUNT; ++i)
-      new_pte_value.avl(pte_value.avl(i), i);
+    const auto new_pte_value = pte_record::create(
+        pg, (support_.userspace ? PT_US : flags{ 0 }) |
+            (pte_value.flags() & PT_AVL)).combine(perm);
     assert(new_pte_value.valid());
     pte_value = new_pte_value;
   }
 
   /* Assign pte to pdp, iff newly allocated. */
   if (pte_ptr.is_allocated()) {
-    pdp_record new_pdp_value{ 0 };
-    new_pdp_value.page_no(pte_ptr.release().get());
-    new_pdp_value.p(true);
-    new_pdp_value.us(support_.userspace);
-    new_pdp_value = new_pdp_value.combine(perm);
-    for (unsigned int i = 0; i < pdp_record::AVL_COUNT; ++i)
-      new_pdp_value.avl(pdp_value.avl(i), i);
+    const auto new_pdp_value = pdp_record::create(
+        pte_ptr.get(), (support_.userspace ? PT_US : flags{ 0 }) |
+                       (pdp_value.flags() & PT_AVL)).combine(perm);
     assert(new_pdp_value.valid());
     pdp_value = new_pdp_value;
+    pte_ptr.release();
   } else {
     pdp_record new_pdp_value = pdp_value.combine(perm);
     assert(new_pdp_value.valid());
@@ -192,14 +181,12 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
 
   /* Assign pdp to pdpe, iff newly allocated. */
   if (pdp_ptr.is_allocated()) {
-    pdpe_record new_pdpe_value{ 0 };
-    new_pdpe_value.page_no(pdp_ptr.release().get());
-    new_pdpe_value.p(true);
-    new_pdpe_value = new_pdpe_value.combine(perm);
-    for (unsigned int i = 0; i < pdpe_record::AVL_COUNT; ++i)
-      new_pdpe_value.avl(pdpe_value.avl(i), i);
+    const auto new_pdpe_value = pdpe_record::create(
+        pdp_ptr.get(), (support_.userspace ? PT_US : flags{ 0 }) |
+                       (pdpe_value.flags() & PT_AVL)).combine(perm);
     assert(new_pdpe_value.valid());
     pdpe_value = new_pdpe_value;
+    pdp_ptr.release();
   } else {
     pdpe_record new_pdpe_value = pdpe_value.combine(perm);
     assert(new_pdpe_value.valid());
@@ -211,6 +198,7 @@ auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,
 
 auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
                               page_count<arch::i386> c) noexcept -> void {
+  using namespace x86_shared;
   using std::none_of;
   using std::min;
   using std::next;
@@ -235,8 +223,7 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
      * Maybe mark this page for destruction
      * (decided at the end of the loop).
      */
-    auto pdp_ptr =
-        page_ptr<arch::i386>(page_no<arch::i386>(pdpe_iter->page_no()));
+    auto pdp_ptr = page_ptr<arch::i386>(pdpe_iter->address());
 
     /* Map the page, to descend. */
     auto mapped_pdp = map_pdp(pdp_ptr.get(), pdpe_off);
@@ -266,25 +253,18 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
             auto new_pdp_ptr = page_ptr<arch::i386>::allocate(support_);
             auto mapped_new_pdp = map_pte(new_pdp_ptr.get(),
                                           pdpe_off, pdp_off);
-            pte_record pg = pte_record::convert(*pdp_iter);
+	    page_no<arch::i386> pg = pdp_iter->address();
             std::generate(mapped_new_pdp->begin(), mapped_new_pdp->end(),
-                          [&pg]() {
-                            pte_record rv = pg;
-                            page_no<arch::i386> pgno(pg.page_no());
-                            ++pgno;
-                            pg.page_no(pgno.get());
-                            return rv;
+                          [&pg, pdp_iter]() {
+                            return pte_record::create(pg++, pdp_iter->flags());
                           });
-            pte_record fill_pg{ 0 };
-            for (unsigned int i = 0; i < pte_record::AVL_COUNT; ++i)
-              fill_pg.avl(pg.avl(i), i);
             std::fill(next(mapped_new_pdp->begin(), pte_off),
                       next(mapped_new_pdp->begin(),
                            min(size_t(pte_off + c.get()), size_t(N_PDP))),
-                      pte_record{ 0 });
-            pdp_iter->ps(false);
-            pdp_iter->page_no(
-                page_no<arch::i386>(new_pdp_ptr.release()).get());
+                      pte_record::create(nullptr, pdp_iter->flags() & PT_AVL));
+            *pdp_iter = pdp_record::create(new_pdp_ptr.get(),
+                                           pdp_iter->flags());
+            new_pdp_ptr.release();
           } catch (...) {
             /* Error recovery: unmap the whole thing and
              * let the fault handler sort it out. */
@@ -295,26 +275,25 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
         if (unmap_entirely) {
           /* the big page is entirely removed:
            * invalidate pdp entry and continue. */
-          pdp_iter->p(false);
+          *pdp_iter = pdp_record::create(nullptr, pdp_iter->flags(), true);
         }
       } else { /* Descend into pte record. */
-        auto pte_ptr =
-            page_ptr<arch::i386>(page_no<arch::i386>(pdp_iter->page_no()));
+        auto pte_ptr = page_ptr<arch::i386>(pdp_iter->address());
         auto mapped_pte = map_pte(pte_ptr.get(), pdp_off, pte_off);
 
         std::for_each(next(mapped_pte->begin(), pte_off),
                       next(mapped_pte->begin(),
                            min(size_t(pte_off + c.get()), size_t(N_PTE))),
                       [](pte_record& r) {
-                        r.p(false);
+                        r = pte_record::create(nullptr, r.flags());
                       });
 
         /* Remove mapping if page becomes empty. */
         if (none_of(mapped_pte->begin(), mapped_pte->end(),
                     [](pte_record r) {
-                      return r.p() || r.avl(AVL_CRITICAL);
+                      return r.p() || r.flags().avl(AVL_CRITICAL);
                     })) {
-          pdp_iter->p(false);
+          *pdp_iter = pdp_record::create(nullptr, pdp_iter->flags());
           pte_ptr.set_allocated(support_);
         }
       }
@@ -327,9 +306,9 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
     /* Remove mapping if page becomes empty. */
     if (none_of(mapped_pdp->begin(), mapped_pdp->end(),
                 [](pdp_record r) {
-                  return r.p() || r.avl(AVL_CRITICAL);
+                  return r.p() || r.flags().avl(AVL_CRITICAL);
                 })) {
-      pdpe_iter->p(false);
+      *pdpe_iter = pdpe_record::create(nullptr, pdpe_iter->flags());
       pdp_ptr.set_allocated(support_);
     }
 
