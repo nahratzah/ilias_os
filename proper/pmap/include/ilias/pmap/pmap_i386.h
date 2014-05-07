@@ -192,12 +192,15 @@ template<> class pmap_map<pmap<arch::i386>> {
 
  public:
   pmap_map() noexcept = default;
+  pmap_map(const pmap_map&) = delete;
+  pmap_map& operator=(const pmap_map&) = delete;
   pmap_map(pmap<arch::i386>&, vpage_no<arch::i386>, vpage_no<arch::i386>);
 
   void push_back(page_no<arch::i386>, permission,
                  page_count<arch::i386> = page_count<arch::i386>(1));
   void commit();
   page_count<arch::i386> size() const noexcept;
+  page_count<arch::i386> max_size() const noexcept;
 
  private:
   void load_pdp_ptr_(size_t) const;
@@ -206,6 +209,7 @@ template<> class pmap_map<pmap<arch::i386>> {
 
   pmap<arch::i386>* pmap_ = nullptr;
   vpage_no<arch::i386> va_start_{}, va_end_{}, va_{};
+  bool commit_ = false;
 
   /* The pointers for PDP and PTE are cached between calls. */
   mutable pmap_mapped_ptr<pmap<arch::i386>::pdp, arch::i386> pdp_ptr_;

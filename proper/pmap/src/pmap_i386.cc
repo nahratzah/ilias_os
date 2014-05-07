@@ -361,6 +361,7 @@ auto pmap_map<pmap<arch::i386>>::push_back(page_no<arch::i386> pg,
 
   if (npg < page_count<arch::i386>(0))
     throw std::invalid_argument("cannot map negative page count");
+  if (va_end_ - va_ < npg) throw std::range_error("too many pages");
 
   while (npg > page_count<arch::i386>(0)) {
     pmap_->pdpe_[pdpe_idx] = pmap_->pdpe_[pdpe_idx].combine(perm);

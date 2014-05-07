@@ -94,7 +94,18 @@ inline pmap_map<pmap<arch::i386>>::pmap_map(pmap<arch::i386>& pmap,
     throw std::range_error("pre-condition not met: va_begin <= va_end");
 }
 
+inline auto pmap_map<pmap<arch::i386>>::commit() -> void {
+  if (va_ != va_end_) throw std::range_error("pmap range has not been filled");
+  if (commit_) throw std::logic_error("duplicate commit");
+  commit_ = true;
+}
+
 inline auto pmap_map<pmap<arch::i386>>::size() const noexcept ->
+    page_count<arch::i386> {
+  return va_ - va_start_;
+}
+
+inline auto pmap_map<pmap<arch::i386>>::max_size() const noexcept ->
     page_count<arch::i386> {
   return va_end_ - va_start_;
 }
