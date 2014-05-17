@@ -24,6 +24,7 @@ template<> class pmap<arch::i386> final {
   ~pmap() noexcept;
 
   void clear() noexcept;
+  bool userspace() const noexcept { return support_.userspace; }
 
   phys_addr<arch::i386> virt_to_phys(vaddr<arch::i386>) const;
   std::tuple<page_no<arch::i386>, size_t, uintptr_t> virt_to_page(
