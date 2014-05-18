@@ -10,6 +10,16 @@
 _namespace_begin(ilias)
 
 
+inline bool operator==(const basic_linked_set::iterator& x,
+                       const basic_linked_set::iterator& y) noexcept {
+  return x.elem_ == y.elem_;
+}
+
+inline bool operator!=(const basic_linked_set::iterator& x,
+                       const basic_linked_set::iterator& y) noexcept {
+  return !(x == y);
+}
+
 inline void swap(basic_linked_set& x, basic_linked_set& y) noexcept {
   x.swap(y);
 }

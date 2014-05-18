@@ -139,10 +139,19 @@ class basic_linked_set {
                 "Tagged pointer won't work.");
 };
 
+bool operator==(const basic_linked_set::iterator&,
+                const basic_linked_set::iterator&) noexcept;
+bool operator!=(const basic_linked_set::iterator&,
+                const basic_linked_set::iterator&) noexcept;
 void swap(basic_linked_set&, basic_linked_set&) noexcept;
 
-class basic_linked_set::iterator {
+class basic_linked_set::iterator
+: public _namespace(std)::iterator<_namespace(std)::bidirectional_iterator_tag,
+                                   element>
+{
   friend basic_linked_set;
+  friend bool operator==(const basic_linked_set::iterator&,
+                         const basic_linked_set::iterator&) noexcept;
 
  private:
   explicit iterator(const basic_linked_set*, element*) noexcept;
