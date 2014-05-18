@@ -9,33 +9,6 @@
 _namespace_begin(ilias)
 
 
-template<typename>
-struct set_augmentation_is_recursive : _namespace(std)::true_type {};
-
-template<typename A>
-struct set_augmentation_is_recursive<_namespace(std)::reference_wrapper<A>>
-: set_augmentation_is_recursive<A> {};
-
-
-namespace impl {
-
-template<typename...> struct set_augmentations_are_recursive_;
-template<typename A, typename... Tail>
-struct set_augmentations_are_recursive_<A, Tail...>
-: _namespace(std)::conditional_t<set_augmentation_is_recursive<A>::value,
-                                 _namespace(std)::true_type,
-                                 typename set_augmentations_are_recursive_<
-                                     Tail...>::type>
-{};
-
-template<>
-struct set_augmentations_are_recursive_<>
-: _namespace(std)::false_type
-{};
-
-} /* namespace ilias::impl */
-
-
 class basic_linked_set {
  public:
   class iterator;
@@ -121,9 +94,9 @@ class basic_linked_set {
   element* rotate_(element*, unsigned int) noexcept;
 
   /* Augmentation operation. */
-  static void apply_augmentations_(element*, bool) noexcept {}
+  static void apply_augmentations_(element*) noexcept {}
   template<typename Augment0, typename... Augment>
-  static void apply_augmentations_(element*, bool, Augment0, Augment&&...)
+  static void apply_augmentations_(element*, Augment0, Augment&&...)
       noexcept;
 
   /* Element parent-pointer tagging constants. */

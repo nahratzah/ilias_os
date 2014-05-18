@@ -223,9 +223,9 @@ auto basic_linked_set::link_fixup_(element* elem, Augments&&... augments)
   while (elem->parent() != nullptr) {
     element* p = elem->parent();
     if (p->black()) {
-      apply_augmentations_(elem, true, ref(augments)...);
+      apply_augmentations_(elem, ref(augments)...);
       do {
-        apply_augmentations_(p, true, ref(augments)...);
+        apply_augmentations_(p, ref(augments)...);
         p = p->parent();
       } while (p != nullptr);
       return;
@@ -240,8 +240,8 @@ auto basic_linked_set::link_fixup_(element* elem, Augments&&... augments)
       toggle_color(p);
       toggle_color(ps);
 
-      apply_augmentations_(elem, true, ref(augments)...);
-      apply_augmentations_(p, true, ref(augments)...);
+      apply_augmentations_(elem, ref(augments)...);
+      apply_augmentations_(p, ref(augments)...);
 
       elem = pp;
     } else {
@@ -259,14 +259,14 @@ auto basic_linked_set::link_fixup_(element* elem, Augments&&... augments)
       }
 
       /* Subtree rooted in elem won't change in the next operations. */
-      apply_augmentations_(elem, true, ref(augments)...);
+      apply_augmentations_(elem, ref(augments)...);
 
       auto subtree_root = rotate_(pp, 1 - ppidx);
       assert(subtree_root == p);
-      apply_augmentations_(pp, true, ref(augments)...);
+      apply_augmentations_(pp, ref(augments)...);
 
       do {
-        apply_augmentations_(p, true, ref(augments)...);
+        apply_augmentations_(p, ref(augments)...);
         p = p->parent();
       } while (p != nullptr);
       return;
@@ -276,7 +276,7 @@ auto basic_linked_set::link_fixup_(element* elem, Augments&&... augments)
   /* elem is the root node. */
   assert(root_ == elem);
   if (!elem->black()) toggle_color(elem);
-  apply_augmentations_(elem, true, ref(augments)...);
+  apply_augmentations_(elem, ref(augments)...);
   return;
 }
 
@@ -314,7 +314,7 @@ auto basic_linked_set::unlink_fixup_(element* elem, Augments&&... augments)
     p->children_[n->pidx_()] = nullptr;
     n->parent_ = 0;
     do {
-      apply_augmentations_(p, true, ref(augments)...);
+      apply_augmentations_(p, ref(augments)...);
       p = p->parent();
     } while (p != nullptr);
     return;
@@ -324,7 +324,7 @@ auto basic_linked_set::unlink_fixup_(element* elem, Augments&&... augments)
   n = p;
 
   for (;;) {
-    apply_augmentations_(n, true, ref(augments)...);
+    apply_augmentations_(n, ref(augments)...);
     p = n->parent();
 
     if (p != nullptr) {
@@ -343,7 +343,7 @@ auto basic_linked_set::unlink_fixup_(element* elem, Augments&&... augments)
                  [](element* p) { return p == nullptr || p->black(); })) {
         assert(s == n->sibling());
         toggle_color(s);
-        apply_augmentations_(n, true, ref(augments)...);
+        apply_augmentations_(n, ref(augments)...);
         n = p;
         continue;  // RECURSE
       } else if (p->red() &&
@@ -360,8 +360,8 @@ auto basic_linked_set::unlink_fixup_(element* elem, Augments&&... augments)
           toggle_color(s->children_[n->pidx_()]);
           toggle_color(s);
           rotate_(s, 1 - n->pidx_());
-          apply_augmentations_(s, true, ref(augments)...);
-          apply_augmentations_(s->parent(), true, ref(augments)...);
+          apply_augmentations_(s, ref(augments)...);
+          apply_augmentations_(s->parent(), ref(augments)...);
           s = n->sibling();
         }
 
@@ -378,23 +378,15 @@ auto basic_linked_set::unlink_fixup_(element* elem, Augments&&... augments)
 
   p = n;
   while ((p = p->parent()) != nullptr)
-    apply_augmentations_(p, true, ref(augments)...);
+    apply_augmentations_(p, ref(augments)...);
 }
 
 template<typename Augment0, typename... Augment>
-auto basic_linked_set::apply_augmentations_(element* e, bool subtree_changed,
-                                            Augment0 augment0,
+auto basic_linked_set::apply_augmentations_(element* e, Augment0 augment0,
                                             Augment&&... augments)
     noexcept -> void {
-  using _namespace(std)::remove_cv_t;
-  using _namespace(std)::remove_reference_t;
-  using unadorned_augment0 = remove_cv_t<remove_reference_t<Augment0>>;
-
-  if (set_augmentation_is_recursive<unadorned_augment0>::value ||
-      subtree_changed)
-    augment0(e);
-  apply_augmentations_(e, subtree_changed,
-                       _namespace(std)::forward<Augment>(augments)...);
+  augment0(e);
+  apply_augmentations_(e, _namespace(std)::forward<Augment>(augments)...);
 }
 
 
