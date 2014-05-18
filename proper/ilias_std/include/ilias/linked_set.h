@@ -58,6 +58,9 @@ class basic_linked_set {
   template<typename Comparator, typename... Augments>
   _namespace(std)::pair<iterator, bool> link(element*, Comparator, bool,
                                              Augments&&...);
+  template<typename Comparator, typename... Augments>
+  _namespace(std)::pair<iterator, bool> link(iterator, element*, Comparator,
+                                             bool, Augments&&...);
   template<typename... Augments>
   element* unlink(element*, Augments&&...) noexcept;
   template<typename... Augments>
@@ -68,13 +71,14 @@ class basic_linked_set {
   iterator end() const noexcept;
 
   template<typename T, typename Comparator>
-  iterator find(const T&, Comparator);
+  iterator find(const T&, Comparator) const;
   template<typename T, typename Comparator>
-  iterator lower_bound(const T&, Comparator);
+  iterator lower_bound(const T&, Comparator) const;
   template<typename T, typename Comparator>
-  iterator upper_bound(const T&, Comparator);
+  iterator upper_bound(const T&, Comparator) const;
   template<typename T, typename Comparator>
-  _namespace(std)::pair<iterator, iterator> equal_range(const T&, Comparator);
+  _namespace(std)::pair<iterator, iterator> equal_range(const T&, Comparator)
+      const;
 
  private:
   /* Color modification. */
@@ -84,6 +88,9 @@ class basic_linked_set {
   /* Link/unlink support functions. */
   template<typename Comparator>
   _namespace(std)::pair<iterator, bool> link_(element*, Comparator, bool);
+  template<typename Comparator>
+  _namespace(std)::pair<iterator, bool> link_(iterator, element*, Comparator,
+                                              bool);
   template<typename... Augments>
   void link_fixup_(element*, Augments&&...) noexcept;
   void unlink_to_leaf_(element*) noexcept;
@@ -195,13 +202,17 @@ class linked_set
       _namespace(std)::reverse_iterator<const_iterator>;
 
   explicit linked_set(const key_compare& = value_compare());
-  explicit linked_set(const key_compare&, const Augments&...);
+  template<typename Enabler>
+  linked_set(const key_compare&, const Augments&...,
+      Enabler = _namespace(std)::enable_if_t<sizeof...(Augments) != 0, int>());
   linked_set(const linked_set&) = delete;
   linked_set& operator=(const linked_set&) = delete;
   linked_set(linked_set&&);
   linked_set& operator=(linked_set&&);
 
   _namespace(std)::pair<iterator, bool> link(pointer, bool) noexcept;
+  _namespace(std)::pair<iterator, bool> link(const_iterator, pointer, bool)
+      noexcept;
   pointer unlink(const_iterator) noexcept;
   pointer unlink(const_pointer) noexcept;
   void unlink_all() noexcept;
@@ -233,6 +244,9 @@ class linked_set
   template<typename K> _namespace(std)::pair<const_iterator, const_iterator>
       equal_range(const K&) const;
 
+  const key_compare& key_comp() const noexcept;
+  const value_compare& value_comp() const noexcept;
+
   void swap(linked_set&) noexcept;
 
   static iterator nonconst_iterator(const_iterator) noexcept;
@@ -244,6 +258,10 @@ class linked_set
   _namespace(std)::pair<iterator, bool> link_(
       pointer, bool, _namespace(std)::index_sequence<Idx...>) noexcept;
   template<size_t... Idx>
+  _namespace(std)::pair<iterator, bool> link_(
+      const_iterator, pointer, bool, _namespace(std)::index_sequence<Idx...>)
+      noexcept;
+  template<size_t... Idx>
   pointer unlink_(
       const_iterator, _namespace(std)::index_sequence<Idx...>) noexcept;
   template<size_t... Idx>
@@ -254,8 +272,30 @@ class linked_set
   static element* down_cast_(const_pointer) noexcept;
   static pointer up_cast_(element*) noexcept;
 
+  struct compare_wrapper {
+   private:
+    template<typename X>
+    static const X& unwrap(const X& x) noexcept { return x; }
+    static const T& unwrap(const element& p) noexcept {
+      return *up_cast_(const_cast<element*>(&p));
+    }
+
+   public:
+    compare_wrapper() = default;
+    compare_wrapper(const compare_wrapper&) = default;
+    compare_wrapper& operator=(const compare_wrapper&) = default;
+    compare_wrapper(key_compare impl) : impl(impl) {}
+
+    template<typename X, typename Y>
+    bool operator()(const X& x, const Y& y) const {
+      return impl(unwrap(x), unwrap(y));
+    }
+
+    key_compare impl;
+  };
+
   _namespace(std)::tuple<Augments...> augments_;
-  key_compare cmp_;
+  compare_wrapper cmp_;
 };
 
 template<typename T, class Tag>

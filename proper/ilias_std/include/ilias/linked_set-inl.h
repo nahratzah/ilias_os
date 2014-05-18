@@ -4,6 +4,7 @@
 #include <ilias/linked_set.h>
 #include <algorithm>
 #include <functional>
+#include <iterator>
 #include <type_traits>
 #include <utility>
 
@@ -86,6 +87,16 @@ auto basic_linked_set::link(element* elem, Comparator cmp, bool dup_ok,
   return rv;
 }
 
+template<typename Comparator, typename... Augments>
+auto basic_linked_set::link(iterator hint, element* elem, Comparator cmp,
+                            bool dup_ok, Augments&&... augments) ->
+    _namespace(std)::pair<iterator, bool> {
+  auto rv = link_(hint, elem, cmp, dup_ok);
+  if (rv.second)
+    link_fixup_(elem, _namespace(std)::forward<Augments>(augments)...);
+  return rv;
+}
+
 template<typename... Augments>
 auto basic_linked_set::unlink(element* elem, Augments&&... augments)
     noexcept -> element* {
@@ -121,7 +132,7 @@ inline auto basic_linked_set::end() const noexcept -> iterator {
 }
 
 template<typename T, typename Comparator>
-auto basic_linked_set::find(const T& v, Comparator cmp) -> iterator {
+auto basic_linked_set::find(const T& v, Comparator cmp) const -> iterator {
   element* i = root_;
   while (i != nullptr) {
     if (cmp(*i, v))
@@ -135,7 +146,8 @@ auto basic_linked_set::find(const T& v, Comparator cmp) -> iterator {
 }
 
 template<typename T, typename Comparator>
-auto basic_linked_set::lower_bound(const T& v, Comparator cmp) -> iterator {
+auto basic_linked_set::lower_bound(const T& v, Comparator cmp) const ->
+    iterator {
   element* i = root_;
   element* match = nullptr;  // iterator(this, nullptr) == end()
   while (i != nullptr) {
@@ -150,21 +162,22 @@ auto basic_linked_set::lower_bound(const T& v, Comparator cmp) -> iterator {
 }
 
 template<typename T, typename Comparator>
-auto basic_linked_set::upper_bound(const T& v, Comparator cmp) -> iterator {
+auto basic_linked_set::upper_bound(const T& v, Comparator cmp) const ->
+    iterator {
   using _namespace(std)::bind;
   using _namespace(std)::ref;
   using _namespace(std)::placeholders::_1;
   using _namespace(std)::placeholders::_2;
 
   /* Bind statement transforms cmp in <= operation. */
-  return lower_bound(v, bind(ref(cmp), _2, _1));
+  return lower_bound(v, bind(cref(cmp), _2, _1));
 }
 
 template<typename T, typename Comparator>
-auto basic_linked_set::equal_range(const T& v, Comparator cmp) ->
+auto basic_linked_set::equal_range(const T& v, Comparator cmp) const ->
     _namespace(std)::pair<iterator, iterator> {
-  return _namespace(std)::make_pair(lower_bound(v, ref(cmp)),
-                                    upper_bound(v, ref(cmp)));
+  return _namespace(std)::make_pair(lower_bound(v, cref(cmp)),
+                                    upper_bound(v, cref(cmp)));
 }
 
 inline auto basic_linked_set::set_color(element* e, uintptr_t c) noexcept ->
@@ -194,21 +207,91 @@ auto basic_linked_set::link_(element* elem, Comparator cmp, bool dup_ok) ->
   /* Find a spot where to insert the new node. */
   element* p = root_;
   element** pp = &root_;
-  while (p) {
-    if (cmp(*elem, *p)) {
-      pp = &p->children_[0];
-      p = p->children_[0];
-    } else if (dup_ok || cmp(*p, *elem)) {
-      pp = &p->children_[1];
-      p = p->children_[1];
-    } else
-      return make_pair(iterator(this, p), false);
+  if (p != nullptr) {
+    for (;;) {
+      if (cmp(*elem, *p)) {
+        pp = &p->children_[0];
+        if (*pp == nullptr) break;
+        p = p->children_[0];
+      } else if (dup_ok || cmp(*p, *elem)) {
+        pp = &p->children_[1];
+        if (*pp == nullptr) break;
+        p = p->children_[1];
+      } else
+        return make_pair(iterator(this, p), false);
+    }
   }
   *pp = elem;
   elem->parent_ = (reinterpret_cast<uintptr_t>(p) | RED);
+  return make_pair(iterator(this, elem), true);
+}
 
-  link_fixup_(elem);
+template<typename Comparator>
+auto basic_linked_set::link_(iterator hint, element* elem,
+                             Comparator cmp, bool dup_ok) ->
+    _namespace(std)::pair<iterator, bool> {
+  using _namespace(std)::make_pair;
 
+  /* Prevent linking elem twice. */
+  assert(elem->parent_ == 0);
+  assert(_namespace(std)::all_of(elem->children_.begin(),
+                                 elem->children_.end(),
+                                 [](element* e) { return (e == nullptr); }));
+
+  /*
+   * Verify hint.
+   *
+   * Hint is correct iff:
+   * - dup_ok && pred <= elem && elem <= hint
+   * or:
+   * - !dup_ok && pred < elem && elem < hint
+   *
+   * From the above, the following can be deduced as bad hints:
+   * -  dup_ok:  elem > hint        aka:   dup_ok && cmp(hint, elem)
+   * -  dup_ok:  pred > elem        aka:   dup_ok && cmp(elem, pred)
+   * - !dup_ok:  !(elem < hint)     aka:  !dup_ok && !cmp(elem, hint)
+   * - !dup_ok:  !(pred < elem)     aka:  !dup_ok && !cmp(pred, elem)
+   *
+   * Note that for the nil hint, (elem < hint) always holds.
+   * Note that for the nil pred, (pred < elem) always holds.
+   */
+  if (hint.elem_) {
+    if ((dup_ok && cmp(*hint, *elem)) ||
+        (!dup_ok && !cmp(*elem, *hint)))
+      return link_(elem, move(cmp), dup_ok);
+  }
+  iterator pred = _namespace(std)::prev(hint);
+  if (pred.elem_) {
+    if ((dup_ok && cmp(*elem, *pred)) ||
+        (!dup_ok && !cmp(*pred, *elem)))
+      return link_(elem, move(cmp), dup_ok);
+  }
+
+  /* Seek towards a leaf. */
+  element* p;
+  element** pp;
+  if (hint.elem_ != nullptr) {
+    p = &*hint;
+    if (p->left()) {
+      assert(pred.elem_);
+      p = pred.elem_;
+      pp = &p->children_[1];
+    } else {
+      pp = &p->children_[0];
+    }
+  } else if (pred.elem_ != nullptr) {
+    p = &*pred;
+    assert(!p->right());  // Since hint is a nullptr.
+    pp = &p->children_[1];
+  } else {
+    assert_msg(root_ == nullptr,
+               "This hint is most likely not from this tree at all.");
+    p = nullptr;
+    pp = &root_;
+  }
+
+  *pp = elem;
+  elem->parent_ = (reinterpret_cast<uintptr_t>(p) | RED);
   return make_pair(iterator(this, elem), true);
 }
 
@@ -525,17 +608,19 @@ linked_set<T, Tag, Cmp, Augments...>::linked_set(const key_compare& cmp)
 {}
 
 template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename Enabler>
 linked_set<T, Tag, Cmp, Augments...>::linked_set(const key_compare& cmp,
-                                                 const Augments&... augments)
+                                                 const Augments&... augments,
+                                                 Enabler)
 : augments_(augments...),
   cmp_(cmp)
 {}
 
 template<typename T, class Tag, typename Cmp, typename... Augments>
 linked_set<T, Tag, Cmp, Augments...>::linked_set(linked_set&& o)
-: basic_linked_set(move(o)),
-  augments_(move(o.augments_)),
-  cmp_(move(o.cmp_))
+: basic_linked_set(_namespace(std)::move(o)),
+  augments_(_namespace(std)::move(o.augments_)),
+  cmp_(_namespace(std)::move(o.cmp_))
 {}
 
 template<typename T, class Tag, typename Cmp, typename... Augments>
@@ -549,6 +634,14 @@ template<typename T, class Tag, typename Cmp, typename... Augments>
 auto linked_set<T, Tag, Cmp, Augments...>::link(pointer p, bool dup_ok)
     noexcept -> _namespace(std)::pair<iterator, bool> {
   return link_(p, dup_ok, _namespace(std)::index_sequence_for<Augments...>());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::link(const_iterator hint, pointer p,
+                                                bool dup_ok) noexcept ->
+    _namespace(std)::pair<iterator, bool> {
+  return link_(hint, p, dup_ok,
+               _namespace(std)::index_sequence_for<Augments...>());
 }
 
 template<typename T, class Tag, typename Cmp, typename... Augments>
@@ -572,7 +665,7 @@ template<typename T, class Tag, typename Cmp, typename... Augments>
 template<typename Visitor>
 auto linked_set<T, Tag, Cmp, Augments...>::unlink_all(Visitor v) -> void {
   basic_linked_set::unlink_all([&v](element* e) {
-                                 v(*up_cast_(e));
+                                 v(up_cast_(e));
                                });
 }
 
@@ -719,6 +812,18 @@ auto linked_set<T, Tag, Cmp, Augments...>::equal_range(const K& v) const ->
 }
 
 template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::key_comp() const noexcept ->
+    const key_compare& {
+  return cmp_.impl;
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::value_comp() const noexcept ->
+    const value_compare& {
+  return cmp_.impl;
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
 auto linked_set<T, Tag, Cmp, Augments...>::swap(linked_set& o) noexcept ->
     void {
   using _namespace(std)::swap;
@@ -755,6 +860,24 @@ auto linked_set<T, Tag, Cmp, Augments...>::link_(
 
   auto link_result = basic_linked_set::link(
       down_cast_(p), cref(cmp_), dup_ok,
+      bind(&invoke_augment_<Augments>, cref(get<Idx>(augments_)), _1)...);
+  return make_pair(iterator(link_result.first), link_result.second);
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<size_t... Idx>
+auto linked_set<T, Tag, Cmp, Augments...>::link_(
+    const_iterator hint, pointer p, bool dup_ok,
+    _namespace(std)::index_sequence<Idx...>) noexcept ->
+    _namespace(std)::pair<iterator, bool> {
+  using _namespace(std)::make_pair;
+  using _namespace(std)::bind;
+  using _namespace(std)::placeholders::_1;
+  using _namespace(std)::cref;
+  using _namespace(std)::get;
+
+  auto link_result = basic_linked_set::link(
+      hint.impl_, down_cast_(p), cref(cmp_), dup_ok,
       bind(&invoke_augment_<Augments>, cref(get<Idx>(augments_)), _1)...);
   return make_pair(iterator(link_result.first), link_result.second);
 }
@@ -825,7 +948,7 @@ auto linked_set_iterator_<T, Tag>::operator*() const noexcept -> T& {
 
 template<typename T, class Tag>
 auto linked_set_iterator_<T, Tag>::operator->() const noexcept -> T* {
-  return static_cast<T*>(static_cast<linked_set_element<T, Tag>*>(*impl_));
+  return &static_cast<T&>(static_cast<linked_set_element<T, Tag>&>(*impl_));
 }
 
 template<typename T, class Tag>
@@ -886,6 +1009,12 @@ const_linked_set_iterator_<T, Tag>::const_linked_set_iterator_(
 {}
 
 template<typename T, class Tag>
+const_linked_set_iterator_<T, Tag>::const_linked_set_iterator_(
+    const linked_set_iterator_<T, Tag>& o) noexcept
+: impl_(o.impl_)
+{}
+
+template<typename T, class Tag>
 auto const_linked_set_iterator_<T, Tag>::operator*() const noexcept ->
     const T& {
   return static_cast<const T&>(
@@ -895,8 +1024,8 @@ auto const_linked_set_iterator_<T, Tag>::operator*() const noexcept ->
 template<typename T, class Tag>
 auto const_linked_set_iterator_<T, Tag>::operator->() const noexcept ->
     const T* {
-  return static_cast<const T*>(
-      static_cast<const linked_set_element<T, Tag>*>(*impl_));
+  return &static_cast<const T&>(
+      static_cast<const linked_set_element<T, Tag>&>(*impl_));
 }
 
 template<typename T, class Tag>
