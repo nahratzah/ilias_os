@@ -664,6 +664,7 @@ auto list<T, A>::construct_(Args&&... args) -> unique_ptr<elem, deleter> {
       deleter(*this, false));
   alloc_traits::construct(this->get_allocator_(), ptr.get(),
                           forward<Args>(args)...);
+  ptr.get_deleter().destroy = true;
   return ptr;
 }
 
