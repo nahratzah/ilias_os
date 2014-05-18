@@ -43,14 +43,19 @@ auto basic_linked_set::begin() const noexcept -> iterator {
 }
 
 auto basic_linked_set::unlink_to_leaf_(element* e) noexcept -> void {
-  using _namespace(std)::none_of;
+  using _namespace(std)::any_of;
+  using _namespace(std)::all_of;
 
   element* s = e;
   while (s->left()) s = s->left();
-  if (s->right()) s = s->right();
-  assert(none_of(s->children_.begin(), s->children_.end(),
-                 [](element* p) { return p != nullptr; }));
+  assert(any_of(s->children_.begin(), s->children_.end(),
+                [](element* p) { return p == nullptr; }));
   node_swap_(e, s);
+  if (e->right()) {
+    node_swap_(e, e->right());
+    assert(all_of(s->children_.begin(), s->children_.end(),
+                  [](element* p) { return p == nullptr; }));
+  }
 }
 
 auto basic_linked_set::rotate_(element* q, unsigned int i)
