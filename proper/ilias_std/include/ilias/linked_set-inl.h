@@ -284,10 +284,7 @@ inline auto basic_linked_set::node_swap_(element* x, element* y) noexcept ->
     void {
   using _namespace(std)::swap;
 
-  uintptr_t x_parent = reinterpret_cast<uintptr_t>(x->parent());
-  uintptr_t y_parent = reinterpret_cast<uintptr_t>(y->parent());
-  x->parent_ = (y_parent | x->rb_flag_());
-  y->parent_ = (x_parent | y->rb_flag_());
+  swap(x->parent_, y->parent_);  // Color swap is required here.
   swap(x->children_, y->children_);
 }
 
@@ -390,6 +387,15 @@ auto basic_linked_set::apply_augmentations_(element* e, Augment0 augment0,
 }
 
 
+inline basic_linked_set::element::element(const element&) noexcept
+: element()
+{}
+
+inline auto basic_linked_set::element::operator=(const element&) noexcept ->
+    element& {
+  return *this;
+}
+
 inline auto basic_linked_set::element::red() const noexcept -> bool {
   return rb_flag_() == RED;
 }
@@ -488,6 +494,466 @@ inline auto basic_linked_set::iterator::operator*() const noexcept ->
 inline auto basic_linked_set::iterator::operator->() const noexcept ->
     element* {
   return elem_;
+}
+
+
+template<typename Derived, class Tag>
+auto linked_set_element<Derived, Tag>::parent() const noexcept ->
+    const Derived* {
+  return static_cast<Derived>(static_cast<linked_set_element>(
+      basic_linked_set::element::parent()));
+}
+
+template<typename Derived, class Tag>
+auto linked_set_element<Derived, Tag>::left() const noexcept ->
+    const Derived* {
+  return static_cast<Derived>(static_cast<linked_set_element>(
+      basic_linked_set::element::left()));
+}
+
+template<typename Derived, class Tag>
+auto linked_set_element<Derived, Tag>::right() const noexcept ->
+    const Derived* {
+  return static_cast<Derived>(static_cast<linked_set_element>(
+      basic_linked_set::element::right()));
+}
+
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+linked_set<T, Tag, Cmp, Augments...>::linked_set(const key_compare& cmp)
+: cmp_(cmp)
+{}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+linked_set<T, Tag, Cmp, Augments...>::linked_set(const key_compare& cmp,
+                                                 const Augments&... augments)
+: augments_(augments...),
+  cmp_(cmp)
+{}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+linked_set<T, Tag, Cmp, Augments...>::linked_set(linked_set&& o)
+: basic_linked_set(move(o)),
+  augments_(move(o.augments_)),
+  cmp_(move(o.cmp_))
+{}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::operator=(linked_set&& o) ->
+    linked_set& {
+  linked_set(move(o)).swap(*this);
+  return *this;
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::link(pointer p, bool dup_ok)
+    noexcept -> _namespace(std)::pair<iterator, bool> {
+  return link_(p, dup_ok, _namespace(std)::index_sequence_for<Augments...>());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::unlink(const_iterator i)
+    noexcept -> pointer {
+  return unlink_(i, _namespace(std)::index_sequence_for<Augments...>());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::unlink(const_pointer p)
+    noexcept -> pointer {
+  return unlink_(p, _namespace(std)::index_sequence_for<Augments...>());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::unlink_all() noexcept -> void {
+  basic_linked_set::unlink_all();
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename Visitor>
+auto linked_set<T, Tag, Cmp, Augments...>::unlink_all(Visitor v) -> void {
+  basic_linked_set::unlink_all([&v](element* e) {
+                                 v(*up_cast_(e));
+                               });
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::begin() noexcept ->
+    iterator {
+  return iterator(basic_linked_set::begin());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::end() noexcept ->
+    iterator {
+  return iterator(basic_linked_set::end());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::rbegin() noexcept ->
+    reverse_iterator {
+  return reverse_iterator(end());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::rend() noexcept ->
+    reverse_iterator {
+  return reverse_iterator(begin());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::begin() const noexcept ->
+    const_iterator {
+  return const_iterator(basic_linked_set::begin());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::end() const noexcept ->
+    const_iterator {
+  return const_iterator(basic_linked_set::begin());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::rbegin() const noexcept ->
+    const_reverse_iterator {
+  return const_reverse_iterator(end());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::rend() const noexcept ->
+    const_reverse_iterator {
+  return const_reverse_iterator(begin());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::cbegin() const noexcept ->
+    const_iterator {
+  return begin();
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::cend() const noexcept ->
+    const_iterator {
+  return end();
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::crbegin() const noexcept ->
+    const_reverse_iterator {
+  return rbegin();
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::crend() const noexcept ->
+    const_reverse_iterator {
+  return rend();
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename K>
+auto linked_set<T, Tag, Cmp, Augments...>::find(const K& v) ->
+    iterator {
+  using _namespace(std)::cref;
+  return iterator(basic_linked_set::find(v, cref(cmp_)));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename K>
+auto linked_set<T, Tag, Cmp, Augments...>::find(const K& v) const ->
+    const_iterator {
+  using _namespace(std)::cref;
+  return const_iterator(basic_linked_set::find(v, cref(cmp_)));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename K>
+auto linked_set<T, Tag, Cmp, Augments...>::lower_bound(const K& v) ->
+    iterator {
+  using _namespace(std)::cref;
+  return iterator(basic_linked_set::lower_bound(v, cref(cmp_)));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename K>
+auto linked_set<T, Tag, Cmp, Augments...>::lower_bound(const K& v) const ->
+    const_iterator {
+  using _namespace(std)::cref;
+  return const_iterator(basic_linked_set::lower_bound(v, cref(cmp_)));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename K>
+auto linked_set<T, Tag, Cmp, Augments...>::upper_bound(const K& v) ->
+    iterator {
+  using _namespace(std)::cref;
+  return iterator(basic_linked_set::upper_bound(v, cref(cmp_)));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename K>
+auto linked_set<T, Tag, Cmp, Augments...>::upper_bound(const K& v) const ->
+    const_iterator {
+  using _namespace(std)::cref;
+  return const_iterator(basic_linked_set::upper_bound(v, cref(cmp_)));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename K>
+auto linked_set<T, Tag, Cmp, Augments...>::equal_range(const K& v) ->
+    _namespace(std)::pair<iterator, iterator> {
+  using _namespace(std)::cref;
+  using _namespace(std)::make_pair;
+
+  auto range = basic_linked_set::equal_range(v, cref(cmp_));
+  return make_pair(iterator(range.first), iterator(range.second));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename K>
+auto linked_set<T, Tag, Cmp, Augments...>::equal_range(const K& v) const ->
+    _namespace(std)::pair<const_iterator, const_iterator> {
+  using _namespace(std)::cref;
+  using _namespace(std)::make_pair;
+
+  auto range = basic_linked_set::equal_range(v, cref(cmp_));
+  return make_pair(const_iterator(range.first), const_iterator(range.second));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::swap(linked_set& o) noexcept ->
+    void {
+  using _namespace(std)::swap;
+
+  basic_linked_set::swap(o);
+  swap(cmp_, o.cmp_);
+  swap(augments_, o.augments_);
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::nonconst_iterator(const_iterator i)
+    noexcept -> iterator {
+  return iterator(i.impl_);
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<typename A>
+auto linked_set<T, Tag, Cmp, Augments...>::invoke_augment_(const A& a,
+                                                           element* e)
+    noexcept -> void {
+  a(up_cast_(e));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<size_t... Idx>
+auto linked_set<T, Tag, Cmp, Augments...>::link_(
+    pointer p, bool dup_ok, _namespace(std)::index_sequence<Idx...>)
+    noexcept -> _namespace(std)::pair<iterator, bool> {
+  using _namespace(std)::make_pair;
+  using _namespace(std)::bind;
+  using _namespace(std)::placeholders::_1;
+  using _namespace(std)::cref;
+  using _namespace(std)::get;
+
+  auto link_result = basic_linked_set::link(
+      down_cast_(p), cref(cmp_), dup_ok,
+      bind(&invoke_augment_<Augments>, cref(get<Idx>(augments_)), _1)...);
+  return make_pair(iterator(link_result.first), link_result.second);
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<size_t... Idx>
+auto linked_set<T, Tag, Cmp, Augments...>::unlink_(
+    const_iterator i, _namespace(std)::index_sequence<Idx...>)
+    noexcept -> pointer {
+  using _namespace(std)::bind;
+  using _namespace(std)::placeholders::_1;
+  using _namespace(std)::cref;
+  using _namespace(std)::get;
+
+  return up_cast_(basic_linked_set::unlink(
+      i.impl_,
+      bind(&invoke_augment_<Augments>, cref(get<Idx>(augments_)), _1)...));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+template<size_t... Idx>
+auto linked_set<T, Tag, Cmp, Augments...>::unlink_(
+    const_pointer p, _namespace(std)::index_sequence<Idx...>)
+    noexcept -> pointer {
+  using _namespace(std)::bind;
+  using _namespace(std)::placeholders::_1;
+  using _namespace(std)::cref;
+  using _namespace(std)::get;
+
+  return up_cast_(basic_linked_set::unlink(
+      down_cast_(p),
+      bind(&invoke_augment_<Augments>, cref(get<Idx>(augments_)), _1)...));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::down_cast_(pointer p)
+    noexcept -> element* {
+  if (!p) return nullptr;
+  return static_cast<element*>(static_cast<linked_set_element<T, Tag>*>(p));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::down_cast_(const_pointer p)
+    noexcept -> element* {
+  if (!p) return nullptr;
+  return static_cast<element*>(const_cast<linked_set_element<T, Tag>>(
+      static_cast<const linked_set_element<T, Tag>*>(p)));
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::up_cast_(element* e)
+    noexcept -> pointer {
+  if (!e) return nullptr;
+  return static_cast<pointer>(static_cast<linked_set_element<T, Tag>*>(e));
+}
+
+
+template<typename T, class Tag>
+linked_set_iterator_<T, Tag>::linked_set_iterator_(
+    const basic_linked_set::iterator& impl) noexcept
+: impl_(impl)
+{}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator*() const noexcept -> T& {
+  return static_cast<T&>(static_cast<linked_set_element<T, Tag>&>(*impl_));
+}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator->() const noexcept -> T* {
+  return static_cast<T*>(static_cast<linked_set_element<T, Tag>*>(*impl_));
+}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator++() noexcept ->
+    linked_set_iterator_& {
+  ++impl_;
+  return *this;
+}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator++(int) noexcept ->
+    linked_set_iterator_ {
+  return linked_set_iterator_(impl_++);
+}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator--() noexcept ->
+    linked_set_iterator_& {
+  --impl_;
+  return *this;
+}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator--(int) noexcept ->
+    linked_set_iterator_ {
+  return linked_set_iterator_(impl_--);
+}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator==(const linked_set_iterator_& o)
+    const noexcept -> bool {
+  return impl_ == o.impl_;
+}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator!=(const linked_set_iterator_& o)
+    const noexcept -> bool {
+  return impl_ != o.impl_;
+}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator==(
+    const const_linked_set_iterator_<T, Tag>& o) const noexcept -> bool {
+  return impl_ == o.impl_;
+}
+
+template<typename T, class Tag>
+auto linked_set_iterator_<T, Tag>::operator!=(
+    const const_linked_set_iterator_<T, Tag>& o) const noexcept -> bool {
+  return impl_ != o.impl_;
+}
+
+
+template<typename T, class Tag>
+const_linked_set_iterator_<T, Tag>::const_linked_set_iterator_(
+    const basic_linked_set::iterator& impl) noexcept
+: impl_(impl)
+{}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator*() const noexcept ->
+    const T& {
+  return static_cast<const T&>(
+      static_cast<const linked_set_element<T, Tag>&>(*impl_));
+}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator->() const noexcept ->
+    const T* {
+  return static_cast<const T*>(
+      static_cast<const linked_set_element<T, Tag>*>(*impl_));
+}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator++() noexcept ->
+    const_linked_set_iterator_& {
+  ++impl_;
+  return *this;
+}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator++(int) noexcept ->
+    const_linked_set_iterator_ {
+  return const_linked_set_iterator_(impl_++);
+}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator--() noexcept ->
+    const_linked_set_iterator_& {
+  --impl_;
+  return *this;
+}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator--(int) noexcept ->
+    const_linked_set_iterator_ {
+  return const_linked_set_iterator_(impl_--);
+}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator==(
+    const linked_set_iterator_<T, Tag>& o) const noexcept -> bool {
+  return impl_ == o.impl_;
+}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator!=(
+    const linked_set_iterator_<T, Tag>& o) const noexcept -> bool {
+  return impl_ != o.impl_;
+}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator==(
+    const const_linked_set_iterator_& o) const noexcept -> bool {
+  return impl_ == o.impl_;
+}
+
+template<typename T, class Tag>
+auto const_linked_set_iterator_<T, Tag>::operator!=(
+    const const_linked_set_iterator_& o) const noexcept -> bool {
+  return impl_ != o.impl_;
+}
+
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+void swap(linked_set<T, Tag, Cmp, Augments...>& x,
+          linked_set<T, Tag, Cmp, Augments...>& y) noexcept {
+  x.swap(y);
 }
 
 

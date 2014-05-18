@@ -5,6 +5,7 @@
 #include <array>
 #include <type_traits>
 #include <functional>
+#include <tuple>
 
 _namespace_begin(ilias)
 
@@ -142,6 +143,182 @@ class basic_linked_set::iterator
   const basic_linked_set* set_ = nullptr;
   element* elem_ = nullptr;
 };
+
+
+template<typename T, class = void, typename = _namespace(std)::less<T>,
+         typename...>
+class linked_set;
+
+template<typename T, class Tag>
+class linked_set_iterator_;
+template<typename T, class Tag>
+class const_linked_set_iterator_;
+
+
+template<typename Derived, class Tag = void>
+class linked_set_element
+: private basic_linked_set::element
+{
+  template<typename, class, typename, typename...> friend class linked_set;
+  template<typename, class> friend class linked_set_iterator_;
+  template<typename, class> friend class const_linked_set_iterator_;
+
+ protected:
+  linked_set_element() = default;
+  linked_set_element(const linked_set_element&) = default;
+  linked_set_element& operator=(const linked_set_element&) = default;
+  ~linked_set_element() = default;
+
+  const Derived* parent() const noexcept;
+  const Derived* left() const noexcept;
+  const Derived* right() const noexcept;
+};
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+class linked_set
+: private basic_linked_set
+{
+ public:
+  using value_type = T;
+  using key_type = value_type;
+  using key_compare = Cmp;
+  using value_compare = Cmp;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = value_type*;
+  using const_pointer = const value_type*;
+
+  using iterator = linked_set_iterator_<T, Tag>;
+  using const_iterator = const_linked_set_iterator_<T, Tag>;
+  using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
+  using const_reverse_iterator =
+      _namespace(std)::reverse_iterator<const_iterator>;
+
+  explicit linked_set(const key_compare& = value_compare());
+  explicit linked_set(const key_compare&, const Augments&...);
+  linked_set(const linked_set&) = delete;
+  linked_set& operator=(const linked_set&) = delete;
+  linked_set(linked_set&&);
+  linked_set& operator=(linked_set&&);
+
+  _namespace(std)::pair<iterator, bool> link(pointer, bool) noexcept;
+  pointer unlink(const_iterator) noexcept;
+  pointer unlink(const_pointer) noexcept;
+  void unlink_all() noexcept;
+  template<typename Visitor> void unlink_all(Visitor);
+
+  using basic_linked_set::empty;
+
+  iterator begin() noexcept;
+  iterator end() noexcept;
+  reverse_iterator rbegin() noexcept;
+  reverse_iterator rend() noexcept;
+  const_iterator begin() const noexcept;
+  const_iterator end() const noexcept;
+  const_reverse_iterator rbegin() const noexcept;
+  const_reverse_iterator rend() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+  const_reverse_iterator crbegin() const noexcept;
+  const_reverse_iterator crend() const noexcept;
+
+  template<typename K> iterator find(const K&);
+  template<typename K> const_iterator find(const K&) const;
+  template<typename K> iterator lower_bound(const K&);
+  template<typename K> const_iterator lower_bound(const K&) const;
+  template<typename K> iterator upper_bound(const K&);
+  template<typename K> const_iterator upper_bound(const K&) const;
+  template<typename K> _namespace(std)::pair<iterator, iterator>
+      equal_range(const K&);
+  template<typename K> _namespace(std)::pair<const_iterator, const_iterator>
+      equal_range(const K&) const;
+
+  void swap(linked_set&) noexcept;
+
+  static iterator nonconst_iterator(const_iterator) noexcept;
+
+ private:
+  template<typename A>
+  static void invoke_augment_(const A&, element*) noexcept;
+  template<size_t... Idx>
+  _namespace(std)::pair<iterator, bool> link_(
+      pointer, bool, _namespace(std)::index_sequence<Idx...>) noexcept;
+  template<size_t... Idx>
+  pointer unlink_(
+      const_iterator, _namespace(std)::index_sequence<Idx...>) noexcept;
+  template<size_t... Idx>
+  pointer unlink_(
+      const_pointer, _namespace(std)::index_sequence<Idx...>) noexcept;
+
+  static element* down_cast_(pointer) noexcept;
+  static element* down_cast_(const_pointer) noexcept;
+  static pointer up_cast_(element*) noexcept;
+
+  _namespace(std)::tuple<Augments...> augments_;
+  key_compare cmp_;
+};
+
+template<typename T, class Tag>
+class linked_set_iterator_
+: public _namespace(std)::iterator<
+    basic_linked_set::iterator::iterator_category, T>
+{
+  template<typename, class, typename, typename...> friend class linked_set;
+  template<typename, class> friend class const_linked_set_iterator_;
+
+ public:
+  explicit linked_set_iterator_(const basic_linked_set::iterator&) noexcept;
+
+  T& operator*() const noexcept;
+  T* operator->() const noexcept;
+
+  linked_set_iterator_& operator++() noexcept;
+  linked_set_iterator_ operator++(int) noexcept;
+  linked_set_iterator_& operator--() noexcept;
+  linked_set_iterator_ operator--(int) noexcept;
+
+  bool operator==(const linked_set_iterator_&) const noexcept;
+  bool operator!=(const linked_set_iterator_&) const noexcept;
+  bool operator==(const const_linked_set_iterator_<T, Tag>&) const noexcept;
+  bool operator!=(const const_linked_set_iterator_<T, Tag>&) const noexcept;
+
+ private:
+  basic_linked_set::iterator impl_;
+};
+
+template<typename T, class Tag>
+class const_linked_set_iterator_
+: public _namespace(std)::iterator<
+    basic_linked_set::iterator::iterator_category, const T>
+{
+  template<typename, class, typename, typename...> friend class linked_set;
+  template<typename, class> friend class linked_set_iterator_;
+
+ public:
+  explicit const_linked_set_iterator_(const basic_linked_set::iterator&)
+      noexcept;
+  const_linked_set_iterator_(const linked_set_iterator_<T, Tag>&) noexcept;
+
+  const T& operator*() const noexcept;
+  const T* operator->() const noexcept;
+
+  const_linked_set_iterator_& operator++() noexcept;
+  const_linked_set_iterator_ operator++(int) noexcept;
+  const_linked_set_iterator_& operator--() noexcept;
+  const_linked_set_iterator_ operator--(int) noexcept;
+
+  bool operator==(const linked_set_iterator_<T, Tag>&) const noexcept;
+  bool operator!=(const linked_set_iterator_<T, Tag>&) const noexcept;
+  bool operator==(const const_linked_set_iterator_&) const noexcept;
+  bool operator!=(const const_linked_set_iterator_&) const noexcept;
+
+ private:
+  basic_linked_set::iterator impl_;
+};
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+void swap(linked_set<T, Tag, Cmp, Augments...>&,
+          linked_set<T, Tag, Cmp, Augments...>&) noexcept;
 
 
 _namespace_end(ilias)
