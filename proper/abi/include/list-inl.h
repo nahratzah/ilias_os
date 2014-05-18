@@ -809,7 +809,7 @@ auto list<T, A>::const_iterator::operator!=(const const_iterator& o)
 
 template<typename T, typename A>
 bool operator==(const list<T, A>& a, const list<T, A>& b) {
-  return equal(a.begin(), a.end(), b.begin(), b.end());
+  return a.size() == b.size() && equal(a.begin(), a.end(), b.begin(), b.end());
 }
 
 template<typename T, typename A>
