@@ -106,7 +106,7 @@ template<class Tag = void>
 class linked_list_element
 : private basic_linked_list::element
 {
-  template<typename, typename> friend class linked_list;
+  template<typename, class> friend class linked_list;
 
  protected:
   linked_list_element() = default;

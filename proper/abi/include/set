@@ -1,0 +1,289 @@
+#ifndef _SET_
+#define _SET_
+
+#include <cdecl.h>
+#include <functional>
+#include <initializer_list>
+#include <memory>
+#include <stdimpl/alloc_base.h>
+#include <ilias/linked_set.h>
+
+_namespace_begin(std)
+namespace impl {
+
+template<typename T, class Tag>
+struct set_elem
+: _namespace(ilias)::linked_set_element<set_elem<T, Tag>, Tag>
+{
+  using value_type = T;
+
+  set_elem() = default;
+  set_elem(const set_elem&) = default;
+  set_elem& operator=(const set_elem&) = default;
+  template<typename... Args> set_elem(Args&&...);
+
+  value_type value;
+};
+
+template<typename T, typename Iter>
+class set_elem_iter
+: public iterator<typename iterator_traits<Iter>::iterator_category,
+                  T,
+                  typename iterator_traits<Iter>::difference_type> {
+ public:
+  using difference_type = typename iterator_traits<Iter>::difference_type;
+
+  set_elem_iter() = default;
+  set_elem_iter(const set_elem_iter&) = default;
+  set_elem_iter& operator=(const set_elem_iter&) = default;
+  set_elem_iter(Iter impl) : impl_(impl) {}
+
+  template<typename OT, typename OIter>
+  set_elem_iter(const set_elem_iter<OT, OIter>& o)
+  : impl_(o.impl())
+  {}
+
+  template<typename OT, typename OIter>
+  bool operator==(const set_elem_iter<OT, OIter>& o) const {
+    return impl() == o.impl();
+  }
+
+  template<typename OT, typename OIter>
+  bool operator!=(const set_elem_iter<OT, OIter>& o) const {
+    return !(*this == o);
+  }
+
+  const Iter& impl() const noexcept { return impl_; }
+
+  set_elem_iter& operator++() noexcept {
+    ++impl_;
+    return *this;
+  }
+
+  set_elem_iter operator++(int) noexcept {
+    return set_elem_iter(impl_++);
+  }
+
+  set_elem_iter& operator--() noexcept {
+    --impl_;
+    return *this;
+  }
+
+  set_elem_iter operator--(int) noexcept {
+    return set_elem_iter(impl_--);
+  }
+
+  set_elem_iter operator+(difference_type n) {
+    return set_elem_iter(next(impl_, n));
+  }
+
+  set_elem_iter operator-(difference_type n) {
+    return set_elem_iter(prev(impl_, n));
+  }
+
+  set_elem_iter& operator+=(difference_type n) {
+    advance(impl_, n);
+    return *this;
+  }
+
+  set_elem_iter& operator-=(difference_type n) {
+    advance(impl_, n);
+    return *this;
+  }
+
+  T& operator*() const {
+    return impl_->value;
+  }
+
+  T* operator->() const {
+    return &impl_->value;
+  }
+
+ private:
+  Iter impl_;
+};
+
+template<typename Cmp, typename T, typename TWrapped>
+struct set_cmp_wrapper {
+ private:
+  Cmp cmp_;
+
+  template<typename X>
+  static const X& unwrap_(const X& x) noexcept { return x; }
+  static const T& unwrap_(const TWrapped& x) noexcept { return x.value; }
+
+ public:
+  set_cmp_wrapper(const Cmp& cmp) : cmp_(cmp) {}
+
+  const Cmp& get_compare() const noexcept { return cmp_; }
+
+  template<typename X, typename Y>
+  bool operator()(const X& x, const Y& y) const {
+    return cmp_(unwrap_(x), unwrap_(y));
+  }
+};
+
+} /* namespace impl */
+
+
+template<typename Key, typename Compare = less<Key>,
+         typename Allocator = allocator<Key>>
+class set
+: private impl::alloc_base<typename allocator_traits<Allocator>::
+      template rebind_alloc<impl::set_elem<Key, void>>>
+{
+ private:
+  using elem = impl::set_elem<Key, void>;
+  struct deleter;
+  using data_type =
+      _namespace(ilias)::linked_set<elem, void,
+                                    impl::set_cmp_wrapper<Compare, Key, elem>>;
+  using alloc_base = impl::alloc_base<
+      typename allocator_traits<Allocator>::template rebind_alloc<elem>>;
+
+ public:
+  using key_type = Key;
+  using value_type = Key;
+  using key_compare = Compare;
+  using value_compare = Compare;
+  using allocator_type = Allocator;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = typename allocator_traits<allocator_type>::pointer;
+  using const_pointer =
+      typename allocator_traits<allocator_type>::const_pointer;
+  using size_type = typename allocator_traits<allocator_type>::size_type;
+  using difference_type =
+      typename allocator_traits<allocator_type>::difference_type;
+  using iterator =
+      impl::set_elem_iter<value_type,
+                          typename data_type::iterator>;
+  using const_iterator =
+      impl::set_elem_iter<const value_type,
+                          typename data_type::const_iterator>;
+  using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
+  using const_reverse_iterator =
+      _namespace(std)::reverse_iterator<const_iterator>;
+
+  explicit set(const Compare& = Compare(), const Allocator& = Allocator());
+  template<typename InputIterator>
+  set(InputIterator, InputIterator,
+      const Compare& = Compare(), const Allocator& = Allocator());
+  set(const set&);
+  set(set&&);
+  set(const set&, const Allocator&);
+  set(set&&, const Allocator&);
+  set(initializer_list<value_type>,
+      const Compare& = Compare(), const Allocator& = Allocator());
+  template<typename InputIterator>
+  set(InputIterator, InputIterator, const Allocator&);
+  set(initializer_list<value_type>, const Allocator&);
+  ~set() noexcept;
+  set& operator=(const set&);
+  set& operator=(set&&);
+  set& operator=(initializer_list<value_type>);
+  allocator_type get_allocator() const noexcept;
+
+  iterator begin() noexcept;
+  const_iterator begin() const noexcept;
+  iterator end() noexcept;
+  const_iterator end() const noexcept;
+
+  reverse_iterator rbegin() noexcept;
+  const_reverse_iterator rbegin() const noexcept;
+  reverse_iterator rend() noexcept;
+  const_reverse_iterator rend() const noexcept;
+
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+  const_reverse_iterator crbegin() const noexcept;
+  const_reverse_iterator crend() const noexcept;
+
+  bool empty() const noexcept;
+  size_type size() const noexcept;
+  size_type max_size() const noexcept;
+
+  template<typename... Args> pair<iterator, bool> emplace(Args&&...);
+  template<typename... Args> iterator emplace_hint(const_iterator, Args&&...);
+  pair<iterator, bool> insert(const value_type&);
+  pair<iterator, bool> insert(value_type&&);
+  iterator insert(const_iterator, const value_type&);
+  iterator insert(const_iterator, value_type&&);
+  template<typename InputIterator>
+  void insert(InputIterator, InputIterator);
+  void insert(initializer_list<value_type>);
+
+  iterator erase(const_iterator) noexcept;
+  size_type erase(const key_type&) noexcept;
+  iterator erase(const_iterator, const_iterator) noexcept;
+  void swap(set&) noexcept;
+  void clear() noexcept;
+
+  key_compare key_comp() const;
+  value_compare value_comp() const;
+
+  iterator find(const key_type&);
+  const_iterator find(const key_type&) const;
+  template<typename K> iterator find(const K&);
+  template<typename K> const_iterator find(const K&) const;
+
+  size_type count(const key_type&) const;
+  template<typename K> size_type count(const K&) const;
+
+  iterator lower_bound(const key_type&);
+  const_iterator lower_bound(const key_type&) const;
+  template<typename K> iterator lower_bound(const K&);
+  template<typename K> const_iterator lower_bound(const K&) const;
+
+  iterator upper_bound(const key_type&);
+  const_iterator upper_bound(const key_type&) const;
+  template<typename K> iterator upper_bound(const K&);
+  template<typename K> const_iterator upper_bound(const K&) const;
+
+  pair<iterator, iterator> equal_range(const key_type&);
+  pair<const_iterator, const_iterator> equal_range(const key_type&) const;
+  template<typename K>
+  pair<iterator, iterator> equal_range(const K&);
+  template<typename K>
+  pair<const_iterator, const_iterator> equal_range(const K&) const;
+
+ private:
+  template<typename... Args>
+  unique_ptr<elem, deleter> construct_(Args&&... args);
+
+  data_type data_;
+  size_type size_ = 0;
+};
+
+template<typename Key, typename Compare, typename Allocator>
+bool operator==(const set<Key, Compare, Allocator>&,
+                const set<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator<(const set<Key, Compare, Allocator>&,
+               const set<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator!=(const set<Key, Compare, Allocator>&,
+                const set<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator>(const set<Key, Compare, Allocator>&,
+               const set<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator<=(const set<Key, Compare, Allocator>&,
+                const set<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator>=(const set<Key, Compare, Allocator>&,
+                const set<Key, Compare, Allocator>&);
+
+template<typename Key, typename Compare, typename Allocator>
+void swap(set<Key, Compare, Allocator>&,
+          set<Key, Compare, Allocator>&) noexcept;
+
+
+extern template class set<int>;
+
+
+_namespace_end(std)
+
+#include <set-inl.h>
+
+#endif /* _SET_ */
