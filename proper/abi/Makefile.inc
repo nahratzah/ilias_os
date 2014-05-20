@@ -39,13 +39,17 @@ ABI_SRCS += abi/src/stdimpl_simple_bitset.cc
 ABI_SRCS += abi/src/stdimpl_stats.cc
 ABI_SRCS += abi/src/stdimpl_shared_ptr_ownership.cc
 
+ILIAS_STD_SRCS += abi/src/ilias_linked_list.cc
+ILIAS_STD_SRCS += abi/src/ilias_linked_set.cc
+ILIAS_STD_SRCS += abi/src/ilias_stats.cc
+
 SRCS_32 += abi/i386/divdi3.s
 SRCS_32 += abi/i386/moddi3.s
 SRCS_32 += abi/i386/udivdi3.s
 SRCS_32 += abi/i386/umoddi3.s
 
-SRCS += ${ABI_SRCS}
-SRCS_LOADER += ${ABI_SRCS}
+SRCS += ${ABI_SRCS} ${ILIAS_STD_SRCS}
+SRCS_LOADER += ${ABI_SRCS} ${ILIAS_STD_SRCS}
 
 SRCS_LOADER += abi/i386/divdi3.s
 SRCS_LOADER += abi/i386/moddi3.s

@@ -6,7 +6,6 @@ all: kernel
 
 # Import lists of sources.
 include abi/Makefile.inc
-include ilias_std/Makefile.inc
 include loader/Makefile.inc
 include loader_exported/Makefile.inc
 #include "freestanding/Makefile.inc"
