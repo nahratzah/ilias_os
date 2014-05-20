@@ -279,9 +279,6 @@ void swap(set<Key, Compare, Allocator>&,
           set<Key, Compare, Allocator>&) noexcept;
 
 
-extern template class set<int>;
-
-
 _namespace_end(std)
 
 #include <set-inl.h>
