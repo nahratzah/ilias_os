@@ -48,6 +48,7 @@ namespace {
 
 using _namespace(std)::once_flag;
 using _namespace(std)::aligned_storage_t;
+using _namespace(std)::size_t;
 
 abi::big_heap& throwing_heap() noexcept {
   static once_flag guard;
@@ -96,7 +97,7 @@ abi::big_heap& no_throw_array_heap() noexcept {
 }
 
 
-void* new_impl(abi::big_heap& heap, std::size_t sz) {
+void* new_impl(abi::big_heap& heap, size_t sz) {
   void* p;
   for (p = heap.malloc(sz); _predict_false(!p); p = heap.malloc(sz)) {
     std::new_handler nh = std::get_new_handler();
@@ -114,7 +115,7 @@ void* new_impl(abi::big_heap& heap, std::size_t sz) {
   return p;
 }
 
-void* new_impl_nothrow(abi::big_heap& heap, std::size_t sz) noexcept {
+void* new_impl_nothrow(abi::big_heap& heap, size_t sz) noexcept {
   try {
     return new_impl(heap, sz);
   } catch (const std::bad_alloc&) {
@@ -125,12 +126,12 @@ void* new_impl_nothrow(abi::big_heap& heap, std::size_t sz) noexcept {
 } /* namespace <unnamed> */
 
 
-void* __attribute__((weak)) operator new(std::size_t sz) {
+void* __attribute__((weak)) operator new(size_t sz) {
   return new_impl(throwing_heap(), sz);
 }
 
 void* __attribute__((weak)) operator new(
-    std::size_t sz, const std::nothrow_t&) noexcept {
+    size_t sz, const std::nothrow_t&) noexcept {
   return new_impl_nothrow(no_throw_heap(), sz);
 }
 
@@ -153,12 +154,12 @@ void __attribute__((weak)) operator delete(
 }
 
 
-void* __attribute__((weak)) operator new[](std::size_t sz) {
+void* __attribute__((weak)) operator new[](size_t sz) {
   return new_impl(throwing_array_heap(), sz);
 }
 
 void* __attribute__((weak)) operator new[](
-    std::size_t sz, const std::nothrow_t&) noexcept {
+    size_t sz, const std::nothrow_t&) noexcept {
   return new_impl_nothrow(no_throw_array_heap(), sz);
 }
 
