@@ -10,10 +10,7 @@
 #include <ctime_misc/tm_fwd.h>
 #include <climits>
 
-#ifdef __cplusplus
-namespace std {
-#endif
-
+_namespace_begin(std)
 _cdecl_begin
 
 #define WEOF			EOF
@@ -138,19 +135,18 @@ int wscanf(const wchar_t*__restrict, ...) noexcept;
 
 
 _cdecl_end
+_namespace_end(std)
 
 #ifdef __cplusplus
-} /* namespace std */
-
-using std::mbstate_t;
-using std::wint_t;
-using std::wmemcmp;
-using std::wmemset;
-using std::wmemcpy;
-using std::wmemmove;
-using std::wmemchr;
-using std::wmemrchr;
-using std::wcslen;
+using _namespace(std)::mbstate_t;
+using _namespace(std)::wint_t;
+using _namespace(std)::wmemcmp;
+using _namespace(std)::wmemset;
+using _namespace(std)::wmemcpy;
+using _namespace(std)::wmemmove;
+using _namespace(std)::wmemchr;
+using _namespace(std)::wmemrchr;
+using _namespace(std)::wcslen;
 #endif
 
 
