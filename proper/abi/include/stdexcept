@@ -1,11 +1,12 @@
 #ifndef _STDEXCEPT_
 #define _STDEXCEPT_
 
+#include <cdecl.h>
 #include <exception>
 #include <iosfwd>  // Forward decl of std::string.
 #include <abi/ext/c_string_ptr.h>
 
-namespace std {
+_namespace_begin(std)
 
 
 class logic_error
@@ -109,6 +110,6 @@ class underflow_error
 };
 
 
-} /* namespace std */
+_namespace_end(std)
 
 #endif /* _STDEXCEPT_ */
