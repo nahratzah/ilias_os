@@ -54,6 +54,12 @@ class bad_typeid
 
 _namespace_end(std)
 
+#ifdef _TEST
+namespace std {
+using _namespace(std)::type_info;
+}
+#endif
+
 #include <typeinfo-inl.h>
 
 #endif /* _TYPEINFO_ */
