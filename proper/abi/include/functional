@@ -486,7 +486,7 @@ template<typename R, typename... ArgTypes> class function<R(ArgTypes...)>
 
   R operator()(ArgTypes...) const;
 
-  const std::type_info& target_type() const noexcept;
+  const type_info& target_type() const noexcept;
   template<typename T> T* target() noexcept;
   template<typename T> const T* target() const noexcept;
 
