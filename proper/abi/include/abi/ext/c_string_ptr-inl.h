@@ -2,12 +2,22 @@ namespace __cxxabiv1 {
 namespace ext {
 
 
-inline c_string_ptr::~c_string_ptr() noexcept { if (data_) std::free(data_); }
-inline c_string_ptr::c_string_ptr(c_string_ptr&& other) noexcept { swap(other); }
+inline c_string_ptr::~c_string_ptr() noexcept {
+  _namespace(std)::free(data_);
+}
+inline c_string_ptr::c_string_ptr(c_string_ptr&& other) noexcept {
+  swap(other);
+}
 
-inline c_string_ptr::size_type c_string_ptr::size() const noexcept { return len_; }
-inline c_string_ptr::size_type c_string_ptr::length() const noexcept { return size(); }
-inline bool c_string_ptr::empty() const noexcept { return size() == 0U; }
+inline c_string_ptr::size_type c_string_ptr::size() const noexcept {
+  return len_;
+}
+inline c_string_ptr::size_type c_string_ptr::length() const noexcept {
+  return size();
+}
+inline bool c_string_ptr::empty() const noexcept {
+  return size() == 0U;
+}
 
 inline char* c_string_ptr::release() noexcept {
   char* result = c_str();
@@ -28,7 +38,7 @@ inline char* c_string_ptr::data() const noexcept {
 }
 
 inline void c_string_ptr::swap(c_string_ptr& other) noexcept {
-  using std::swap;
+  using _namespace(std)::swap;
 
   swap(data_, other.data_);
   swap(len_, other.len_);
@@ -37,16 +47,19 @@ inline void c_string_ptr::swap(c_string_ptr& other) noexcept {
 
 inline void swap(c_string_ptr& a, c_string_ptr& b) noexcept { a.swap(b); }
 
-inline bool c_string_ptr::operator==(const c_string_ptr& other) const noexcept {
-  if (empty() || size() != other.size()) return size() == other.size();
-  return std::memcmp(data(), other.data(), size()) == 0;
+inline bool c_string_ptr::operator==(const c_string_ptr& other)
+      const noexcept {
+  if (size() != other.size()) return size() == other.size();
+  return _namespace(std)::memcmp(data(), other.data(), size()) == 0;
 }
 
-inline bool c_string_ptr::operator==(const char* s) const noexcept {
-  return strcmp(c_str(), s) == 0;
+inline bool c_string_ptr::operator==(const char* s)
+      const noexcept {
+  return _namespace(std)::strcmp(c_str(), s) == 0;
 }
 
-inline bool c_string_ptr::operator!=(const c_string_ptr& other) const noexcept {
+inline bool c_string_ptr::operator!=(const c_string_ptr& other)
+      const noexcept {
   return !(*this == other);
 }
 
@@ -55,7 +68,7 @@ inline bool c_string_ptr::operator!=(const char* s) const noexcept {
 }
 
 inline c_string_ptr& c_string_ptr::operator=(c_string_ptr&& other) noexcept {
-  if (data_) std::free(data_);
+  _namespace(std)::free(data_);
   data_ = other.data_;
   len_ = other.len_;
   capacity_ = other.capacity_;
@@ -118,13 +131,16 @@ inline c_string_ptr make_c_string_ptr(const char* s) {
   return result;
 }
 
-inline c_string_ptr make_c_string_ptr(const char* s, c_string_ptr::size_type len) {
+inline c_string_ptr make_c_string_ptr(const char* s,
+                                      c_string_ptr::size_type len) {
   c_string_ptr result;
   result.append(s, len);
   return result;
 }
 
-inline c_string_ptr make_c_string_ptr_buffer(char* buf, c_string_ptr::size_type len) noexcept {
+inline c_string_ptr make_c_string_ptr_buffer(char* buf,
+                                             c_string_ptr::size_type len)
+      noexcept {
   c_string_ptr result;
   if (buf) {
     assert(result.data_ == nullptr);
@@ -136,7 +152,8 @@ inline c_string_ptr make_c_string_ptr_buffer(char* buf, c_string_ptr::size_type 
 
 inline c_string_ptr make_c_string_ptr_buffer(c_string_ptr::size_type len) {
   void* buf = nullptr;
-  if (len > 0 && (buf = std::malloc(len)) == nullptr) throw std::bad_alloc();
+  if (len > 0 && (buf = _namespace(std)::malloc(len)) == nullptr)
+    throw _namespace(std)::bad_alloc();
   return make_c_string_ptr_buffer(static_cast<char*>(buf), len);
 }
 

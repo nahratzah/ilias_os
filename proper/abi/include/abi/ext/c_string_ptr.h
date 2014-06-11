@@ -17,7 +17,7 @@ namespace ext {
 
 class c_string_ptr {
  public:
-  using size_type = std::size_t;
+  using size_type = _namespace(std)::size_t;
   using iterator = char*;
   using const_iterator = const char*;
 
@@ -25,7 +25,7 @@ class c_string_ptr {
   inline ~c_string_ptr() noexcept;
   c_string_ptr(const c_string_ptr&);
   inline c_string_ptr(c_string_ptr&&) noexcept;
-  c_string_ptr(const std::string&);
+  c_string_ptr(const _namespace(std)::string_ref&);
 
   void reserve(size_type);
   void shrink_to_fit() noexcept;
@@ -37,7 +37,8 @@ class c_string_ptr {
   inline char* data() const noexcept;
   inline void swap(c_string_ptr&) noexcept;
   friend inline void swap(c_string_ptr&, c_string_ptr&) noexcept;
-  friend inline c_string_ptr make_c_string_ptr_buffer(char*, size_type) noexcept;
+  friend inline c_string_ptr make_c_string_ptr_buffer(char*, size_type)
+      noexcept;
 
   inline bool operator==(const c_string_ptr&) const noexcept;
   inline bool operator==(const char*) const noexcept;
@@ -64,7 +65,7 @@ class c_string_ptr {
   inline char& operator[](size_type idx);
   inline const char& operator[](size_type idx) const;
 
-  operator std::string() const;
+  operator _namespace(std)::string_ref() const noexcept;
 
  private:
   char* data_ = nullptr;
@@ -75,7 +76,8 @@ class c_string_ptr {
 inline c_string_ptr make_c_string_ptr(const char*);
 inline c_string_ptr make_c_string_ptr(const char*, c_string_ptr::size_type);
 inline c_string_ptr make_c_string_ptr_buffer(c_string_ptr::size_type);
-inline c_string_ptr make_c_string_ptr_buffer(const char*, c_string_ptr::size_type);
+inline c_string_ptr make_c_string_ptr_buffer(const char*,
+                                             c_string_ptr::size_type);
 
 inline bool operator==(const char* a, const c_string_ptr& b) noexcept;
 inline bool operator!=(const char* a, const c_string_ptr& b) noexcept;
