@@ -1,4 +1,10 @@
+#ifndef _MEMORY_INL_H_
+#define _MEMORY_INL_H_
+
+#include <cdecl.h>
 #include <stdimpl/shared_ptr_ownership.h>
+#include <memory>
+#include <typeinfo>
 
 _namespace_begin(std)
 namespace impl {
@@ -745,7 +751,8 @@ void shared_ptr_ownership_impl<T, D, A>::destroy_me() noexcept {
 
 template<typename T, typename D, typename A>
 shared_ptr_ownership* allocate_shared_ptr_ownership(
-    unique_ptr<T, D> ptr, const A& alloc_arg = std::allocator<void>()) {
+    unique_ptr<T, D> ptr,
+    const A& alloc_arg = _namespace(std)::allocator<void>()) {
   using impl = shared_ptr_ownership_impl<T, D, A>;
   using allocator_type = typename impl::allocator_type;
 
@@ -1038,7 +1045,8 @@ void shared_ptr<T>::fixup_shared_from_this(
 
 template<typename T, typename... Args>
 shared_ptr<T> make_shared(Args&&... args) {
-  return allocate_shared<T>(std::allocator<void>(), forward<Args>(args)...);
+  return allocate_shared<T>(_namespace(std)::allocator<void>(),
+                            forward<Args>(args)...);
 }
 
 template<typename T, typename A, typename... Args>
@@ -1701,3 +1709,5 @@ auto temporary_buffer_allocator<T>::deallocate(pointer p, size_t)
 
 
 _namespace_end(std)
+
+#endif /* _MEMORY_INL_H_ */
