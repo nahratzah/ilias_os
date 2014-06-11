@@ -6,7 +6,7 @@ namespace __cxxabiv1 {
 namespace ext {
 
 
-c_string_ptr::c_string_ptr(const std::string& s) : c_string_ptr() {
+c_string_ptr::c_string_ptr(const std::string_ref& s) : c_string_ptr() {
   reserve(s.length());
   len_ = s.length();
   std::memcpy(data(), s.data(), len_);
@@ -58,8 +58,8 @@ void c_string_ptr::append(const char* s, size_type len) {
   len_ += len;
 }
 
-c_string_ptr::operator std::string() const {
-  return std::string(data(), size());
+c_string_ptr::operator _namespace(std)::string_ref() const noexcept {
+  return std::string_ref(data(), size());
 }
 
 }} /* namespace __cxxabiv1::ext */
