@@ -1,4 +1,11 @@
+#ifndef _STRING_INL_H_
+#define _STRING_INL_H_
+
 #pragma GCC system_header
+#include <cdecl.h>
+#include <cstring>
+#include <cstdio>
+#include <cwchar>
 
 _namespace_begin(std)
 
@@ -2095,3 +2102,5 @@ inline _namespace(std)::u32string operator"" s(const char32_t* s, size_t l) {
 
 }} /* namespace std::literals::string_literals */
 _namespace_end(std)
+
+#endif /* _STRING_INL_H_ */
