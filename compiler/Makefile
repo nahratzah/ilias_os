@@ -8,7 +8,7 @@ RM ?= rm
 
 LLVM_OPTS ?= -DCMAKE_BUILD_TYPE=Release
 CLANG_OPTS ?= -DCMAKE_BUILD_TYPE=Release
-LLVM_OPTS += -DLLVM_ENABLE_CXX11:BOOL=ON
+LLVM_OPTS += -DLLVM_ENABLE_CXX11:BOOL=OFF
 LLVM_OPTS += -DLLVM_ENABLE_LIBCXX:BOOL=OFF
 LLVM_OPTS += -DLLVM_ENABLE_PIC:BOOL=OFF
 LLVM_OPTS += -DLLVM_FORCE_USE_OLD_TOOLCHAIN:BOOL=ON
@@ -53,7 +53,7 @@ ${BUILDDIR}/binutils.done_build: ${BUILDDIR}/binutils.done_configure
 	touch "${BUILDDIR}/binutils.done_build"
 
 ${BUILDDIR}/binutils.done_install: ${BUILDDIR}/binutils.done_build
-	cd "${BUILDDIR}/binutils" && ${MAKE} install
+	cd "${BUILDDIR}/binutils" && ${MAKE} -j1 install
 	touch "${BUILDDIR}/binutils.done_install"
 
 
