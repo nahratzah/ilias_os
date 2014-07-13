@@ -15,7 +15,7 @@ typedef struct __locale* locale_t;
 
 _namespace_end(std)
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(_TEST)
 using _namespace(std)::locale_t;
 #endif
 

@@ -81,20 +81,20 @@ void dfl_terminate() noexcept {
   abi::panic("std::terminate");
 }
 
-std::atomic<unexpected_handler> unexpected_impl;  // Zero initialized
-std::atomic<terminate_handler> terminate_impl;  // Zero initialized
+atomic<unexpected_handler> unexpected_impl;  // Zero initialized
+atomic<terminate_handler> terminate_impl;  // Zero initialized
 
 } /* namespace std::<unnamed> */
 
 
 unexpected_handler set_unexpected(unexpected_handler h) noexcept {
   unexpected_handler rv = unexpected_impl.exchange(h,
-                                                   std::memory_order_acq_rel);
+                                                   memory_order_acq_rel);
   return (rv ? rv : &dfl_unexpected);
 }
 
 unexpected_handler get_unexpected() noexcept {
-  unexpected_handler rv = unexpected_impl.load(std::memory_order_acquire);
+  unexpected_handler rv = unexpected_impl.load(memory_order_acquire);
   return (rv ? rv : &dfl_unexpected);
 }
 
@@ -107,12 +107,12 @@ void unexpected() noexcept {
 
 
 terminate_handler set_terminate(terminate_handler h) noexcept {
-  terminate_handler rv = terminate_impl.exchange(h, std::memory_order_acq_rel);
+  terminate_handler rv = terminate_impl.exchange(h, memory_order_acq_rel);
   return (rv ? rv : &dfl_terminate);
 }
 
 terminate_handler get_terminate() noexcept {
-  terminate_handler rv = terminate_impl.load(std::memory_order_acquire);
+  terminate_handler rv = terminate_impl.load(memory_order_acquire);
   return (rv ? rv : &dfl_terminate);
 }
 

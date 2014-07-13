@@ -6,7 +6,7 @@
 #include <system_error>
 #include <abi/ext/printf.h>
 
-namespace std {
+_namespace_begin(std)
 
 
 /*
@@ -107,8 +107,8 @@ int vsnprintf(char*__restrict s, size_t sz, const char*__restrict fmt,
   };
 
   /* Check arguments. */
-  if (_predict_false(s == nullptr && sz != 0)) return EINVAL;
-  if (_predict_false(fmt == nullptr)) return EINVAL;
+  if (_predict_false(s == nullptr && sz != 0)) return _ABI_EINVAL;
+  if (_predict_false(fmt == nullptr)) return _ABI_EINVAL;
 
   /* Rendering stage. */
   vsn_renderer renderer{ s, sz };
@@ -152,8 +152,8 @@ int vsprintf(char*__restrict s, const char*__restrict fmt, va_list ap)
   };
 
   /* Check arguments. */
-  if (_predict_false(s == nullptr)) return EINVAL;
-  if (_predict_false(fmt == nullptr)) return EINVAL;
+  if (_predict_false(s == nullptr)) return _ABI_EINVAL;
+  if (_predict_false(fmt == nullptr)) return _ABI_EINVAL;
 
   /* Rendering stage. */
   vs_renderer renderer{ s };
@@ -221,7 +221,7 @@ int vasprintf(char** sptr, const char*__restrict fmt, va_list ap) noexcept {
           alt_sz = len + s_avail_ + sp.size() + 1U;
           alt = static_cast<char*>(realloc(s_, alt_sz));
         }
-        if (!alt) return ENOMEM;
+        if (!alt) return _ABI_ENOMEM;
 
         s_ = alt;
         s_end_ = s_ + len;
@@ -236,12 +236,12 @@ int vasprintf(char** sptr, const char*__restrict fmt, va_list ap) noexcept {
   };
 
   /* Check arguments. */
-  if (_predict_false(sptr == nullptr)) return EINVAL;
-  if (_predict_false(fmt == nullptr)) return EINVAL;
+  if (_predict_false(sptr == nullptr)) return _ABI_EINVAL;
+  if (_predict_false(fmt == nullptr)) return _ABI_EINVAL;
 
   /* Rendering stage. */
   vas_renderer renderer;
-  if (!renderer) return ENOMEM;
+  if (!renderer) return _ABI_ENOMEM;
   int error = 0;
   {
     abi::ext::vxprintf_locals<char> locals;
@@ -280,10 +280,10 @@ template<typename Char>
 int renderer<Char>::do_append(basic_string_ref<Char> sp) noexcept {
   try {
     str_.append(sp);
-  } catch (const std::length_error&) {
-    return ENOMEM;
-  } catch (const std::bad_alloc&) {
-    return ENOMEM;
+  } catch (const length_error&) {
+    return _ABI_ENOMEM;
+  } catch (const bad_alloc&) {
+    return _ABI_ENOMEM;
   }
   return 0;
 }
@@ -306,7 +306,7 @@ string format(string_ref fmt, ...) {
     va_end(ap);
   }
 
-  if (_predict_false(error == ENOMEM)) throw std::bad_alloc();
+  if (_predict_false(error == _ABI_ENOMEM)) throw bad_alloc();
   if (_predict_false(error != 0)) throw system_error(error, system_category(),
                                                      "std::format");
   return rv;
@@ -323,7 +323,7 @@ wstring format(wstring_ref fmt, ...) {
     va_end(ap);
   }
 
-  if (_predict_false(error == ENOMEM)) throw std::bad_alloc();
+  if (_predict_false(error == _ABI_ENOMEM)) throw bad_alloc();
   if (_predict_false(error != 0)) throw system_error(error, system_category(),
                                                      "std::format");
   return rv;
@@ -340,7 +340,7 @@ u16string format(u16string_ref fmt, ...) {
     va_end(ap);
   }
 
-  if (_predict_false(error == ENOMEM)) throw std::bad_alloc();
+  if (_predict_false(error == _ABI_ENOMEM)) throw bad_alloc();
   if (_predict_false(error != 0)) throw system_error(error, system_category(),
                                                      "std::format");
   return rv;
@@ -357,11 +357,11 @@ u32string format(u32string_ref fmt, ...) {
     va_end(ap);
   }
 
-  if (_predict_false(error == ENOMEM)) throw std::bad_alloc();
+  if (_predict_false(error == _ABI_ENOMEM)) throw bad_alloc();
   if (_predict_false(error != 0)) throw system_error(error, system_category(),
                                                      "std::format");
   return rv;
 }
 
 
-} /* namespace std */
+_namespace_end(std)
