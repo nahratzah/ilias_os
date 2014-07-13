@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <utility>
+#include <type_traits>
 
 _namespace_begin(std)
 
@@ -187,7 +188,7 @@ auto basic_stringbuf<Char, Traits, Allocator>::seekoff(
     return pos_type(off_type(-1));
 
   /* Validate new offset. */
-  if (off < 0 || off >= end)
+  if (off < 0 || make_unsigned_t<off_type>(off) >= end)
     return pos_type(off_type(-1));
 
   /* Update requested pointers. */
