@@ -14,8 +14,10 @@ void exit(int) noexcept __attribute__((__noreturn__));
 void quick_exit(int) noexcept __attribute__((__noreturn__));
 
 void* malloc(size_t) noexcept;
+void* calloc(size_t, size_t) noexcept;
 void free(void*) noexcept;
 void* realloc(void*, size_t) noexcept;
+void* reallocarray(void*, size_t, size_t) noexcept;
 
 void qsort(void*, size_t, size_t, int (*)(const void*, const void*));
 void* bsearch(const void*, const void*, size_t, size_t,
@@ -31,8 +33,10 @@ using std::at_quick_exit;
 using std::exit;
 using std::quick_exit;
 using std::malloc;
+using std::calloc;
 using std::free;
 using std::realloc;
+using std::reallocarray;
 using std::qsort;
 using std::bsearch;
 #endif /* !_TEST && __cplusplus */

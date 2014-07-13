@@ -241,8 +241,23 @@ void* __attribute__((weak)) malloc(size_t sz) noexcept {
   return c_malloc_heap().malloc(sz);
 }
 
+void* __attribute__((weak)) calloc(size_t nmemb, size_t sz) noexcept {
+  if (_predict_false(sz == 0 || SIZE_MAX / sz < nmemb)) {
+    errno = _ABI_ENOMEM;
+    return nullptr;  // Prevent overflow.
+  }
+
+  size_t bytes = nmemb * sz;
+  void* p = malloc(bytes);
+  if (_predict_true(p))
+    bzero(p, bytes);
+  else
+    errno = _ABI_ENOMEM;
+  return p;
+}
+
 void __attribute__((weak)) free(void* p) noexcept {
-  c_malloc_heap().free(p);
+  if (p) c_malloc_heap().free(p);
 }
 
 void* __attribute__((weak)) realloc(void* p, size_t sz) noexcept {
@@ -255,10 +270,19 @@ void* __attribute__((weak)) realloc(void* p, size_t sz) noexcept {
   /* Move memory. */
   if (sz < oldsz) oldsz = sz;
   void* q = heap.malloc(sz);
-  if (!q) return nullptr;
+  if (_predict_false(!q)) return nullptr;
   memcpy(q, p, oldsz);
   heap.free(p);
   return q;
+}
+
+void* __attribute__((weak)) reallocarray(void* p, size_t nmemb, size_t sz)
+    noexcept {
+  if (_predict_false(sz == 0 || SIZE_MAX / sz < nmemb)) {
+    errno = _ABI_ENOMEM;
+    return nullptr;
+  }
+  return realloc(p, nmemb * sz);
 }
 
 
