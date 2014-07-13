@@ -6,8 +6,13 @@
 #include <type_traits>
 #include <functional>
 #include <tuple>
+#include <cstdint>
 
 _namespace_begin(ilias)
+
+
+using _namespace(std)::uintptr_t;
+using _namespace(std)::size_t;
 
 
 class basic_linked_set {
