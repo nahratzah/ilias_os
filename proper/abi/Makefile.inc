@@ -56,6 +56,6 @@ SRCS_LOADER += abi/i386/moddi3.s
 SRCS_LOADER += abi/i386/udivdi3.s
 SRCS_LOADER += abi/i386/umoddi3.s
 
-ABI_TEST_SRCS = ${ABI_SRCS} ${ILIAS_SRC_SRCS}
+ABI_TEST_SRCS = ${ABI_SRCS} ${ILIAS_STD_SRCS}
 
 include abi/test/Makefile.inc
