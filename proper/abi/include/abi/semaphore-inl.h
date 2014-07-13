@@ -7,30 +7,31 @@ namespace __cxxabiv1 {
 _SEM_INLINE void semaphore::decrement() noexcept {
   using abi::ext::pause;
 
-  auto& t = reinterpret_cast<std::atomic<value_type>&>(t_);
-  auto& a = reinterpret_cast<const std::atomic<value_type>&>(a_);
+  auto& t = reinterpret_cast<_namespace(std)::atomic<value_type>&>(t_);
+  auto& a = reinterpret_cast<const _namespace(std)::atomic<value_type>&>(a_);
   static_assert(sizeof(t) == sizeof(t_), "semaphore broken");
   static_assert(sizeof(a) == sizeof(a_), "semaphore broken");
 
-  const value_type ticket = t.fetch_add(1U, std::memory_order_acquire);
-  while (a.load(std::memory_order_relaxed) - ticket > wnd) pause();
-  std::atomic_thread_fence(std::memory_order_acquire);
+  const value_type ticket =
+      t.fetch_add(1U, _namespace(std)::memory_order_acquire);
+  while (a.load(_namespace(std)::memory_order_relaxed) - ticket > wnd) pause();
+  _namespace(std)::atomic_thread_fence(_namespace(std)::memory_order_acquire);
 }
 
 _SEM_INLINE bool semaphore::try_decrement() noexcept {
-  auto& t = reinterpret_cast<std::atomic<value_type>&>(t_);
-  auto& a = reinterpret_cast<const std::atomic<value_type>&>(a_);
-  const value_type a_ticket = a.load(std::memory_order_relaxed);
-  value_type t_ticket = t.load(std::memory_order_relaxed);
+  auto& t = reinterpret_cast<_namespace(std)::atomic<value_type>&>(t_);
+  auto& a = reinterpret_cast<const _namespace(std)::atomic<value_type>&>(a_);
+  const value_type a_ticket = a.load(_namespace(std)::memory_order_relaxed);
+  value_type t_ticket = t.load(_namespace(std)::memory_order_relaxed);
   if (a_ticket - t_ticket > wnd) return false;
   return t.compare_exchange_strong(t_ticket, t_ticket + 1U,
-                                   std::memory_order_acquire,
-                                   std::memory_order_relaxed);
+                                   _namespace(std)::memory_order_acquire,
+                                   _namespace(std)::memory_order_relaxed);
 }
 
 _SEM_INLINE void semaphore::increment() noexcept {
-  auto& a = reinterpret_cast<std::atomic<value_type>&>(a_);
-  a.fetch_add(1U, std::memory_order_release);
+  auto& a = reinterpret_cast<_namespace(std)::atomic<value_type>&>(a_);
+  a.fetch_add(1U, _namespace(std)::memory_order_release);
 }
 
 
@@ -119,35 +120,35 @@ inline semlock::operator bool() const noexcept {
 
 template<typename FN, typename... Args> auto semlock::do_locked(
     FN&& fn, Args&&... args)
-    noexcept(noexcept(fn(std::forward<Args>(args)...))) ->
-    decltype(fn(std::forward<Args>(args)...))
+    noexcept(noexcept(fn(_namespace(std)::forward<Args>(args)...))) ->
+    decltype(fn(_namespace(std)::forward<Args>(args)...))
 {
   assert(sem_);
   assert(locked_);
 
   scope_ s{ *this, true };
-  return fn(std::forward<Args>(args)...);
+  return fn(_namespace(std)::forward<Args>(args)...);
 }
 
 template<typename FN, typename... Args> auto semlock::do_unlocked(
     FN&& fn, Args&&... args)
-    noexcept(noexcept(fn(std::forward<Args>(args)...))) ->
-    decltype(fn(std::forward<Args>(args)...))
+    noexcept(noexcept(fn(_namespace(std)::forward<Args>(args)...))) ->
+    decltype(fn(_namespace(std)::forward<Args>(args)...))
 {
   assert(sem_);
   assert(locked_);
 
   scope_ s{ *this, false };
-  return fn(std::forward<Args>(args)...);
+  return fn(_namespace(std)::forward<Args>(args)...);
 }
 
 template<typename FN, typename... Args> auto semaphore::execute(
     FN&& fn, Args&&... args)
-    noexcept(noexcept(fn(std::forward<Args>(args)...))) ->
-    decltype(fn(std::forward<Args>(args)...))
+    noexcept(noexcept(fn(_namespace(std)::forward<Args>(args)...))) ->
+    decltype(fn(_namespace(std)::forward<Args>(args)...))
 {
   semlock lock{ *this };
-  return fn(std::forward<Args>(args)...);
+  return fn(_namespace(std)::forward<Args>(args)...);
 }
 
 } /* namespace __cxxabiv1 */

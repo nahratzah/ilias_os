@@ -1,6 +1,7 @@
 #ifndef _ABI_EXT_LIST_H_
 #define _ABI_EXT_LIST_H_
 
+#include <cdecl.h>
 #include <abi/abi.h>
 #include <iterator>
 
@@ -110,7 +111,7 @@ template<typename T, typename Tag> class list {
 template<typename Tag>
 class iterator_order<true, Tag> {
  public:
-  using iterator_category = std::bidirectional_iterator_tag;
+  using iterator_category = _namespace(std)::bidirectional_iterator_tag;
 
  private:
   using elem_t = list_elem<Tag>;
@@ -128,7 +129,7 @@ class iterator_order<true, Tag> {
 template<typename Tag>
 class iterator_order<false, Tag> {
  public:
-  using iterator_category = std::bidirectional_iterator_tag;
+  using iterator_category = _namespace(std)::bidirectional_iterator_tag;
 
  private:
   using elem_t = list_elem<Tag>;

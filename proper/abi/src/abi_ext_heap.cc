@@ -515,7 +515,8 @@ auto heap::malloc(size_t sz, size_t align) noexcept -> void* {
 }
 
 auto heap::malloc(size_t sz) noexcept -> void* {
-  size_t align = std::min(size_t(1) << log2_down(sz), alignof(max_align_t));
+  size_t align = _namespace(std)::min(size_t(1) << log2_down(sz),
+                                      alignof(max_align_t));
   return malloc(sz, align);
 }
 

@@ -1,7 +1,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace std {
+_namespace_begin(std)
 
 
 logic_error::logic_error(string_ref msg)
@@ -23,7 +23,7 @@ logic_error::logic_error(const logic_error& other) noexcept
 
 logic_error& logic_error::operator=(const logic_error& other) noexcept
 {
-  this->std::exception::operator=(other);
+  this->_namespace(std)::exception::operator=(other);
   msg_ = other.msg_;
   return *this;
 }
@@ -53,7 +53,7 @@ runtime_error::runtime_error(const runtime_error& other) noexcept
 {}
 
 runtime_error& runtime_error::operator=(const runtime_error& other) noexcept {
-  this->std::exception::operator=(other);
+  this->_namespace(std)::exception::operator=(other);
   msg_ = other.msg_;
   return *this;
 }
@@ -101,4 +101,4 @@ underflow_error::underflow_error(const char* msg) : runtime_error(msg) {}
 underflow_error::~underflow_error() noexcept {}
 
 
-} /* namespace std */
+_namespace_end(std)

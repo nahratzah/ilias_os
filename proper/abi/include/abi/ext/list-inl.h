@@ -1,3 +1,6 @@
+#ifndef _ABI_EXT_LIST_INL_H_
+#define _ABI_EXT_LIST_INL_H_
+
 namespace __cxxabiv1 {
 namespace ext {
 
@@ -40,7 +43,7 @@ auto list<T, Tag>::operator=(list&& o) noexcept -> list& {
 
 template<typename T, typename Tag>
 auto list<T, Tag>::swap(list& o) noexcept -> void {
-  using std::swap;
+  using _namespace(std)::swap;
 
   swap(head_.succ_, o.head_.succ_);
   swap(head_.pred_, o.head_.pred_);
@@ -392,3 +395,5 @@ auto unlink(T* e) noexcept -> bool {
 
 
 }} /* namespace __cxxabiv1::ext */
+
+#endif /* _ABI_EXT_LIST_INL_H_ */

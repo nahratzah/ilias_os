@@ -200,7 +200,8 @@ _namespace(std)::tuple<bigint, bigint> bigint::divmod(bigint x, bigint y) {
 _namespace(std)::tuple<bigint, uintmax_t> bigint::divmod(bigint x,
                                                          uintmax_t y) {
   bigint div, bigmod;
-  std::tie(div, bigmod) = divmod(_namespace(std)::move(x), bigint(y));
+  _namespace(std)::tie(div, bigmod) =
+      divmod(_namespace(std)::move(x), bigint(y));
 
   uintmax_t mod = 0;
   for (auto mi = bigmod.x_.rbegin(); mi != bigmod.x_.rend(); ++mi) {

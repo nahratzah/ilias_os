@@ -1,3 +1,4 @@
+#include <cdecl.h>
 #include <abi/abi.h>
 #include <abi/eh.h>
 #include <abi/panic.h>
@@ -5,7 +6,7 @@
 #include <exception>
 #include <utility>
 
-namespace std {
+_namespace_begin(std)
 namespace {
 
 
@@ -133,4 +134,4 @@ exception_ptr current_exception() noexcept {
 }
 
 
-} /* namespace std */
+_namespace_end(std)
