@@ -1,0 +1,112 @@
+#ifndef _SSTREAM_
+#define _SSTREAM_
+
+#include <cdecl.h>
+#include <ios>
+#include <streambuf>
+#include <string>
+
+_namespace_begin(std)
+
+
+template<typename Char, typename Traits, typename Allocator>
+class basic_stringbuf
+: public basic_streambuf<Char, Traits>
+{
+ public:
+  using char_type = typename basic_streambuf<Char, Traits>::char_type;
+  using traits_type = typename basic_streambuf<Char, Traits>::traits_type;
+  using allocator_type = Allocator;
+  using int_type = typename basic_streambuf<Char, Traits>::int_type;
+  using pos_type = typename basic_streambuf<Char, Traits>::pos_type;
+  using off_type = typename basic_streambuf<Char, Traits>::off_type;
+
+  explicit basic_stringbuf(ios_base::openmode = ios_base::in | ios_base::out);
+  explicit basic_stringbuf(const basic_string<Char, Traits, Allocator>&,
+                           ios_base::openmode = ios_base::in | ios_base::out);
+  explicit basic_stringbuf(basic_string_ref<Char, Traits>,
+                           ios_base::openmode = ios_base::in | ios_base::out);
+  basic_stringbuf(basic_stringbuf&&);
+
+  basic_stringbuf& operator=(basic_stringbuf&&);
+  void swap(basic_stringbuf&);
+
+  basic_string<Char, Traits, Allocator> str() const;
+  void str(const basic_string<Char, Traits, Allocator>&);
+  void str(basic_string_ref<Char, Traits>);
+
+ protected:
+  int_type underflow() override;
+  int_type pbackfail(int_type = traits_type::eof()) override;
+  int_type overflow(int_type = traits_type::eof()) override;
+  basic_streambuf<Char, Traits>* setbuf(char_type*, streamsize) override;
+
+  pos_type seekoff(off_type, ios_base::seekdir,
+                   ios_base::openmode = ios_base::in | ios_base::out)
+      override;
+  pos_type seekpos(pos_type,
+                   ios_base::openmode = ios_base::in | ios_base::out)
+      override;
+
+ private:
+  bool extend_(size_t);
+
+  ios_base::openmode mode_;
+  char_type* buf_end_ = nullptr;  // End of put buffer.
+  unique_ptr<char_type[]> buf_;
+};
+
+template<typename Char, typename Traits, typename Allocator>
+void swap(basic_stringbuf<Char, Traits, Allocator>&,
+          basic_stringbuf<Char, Traits, Allocator>&);
+
+
+template<typename Char, typename Traits, typename Allocator>
+class basic_istringstream;
+
+template<typename Char, typename Traits, typename Allocator>
+class basic_ostringstream;
+
+template<typename Char, typename Traits, typename Allocator>
+class basic_stringstream;
+
+
+using stringbuf = basic_stringbuf<char>;
+using wstringbuf = basic_stringbuf<wchar_t>;
+
+using istringstream = basic_istringstream<char>;
+using wistringstream = basic_istringstream<wchar_t>;
+
+using ostringstream = basic_ostringstream<char>;
+using wostringstream = basic_ostringstream<wchar_t>;
+
+using stringstream = basic_stringstream<char>;
+using wstringstream = basic_stringstream<wchar_t>;
+
+
+/*
+ * Definitions.
+ */
+
+
+template<typename Char, typename Traits, typename Allocator>
+class basic_istringstream;
+
+template<typename Char, typename Traits, typename Allocator>
+class basic_ostringstream;
+
+template<typename Char, typename Traits, typename Allocator>
+class basic_stringstream;
+
+
+extern template class basic_stringbuf<char>;
+extern template class basic_stringbuf<char16_t>;
+extern template class basic_stringbuf<char32_t>;
+extern template class basic_stringbuf<wchar_t>;
+
+
+_namespace_end(std)
+
+#include <sstream-inl.h>
+
+#endif /* _SSTREAM_ */
