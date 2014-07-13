@@ -1,5 +1,6 @@
 #include <stdimpl/allocator_cloneable.h>
 #include <cdecl.h>
+#include <initializer_list>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
