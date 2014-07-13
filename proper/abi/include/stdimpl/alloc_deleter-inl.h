@@ -33,9 +33,9 @@ auto alloc_deleter<Alloc>::operator()(T* v) const noexcept {
 
 template<typename T, typename Alloc, typename Hint, Args&&...>
 auto new_alloc_deleter(Alloc& alloc, Hint&& hint, Args&&... args) ->
-    unique_ptr<T, alloc_deleter<Alloc>> {
+    alloc_deleter_ptr<T, Alloc> {
   using alloc_traits = allocator_traits<Alloc>;
-  using ptr_t = unique_ptr<T, alloc_deleter<Alloc>>;
+  using ptr_t = alloc_deleter_ptr<T, Alloc>;
 
   ptr_t ptr = ptr_t(alloc_traits::allocate(alloc, 1, forward<Hint>(hint)),
                     alloc);
@@ -47,7 +47,15 @@ auto new_alloc_deleter(Alloc& alloc, Hint&& hint, Args&&... args) ->
 template<typename T, typename Alloc>
 auto existing_alloc_deleter(Alloc& alloc, T* p) ->
     alloc_deleter_ptr<T, Alloc> {
-  return alloc_deleter_ptr<T, Alloc>(p, alloc);
+  return alloc_deleter_ptr<T, Alloc>(p, alloc_deleter_visitor(alloc));
+}
+
+template<typename Alloc>
+auto alloc_deleter_visitor(Alloc& alloc) noexcept ->
+    alloc_deleter<Alloc> {
+  alloc_deleter<Alloc> rv = alloc_deleter<Alloc>(alloc);
+  rv.mark_constructed();
+  return rv;
 }
 
 

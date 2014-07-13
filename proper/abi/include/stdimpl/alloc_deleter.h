@@ -36,6 +36,10 @@ template<typename T, typename Alloc>
 auto existing_alloc_deleter(Alloc&, T*) ->
     alloc_deleter_ptr<T, Alloc>;
 
+template<typename Alloc>
+auto alloc_deleter_visitor(Alloc&) noexcept ->
+    alloc_deleter<Alloc>;
+
 
 } /* namespace std::impl */
 _namespace_end(std)
