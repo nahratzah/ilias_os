@@ -489,7 +489,7 @@ auto make_unique(Args&&... args) ->
   return unique_ptr<T>(new T(forward<Args>(args)...));
 }
 
-template<typename T, typename... Args>
+template<typename T>
 auto make_unique(size_t n) ->
     enable_if_t<is_array<T>::value && extent<T>::value == 0,
                 unique_ptr<T>> {
