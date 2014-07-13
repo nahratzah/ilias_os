@@ -4,7 +4,7 @@
 #include <mutex>
 #include <abi/memory.h>
 
-namespace std {
+_namespace_begin(std)
 
 
 const nothrow_t nothrow{};
@@ -27,21 +27,21 @@ const char* bad_array_new_length::what() const noexcept {
 
 namespace {
 
-std::atomic<new_handler> nh;
+atomic<new_handler> nh;
 
 } /* namespace std::<unnamed> */
 
 
 new_handler get_new_handler() noexcept {
-  return nh.load(std::memory_order_acquire);
+  return nh.load(memory_order_acquire);
 }
 
 new_handler set_new_handler(new_handler n) noexcept {
-  return nh.exchange(n, std::memory_order_acq_rel);
+  return nh.exchange(n, memory_order_acq_rel);
 }
 
 
-} /* namespace std */
+_namespace_end(std)
 
 
 namespace {
@@ -100,14 +100,14 @@ abi::big_heap& no_throw_array_heap() noexcept {
 void* new_impl(abi::big_heap& heap, size_t sz) {
   void* p;
   for (p = heap.malloc(sz); _predict_false(!p); p = heap.malloc(sz)) {
-    std::new_handler nh = std::get_new_handler();
-    if (!nh) std::__throw_bad_alloc();
+    _namespace(std)::new_handler nh = _namespace(std)::get_new_handler();
+    if (!nh) _namespace(std)::__throw_bad_alloc();
     try {
       (*nh)();
-    } catch (const std::bad_alloc&) {
+    } catch (const _namespace(std)::bad_alloc&) {
       throw;
     } catch (...) {
-      std::unexpected();
+      _namespace(std)::unexpected();
     }
   }
 
@@ -118,7 +118,7 @@ void* new_impl(abi::big_heap& heap, size_t sz) {
 void* new_impl_nothrow(abi::big_heap& heap, size_t sz) noexcept {
   try {
     return new_impl(heap, sz);
-  } catch (const std::bad_alloc&) {
+  } catch (const _namespace(std)::bad_alloc&) {
     return nullptr;
   }
 }
@@ -131,7 +131,7 @@ void* __attribute__((weak)) operator new(size_t sz) {
 }
 
 void* __attribute__((weak)) operator new(
-    size_t sz, const std::nothrow_t&) noexcept {
+    size_t sz, const _namespace(std)::nothrow_t&) noexcept {
   return new_impl_nothrow(no_throw_heap(), sz);
 }
 
@@ -140,7 +140,7 @@ void __attribute__((weak)) operator delete(void* p) noexcept {
 }
 
 void __attribute__((weak)) operator delete(
-    void* p, const std::nothrow_t&) noexcept {
+    void* p, const _namespace(std)::nothrow_t&) noexcept {
   if (p) no_throw_heap().free(p);
 }
 
@@ -149,7 +149,7 @@ void __attribute__((weak)) operator delete(void* p, size_t sz) noexcept {
 }
 
 void __attribute__((weak)) operator delete(
-    void* p, size_t sz, const std::nothrow_t&) noexcept {
+    void* p, size_t sz, const _namespace(std)::nothrow_t&) noexcept {
   if (p) no_throw_heap().free(p, sz);
 }
 
@@ -159,7 +159,7 @@ void* __attribute__((weak)) operator new[](size_t sz) {
 }
 
 void* __attribute__((weak)) operator new[](
-    size_t sz, const std::nothrow_t&) noexcept {
+    size_t sz, const _namespace(std)::nothrow_t&) noexcept {
   return new_impl_nothrow(no_throw_array_heap(), sz);
 }
 
@@ -168,7 +168,7 @@ void __attribute__((weak)) operator delete[](void* p) noexcept {
 }
 
 void __attribute__((weak)) operator delete[](
-    void* p, const std::nothrow_t&) noexcept {
+    void* p, const _namespace(std)::nothrow_t&) noexcept {
   if (p) no_throw_array_heap().free(p);
 }
 
@@ -177,7 +177,7 @@ void __attribute__((weak)) operator delete[](void* p, size_t sz) noexcept {
 }
 
 void __attribute__((weak)) operator delete[](
-    void* p, size_t sz, const std::nothrow_t&) noexcept {
+    void* p, size_t sz, const _namespace(std)::nothrow_t&) noexcept {
   if (p) no_throw_array_heap().free(p, sz);
 }
 
@@ -185,7 +185,7 @@ void __attribute__((weak)) operator delete[](
 _namespace_begin(std)
 
 void __throw_bad_alloc() {
-  throw std::bad_alloc();
+  throw _namespace(std)::bad_alloc();
 }
 
 _namespace_end(std)
