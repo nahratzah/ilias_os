@@ -4,14 +4,10 @@
 #include <cstddef_misc/null.h>
 #include <cstddef_misc/size_ptrdiff.h>
 #include <cstdio_misc/eof.h>
-#if __has_include(<clocale>)
+#if _ILIAS_LOCALE
 # include <locale_misc/locale_t.h>
 #endif
 #include <cdecl.h>
-
-#if defined(_TEST) && __has_include_next(<cstring>)
-# include_next <cstring>
-#endif
 
 _namespace_begin(std)
 _cdecl_begin
@@ -91,7 +87,7 @@ _cdecl_begin
 
 #undef __cpp_const
 
-#if __has_include(<clocale>)
+#if _ILIAS_LOCALE
 /* These functions require working locale support. */
 int    strcoll(const char*, const char*) noexcept;
 int    strcoll_l(const char*, const char*, locale_t) noexcept;
@@ -100,7 +96,7 @@ char*  strsignal(int) noexcept;
 size_t strxfrm(char*__restrict, const char*__restrict, size_t) noexcept;
 size_t strxfrm_l(char*__restrict, const char*__restrict, size_t, locale_t)
          noexcept;
-#endif /* __has_include(<clocale>) */
+#endif /* _ILIAS_LOCALE */
 
 _cdecl_end
 _namespace_end(std)
@@ -139,7 +135,7 @@ using std::strtok;
 using std::strtok_r;
 using std::bcopy;
 
-#if __has_include(<clocale>)
+#if _ILIAS_LOCALE
 /* These functions require working locale support. */
 using std::strcoll;
 using std::strcoll_l;
@@ -147,7 +143,7 @@ using std::strerror_l;
 using std::strsignal;
 using std::strxfrm;
 using std::strxfrm_l;
-#endif /* __has_include(<clocale>) */
+#endif /* _ILIAS_LOCALE */
 #endif /* !_TEST && __cplusplus */
 
 #endif /* _CSTRING_ */

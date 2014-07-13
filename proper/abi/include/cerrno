@@ -4,10 +4,6 @@
 #include <abi/abi.h>
 #include <abi/errno.h>
 
-#if defined(_TEST) && __has_include_next(<cerrno>)
-# include <cerrno>
-#endif
-
 _namespace_begin(std)
 using abi::errno;
 _namespace_end(std)
