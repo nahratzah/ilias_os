@@ -1,3 +1,8 @@
+#ifndef _SYSTEM_ERROR_INL_H_
+#define _SYSTEM_ERROR_INL_H_
+
+#include <system_error>
+
 _namespace_begin(std)
 
 
@@ -179,3 +184,5 @@ inline bool operator!=(const error_condition& lhs, const error_condition& rhs)
 
 
 _namespace_end(std)
+
+#endif /* _SYSTEM_ERROR_INL_H_ */

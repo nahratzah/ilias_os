@@ -1,3 +1,8 @@
+#ifndef _FUNCTIONAL_INL_H_
+#define _FUNCTIONAL_INL_H_
+
+#include <functional>
+
 _namespace_begin(std)
 
 
@@ -864,3 +869,5 @@ size_t hash<T*>::operator()(T* p) const {
 
 
 _namespace_end(std)
+
+#endif /* _FUNCTIONAL_INL_H_ */

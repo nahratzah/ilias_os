@@ -1,3 +1,7 @@
+#ifndef _ALGORITHM_INL_H_
+#define _ALGORITHM_INL_H_
+
+#include <algorithm>
 #include <stdimpl/heap_array.h>
 #include <stdimpl/heap_support.h>
 
@@ -2115,3 +2119,5 @@ bool next_permutation(BidirectionalIterator b, BidirectionalIterator e,
 
 
 _namespace_end(std)
+
+#endif /* _ALGORITHM_INL_H_ */

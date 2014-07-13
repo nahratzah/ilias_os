@@ -1,3 +1,8 @@
+#ifndef _STREAMBUF_INL_H_
+#define _STREAMBUF_INL_H_
+
+#include <streambuf>
+
 _namespace_begin(std)
 
 
@@ -322,3 +327,5 @@ streamsize copybuf(basic_streambuf<Char, Traits>& dst,
 
 } /* namespace std::impl */
 _namespace_end(std)
+
+#endif /* _STREAMBUF_INL_H_ */

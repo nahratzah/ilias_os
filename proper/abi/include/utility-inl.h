@@ -1,3 +1,8 @@
+#ifndef _UTILITY_INL_H_
+#define _UTILITY_INL_H_
+
+#include <utility>
+
 _namespace_begin(std)
 namespace rel_ops {
 
@@ -243,3 +248,5 @@ void pair<T1, T2>::swap(pair& o)
 
 
 _namespace_end(std)
+
+#endif /* _UTILITY_INL_H_ */

@@ -1,3 +1,8 @@
+#ifndef _IOS_INL_H_
+#define _IOS_INL_H_
+
+#include <ios>
+
 _namespace_begin(std)
 
 
@@ -493,3 +498,5 @@ inline error_condition make_error_condition(io_errc e) noexcept {
 
 
 _namespace_end(std)
+
+#endif /* _IOS_INL_H_ */

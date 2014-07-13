@@ -1,3 +1,8 @@
+#ifndef _TYPEINFO_INL_H_
+#define _TYPEINFO_INL_H_
+
+#include <typeinfo>
+
 _namespace_begin(std)
 
 
@@ -23,3 +28,5 @@ inline const char* type_info::name() const noexcept {
 
 
 _namespace_end(std)
+
+#endif /* _TYPEINFO_INL_H_ */

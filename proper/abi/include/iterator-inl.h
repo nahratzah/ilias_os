@@ -1,3 +1,8 @@
+#ifndef _ITERATOR_INL_H_
+#define _ITERATOR_INL_H_
+
+#include <iterator>
+
 _namespace_begin(std)
 
 
@@ -805,3 +810,5 @@ template<typename C> auto crend(const C& c) ->
 
 
 _namespace_end(std)
+
+#endif /* _ITERATOR_INL_H_ */

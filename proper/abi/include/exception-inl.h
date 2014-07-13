@@ -1,3 +1,8 @@
+#ifndef _EXCEPTION_INL_H_
+#define _EXCEPTION_INL_H_
+
+#include <exception>
+
 _namespace_begin(std)
 
 
@@ -103,3 +108,5 @@ template<typename E> void rethrow_if_nested(const E& e) {
 
 
 _namespace_end(std)
+
+#endif /* _EXCEPTION_INL_H_ */

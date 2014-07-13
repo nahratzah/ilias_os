@@ -1,3 +1,8 @@
+#ifndef _TYPE_TRAITS_INL_H_
+#define _TYPE_TRAITS_INL_H_
+
+#include <type_traits>
+
 _namespace_begin(std)
 
 
@@ -505,3 +510,5 @@ static_assert(is_void<const volatile void>::value, "std::is_void error");
 
 
 _namespace_end(std)
+
+#endif /* _TYPE_TRAITS_INL_H_ */

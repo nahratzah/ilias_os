@@ -1,3 +1,7 @@
+#ifndef _ARRAY_INL_H_
+#define _ARRAY_INL_H_
+
+#include <array>
 #include <stdexcept>
 
 _namespace_begin(std)
@@ -214,3 +218,5 @@ constexpr auto get(const array<T, N>& a) noexcept -> enable_if_t<(I < N),
 
 
 _namespace_end(std)
+
+#endif /* _ARRAY_INL_H_ */
