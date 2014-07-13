@@ -35,7 +35,7 @@ template<typename Char, typename Traits> class basic_streambuf {
 
   virtual ~basic_streambuf() = default;
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   locale pubimbue(const locale&);
   locale getloc() const;
 #endif
@@ -78,7 +78,7 @@ template<typename Char, typename Traits> class basic_streambuf {
   void pbump(int);
   void setp(char_type*, char_type*);
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   virtual void imbue(const locale&);
 #endif
 
@@ -106,7 +106,7 @@ template<typename Char, typename Traits> class basic_streambuf {
   char_type* pbase_ = nullptr;
   char_type* pptr_ = nullptr;
   char_type* epptr_ = nullptr;
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   locale loc_;
 #endif
 };
