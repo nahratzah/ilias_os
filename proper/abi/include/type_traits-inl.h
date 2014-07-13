@@ -368,7 +368,7 @@ template<typename T> struct _make_unsigned_ll;
 template<typename T> struct _make_unsigned {
   using type =
       conditional_t<is_integral<T>::value,
-          conditional_t<is_signed<T>::value, T,
+          conditional_t<is_unsigned<T>::value, T,
                         typename _make_unsigned_ll<T>::type>,
           conditional_t<sizeof(T) <= sizeof(unsigned char),
               unsigned char,
