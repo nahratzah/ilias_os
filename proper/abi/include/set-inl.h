@@ -19,27 +19,6 @@ set_elem<T, Tag>::set_elem(Args&&... args)
 
 
 template<typename Key, typename Cmp, typename A>
-struct set<Key, Cmp, A>::deleter {
-  using elem = typename set<Key, Cmp, A>::elem;
-  using allocator_type = typename alloc_base::allocator_type;
-  using allocator_traits = _namespace(std)::allocator_traits<allocator_type>;
-
-  set<Key, Cmp, A>* owner = nullptr;
-  bool destroy = false;
-
-  deleter(set<Key, Cmp, A>& owner, bool destroy) noexcept
-  : owner(&owner),
-    destroy(destroy)
-  {}
-
-  void operator()(elem* e) const noexcept {
-    if (destroy) allocator_traits::destroy(owner->get_allocator_(), e);
-    allocator_traits::deallocate(owner->get_allocator_(), e, 1);
-  }
-};
-
-
-template<typename Key, typename Cmp, typename A>
 set<Key, Cmp, A>::set(const Cmp& cmp, const A& a)
 : alloc_base(a),
   data_(cmp)
@@ -217,7 +196,9 @@ auto set<Key, Cmp, A>::max_size() const noexcept -> size_type {
 template<typename Key, typename Cmp, typename A>
 template<typename... Args>
 auto set<Key, Cmp, A>::emplace(Args&&... args) -> pair<iterator, bool> {
-  auto ptr = construct_(forward<Args>(args)...);
+  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
+                                          (empty() ? this : &*root()),
+                                          forward<Args>(args)...);
   auto rv = data_.link(ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -230,7 +211,9 @@ template<typename Key, typename Cmp, typename A>
 template<typename... Args>
 auto set<Key, Cmp, A>::emplace_hint(const_iterator pos, Args&&... args) ->
     iterator {
-  auto ptr = construct_(forward<Args>(args)...);
+  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
+                                          (empty() ? this : &*root()),
+                                          forward<Args>(args)...);
   auto rv = data_.link(pos, ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -241,7 +224,9 @@ auto set<Key, Cmp, A>::emplace_hint(const_iterator pos, Args&&... args) ->
 
 template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::insert(const value_type& v) -> pair<iterator, bool> {
-  auto ptr = construct_(v);
+  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
+                                          (empty() ? this : &*root()),
+                                          v);
   auto rv = data_.link(ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -252,7 +237,9 @@ auto set<Key, Cmp, A>::insert(const value_type& v) -> pair<iterator, bool> {
 
 template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::insert(value_type&& v) -> pair<iterator, bool> {
-  auto ptr = construct_(move(v));
+  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
+                                          (empty() ? this : &*root()),
+                                          move(v));
   auto rv = data_.link(ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -264,7 +251,9 @@ auto set<Key, Cmp, A>::insert(value_type&& v) -> pair<iterator, bool> {
 template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::insert(const_iterator pos, const value_type& v) ->
     iterator {
-  auto ptr = construct_(v);
+  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
+                                          (empty() ? this : &*root()),
+                                          v);
   auto rv = data_.link(pos.impl(), ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -276,7 +265,9 @@ auto set<Key, Cmp, A>::insert(const_iterator pos, const value_type& v) ->
 template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::insert(const_iterator pos, value_type&& v) ->
     iterator {
-  auto ptr = construct_(move(v));
+  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
+                                          (empty() ? this : &*root()),
+                                          move(v));
   auto rv = data_.link(pos.impl(), ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -300,9 +291,8 @@ template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::erase(const_iterator i) noexcept -> iterator {
   assert(i != end());
   iterator rv = data_type::nonconst_iterator(next(i.impl()));
-  auto ptr = unique_ptr<elem, deleter>(
-      data_.unlink(i.impl()),
-      deleter(*this, true));
+  auto ptr = impl::existing_alloc_deleter(this->get_allocator_(),
+                                          data_.unlink(i.impl()));
   if (ptr) --size_;
   return rv;
 }
@@ -331,7 +321,7 @@ auto set<Key, Cmp, A>::swap(set& s) noexcept -> void {
 
 template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::clear() noexcept -> void {
-  data_.unlink_all(deleter(*this, true));
+  data_.unlink_all(impl::alloc_deleter_visitor(this->get_allocator_()));
   size_ = 0;
 }
 
@@ -448,21 +438,6 @@ template<typename K>
 auto set<Key, Cmp, A>::equal_range(const K& k) const ->
     pair<const_iterator, const_iterator> {
   return data_.equal_range(k);
-}
-
-template<typename Key, typename Cmp, typename A>
-template<typename... Args>
-auto set<Key, Cmp, A>::construct_(Args&&... args) ->
-    unique_ptr<elem, deleter> {
-  using alloc_traits = allocator_traits<typename alloc_base::allocator_type>;
-
-  auto ptr = unique_ptr<elem, deleter>(
-      alloc_traits::allocate(this->get_allocator_(), 1, this),
-      deleter(*this, false));
-  alloc_traits::construct(this->get_allocator_(), ptr.get(),
-                          forward<Args>(args)...);
-  ptr.get_deleter().destroy = true;
-  return ptr;
 }
 
 template<typename Key, typename Cmp, typename A>

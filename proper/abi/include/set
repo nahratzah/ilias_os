@@ -134,7 +134,6 @@ class set
 {
  private:
   using elem = impl::set_elem<Key, void>;
-  struct deleter;
   using data_type =
       _namespace(ilias)::linked_set<elem, void,
                                     impl::set_cmp_wrapper<Compare, Key, elem>>;
@@ -248,9 +247,6 @@ class set
   pair<const_iterator, const_iterator> equal_range(const K&) const;
 
  private:
-  template<typename... Args>
-  unique_ptr<elem, deleter> construct_(Args&&... args);
-
   data_type data_;
   size_type size_ = 0;
 };
