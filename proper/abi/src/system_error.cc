@@ -37,7 +37,7 @@ string simple_create_msg(const error_category& ec, int code) {
     if (buflen < 0) {
       switch (abi::errno) {
       case _ABI_ENOMEM:
-        throw std::bad_alloc();
+        throw bad_alloc();
       default:
         assert(false);
         throw runtime_error("simple_create_msg: printf failed");
