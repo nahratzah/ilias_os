@@ -14,15 +14,16 @@ namespace __cxxabiv1 {
 namespace ext {
 
 
-template<typename Char, typename Traits = std::char_traits<Char>>
+template<typename Char, typename Traits = _namespace(std)::char_traits<Char>>
 class printf_renderer {
  public:
-  using string_type = std::basic_string_ref<Char, Traits>;
+  using string_type = _namespace(std)::basic_string_ref<Char, Traits>;
   using size_type = typename string_type::size_type;
 
   virtual ~printf_renderer() noexcept;
   int append(string_type) noexcept;
-  template<typename C, typename T> int append(std::basic_string_ref<C, T>)
+  template<typename C, typename T> int append(
+      _namespace(std)::basic_string_ref<C, T>)
       noexcept;
   size_type length() const noexcept { return len_; }
   size_type size() const noexcept { return len_; }
@@ -36,10 +37,10 @@ class printf_renderer {
   size_type len_ = 0;
 };
 
-template<typename Char, typename Traits = std::char_traits<Char>>
+template<typename Char, typename Traits = _namespace(std)::char_traits<Char>>
 struct vxprintf_locals;
 
-template<typename Char, typename Traits = std::char_traits<Char>>
+template<typename Char, typename Traits = _namespace(std)::char_traits<Char>>
 int vxprintf(printf_renderer<Char, Traits>&,
              typename printf_renderer<Char, Traits>::string_type,
              va_list) noexcept;
