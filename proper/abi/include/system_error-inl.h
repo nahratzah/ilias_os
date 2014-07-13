@@ -81,7 +81,7 @@ inline bool operator<(const error_code& lhs, const error_code& rhs) noexcept {
 #if __has_include(<ostream>)
 template<typename Char, typename Traits>
 basic_ostream<Char, Traits>& operator<<(basic_ostream<Char, Traits>& os,
-                                        const error_code& code) {
+                                        const error_code& ec) {
   return os << ec.category().name() << ':' << ec.value();
 }
 #endif

@@ -15,10 +15,7 @@
 # define _namespace(X)		X
 #endif
 
-#if defined(_TEST)
-# define _cdecl_begin	/* don't pollute link namespace */
-# define _cdecl_end	/* don't pollute link namespace */
-#elif defined(__cplusplus)
+#if defined(__cplusplus)
 # define _cdecl_begin	extern "C" {
 # define _cdecl_end	} /* extern "C" */
 #else

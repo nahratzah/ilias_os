@@ -34,7 +34,7 @@ ios_base::Init::~Init() noexcept {
 }
 
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
 locale ios_base::imbue(const locale& l) {
   auto rv = exchange(loc_, l);
   invoke_event_cb(imbue_event);
@@ -44,14 +44,14 @@ locale ios_base::imbue(const locale& l) {
 locale ios_base::getloc() const {
   return loc_;
 }
-#endif /* __has_include(<locale>) */
+#endif /* _ILIAS_LOCALE */
 
 bool ios_base::sync_with_stdio(bool /*sync*/) {
   return true; // XXX implement
 }
 
 int ios_base::xalloc() {
-  static std::atomic<unsigned int> impl;
+  static atomic<unsigned int> impl;
   const unsigned int rv = impl.fetch_add(1U, memory_order_relaxed);
   if (_predict_false(rv > INT_MAX)) {
     impl.fetch_sub(1, memory_order_relaxed);
@@ -70,7 +70,7 @@ void* pword_fallback;
 long& ios_base::iword(int idx) {
   try {
     if (_predict_false(idx < 0))
-      throw std::invalid_argument("ios_base::iword: idx");
+      throw invalid_argument("ios_base::iword: idx");
     unsigned int sz = idx;
     ++sz;
     if (_predict_false(sz > iarray_.size()))
@@ -88,7 +88,7 @@ long& ios_base::iword(int idx) {
 void*& ios_base::pword(int idx) {
   try {
     if (_predict_false(idx < 0))
-      throw std::invalid_argument("ios_base::pword: idx");
+      throw invalid_argument("ios_base::pword: idx");
     unsigned int sz = idx;
     ++sz;
     if (_predict_false(sz > parray_.size()))
@@ -182,7 +182,7 @@ string iostream_error_category::message(int code) const {
   if (buflen < 0) {
     switch (abi::errno) {
     case _ABI_ENOMEM:
-      throw std::bad_alloc();
+      throw bad_alloc();
     default:
       assert(false);
       throw runtime_error("iostream_error_category::message: printf failed");

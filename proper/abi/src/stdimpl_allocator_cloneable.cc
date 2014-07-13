@@ -1,5 +1,6 @@
 #include <stdimpl/allocator_cloneable.h>
 #include <cdecl.h>
+#include <initializer_list>
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
@@ -32,7 +33,8 @@ size_t allocator_cloneable::alloc_size_(size_t alloc_size, size_t alloc_align)
   static_assert(is_pow2(alignof(alloc_type_)),
                 "Internally used allocation type must be a power-of-2.");
 
-  const size_t align = max({ constraints_.align, alloc_align, size_t(1) });
+  const auto align_list = { constraints_.align, alloc_align, size_t(1) };
+  const size_t align = max(align_list);
   const size_t space = roundup(alloc_size, align) +
                        constraints_.size +
                        align - 1U;

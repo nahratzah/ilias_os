@@ -2,7 +2,7 @@
 #include <cstring>
 #include <abi/ext/reader.h>
 
-namespace std {
+_namespace_begin(std)
 
 
 int wmemcmp(const wchar_t* a, const wchar_t* b, size_t len) noexcept {
@@ -36,4 +36,4 @@ size_t wcslen(const wchar_t* s) noexcept {
 }
 
 
-} /* namespace std */
+_namespace_end(std)

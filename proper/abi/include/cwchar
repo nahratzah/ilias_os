@@ -137,7 +137,7 @@ int wscanf(const wchar_t*__restrict, ...) noexcept;
 _cdecl_end
 _namespace_end(std)
 
-#ifdef __cplusplus
+#if defined(__cplusplus) && !defined(_TEST)
 using _namespace(std)::mbstate_t;
 using _namespace(std)::wint_t;
 using _namespace(std)::wmemcmp;

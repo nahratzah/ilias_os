@@ -4,7 +4,7 @@ namespace __cxxabiv1 {
 inline ref_cstr::ref_cstr(const ref_cstr& o) noexcept
 : head_(o.head_)
 {
-  if (head_) head_->fetch_add(1U, std::memory_order_acquire);
+  if (head_) head_->fetch_add(1U, _namespace(std)::memory_order_acquire);
 }
 
 inline ref_cstr::ref_cstr(ref_cstr&& o) noexcept
@@ -27,7 +27,7 @@ inline ref_cstr::operator const char*() const noexcept {
 }
 
 inline void ref_cstr::swap(ref_cstr& o) noexcept {
-  using std::swap;
+  using _namespace(std)::swap;
 
   swap(head_, o.head_);
 }

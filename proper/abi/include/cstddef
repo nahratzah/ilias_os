@@ -2,11 +2,6 @@
 #define CSTDDEF
 
 #include <cdecl.h>
-
-#if defined(_TEST) && __has_include_next(<cstddef>)
-# include_next <cstddef>
-#endif
-
 #include <cstddef_misc/null.h>
 #include <cstddef_misc/size_ptrdiff.h>
 #include <cstddef_misc/valist.h>

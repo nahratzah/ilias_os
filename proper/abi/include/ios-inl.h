@@ -258,7 +258,7 @@ auto basic_ios<Char, Traits>::rdbuf(
   return exchange(rdbuf_, sb);
 }
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
 template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::imbue(const locale& loc) -> locale {
   auto rv = ios_base::imbue(loc);
@@ -275,7 +275,7 @@ template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::widen(char c) const -> char_type {
   return use_facet<ctype<char_type>>(getloc()).widen(c);
 }
-#else /* __has_include(<locale>) */
+#else /* _ILIAS_LOCALE */
 template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::narrow(char_type c, char dfault) const -> char {
   return ((c & 0x7f) == c ? c : dfault);
@@ -285,7 +285,7 @@ template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::widen(char c) const -> char_type {
   return c;
 }
-#endif /* __has_include(<locale>) ... else */
+#endif /* _ILIAS_LOCALE ... else */
 
 template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::fill() const noexcept -> char_type {
@@ -318,7 +318,7 @@ auto basic_ios<Char, Traits>::copyfmt(const basic_ios& rhs) -> basic_ios& {
   fill(rhs.fill());
   this->parray_ = move(parray);
   this->iarray_ = move(iarray);
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   this->loc_ = move(rhs.loc_);
 #endif
 
@@ -335,7 +335,7 @@ template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::move(basic_ios& rhs) -> void {
   using _namespace(std)::move;
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   loc_ = move(rhs.loc_);
 #endif
   precision_ = move(rhs.precision_);
@@ -363,7 +363,7 @@ template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::swap(basic_ios& rhs) noexcept -> void {
   using _namespace(std)::swap;
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   swap(loc_, rhs.loc_);
 #endif
   swap(precision_, rhs.precision_);

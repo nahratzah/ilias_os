@@ -1,6 +1,7 @@
 #ifndef _ABI_EXT_UNICODE_H_
 #define _ABI_EXT_UNICODE_H_
 
+#include <cdecl.h>
 #include <utility>
 #include <abi/errno.h>
 #include <abi/misc_int.h>
@@ -62,7 +63,8 @@ template<typename Char> class unicode_conv_out;
 template<> class unicode_conv_in<char> {
  public:
   template<typename CB> int operator()(char, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const wchar_t>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 
@@ -75,7 +77,8 @@ template<> class unicode_conv_in<char> {
 template<> class unicode_conv_in<char16_t> {
  public:
   template<typename CB> int operator()(char16_t, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const wchar_t>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 
@@ -87,7 +90,8 @@ template<> class unicode_conv_in<char16_t> {
 template<> class unicode_conv_in<char32_t> {
  public:
   template<typename CB> int operator()(char32_t, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const wchar_t>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 };
@@ -95,7 +99,8 @@ template<> class unicode_conv_in<char32_t> {
 template<> class unicode_conv_in<wchar_t> {
  public:
   template<typename CB> int operator()(wchar_t, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const wchar_t>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 };
@@ -104,7 +109,8 @@ template<> class unicode_conv_in<wchar_t> {
 template<> class unicode_conv_out<char> {
  public:
   template<typename CB> int operator()(wchar_t, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const char>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const char>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 };
@@ -112,7 +118,8 @@ template<> class unicode_conv_out<char> {
 template<> class unicode_conv_out<char16_t> {
  public:
   template<typename CB> int operator()(wchar_t, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const char32_t>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const char32_t>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 };
@@ -120,7 +127,8 @@ template<> class unicode_conv_out<char16_t> {
 template<> class unicode_conv_out<char32_t> {
  public:
   template<typename CB> int operator()(wchar_t, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const char32_t>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const char32_t>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 };
@@ -128,7 +136,8 @@ template<> class unicode_conv_out<char32_t> {
 template<> class unicode_conv_out<wchar_t> {
  public:
   template<typename CB> int operator()(wchar_t, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const wchar_t>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 };
@@ -137,7 +146,8 @@ template<> class unicode_conv_out<wchar_t> {
 template<typename COut, typename CIn> class unicode_conv {
  public:
   template<typename CB> int operator()(CIn, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const COut>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const COut>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 
@@ -149,7 +159,8 @@ template<typename COut, typename CIn> class unicode_conv {
 template<typename C> class unicode_conv<C, C> {
  public:
   template<typename CB> int operator()(C, CB&)
-      noexcept(noexcept(std::declval<CB>()(std::declval<const C>())));
+      noexcept(noexcept(_namespace(std)::declval<CB>()(
+                            _namespace(std)::declval<const C>())));
   bool is_clear() const noexcept;
   void reset() noexcept;
 

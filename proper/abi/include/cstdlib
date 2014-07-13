@@ -4,10 +4,6 @@
 #include <cdecl.h>
 #include <cstddef>
 
-#if defined(_TEST) && __has_include_next(<cstdlib>)
-# include <cstdlib>
-#endif
-
 _namespace_begin(std)
 _cdecl_begin
 

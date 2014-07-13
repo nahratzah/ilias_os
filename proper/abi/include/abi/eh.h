@@ -159,16 +159,20 @@ _Unwind_Reason_Code __gxx_personality_v0(int, _Unwind_Action, uint64_t,
  */
 struct __cxa_exception {
 #ifdef __cplusplus
-  std::atomic<uintptr_t>	refcount;  // # references to this exception.
+  _namespace(std)::atomic<uintptr_t>
+				refcount;  // # references to this exception.
 #else
   _Atomic(uintptr_t)		refcount; // # references to this exception.
 #endif
 
   /* ABI starts here.  Extensions go before. */
-  const std::type_info*		exceptionType;
+  const _namespace(std)::type_info*
+				exceptionType;
   void (*exceptionDestructor)(void *);
-  std::unexpected_handler	unexpectedHandler;
-  std::terminate_handler	terminateHandler;
+  _namespace(std)::unexpected_handler
+				unexpectedHandler;
+  _namespace(std)::terminate_handler
+				terminateHandler;
   __cxa_exception*		nextException;
 
   int				handlerCount;
@@ -183,10 +187,12 @@ struct __cxa_exception {
 
 #ifdef __cplusplus
   static inline void acquire(__cxa_exception& ex) noexcept {
-    ex.refcount.fetch_add(1U, std::memory_order_acquire);
+    using _namespace(std)::memory_order_acquire;
+    ex.refcount.fetch_add(1U, memory_order_acquire);
   }
   static inline bool release(__cxa_exception& ex) noexcept {
-    return (ex.refcount.fetch_sub(1U, std::memory_order_release) == 1U);
+    using _namespace(std)::memory_order_release;
+    return (ex.refcount.fetch_sub(1U, memory_order_release) == 1U);
   }
 #endif /* __cplusplus */
 };
@@ -206,7 +212,7 @@ __cxa_eh_globals* __cxa_get_globals_fast() noexcept;
 
 void* __cxa_allocate_exception(size_t) noexcept;
 void __cxa_free_exception(void*) noexcept;
-void __cxa_throw(void*, const std::type_info*, void (*)(void*)) noexcept
+void __cxa_throw(void*, const _namespace(std)::type_info*, void (*)(void*)) noexcept
                 __attribute__((__noreturn__));
 bool __cxa_uncaught_exception() noexcept;
 void __cxa_rethrow_primary_exception(void*)

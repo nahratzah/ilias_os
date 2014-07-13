@@ -12,7 +12,8 @@
 #include <mutex>
 #include <new>
 
-namespace std {
+_namespace_begin(std)
+
 
 using abi::semlock;
 
@@ -474,4 +475,4 @@ void* bsearch(const void* key, const void* base, size_t n, size_t stride,
 }
 
 
-} /* namespace std */
+_namespace_end(std)

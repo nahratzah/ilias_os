@@ -10,7 +10,13 @@ TEST += abi/test/cstring/memccpy.cc
 TEST += abi/test/cstring/memmove.cc
 TEST += abi/test/cstring/stpcpy.cc
 
-abi/test/dynamic_cast.test: abi/src/abi_dynamic_cast.o_test abi/src/typeinfo.o_test abi/src/abi_typeinfo.o_test abi/test/dynamic_cast.o_test
+ABI_TEST_OBJS = $(addsuffix .o_test, $(basename ${ABI_TEST_SRCS}))
+
+# Disable locale support.
+TEST_CFLAGS += -D_ILIAS_LOCALE=0
+TEST_CXXFLAGS += -D_ILIAS_LOCALE=0
+
+abi/test/dynamic_cast.test: abi/test/dynamic_cast.o_test ${ABI_TEST_OBJS}
 abi/test/abi_ext/reader.test: abi/test/abi_ext/reader.o_test
 abi/test/cstring/memcmp.test: abi/src/cstring.o_test abi/src/abi_errno.cc abi/test/cstring/memcmp.o_test
 abi/test/cstring/memset.test: abi/src/cstring.o_test abi/src/abi_errno.cc abi/test/cstring/memset.o_test

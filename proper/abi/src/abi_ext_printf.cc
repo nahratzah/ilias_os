@@ -34,56 +34,56 @@ template int vxprintf(printf_renderer<char32_t>&,
                       typename printf_renderer<char32_t>::string_type,
                       va_list) noexcept;
 
-template int deduce_printf_spec(std::basic_string_ref<char>&,
+template int deduce_printf_spec(_namespace(std)::basic_string_ref<char>&,
                                 printf_spec*, printf_type*) noexcept;
-template int deduce_printf_spec(std::basic_string_ref<wchar_t>&,
+template int deduce_printf_spec(_namespace(std)::basic_string_ref<wchar_t>&,
                                 printf_spec*, printf_type*) noexcept;
-template int deduce_printf_spec(std::basic_string_ref<char16_t>&,
+template int deduce_printf_spec(_namespace(std)::basic_string_ref<char16_t>&,
                                 printf_spec*, printf_type*) noexcept;
-template int deduce_printf_spec(std::basic_string_ref<char32_t>&,
+template int deduce_printf_spec(_namespace(std)::basic_string_ref<char32_t>&,
                                 printf_spec*, printf_type*) noexcept;
 
-template int parse_num(std::basic_string_ref<char>&) noexcept;
-template int parse_num(std::basic_string_ref<wchar_t>&) noexcept;
-template int parse_num(std::basic_string_ref<char16_t>&) noexcept;
-template int parse_num(std::basic_string_ref<char32_t>&) noexcept;
+template int parse_num(_namespace(std)::basic_string_ref<char>&) noexcept;
+template int parse_num(_namespace(std)::basic_string_ref<wchar_t>&) noexcept;
+template int parse_num(_namespace(std)::basic_string_ref<char16_t>&) noexcept;
+template int parse_num(_namespace(std)::basic_string_ref<char32_t>&) noexcept;
 
-template int parse_num_spec(std::basic_string_ref<char>&,
+template int parse_num_spec(_namespace(std)::basic_string_ref<char>&,
                             int*, bool*, bool*) noexcept;
-template int parse_num_spec(std::basic_string_ref<wchar_t>&,
+template int parse_num_spec(_namespace(std)::basic_string_ref<wchar_t>&,
                             int*, bool*, bool*) noexcept;
-template int parse_num_spec(std::basic_string_ref<char16_t>&,
+template int parse_num_spec(_namespace(std)::basic_string_ref<char16_t>&,
                             int*, bool*, bool*) noexcept;
-template int parse_num_spec(std::basic_string_ref<char32_t>&,
+template int parse_num_spec(_namespace(std)::basic_string_ref<char32_t>&,
                             int*, bool*, bool*) noexcept;
 
 template int printf_renderer<char>::append(
-    std::basic_string_ref<wchar_t>) noexcept;
+    _namespace(std)::basic_string_ref<wchar_t>) noexcept;
 template int printf_renderer<char>::append(
-    std::basic_string_ref<char16_t>) noexcept;
+    _namespace(std)::basic_string_ref<char16_t>) noexcept;
 template int printf_renderer<char>::append(
-    std::basic_string_ref<char32_t>) noexcept;
+    _namespace(std)::basic_string_ref<char32_t>) noexcept;
 
 template int printf_renderer<wchar_t>::append(
-    std::basic_string_ref<char>) noexcept;
+    _namespace(std)::basic_string_ref<char>) noexcept;
 template int printf_renderer<wchar_t>::append(
-    std::basic_string_ref<char16_t>) noexcept;
+    _namespace(std)::basic_string_ref<char16_t>) noexcept;
 template int printf_renderer<wchar_t>::append(
-    std::basic_string_ref<char32_t>) noexcept;
+    _namespace(std)::basic_string_ref<char32_t>) noexcept;
 
 template int printf_renderer<char16_t>::append(
-    std::basic_string_ref<char>) noexcept;
+    _namespace(std)::basic_string_ref<char>) noexcept;
 template int printf_renderer<char16_t>::append(
-    std::basic_string_ref<wchar_t>) noexcept;
+    _namespace(std)::basic_string_ref<wchar_t>) noexcept;
 template int printf_renderer<char16_t>::append(
-    std::basic_string_ref<char32_t>) noexcept;
+    _namespace(std)::basic_string_ref<char32_t>) noexcept;
 
 template int printf_renderer<char32_t>::append(
-    std::basic_string_ref<char>) noexcept;
+    _namespace(std)::basic_string_ref<char>) noexcept;
 template int printf_renderer<char32_t>::append(
-    std::basic_string_ref<wchar_t>) noexcept;
+    _namespace(std)::basic_string_ref<wchar_t>) noexcept;
 template int printf_renderer<char32_t>::append(
-    std::basic_string_ref<char16_t>) noexcept;
+    _namespace(std)::basic_string_ref<char16_t>) noexcept;
 
 template int printf_arg::apply(printf_renderer<char>&,
                                printf_spec) const noexcept;

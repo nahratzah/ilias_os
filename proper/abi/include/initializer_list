@@ -47,6 +47,13 @@ inline typename initializer_list<E>::const_iterator end(
 
 _namespace_end(std)
 
+#ifdef _TEST
+/* Prevent breaking initializer list. */
+namespace std {
+using _namespace(std)::initializer_list;
+}
+#endif
+
 #include <initializer_list-inl.h>
 
 #endif /* _INITIALIZER_LIST_ */

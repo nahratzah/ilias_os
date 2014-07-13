@@ -1,6 +1,7 @@
 #ifndef _ABI_SEMAPHORE_H_
 #define _ABI_SEMAPHORE_H_
 
+#include <cdecl.h>
 #include <abi/abi.h>
 #include <abi/ext/atomic.h>
 #include <atomic>
@@ -23,11 +24,12 @@ class semaphore {
   bool try_decrement() noexcept;
 
   template<typename FN, typename... Args> auto execute(FN&& fn, Args&&... args)
-      noexcept(noexcept(fn(std::forward<Args>(args)...))) ->
-      decltype(fn(std::forward<Args>(args)...));
+      noexcept(noexcept(fn(_namespace(std)::forward<Args>(args)...))) ->
+      decltype(fn(_namespace(std)::forward<Args>(args)...));
 
  private:
-  static constexpr uint32_t wnd = std::numeric_limits<uint32_t>::max() / 2U;
+  static constexpr uint32_t wnd =
+      _namespace(std)::numeric_limits<uint32_t>::max() / 2U;
   value_type t_ = 0;
   value_type a_ = 0;
 };
@@ -48,12 +50,12 @@ class semlock {
   explicit inline operator bool() const noexcept;
   template<typename FN, typename... Args> auto do_locked(FN&& fn,
                                                          Args&&... args)
-      noexcept(noexcept(fn(std::forward<Args>(args)...))) ->
-      decltype(fn(std::forward<Args>(args)...));
+      noexcept(noexcept(fn(_namespace(std)::forward<Args>(args)...))) ->
+      decltype(fn(_namespace(std)::forward<Args>(args)...));
   template<typename FN, typename... Args> auto do_unlocked(FN&& fn,
                                                            Args&&... args)
-      noexcept(noexcept(fn(std::forward<Args>(args)...))) ->
-      decltype(fn(std::forward<Args>(args)...));
+      noexcept(noexcept(fn(_namespace(std)::forward<Args>(args)...))) ->
+      decltype(fn(_namespace(std)::forward<Args>(args)...));
 
  private:
   class scope_;

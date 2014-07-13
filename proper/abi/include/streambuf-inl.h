@@ -6,7 +6,7 @@
 _namespace_begin(std)
 
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
 template<typename Char, typename Traits>
 auto basic_streambuf<Char, Traits>::pubimbue(const locale& loc) -> locale {
   imbue(loc);
@@ -117,7 +117,7 @@ auto basic_streambuf<Char, Traits>::swap(basic_streambuf& rhs) noexcept ->
   swap(pbase_, rhs.pbase_);
   swap(pptr_, rhs.pptr_);
   swap(epptr_, rhs.epptr_);
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   loc_.swap(rhs.loc_);
 #endif
 }
@@ -178,7 +178,7 @@ auto basic_streambuf<Char, Traits>::setp(char_type* pbeg, char_type* pend) ->
   epptr_ = pend;
 }
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
 template<typename Char, typename Traits>
 auto basic_streambuf<Char, Traits>::imbue(const locale&) -> void {}
 #endif
