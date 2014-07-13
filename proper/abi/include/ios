@@ -9,7 +9,12 @@
 #include <utility>
 #include <string>
 #include <vector>
-#if __has_include(<locale>)
+
+#ifndef _ILIAS_LOCALE
+# define _ILIAS_LOCALE	__has_include(<locale>)
+#endif
+
+#if _ILIAS_LOCALE
 # include <locale>
 #endif
 
@@ -167,7 +172,7 @@ class ios_base {
   streamsize width() const noexcept;
   streamsize width(streamsize) noexcept;
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   locale imbue(const locale&);
   locale getloc() const;
 #endif
@@ -211,16 +216,16 @@ class ios_base {
     void invoke(event ev, ios_base& self) noexcept { cb(ev, self, index); }
   };
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   locale loc_;
 #endif
   streamsize precision_;
   streamsize width_;
   fmtflags fmtflags_;
 
-  std::vector<event_cb> events_;
-  std::vector<long> iarray_;
-  std::vector<void*> parray_;
+  vector<event_cb> events_;
+  vector<long> iarray_;
+  vector<void*> parray_;
 };
 
 class ios_base::failure : public system_error {
@@ -335,7 +340,7 @@ template<typename Char, typename Traits> class basic_ios
   char_type fill() const noexcept;
   char_type fill(char_type) noexcept;
 
-#if __has_include(<locale>)
+#if _ILIAS_LOCALE
   locale imbue(const locale&);
 #endif
 

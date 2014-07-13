@@ -12,6 +12,10 @@ TEST += abi/test/cstring/stpcpy.cc
 
 ABI_TEST_OBJS = $(addsuffix .o_test, $(basename ${ABI_TEST_SRCS}))
 
+# Disable locale support.
+TEST_CFLAGS += -D_ILIAS_LOCALE=0
+TEST_CXXFLAGS += -D_ILIAS_LOCALE=0
+
 abi/test/dynamic_cast.test: abi/test/dynamic_cast.o_test ${ABI_TEST_OBJS}
 abi/test/abi_ext/reader.test: abi/test/abi_ext/reader.o_test
 abi/test/cstring/memcmp.test: abi/src/cstring.o_test abi/src/abi_errno.cc abi/test/cstring/memcmp.o_test
