@@ -129,12 +129,13 @@ namespace impl {
 
 basic_ios_derived::~basic_ios_derived() noexcept {}
 
-auto basic_ios_derived::clear_(ios_base::iostate state) ->
+auto basic_ios_derived::clear_(ios_base::iostate state, bool throw_allowed) ->
     ios_base::iostate {
   const auto rv = exchange(iostate_, state);
 
   ios_base::iostate masked = rdstate() & exceptions();
-  if (_predict_false(masked != static_cast<ios_base::iostate>(0))) {
+  if (_predict_false(masked != static_cast<ios_base::iostate>(0)) &&
+      throw_allowed) {
     string msg;
     if ((masked & ios_base::eofbit) != static_cast<ios_base::iostate>(0)) {
       if (!msg.empty()) msg += ", ";

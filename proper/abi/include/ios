@@ -301,7 +301,8 @@ class basic_ios_derived {
   void exceptions(ios_base::iostate);
 
  protected:
-  ios_base::iostate clear_(ios_base::iostate);
+  ios_base::iostate clear_(ios_base::iostate, bool = true);
+  void setstate_nothrow_(ios_base::iostate) noexcept;
   void move(basic_ios_derived&&) noexcept;
   void swap(basic_ios_derived&) noexcept;
 
@@ -314,7 +315,9 @@ class basic_ios_derived {
 
 
 template<typename Char, typename Traits> class basic_ios
-: public ios_base, public impl::basic_ios_derived {
+: public ios_base,
+  public impl::basic_ios_derived
+{
  public:
   using char_type = Char;
   using traits_type = Traits;

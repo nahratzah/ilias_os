@@ -146,6 +146,11 @@ bool operator!=(const fpos<State>& a, const fpos<State>& b)
 
 namespace impl {
 
+inline void basic_ios_derived::setstate_nothrow_(ios_base::iostate s)
+    noexcept {
+  clear_(s, false);
+}
+
 inline void basic_ios_derived::move(basic_ios_derived&& rhs) noexcept {
   using _namespace(std)::move;
 
