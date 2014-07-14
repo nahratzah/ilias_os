@@ -33,6 +33,7 @@ ABI_SRCS += abi/src/stdexcept.cc
 ABI_SRCS += abi/src/streambuf.cc
 ABI_SRCS += abi/src/string.cc
 ABI_SRCS += abi/src/sstream.cc
+ABI_SRCS += abi/src/ostream.cc
 ABI_SRCS += abi/src/system_error.cc
 ABI_SRCS += abi/src/typeinfo.cc
 ABI_SRCS += abi/src/stdimpl_allocator_cloneable.cc
