@@ -6,6 +6,7 @@
 #include <exception>
 #include <iterator>
 #include <algorithm>
+#include <locale>
 #include <string>
 #include <streambuf>
 #include <stdimpl/invoke.h>
@@ -352,7 +353,6 @@ auto basic_ostream<Char, Traits>::op_lshift_(Fn fn, Args&&... args) ->
   } catch (...) {
     this->setstate_nothrow_(ios_base::badbit);
     if (this->exceptions() & ios_base::badbit) throw;
-    failed = false;  // Prevent failbit to be set.
   }
   return *this;
 }
@@ -369,7 +369,6 @@ auto basic_ostream<Char, Traits>::unformatted_(Fn fn, Args&&... args) ->
   } catch (...) {
     this->setstate_nothrow_(ios_base::badbit);
     if (this->exceptions() & ios_base::badbit) throw;
-    failed = false;  // Prevent failbit to be set.
   }
   return *this;
 }
@@ -449,19 +448,19 @@ auto operator<< (basic_ostream<Char, Traits>& os, char ch) ->
 
 template<typename Traits>
 auto operator<< (basic_ostream<char, Traits>& os, char ch) ->
-    basic_ostream<Char, Traits>& {
+    basic_ostream<char, Traits>& {
   return impl::op_lshift_stream(os, basic_string_ref<char, Traits>(&ch, 1));
 }
 
 template<typename Traits>
 auto operator<< (basic_ostream<char, Traits>& os, signed char ch) ->
-    basic_ostream<Char, Traits>& {
+    basic_ostream<char, Traits>& {
   return os << static_cast<char>(ch);
 }
 
 template<typename Traits>
 auto operator<< (basic_ostream<char, Traits>& os, unsigned char ch) ->
-    basic_ostream<Char, Traits>& {
+    basic_ostream<char, Traits>& {
   return os << static_cast<char>(ch);
 }
 
@@ -482,20 +481,20 @@ auto operator<< (basic_ostream<Char, Traits>& os, const char* s) ->
 
 template<typename Traits>
 auto operator<< (basic_ostream<char, Traits>& os, const char* s) ->
-    basic_ostream<Char, Traits>& {
+    basic_ostream<char, Traits>& {
   return impl::op_lshift_stream(os, basic_string_ref<char, Traits>(s));
 }
 
 template<typename Traits>
-auto operator<< (basic_ostream<char, Traits>& os, const signed char ch) ->
-    basic_ostream<Char, Traits>& {
-  return os << reinterpret_cast<const char*>(ch);
+auto operator<< (basic_ostream<char, Traits>& os, const signed char* s) ->
+    basic_ostream<char, Traits>& {
+  return os << reinterpret_cast<const char*>(s);
 }
 
 template<typename Traits>
-auto operator<< (basic_ostream<char, Traits>& os, const unsigned char ch) ->
-    basic_ostream<Char, Traits>& {
-  return os << reinterpret_cast<const char*>(ch);
+auto operator<< (basic_ostream<char, Traits>& os, const unsigned char* s) ->
+    basic_ostream<char, Traits>& {
+  return os << reinterpret_cast<const char*>(s);
 }
 
 
