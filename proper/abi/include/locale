@@ -178,7 +178,7 @@ template<> class ctype<char>
  public:
   using char_type = char;
 
-  explicit ctype(size_t = 0);
+  explicit ctype(const mask* = nullptr, bool = false, size_t = 0);
 
   bool is(mask, char_type) const;
   const char_type* is(const char_type*, const char_type*, mask*) const;
@@ -203,14 +203,6 @@ template<> class ctype<char>
  protected:
   ~ctype() noexcept override;
 
-  virtual bool do_is(mask, char_type) const;
-  virtual const char_type* do_is(const char_type*, const char_type*, mask*)
-      const;
-  virtual const char_type* do_scan_is(mask, const char_type*, const char_type*)
-      const;
-  virtual const char_type* do_scan_not(mask,
-                                       const char_type*, const char_type*)
-      const;
   virtual char_type do_toupper(char_type) const;
   virtual const char_type* do_toupper(char_type*, const char_type*) const;
   virtual char_type do_tolower(char_type) const;
@@ -223,6 +215,7 @@ template<> class ctype<char>
 
  private:
   const mask* tbl_;
+  bool del_;
 };
 
 template<typename Char> class ctype_byname;

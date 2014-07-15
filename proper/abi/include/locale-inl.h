@@ -12,26 +12,49 @@ _namespace_begin(std)
 
 
 _LOCALE_INLINE
+ctype<char>::ctype(const mask* tab, bool del, size_t refs)
+: locale::facet(refs),
+  tbl_(tab),
+  del_(del)
+{}
+
+_LOCALE_INLINE
 auto ctype<char>::is(mask m, char_type c) const -> bool {
-  return do_is(m, c);
+  const size_t idx = static_cast<unsigned char>(c);
+  return (idx < table_size && table() != nullptr ?
+          bool(table()[idx] & m) :
+          false);
 }
 
 _LOCALE_INLINE
 auto ctype<char>::is(const char_type* b, const char_type* e, mask* vec)
     const -> const char_type* {
-  return do_is(b, e, vec);
+  std::transform(b, e, vec,
+                 [this](char_type c) -> mask {
+                   const size_t idx = static_cast<unsigned char>(c);
+                   return (idx < table_size && table() != nullptr ?
+                           table()[idx] :
+                           0);
+                 });
+  return e;
 }
 
 _LOCALE_INLINE
 auto ctype<char>::scan_is(mask m, const char_type* b, const char_type* e)
     const -> const char_type* {
-  return do_scan_is(m, b, e);
+  return std::find_if(b, e,
+                      [m, this](char_type c) -> bool {
+                        return this->is(m, c);
+                      });
 }
 
 _LOCALE_INLINE
 auto ctype<char>::scan_not(mask m, const char_type* b, const char_type* e)
     const -> const char_type* {
-  return do_scan_not(m, b, e);
+  return std::find_if_not(b, e,
+                          [m, this](char_type c) -> bool {
+                            return this->is(m, c);
+                          });
 }
 
 _LOCALE_INLINE
@@ -79,45 +102,13 @@ auto ctype<char>::narrow(const char_type* b, const char_type* e, char dfl,
 }
 
 _LOCALE_INLINE
-ctype<char>::~ctype() noexcept {}
-
-_LOCALE_INLINE
-auto ctype<char>::do_is(mask m, char_type c) const -> bool {
-  const size_t idx = static_cast<unsigned char>(c);
-  return (idx < table_size && table() != nullptr ?
-          bool(table()[idx] & m) :
-          false);
+auto ctype<char>::table() const noexcept -> const mask* {
+  return tbl_;
 }
 
 _LOCALE_INLINE
-auto ctype<char>::do_is(const char_type* b, const char_type* e, mask* vec)
-    const -> const char_type* {
-  std::transform(b, e, vec,
-                 [this](char_type c) -> mask {
-                   const size_t idx = static_cast<unsigned char>(c);
-                   return (idx < table_size && table() != nullptr ?
-                           table()[idx] :
-                           0);
-                 });
-  return e;
-}
-
-_LOCALE_INLINE
-auto ctype<char>::do_scan_is(mask m, const char_type* b, const char_type* e)
-    const -> const char_type* {
-  return std::find_if(b, e,
-                      [m, this](char_type c) -> bool {
-                        return this->is(m, c);
-                      });
-}
-
-_LOCALE_INLINE
-auto ctype<char>::do_scan_not(mask m, const char_type* b, const char_type* e)
-    const -> const char_type* {
-  return std::find_if_not(b, e,
-                          [m, this](char_type c) -> bool {
-                            return this->is(m, c);
-                          });
+ctype<char>::~ctype() noexcept {
+  if (del_ && tbl_) delete[] tbl_;
 }
 
 _LOCALE_INLINE
