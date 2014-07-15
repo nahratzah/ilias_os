@@ -32,6 +32,7 @@ ABI_SRCS += abi/src/new.cc
 ABI_SRCS += abi/src/stdexcept.cc
 ABI_SRCS += abi/src/streambuf.cc
 ABI_SRCS += abi/src/string.cc
+ABI_SRCS += abi/src/locale.cc
 ABI_SRCS += abi/src/sstream.cc
 ABI_SRCS += abi/src/ostream.cc
 ABI_SRCS += abi/src/system_error.cc

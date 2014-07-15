@@ -1,0 +1,265 @@
+#ifndef _LOCALE_
+#define _LOCALE_
+
+#include <cdecl.h>
+#include <iosfwd>
+#include <type_traits>
+
+_namespace_begin(std)
+
+
+class locale {
+ public:
+  class facet;
+  class id;
+  using category = int;
+  static constexpr category none     = 0x00,
+                            collate  = 0x01,
+                            ctype    = 0x02,
+                            monetary = 0x04,
+                            numeric  = 0x08,
+                            time     = 0x10,
+                            messages = 0x20,
+                            all      = collate | ctype | monetary | numeric |
+                                       time | messages;
+
+  locale() noexcept;
+  locale(const locale&) noexcept;
+  explicit locale(const char*);
+  explicit locale(const string&);
+  explicit locale(string_ref);
+  locale(const locale&, const char*, category);
+  locale(const locale&, const string&, category);
+  locale(const locale&, string_ref, category);
+  template<typename Facet> locale(const locale&, Facet*);
+  locale(const locale&, const locale&, category);
+  ~locale() noexcept;
+
+  const locale& operator=(const locale&) noexcept;
+  template<typename Facet> locale combine(const locale&) const;
+
+  string name() const;
+
+  bool operator==(const locale&) const;
+  bool operator!=(const locale&) const;
+
+  template<typename Char, typename Traits, typename Allocator>
+  bool operator()(const basic_string<Char, Traits, Allocator>&,
+                  const basic_string<Char, Traits, Allocator>&) const;
+  template<typename Char, typename Traits>
+  bool operator()(basic_string_ref<Char, Traits>,
+                  basic_string_ref<Char, Traits>) const;
+
+  static locale global(const locale&);
+  static const locale& classic();
+};
+
+#if 0 // XXX fix type_traits
+static_assert(!has_virtual_destructor<locale>::value,
+              "Standard explicitly mandates locale has a non-virtual "
+              "destructor.");
+#endif
+
+
+class locale::facet {
+ protected:
+  explicit facet(size_t = 0);
+  virtual ~facet();
+  facet(const facet&) = delete;
+  facet& operator=(const facet&) = delete;
+};
+
+class locale::id {
+ public:
+  id();
+  id(const id&) = delete;
+  void operator=(const id&) = delete;
+};
+
+
+template<typename Facet> const Facet& use_facet(const locale&);
+template<typename Facet> bool has_facet(const locale&) noexcept;
+
+template<typename Char> bool isspace(Char, const locale&);
+template<typename Char> bool isprint(Char, const locale&);
+template<typename Char> bool iscntrl(Char, const locale&);
+template<typename Char> bool isupper(Char, const locale&);
+template<typename Char> bool islower(Char, const locale&);
+template<typename Char> bool isalpha(Char, const locale&);
+template<typename Char> bool isdigit(Char, const locale&);
+template<typename Char> bool ispunct(Char, const locale&);
+template<typename Char> bool isxdigit(Char, const locale&);
+template<typename Char> bool isalnum(Char, const locale&);
+template<typename Char> bool isgraph(Char, const locale&);
+template<typename Char> Char toupper(Char, const locale&);
+template<typename Char> Char tolower(Char, const locale&);
+
+template<typename Codecvt, typename Elem = wchar_t,
+         typename WideAlloc = allocator<Elem>,
+         typename ByteAlloc = allocator<char>>
+class wstring_convert;
+
+template<typename Codecvt, typename Elem = wchar_t,
+         typename Tr = char_traits<Elem>>
+class wbuffer_convert;
+
+
+class ctype_base {
+ public:
+  using mask = unsigned short;
+
+  static constexpr mask space  = 0x001,
+                        print  = 0x002,
+                        cntrl  = 0x004,
+                        upper  = 0x008,
+                        lower  = 0x010,
+                        alpha  = 0x020,
+                        digit  = 0x040,
+                        punct  = 0x080,
+                        xdigit = 0x100,
+                        blank  = 0x200,
+                        graph  = 0x400,
+                        alnum  = alpha | digit;
+};
+
+template<typename Char>
+class ctype
+: public locale::facet,
+  public ctype_base
+{
+ public:
+  using char_type = Char;
+
+  explicit ctype(size_t = 0);
+
+  bool is(mask, char_type) const;
+  const char_type* is(const char_type*, const char_type*, mask*) const;
+  const char_type* scan_is(mask, const char_type*, const char_type*) const;
+  const char_type* scan_not(mask, const char_type*, const char_type*) const;
+  char_type toupper(char_type) const;
+  const char_type* toupper(char_type*, const char_type*) const;
+  char_type tolower(char_type) const;
+  const char_type* tolower(char_type*, const char_type*) const;
+
+  char_type widen(char) const;
+  const char* widen(const char*, const char*, char_type*) const;
+  char narrow(char_type, char) const;
+  const char_type* narrow(const char_type*, const char_type*, char, char*)
+      const;
+
+  static locale::id id;
+
+ protected:
+  ~ctype() noexcept override;
+
+  virtual bool do_is(mask, char_type) const;
+  virtual const char_type* do_is(const char_type*, const char_type*, mask*)
+      const;
+  virtual const char_type* do_scan_is(mask, const char_type*, const char_type*)
+      const;
+  virtual const char_type* do_scan_not(mask,
+                                       const char_type*, const char_type*)
+      const;
+  virtual char_type do_toupper(char_type) const;
+  virtual const char_type* do_toupper(char_type*, const char_type*) const;
+  virtual char_type do_tolower(char_type) const;
+  virtual const char_type* do_tolower(char_type*, const char_type*) const;
+  virtual char_type do_widen(char) const;
+  virtual const char* do_widen(const char*, const char*, char_type*) const;
+  virtual char do_narrow(char_type, char) const;
+  virtual const char_type* do_narrow(const char_type*, const char_type*, char,
+                                     char*) const;
+};
+
+template<> class ctype<char>
+: public locale::facet,
+  public ctype_base
+{
+ public:
+  using char_type = char;
+
+  explicit ctype(size_t = 0);
+
+  bool is(mask, char_type) const;
+  const char_type* is(const char_type*, const char_type*, mask*) const;
+  const char_type* scan_is(mask, const char_type*, const char_type*) const;
+  const char_type* scan_not(mask, const char_type*, const char_type*) const;
+  char_type toupper(char_type) const;
+  const char_type* toupper(char_type*, const char_type*) const;
+  char_type tolower(char_type) const;
+  const char_type* tolower(char_type*, const char_type*) const;
+
+  char_type widen(char) const;
+  const char* widen(const char*, const char*, char_type*) const;
+  char narrow(char_type, char) const;
+  const char_type* narrow(const char_type*, const char_type*, char, char*)
+      const;
+
+  static locale::id id;
+
+ protected:
+  ~ctype() noexcept override;
+
+  virtual bool do_is(mask, char_type) const;
+  virtual const char_type* do_is(const char_type*, const char_type*, mask*)
+      const;
+  virtual const char_type* do_scan_is(mask, const char_type*, const char_type*)
+      const;
+  virtual const char_type* do_scan_not(mask,
+                                       const char_type*, const char_type*)
+      const;
+  virtual char_type do_toupper(char_type) const;
+  virtual const char_type* do_toupper(char_type*, const char_type*) const;
+  virtual char_type do_tolower(char_type) const;
+  virtual const char_type* do_tolower(char_type*, const char_type*) const;
+  virtual char_type do_widen(char) const;
+  virtual const char* do_widen(const char*, const char*, char_type*) const;
+  virtual char do_narrow(char_type, char) const;
+  virtual const char_type* do_narrow(const char_type*, const char_type*, char,
+                                     char*) const;
+};
+
+template<typename Char> class ctype_byname;
+
+class codecvt_base;
+template<typename Intern, typename Extern, typename St> class codecvt;
+template<typename Intern, typename Extern, typename St> class codecvt_byname;
+
+template<typename Char, typename InputIter = istreambuf_iterator<Char>>
+class num_get;
+template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
+class num_put;
+template<typename Char> class numpunct;
+template<typename Char> class numpunct_byname;
+
+template<typename Char> class collate;
+template<typename Char> class collate_byname;
+
+class time_base;
+template<typename Char, typename InputIter = istreambuf_iterator<Char>>
+class time_get;
+template<typename Char, typename InputIter = istreambuf_iterator<Char>>
+class time_get_byname;
+template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
+class time_put;
+template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
+class time_put_byname;
+
+class money_base;
+template<typename Char, typename InputIter = istreambuf_iterator<Char>>
+class money_get;
+template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
+class money_put;
+template<typename Char, bool Intl = false> class moneypunct;
+template<typename Char, bool Intl = false> class moneypunct_byname;
+
+class messages_base;
+template<typename Char> class messages;
+template<typename Char> class messages_byname;
+
+
+_namespace_end(std)
+
+#include <locale-inl.h>
+
+#endif /* _LOCALE_ */
