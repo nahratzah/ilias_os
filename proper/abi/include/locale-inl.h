@@ -174,4 +174,6 @@ auto ctype<char>::do_narrow(const char_type* b, const char_type* e,
 
 _namespace_end(std)
 
+#undef _LOCALE_INLINE
+
 #endif /* _LOCALE_INL_H_ */
