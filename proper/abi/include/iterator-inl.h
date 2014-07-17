@@ -785,10 +785,10 @@ template<typename C> auto rend(C& c) -> decltype(c.rend()) {
 template<typename C> auto rend(const C& c) -> decltype(c.rend()) {
   return c.rend();
 }
-template<typename T, size_t N> reverse_iterator<T*> begin(T (&array)[N]) {
+template<typename T, size_t N> reverse_iterator<T*> rbegin(T (&array)[N]) {
   return reverse_iterator<T*>(array + N);
 }
-template<typename T, size_t N> reverse_iterator<T*> end(T (&array)[N]) {
+template<typename T, size_t N> reverse_iterator<T*> rend(T (&array)[N]) {
   return reverse_iterator<T*>(array);
 }
 template<typename E> reverse_iterator<const E*> rbegin(
