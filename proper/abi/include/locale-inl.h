@@ -3,12 +3,165 @@
 
 #include <locale>
 #include <algorithm>
+#include <string>
 
 #ifndef _LOCALE_INLINE
 # define _LOCALE_INLINE  extern inline
 #endif
 
 _namespace_begin(std)
+
+
+template<typename Facet>
+const Facet& use_facet(const locale& loc) {
+  return static_cast<const Facet&>(loc.use_facet_(&Facet::id));
+}
+
+template<typename Facet>
+bool has_facet(const locale& loc) noexcept {
+  return loc.has_facet_(&Facet::id);
+}
+
+
+inline locale::locale(locale&& loc) noexcept {
+  using _namespace(std)::swap;
+  swap(data_, loc.data_);
+}
+
+inline locale::locale(const void* data) noexcept
+: data_(data)
+{}
+
+inline locale::locale(const char* name)
+: locale(string_ref(name))
+{}
+
+inline locale::locale(const string& name)
+: locale(string_ref(name))
+{}
+
+template<typename Facet>
+locale::locale(const locale& loc, Facet* f)
+: locale(loc, &Facet::id, f)
+{}
+
+inline locale::locale(const locale& loc, const char* name, category cat)
+: locale(loc, string_ref(name), cat)
+{}
+
+inline locale::locale(const locale& loc, const string& name, category cat)
+: locale(loc, string_ref(name), cat)
+{}
+
+inline auto locale::operator=(locale&& loc) noexcept -> const locale& {
+  using _namespace(std)::swap;
+  swap(data_, loc.data_);
+  return *this;
+}
+
+template<typename Facet>
+auto locale::combine(const locale& loc) const -> locale {
+  return locale(*this, &use_facet<Facet>(loc));
+}
+
+inline bool locale::operator==(const locale& loc) const {
+  return data_ == loc.data_;
+}
+
+inline bool locale::operator!=(const locale& loc) const {
+  return !(*this == loc);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+bool locale::operator()(const basic_string<Char, Traits, Allocator>& x,
+                        const basic_string<Char, Traits, Allocator>& y) const {
+  return (*this)(basic_string_ref<Char, Traits>(x),
+                 basic_string_ref<Char, Traits>(y));
+}
+
+
+inline locale::facet::facet(size_t refs)
+: refs_(refs)
+{}
+
+_LOCALE_INLINE
+locale::facet::~facet() noexcept {}
+
+
+template<typename Char>
+ctype<Char>::ctype(size_t refs)
+: locale::facet(refs)
+{}
+
+template<typename Char>
+auto ctype<Char>::is(mask m, char_type c) const -> bool {
+  return do_is(m, c);
+}
+
+template<typename Char>
+auto ctype<Char>::is(const char_type* b, const char_type* e, mask* vec)
+    const -> const char_type* {
+  return do_is(b, e, vec);
+}
+
+template<typename Char>
+auto ctype<Char>::scan_is(mask m, const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return do_scan_is(m, b, e);
+}
+
+template<typename Char>
+auto ctype<Char>::scan_not(mask m, const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return do_scan_not(m, b, e);
+}
+
+template<typename Char>
+auto ctype<Char>::toupper(char_type c) const -> char_type {
+  return do_toupper(c);
+}
+
+template<typename Char>
+auto ctype<Char>::toupper(char_type* b, const char_type* e) const ->
+    const char_type* {
+  return do_toupper(b, e);
+}
+
+template<typename Char>
+auto ctype<Char>::tolower(char_type c) const -> char_type {
+  return do_tolower(c);
+}
+
+template<typename Char>
+auto ctype<Char>::tolower(char_type* b, const char_type* e) const ->
+    const char_type* {
+  return do_tolower(b, e);
+}
+
+template<typename Char>
+auto ctype<Char>::widen(char c) const -> char_type {
+  return do_widen(c);
+}
+
+template<typename Char>
+auto ctype<Char>::widen(const char* b, const char* e, char_type* out) const ->
+    const char* {
+  return do_widen(b, e, out);
+}
+
+template<typename Char>
+auto ctype<Char>::narrow(char_type c, char dfl) const -> char {
+  return do_narrow(c, dfl);
+}
+
+template<typename Char>
+auto ctype<Char>::narrow(const char_type* b, const char_type* e, char dfl,
+                         char* out) const -> const char_type* {
+  return do_narrow(b, e, dfl, out);
+}
+
+template<typename Char>
+ctype<Char>::~ctype() noexcept {}
 
 
 _LOCALE_INLINE
@@ -170,6 +323,23 @@ auto ctype<char>::do_narrow(const char_type* b, const char_type* e,
                  });
   return e;
 }
+
+
+template<typename Char>
+ctype_byname<Char>::ctype_byname(const char* name, size_t refs)
+: ctype_byname(string_ref(name), refs)
+{}
+
+template<typename Char>
+ctype_byname<Char>::ctype_byname(const string& name, size_t refs)
+: ctype_byname(string_ref(name), refs)
+{}
+
+template<typename Char>
+ctype_byname<Char>::ctype_byname(string_ref name, size_t refs)
+: ctype<Char>(refs),
+  name_(name)
+{}
 
 
 _namespace_end(std)

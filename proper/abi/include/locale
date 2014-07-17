@@ -4,15 +4,29 @@
 #include <cdecl.h>
 #include <iosfwd>
 #include <type_traits>
+#include <string>
 
 _namespace_begin(std)
 
 
+class locale;
+
+template<typename Facet> const Facet& use_facet(const locale&);
+template<typename Facet> bool has_facet(const locale&) noexcept;
+
+
 class locale {
+  template<typename Facet> friend const Facet& use_facet(const locale&);
+  template<typename Facet> friend bool has_facet(const locale&) noexcept;
+
  public:
   class facet;
   class id;
   using category = int;
+#ifdef _COMPILING_LOCALE
+  class facet_ptr;
+#endif
+
   static constexpr category none     = 0x00,
                             collate  = 0x01,
                             ctype    = 0x02,
@@ -25,6 +39,7 @@ class locale {
 
   locale() noexcept;
   locale(const locale&) noexcept;
+  locale(locale&&) noexcept;
   explicit locale(const char*);
   explicit locale(const string&);
   explicit locale(string_ref);
@@ -36,6 +51,7 @@ class locale {
   ~locale() noexcept;
 
   const locale& operator=(const locale&) noexcept;
+  const locale& operator=(locale&&) noexcept;
   template<typename Facet> locale combine(const locale&) const;
 
   string name() const;
@@ -52,6 +68,15 @@ class locale {
 
   static locale global(const locale&);
   static const locale& classic();
+  static const locale& posix();
+
+ private:
+  explicit locale(const void*) noexcept;
+  locale(const locale&, const id*, const facet*);
+  bool has_facet_(const id*) const noexcept;
+  const facet& use_facet_(const id*) const;
+
+  const void* data_ = nullptr;
 };
 
 #if 0 // XXX fix type_traits
@@ -62,23 +87,32 @@ static_assert(!has_virtual_destructor<locale>::value,
 
 
 class locale::facet {
+#ifdef _COMPILING_LOCALE
+  friend class locale::facet_ptr;
+#else
+  friend class locale;  // Silence compiler warnings.
+#endif
+
  protected:
   explicit facet(size_t = 0);
-  virtual ~facet();
+  virtual ~facet() noexcept;
   facet(const facet&) = delete;
   facet& operator=(const facet&) = delete;
+
+ private:
+  mutable atomic<uintptr_t> refs_;
 };
 
 class locale::id {
  public:
-  id();
+  constexpr id() = default;
+  constexpr id(category cat) noexcept : cat(cat) {}
   id(const id&) = delete;
   void operator=(const id&) = delete;
+
+  const category cat = none;
 };
 
-
-template<typename Facet> const Facet& use_facet(const locale&);
-template<typename Facet> bool has_facet(const locale&) noexcept;
 
 template<typename Char> bool isspace(Char, const locale&);
 template<typename Char> bool isprint(Char, const locale&);
@@ -147,7 +181,7 @@ class ctype
   const char_type* narrow(const char_type*, const char_type*, char, char*)
       const;
 
-  static locale::id id;
+  static constexpr locale::id id{ locale::ctype };
 
  protected:
   ~ctype() noexcept override;
@@ -195,7 +229,7 @@ template<> class ctype<char>
   const char_type* narrow(const char_type*, const char_type*, char, char*)
       const;
 
-  static locale::id id;
+  static constexpr locale::id id{ locale::ctype };
   static const size_t table_size;
   const mask* table() const noexcept;
   static const mask* classic_table() noexcept;
@@ -218,7 +252,23 @@ template<> class ctype<char>
   bool del_;
 };
 
-template<typename Char> class ctype_byname;
+template<typename Char>
+class ctype_byname
+: public ctype<Char>
+{
+ public:
+  using mask = typename ctype<Char>::mask;
+  explicit ctype_byname(const char*, size_t = 0);
+  explicit ctype_byname(const string&, size_t = 0);
+  explicit ctype_byname(string_ref, size_t = 0);
+
+ protected:
+  ~ctype_byname() noexcept = default;
+
+ private:
+  string name_;
+};
+
 
 class codecvt_base;
 template<typename Intern, typename Extern, typename St> class codecvt;
@@ -255,6 +305,11 @@ template<typename Char, bool Intl = false> class moneypunct_byname;
 class messages_base;
 template<typename Char> class messages;
 template<typename Char> class messages_byname;
+
+
+extern template class ctype<char16_t>;
+extern template class ctype<char32_t>;
+extern template class ctype<wchar_t>;
 
 
 _namespace_end(std)
