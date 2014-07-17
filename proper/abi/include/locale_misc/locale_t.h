@@ -5,12 +5,11 @@
 
 _namespace_begin(std)
 
-#ifdef __cplusplus
-class locale;  // Implemented in locale.h
-typedef locale* locale_t;
-#else
 struct __locale;  // Opaque type.
-typedef struct __locale* locale_t;
+#ifdef __cplusplus
+using locale_t = const __locale*;
+#else
+typedef const struct __locale* locale_t;
 #endif
 
 _namespace_end(std)

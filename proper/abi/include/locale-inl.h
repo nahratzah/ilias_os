@@ -28,7 +28,7 @@ inline locale::locale(locale&& loc) noexcept {
   swap(data_, loc.data_);
 }
 
-inline locale::locale(const void* data) noexcept
+inline locale::locale(locale_t data) noexcept
 : data_(data)
 {}
 

@@ -125,7 +125,7 @@ namespace {
  * [3...] -- vector: pointers to facets
  * vector is sorted by &facet::id.
  */
-struct facet_vector_map_;  // Opaque.
+using facet_vector_map_ = __locale;  // Opaque.
 using facet_vector_map_value_type = tuple<const locale::id*,
                                           locale::facet_ptr>;
 
@@ -143,6 +143,7 @@ static_assert(alignof(string) <= alignof(uintptr_t),
               "Facet array won't work properly.");
 static_assert(alignof(facet_vector_map_value_type) <= alignof(uintptr_t),
               "Facet array won't work properly.");
+
 
 inline uintptr_t facet_vector_map_size(const facet_vector_map_* m)
     noexcept {
@@ -171,26 +172,24 @@ inline atomic<uintptr_t>* facet_vector_map_refcounter(
       &reinterpret_cast<uintptr_t*>(mm)[FACET_VECTOR_MAP__REFCOUNTER]);
 }
 
-inline const facet_vector_map_value_type* begin(const facet_vector_map_* m)
+inline const facet_vector_map_value_type* begin(const __locale& m)
     noexcept {
-  if (m == nullptr) return nullptr;
   return reinterpret_cast<const facet_vector_map_value_type*>(
-      &reinterpret_cast<const uintptr_t*>(m)[FACET_VECTOR_MAP__VECTOR_BEGIN]);
+      &reinterpret_cast<const uintptr_t*>(&m)[FACET_VECTOR_MAP__VECTOR_BEGIN]);
 }
 
-inline facet_vector_map_value_type* begin(facet_vector_map_* m) noexcept {
-  if (m == nullptr) return nullptr;
+inline facet_vector_map_value_type* begin(__locale& m) noexcept {
   return reinterpret_cast<facet_vector_map_value_type*>(
-      &reinterpret_cast<uintptr_t*>(m)[FACET_VECTOR_MAP__VECTOR_BEGIN]);
+      &reinterpret_cast<uintptr_t*>(&m)[FACET_VECTOR_MAP__VECTOR_BEGIN]);
 }
 
-inline const facet_vector_map_value_type* end(const facet_vector_map_* m)
+inline const facet_vector_map_value_type* end(const __locale& m)
     noexcept {
-  return (m ? begin(m) + facet_vector_map_size(m) : nullptr);
+  return begin(m) + facet_vector_map_size(&m);
 }
 
-inline facet_vector_map_value_type* end(facet_vector_map_* m) noexcept {
-  return (m ? begin(m) + facet_vector_map_size(m) : nullptr);
+inline facet_vector_map_value_type* end(__locale& m) noexcept {
+  return begin(m) + facet_vector_map_size(&m);
 }
 
 inline constexpr size_t facet_vector_map_bytes(size_t nelem, string_ref name)
@@ -199,6 +198,7 @@ inline constexpr size_t facet_vector_map_bytes(size_t nelem, string_ref name)
          sizeof(facet_vector_map_value_type) * nelem +
          name.length();
 }
+
 
 class facet_vector_map_ptr {
  public:
@@ -220,7 +220,7 @@ class facet_vector_map_ptr {
   const facet_vector_map_* release() noexcept;
 
  private:
-  const facet_vector_map_* ptr_ = nullptr;
+  const __locale* ptr_ = nullptr;
 };
 
 void swap(facet_vector_map_ptr& x, facet_vector_map_ptr& y) noexcept {
@@ -260,7 +260,8 @@ auto facet_vector_map_ptr::operator=(facet_vector_map_ptr&& p) noexcept ->
 facet_vector_map_ptr::~facet_vector_map_ptr() noexcept {
   auto refcounter = facet_vector_map_refcounter(ptr_);
   if (refcounter && refcounter->fetch_sub(1U, memory_order_release) == 1U) {
-    for (auto i : ptr_) i.~facet_vector_map_value_type();
+    for (auto i = begin(*ptr_); i != end(*ptr_); ++i)
+      i->~facet_vector_map_value_type();
     locale_heap().free(ptr_,
                        facet_vector_map_bytes(facet_vector_map_size(ptr_),
                                               facet_vector_map_name(ptr_)));
@@ -317,8 +318,8 @@ facet_vector_map_* new_facet_vector_map(size_t nelem,
   atomic_init(facet_vector_map_refcounter(m), 0U);
 
   /* Initialize fields. */
-  for (auto i : m) {
-    void* i_void = &i;
+  for (auto i = begin(*m); i != end(*m); ++i) {
+    void* i_void = &*i;
     new (i_void) facet_vector_map_value_type(nullptr, nullptr);
   }
 
@@ -363,8 +364,8 @@ facet_vector_map_ptr classic_facet_vector_map(const string_ref name) {
   /* Build facet map. */
   facet_vector_map_* map = new_facet_vector_map(facets.size(), name);
   facet_vector_map_ptr map_ptr = facet_vector_map_ptr(map);
-  auto copy_rv = move(begin(facets), end(facets), begin(map));
-  assert(copy_rv == end(map));
+  auto copy_rv = move(begin(facets), end(facets), begin(*map));
+  assert(copy_rv == end(*map));
   return map_ptr;
 }
 
@@ -383,8 +384,7 @@ locale::locale() noexcept
 {}
 
 locale::locale(const locale& other) noexcept
-: data_(facet_vector_map_ptr(
-            static_cast<const facet_vector_map_*>(other.data_)).release())
+: data_(facet_vector_map_ptr(other.data_).release())
 {}
 
 locale::locale(string_ref) {
@@ -403,10 +403,8 @@ locale::locale(const locale& loc, const id* idp, const facet* f) {
     throw std::invalid_argument("locale: null argument");
 
   /* Figure out which elements are to stay. */
-  const facet_vector_map_* locdata =
-      static_cast<const facet_vector_map_*>(loc.data_);
-  const vtype* ld_begin = begin(locdata);
-  const vtype* ld_end = end(locdata);
+  const vtype* ld_begin = (loc.data_ ? begin(*loc.data_) : nullptr);
+  const vtype* ld_end = (loc.data_ ? end(*loc.data_) : nullptr);
   const vtype* excl_begin;
   const vtype* excl_end;
   tie(excl_begin, excl_end) = equal_range(ld_begin, ld_end,
@@ -418,11 +416,11 @@ locale::locale(const locale& loc, const id* idp, const facet* f) {
   facet_vector_map_ptr new_map_ptr = facet_vector_map_ptr(new_map);
 
   /* Fill map with elements. */
-  auto out = begin(new_map);
+  auto out = begin(*new_map);
   out = copy(ld_begin, excl_begin, out);
   *out++ = vtype(idp, locale::facet_ptr(f));
   out = copy(excl_end, ld_end, out);
-  assert(out == end(new_map));
+  assert(out == end(*new_map));
 
   /* Finish intialization. */
   data_ = new_map_ptr.release();
@@ -434,12 +432,9 @@ locale::locale(const locale& loc_a, const locale& loc_b, category c) {
              temporary_buffer_allocator<facet_vector_map_value_type>>;
   using vtype = facet_vector_map_value_type;
 
-  /* Cast internal data to internal data type. */
-  const facet_vector_map_* map_a =
-      static_cast<const facet_vector_map_*>(loc_a.data_);
-  const facet_vector_map_* map_b =
-      static_cast<const facet_vector_map_*>(loc_b.data_);
+  assert(loc_a.data_ != nullptr && loc_b.data_ != nullptr);
 
+  /* Predicates, filters category c. */
   const auto pred = [c](const vtype& v) {
                       return get<0>(v)->cat == c;
                     };
@@ -449,9 +444,9 @@ locale::locale(const locale& loc_a, const locale& loc_b, category c) {
 
   /* Select facets to use, using a merge strategy. */
   facet_tmp_t facets;
-  auto a_i = begin(map_a);
-  auto b_i = begin(map_b);
-  while (a_i != end(map_a) && b_i != end(map_b)) {
+  auto a_i = begin(*loc_a.data_);
+  auto b_i = begin(*loc_b.data_);
+  while (a_i != end(*loc_a.data_) && b_i != end(*loc_b.data_)) {
     if (!not_pred(*a_i)) {
       ++a_i;
     } else if (!pred(*b_i)) {
@@ -462,40 +457,37 @@ locale::locale(const locale& loc_a, const locale& loc_b, category c) {
     }
   }
   /* Copy remaining facets (note that at least one of the ranges is empty). */
-  copy_if(a_i, end(map_a), back_inserter(facets), not_pred);
-  copy_if(b_i, end(map_b), back_inserter(facets), pred);
+  copy_if(a_i, end(*loc_a.data_), back_inserter(facets), not_pred);
+  copy_if(b_i, end(*loc_b.data_), back_inserter(facets), pred);
 
   /* Build facet map. */
   facet_vector_map_* result = new_facet_vector_map(facets.size());
   facet_vector_map_ptr result_ptr = facet_vector_map_ptr(result);
-  const auto move_rv = move(begin(facets), end(facets), begin(result));
-  assert(move_rv == end(result));
+  const auto move_rv = move(begin(facets), end(facets), begin(*result));
+  assert(move_rv == end(*result));
 
   /* Finish initialization. */
   data_ = result_ptr.release();
 }
 
 locale::~locale() noexcept {
-  facet_vector_map_ptr::steal(static_cast<const facet_vector_map_*>(data_));
+  facet_vector_map_ptr::steal(data_);
 }
 
 const locale& locale::operator=(const locale& other) noexcept {
-  auto tmp = facet_vector_map_ptr(static_cast<const facet_vector_map_*>(
-                                      other.data_));
+  auto tmp = facet_vector_map_ptr(other.data_);
   facet_vector_map_ptr::steal(static_cast<const facet_vector_map_*>(
       exchange(data_, tmp.release())));
   return *this;
 }
 
 auto locale::name() const -> string {
-  const auto fvm_name =
-      facet_vector_map_name(static_cast<const facet_vector_map_*>(data_));
+  const auto fvm_name = facet_vector_map_name(data_);
   return (fvm_name.empty() ? string_ref("*", 1) : fvm_name);
 }
 
 auto locale::global(const locale& loc) -> locale {
-  auto ptr =
-      facet_vector_map_ptr(static_cast<const facet_vector_map_*>(loc.data_));
+  auto ptr = facet_vector_map_ptr(loc.data_);
   assert(ptr);  // XXX throw EINVAL
 
   swap(global_loc, ptr);
@@ -515,15 +507,18 @@ auto locale::posix() -> const locale& {
 }
 
 auto locale::has_facet_(const id* idp) const noexcept -> bool {
-  auto m = static_cast<const facet_vector_map_*>(data_);
-  return binary_search(begin(m), end(m), idp, facet_vector_map_less());
+  return _predict_true(data_ != nullptr) &&
+         binary_search(begin(*data_), end(*data_),
+                       idp, facet_vector_map_less());
 }
 
 auto locale::use_facet_(const id* idp) const -> const facet& {
-  auto m = static_cast<const facet_vector_map_*>(data_);
-  auto f = lower_bound(begin(m), end(m), idp, facet_vector_map_less());
-  if (_predict_true(f != end(m) && get<0>(*f) == idp))
-    return *get<1>(*f);
+  if (_predict_true(data_ != nullptr)) {
+    auto f = lower_bound(begin(*data_), end(*data_),
+                         idp, facet_vector_map_less());
+    if (_predict_true(f != end(*data_) && get<0>(*f) == idp))
+      return *get<1>(*f);
+  }
 
   throw bad_cast();
 }

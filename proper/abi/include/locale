@@ -5,6 +5,8 @@
 #include <iosfwd>
 #include <type_traits>
 #include <string>
+#include <locale_misc/lc_mask.h>
+#include <locale_misc/locale_t.h>
 
 _namespace_begin(std)
 
@@ -27,15 +29,14 @@ class locale {
   class facet_ptr;
 #endif
 
-  static constexpr category none     = 0x00,
-                            collate  = 0x01,
-                            ctype    = 0x02,
-                            monetary = 0x04,
-                            numeric  = 0x08,
-                            time     = 0x10,
-                            messages = 0x20,
-                            all      = collate | ctype | monetary | numeric |
-                                       time | messages;
+  static constexpr category none     = 0,
+                            collate  = LC_COLLATE_MASK,
+                            ctype    = LC_CTYPE_MASK,
+                            monetary = LC_MONETARY_MASK,
+                            numeric  = LC_NUMERIC_MASK,
+                            time     = LC_TIME_MASK,
+                            messages = LC_MESSAGES_MASK,
+                            all      = LC_ALL_MASK;
 
   locale() noexcept;
   locale(const locale&) noexcept;
@@ -71,12 +72,12 @@ class locale {
   static const locale& posix();
 
  private:
-  explicit locale(const void*) noexcept;
+  explicit locale(locale_t) noexcept;
   locale(const locale&, const id*, const facet*);
   bool has_facet_(const id*) const noexcept;
   const facet& use_facet_(const id*) const;
 
-  const void* data_ = nullptr;
+  locale_t data_ = nullptr;
 };
 
 #if 0 // XXX fix type_traits
