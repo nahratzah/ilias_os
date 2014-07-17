@@ -32,10 +32,6 @@ inline locale::locale(locale_t data) noexcept
 : data_(data)
 {}
 
-inline locale::locale(const char* name)
-: locale(string_ref(name))
-{}
-
 inline locale::locale(const string& name)
 : locale(string_ref(name))
 {}
@@ -43,10 +39,6 @@ inline locale::locale(const string& name)
 template<typename Facet>
 locale::locale(const locale& loc, Facet* f)
 : locale(loc, &Facet::id, f)
-{}
-
-inline locale::locale(const locale& loc, const char* name, category cat)
-: locale(loc, string_ref(name), cat)
 {}
 
 inline locale::locale(const locale& loc, const string& name, category cat)
@@ -77,6 +69,86 @@ bool locale::operator()(const basic_string<Char, Traits, Allocator>& x,
                         const basic_string<Char, Traits, Allocator>& y) const {
   return (*this)(basic_string_ref<Char, Traits>(x),
                  basic_string_ref<Char, Traits>(y));
+}
+
+template<typename Char, typename Traits>
+bool locale::operator()(basic_string_ref<Char, Traits> x,
+                        basic_string_ref<Char, Traits> y) const {
+  using collate_t = _namespace(std)::collate<Char>;
+
+  return use_facet<collate_t>(*this).compare(x.begin(), x.end(),
+                                             y.begin(), y.end()) < 0;
+}
+
+
+template<typename Char>
+bool isspace(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::space, c);
+}
+
+template<typename Char>
+bool isprint(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::print, c);
+}
+
+template<typename Char>
+bool iscntrl(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::cntrl, c);
+}
+
+template<typename Char>
+bool isupper(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::upper, c);
+}
+
+template<typename Char>
+bool islower(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::lower, c);
+}
+
+template<typename Char>
+bool isalpha(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::alpha, c);
+}
+
+template<typename Char>
+bool isdigit(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::digit, c);
+}
+
+template<typename Char>
+bool ispunct(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::punct, c);
+}
+
+template<typename Char>
+bool isxdigit(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::xdigit, c);
+}
+
+template<typename Char>
+bool isalnum(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::alnum, c);
+}
+
+template<typename Char>
+bool isgraph(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::graph, c);
+}
+
+template<typename Char>
+bool isblank(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).is(ctype_base::blank, c);
+}
+
+template<typename Char>
+Char toupper(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).toupper(c);
+}
+
+template<typename Char>
+Char tolower(Char c, const locale& loc) {
+  return use_facet<ctype<Char>>(loc).tolower(c);
 }
 
 

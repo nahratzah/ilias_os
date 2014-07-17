@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
+#include <cerrno>
 
 _namespace_begin(std)
 namespace {
@@ -196,7 +197,7 @@ inline constexpr size_t facet_vector_map_bytes(size_t nelem, string_ref name)
     noexcept {
   return sizeof(uintptr_t) * FACET_VECTOR_MAP__VECTOR_BEGIN +
          sizeof(facet_vector_map_value_type) * nelem +
-         name.length();
+         name.length() + (name.empty() ? 0U : 1U);
 }
 
 
@@ -328,7 +329,7 @@ facet_vector_map_* new_facet_vector_map(size_t nelem,
                          nullptr :
                          reinterpret_cast<char*>(m) + bytes);
   if (!name.empty())
-    copy(name.begin(), name.end(), name_ptr);
+    *copy(name.begin(), name.end(), name_ptr) = '\0';
   reinterpret_cast<uintptr_t*>(m)[FACET_VECTOR_MAP__NAME] =
       reinterpret_cast<uintptr_t>(name_ptr);
   reinterpret_cast<uintptr_t*>(m)[FACET_VECTOR_MAP__NAME_LEN] = name.length();
@@ -371,8 +372,22 @@ facet_vector_map_ptr classic_facet_vector_map(const string_ref name) {
 
 thread_local facet_vector_map_ptr global_loc;
 
-facet_vector_map_ptr copy_global_loc() noexcept {
+const facet_vector_map_ptr& get_global_loc() noexcept {
   return global_loc;
+}
+
+facet_vector_map_ptr copy_global_loc() noexcept {
+  return get_global_loc();
+}
+
+
+/*
+ * Tiny helper function for locale construction, validates C string names.
+ */
+string_ref locale_name_c_str_cast_(const char* name) {
+  if (_predict_false(name == nullptr))
+    throw invalid_argument("null locale name");
+  return string_ref(name);
 }
 
 
@@ -387,9 +402,17 @@ locale::locale(const locale& other) noexcept
 : data_(facet_vector_map_ptr(other.data_).release())
 {}
 
+locale::locale(const char* name)
+: locale(locale_name_c_str_cast_(name))
+{}
+
 locale::locale(string_ref) {
   assert_msg(false, "XXX implement");  // XXX
 }
+
+locale::locale(const locale& loc, const char* name, category c)
+: locale(loc, locale_name_c_str_cast_(name), c)
+{}
 
 locale::locale(const locale& loc, string_ref name, category c)
 : locale(loc, locale(name), c)
@@ -521,6 +544,82 @@ auto locale::use_facet_(const id* idp) const -> const facet& {
   }
 
   throw bad_cast();
+}
+
+
+locale_t duplocale(locale_t loc) noexcept {
+  return facet_vector_map_ptr(loc).release();
+}
+
+void freelocale(locale_t loc) noexcept {
+  facet_vector_map_ptr::steal(loc);
+}
+
+locale_t newlocale(int mask, const char* name, locale_t base) noexcept {
+  try {
+    if (_predict_false(name == nullptr)) throw invalid_argument("null name");
+
+    facet_vector_map_ptr ref;
+    if (base == nullptr)
+      ref = facet_vector_map_ptr(new_facet_vector_map(0, string_ref()));
+    else
+      ref = facet_vector_map_ptr(base);
+    locale base_loc = locale(ref.release());
+
+    locale rv_loc = locale(base_loc, name, mask);
+    auto rv = facet_vector_map_ptr::steal(rv_loc.data_);
+    rv_loc.data_ = nullptr;
+    return rv.release();
+  } catch (const bad_alloc&) {
+    errno = _ABI_ENOMEM;
+    return nullptr;
+  } catch (const invalid_argument&) {
+    errno = _ABI_EINVAL;
+    return nullptr;
+  } catch (...) {
+    assert_msg(false, "XXX implement");  // XXX
+    return nullptr;
+  }
+}
+
+locale_t uselocale(locale_t loc) noexcept {
+  try {
+    locale rv_loc;
+    if (loc == nullptr)
+      rv_loc = locale();
+    else
+      rv_loc = locale::global(locale(facet_vector_map_ptr(loc).release()));
+
+    auto rv = facet_vector_map_ptr::steal(rv_loc.data_);
+    rv_loc.data_ = nullptr;
+    return rv.release();
+  } catch (const bad_alloc&) {
+    errno = _ABI_ENOMEM;
+    return nullptr;
+  } catch (const invalid_argument&) {
+    errno = _ABI_EINVAL;
+    return nullptr;
+  } catch (...) {
+    assert_msg(false, "XXX implement");  // XXX
+    return nullptr;
+  }
+}
+
+char* setlocale(int mask, const char* name) noexcept {
+  try {
+    locale assign = locale(locale(), name, mask);
+    locale::global(assign);
+    return const_cast<char*>(facet_vector_map_name(assign.data_).data());
+  } catch (const bad_alloc&) {
+    errno = _ABI_ENOMEM;
+    return nullptr;
+  } catch (const invalid_argument&) {
+    errno = _ABI_EINVAL;
+    return nullptr;
+  } catch (...) {
+    assert_msg(false, "XXX implement");  // XXX
+    return nullptr;
+  }
 }
 
 
@@ -853,6 +952,16 @@ const size_t ctype<char>::table_size =
 auto ctype<char>::classic_table() noexcept -> const mask* {
   return ascii_masks;
 }
+
+
+template bool locale::operator()(basic_string_ref<char>,
+                                 basic_string_ref<char>) const;
+template bool locale::operator()(basic_string_ref<char16_t>,
+                                 basic_string_ref<char16_t>) const;
+template bool locale::operator()(basic_string_ref<char32_t>,
+                                 basic_string_ref<char32_t>) const;
+template bool locale::operator()(basic_string_ref<wchar_t>,
+                                 basic_string_ref<wchar_t>) const;
 
 
 template class ctype<char16_t>;

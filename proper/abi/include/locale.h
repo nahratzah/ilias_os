@@ -4,6 +4,7 @@
 #include <cdecl.h>
 #include <locale_misc/locale_t.h>
 #include <locale_misc/lc_mask.h>
+#include <cstddef_misc/null.h>
 
 _namespace_begin(std)
 _cdecl_begin
@@ -39,7 +40,7 @@ struct lconv {
 locale_t duplocale(locale_t) noexcept;
 void freelocale(locale_t) noexcept;
 struct lconv* localeconv() noexcept;
-locale_t newlocale(int, const char*, locale_t) noexcept
+locale_t newlocale(int, const char*, locale_t) noexcept;
 char* setlocale(int, const char*) noexcept;
 locale_t uselocale(locale_t) noexcept;
 
@@ -57,6 +58,12 @@ using _namespace(std)::newlocale;
 using _namespace(std)::setlocale;
 using _namespace(std)::uselocale;
 
+#endif
+
+#ifdef __cplusplus
+# define LC_GLOBAL_LOCALE	(uselocale(nullptr))
+#else
+# define LC_GLOBAL_LOCALE	(uselocale(NULL))
 #endif
 
 #endif /* _LOCALE_H_ */

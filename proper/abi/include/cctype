@@ -1,0 +1,82 @@
+#ifndef _CCTYPE_
+#define _CCTYPE_
+
+#include <cdecl.h>
+#include <locale_misc/locale_t.h>
+
+_namespace_begin(std)
+_cdecl_begin
+
+int isalnum(int) noexcept;
+int isalnum_l(int, locale_t) noexcept;
+int isalpha(int) noexcept;
+int isalpha_l(int, locale_t) noexcept;
+int isblank(int) noexcept;
+int isblank_l(int, locale_t) noexcept;
+int iscntrl(int) noexcept;
+int iscntrl_l(int, locale_t) noexcept;
+int isdigit(int) noexcept;
+int isdigit_l(int, locale_t) noexcept;
+int isgraph(int) noexcept;
+int isgraph_l(int, locale_t) noexcept;
+int islower(int) noexcept;
+int islower_l(int, locale_t) noexcept;
+int isprint(int) noexcept;
+int isprint_l(int, locale_t) noexcept;
+int ispunct(int) noexcept;
+int ispunct_l(int, locale_t) noexcept;
+int isspace(int) noexcept;
+int isspace_l(int, locale_t) noexcept;
+int isupper(int) noexcept;
+int isupper_l(int, locale_t) noexcept;
+int isxdigit(int) noexcept;
+int isxdigit_l(int, locale_t) noexcept;
+
+int tolower(int) noexcept;
+int tolower_l(int, locale_t) noexcept;
+int toupper(int) noexcept;
+int toupper_l(int, locale_t) noexcept;
+
+inline int isascii(int c) noexcept {
+  return c == (c & 0x7f);
+}
+
+
+_cdecl_end
+_namespace_end(std)
+
+#if defined(__cplusplus) && !defined(_TEST)
+using _namespace(std)::isalnum;
+using _namespace(std)::isalnum_l;
+using _namespace(std)::isalpha;
+using _namespace(std)::isalpha_l;
+using _namespace(std)::blank;
+using _namespace(std)::blank_l;
+using _namespace(std)::cntrl;
+using _namespace(std)::cntrl_l;
+using _namespace(std)::digit;
+using _namespace(std)::digit_l;
+using _namespace(std)::graph;
+using _namespace(std)::graph_l;
+using _namespace(std)::lower;
+using _namespace(std)::lower_l;
+using _namespace(std)::print;
+using _namespace(std)::print_l;
+using _namespace(std)::punct;
+using _namespace(std)::punct_l;
+using _namespace(std)::space;
+using _namespace(std)::space_l;
+using _namespace(std)::upper;
+using _namespace(std)::upper_l;
+using _namespace(std)::xdigit;
+using _namespace(std)::xdigit_l;
+
+using _namespace(std)::tolower;
+using _namespace(std)::tolower_l;
+using _namespace(std)::toupper;
+using _namespace(std)::toupper_l;
+
+using _namespace(std)::isascii;
+#endif
+
+#endif /* _CCTYPE_ */

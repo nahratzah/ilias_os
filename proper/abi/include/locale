@@ -8,6 +8,10 @@
 #include <locale_misc/lc_mask.h>
 #include <locale_misc/locale_t.h>
 
+#ifdef _COMPILING_LOCALE
+# include <locale.h>
+#endif
+
 _namespace_begin(std)
 
 
@@ -20,6 +24,11 @@ template<typename Facet> bool has_facet(const locale&) noexcept;
 class locale {
   template<typename Facet> friend const Facet& use_facet(const locale&);
   template<typename Facet> friend bool has_facet(const locale&) noexcept;
+#ifdef _COMPILING_LOCALE
+  friend locale_t newlocale(int, const char*, locale_t) noexcept;
+  friend locale_t uselocale(locale_t) noexcept;
+  friend char* setlocale(int, const char*) noexcept;
+#endif
 
  public:
   class facet;
@@ -126,6 +135,7 @@ template<typename Char> bool ispunct(Char, const locale&);
 template<typename Char> bool isxdigit(Char, const locale&);
 template<typename Char> bool isalnum(Char, const locale&);
 template<typename Char> bool isgraph(Char, const locale&);
+template<typename Char> bool isblank(Char, const locale&);
 template<typename Char> Char toupper(Char, const locale&);
 template<typename Char> Char tolower(Char, const locale&);
 
@@ -306,6 +316,16 @@ template<typename Char, bool Intl = false> class moneypunct_byname;
 class messages_base;
 template<typename Char> class messages;
 template<typename Char> class messages_byname;
+
+
+extern template bool locale::operator()(basic_string_ref<char>,
+                                        basic_string_ref<char>) const;
+extern template bool locale::operator()(basic_string_ref<char16_t>,
+                                        basic_string_ref<char16_t>) const;
+extern template bool locale::operator()(basic_string_ref<char32_t>,
+                                        basic_string_ref<char32_t>) const;
+extern template bool locale::operator()(basic_string_ref<wchar_t>,
+                                        basic_string_ref<wchar_t>) const;
 
 
 extern template class ctype<char16_t>;
