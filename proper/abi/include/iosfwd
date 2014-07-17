@@ -1,5 +1,5 @@
-#ifndef _IOSFWD_H_
-#define _IOSFWD_H_
+#ifndef _IOSFWD_
+#define _IOSFWD_
 
 #include <cdecl.h>
 #include <abi/abi.h>
@@ -115,4 +115,4 @@ using wfstream = basic_fstream<wchar_t>;
 
 _namespace_end(std)
 
-#endif /* _IOSFWD_H_ */
+#endif /* _IOSFWD_ */
