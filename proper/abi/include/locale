@@ -292,8 +292,47 @@ class num_put;
 template<typename Char> class numpunct;
 template<typename Char> class numpunct_byname;
 
-template<typename Char> class collate;
-template<typename Char> class collate_byname;
+template<typename Char>
+class collate
+: public locale::facet
+{
+ public:
+  using char_type = Char;
+  using string_type = basic_string<Char>;
+
+  explicit collate(size_t = 0);
+
+  int compare(const char_type*, const char_type*,
+              const char_type*, const char_type*) const;
+  string_type transform(const char_type*, const char_type*) const;
+  long hash(const char_type*, const char_type*) const;
+
+  static constexpr locale::id id{ locale::collate };
+
+ protected:
+  ~collate() noexcept override;
+  virtual int do_compare(const char_type*, const char_type*,
+                         const char_type*, const char_type*) const;
+  virtual string_type do_transform(const char_type*, const char_type*) const;
+  virtual long do_hash(const char_type*, const char_type*) const;
+};
+
+template<typename Char>
+class collate_byname
+: public collate<Char>
+{
+ public:
+  using string_type = typename collate<Char>::string_type;
+  explicit collate_byname(const char*, size_t = 0);
+  explicit collate_byname(const string&, size_t = 0);
+  explicit collate_byname(string_ref, size_t = 0);
+
+ protected:
+  ~collate_byname() noexcept = default;
+
+ private:
+  string name_;
+};
 
 class time_base;
 template<typename Char, typename InputIter = istreambuf_iterator<Char>>
@@ -331,6 +370,11 @@ extern template bool locale::operator()(basic_string_ref<wchar_t>,
 extern template class ctype<char16_t>;
 extern template class ctype<char32_t>;
 extern template class ctype<wchar_t>;
+
+extern template class collate<char>;
+extern template class collate<char16_t>;
+extern template class collate<char32_t>;
+extern template class collate<wchar_t>;
 
 
 _namespace_end(std)

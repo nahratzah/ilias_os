@@ -963,10 +963,14 @@ template bool locale::operator()(basic_string_ref<char32_t>,
 template bool locale::operator()(basic_string_ref<wchar_t>,
                                  basic_string_ref<wchar_t>) const;
 
-
 template class ctype<char16_t>;
 template class ctype<char32_t>;
 template class ctype<wchar_t>;
+
+template class collate<char>;
+template class collate<char16_t>;
+template class collate<char32_t>;
+template class collate<wchar_t>;
 
 
 _namespace_end(std)
