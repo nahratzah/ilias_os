@@ -9,6 +9,8 @@
 _namespace_begin(std)
 
 
+class ios_base;
+
 using streamoff = _TYPES(off_t);
 
 template<typename T> class allocator;
