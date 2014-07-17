@@ -35,6 +35,9 @@ template<size_t I, typename T, bool = is_empty<T>::value> class cons_elem {
   template<typename U>
   constexpr cons_elem(U&& v) : value_(forward<U>(v)) {}
 
+  cons_elem& operator=(const cons_elem&) = default;
+  cons_elem& operator=(cons_elem&&) = default;
+
   friend auto get_value_(disambiguator, cons_elem& self) noexcept
   -> add_lvalue_reference_t<T> {
     return self.value_;
@@ -82,6 +85,9 @@ template<size_t I, typename T> class cons_elem<I, T, true>
   constexpr cons_elem(const T& v) : T(v) {}
   template<typename U>
   constexpr cons_elem(U&& v) : T(forward<U>(v)) {}
+
+  cons_elem& operator=(const cons_elem&) = default;
+  cons_elem& operator=(cons_elem&&) = default;
 
   friend auto get_value_(disambiguator, cons_elem& self) noexcept
   -> add_lvalue_reference_t<T> {
