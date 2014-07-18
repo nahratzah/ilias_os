@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <cerrno>
+#include <streambuf>
 
 _namespace_begin(std)
 namespace {
@@ -224,7 +225,8 @@ class facet_vector_map_ptr {
   const __locale* ptr_ = nullptr;
 };
 
-void swap(facet_vector_map_ptr& x, facet_vector_map_ptr& y) noexcept {
+void __attribute__((unused))
+    swap(facet_vector_map_ptr& x, facet_vector_map_ptr& y) noexcept {
   x.swap(y);
 }
 
@@ -513,7 +515,7 @@ auto locale::global(const locale& loc) -> locale {
   auto ptr = facet_vector_map_ptr(loc.data_);
   assert(ptr);  // XXX throw EINVAL
 
-  swap(global_loc, ptr);
+  global_loc.swap(ptr);
   return locale(ptr.release());
 }
 
@@ -966,6 +968,11 @@ template bool locale::operator()(basic_string_ref<wchar_t>,
 template class ctype<char16_t>;
 template class ctype<char32_t>;
 template class ctype<wchar_t>;
+
+template class num_put<char>;
+template class num_put<char16_t>;
+template class num_put<char32_t>;
+template class num_put<wchar_t>;
 
 template class collate<char>;
 template class collate<char16_t>;

@@ -80,6 +80,8 @@ class locale {
   static const locale& classic();
   static const locale& posix();
 
+  void swap(locale&) noexcept;  // extension
+
  private:
   explicit locale(locale_t) noexcept;
   locale(const locale&, const id*, const facet*);
@@ -88,6 +90,8 @@ class locale {
 
   locale_t data_ = nullptr;
 };
+
+void swap(locale&, locale&) noexcept;  // extension
 
 #if 0 // XXX fix type_traits
 static_assert(!has_virtual_destructor<locale>::value,
@@ -287,8 +291,43 @@ template<typename Intern, typename Extern, typename St> class codecvt_byname;
 
 template<typename Char, typename InputIter = istreambuf_iterator<Char>>
 class num_get;
+
 template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
-class num_put;
+class num_put
+: public locale::facet
+{
+ public:
+  using char_type = Char;
+  using iter_type = OutputIter;
+
+  explicit num_put(size_t = 0);
+
+  iter_type put(iter_type, ios_base&, char_type, bool) const;
+  iter_type put(iter_type, ios_base&, char_type, long) const;
+  iter_type put(iter_type, ios_base&, char_type, long long) const;
+  iter_type put(iter_type, ios_base&, char_type, unsigned long) const;
+  iter_type put(iter_type, ios_base&, char_type, unsigned long long) const;
+  iter_type put(iter_type, ios_base&, char_type, double) const;
+  iter_type put(iter_type, ios_base&, char_type, long double) const;
+  iter_type put(iter_type, ios_base&, char_type, const void*) const;
+
+  static constexpr locale::id id{ locale::numeric };
+
+ protected:
+  ~num_put() noexcept override;
+
+  virtual iter_type do_put(iter_type, ios_base&, char_type, bool) const;
+  virtual iter_type do_put(iter_type, ios_base&, char_type, long) const;
+  virtual iter_type do_put(iter_type, ios_base&, char_type, long long) const;
+  virtual iter_type do_put(iter_type, ios_base&, char_type, unsigned long)
+      const;
+  virtual iter_type do_put(iter_type, ios_base&, char_type, unsigned long long)
+      const;
+  virtual iter_type do_put(iter_type, ios_base&, char_type, double) const;
+  virtual iter_type do_put(iter_type, ios_base&, char_type, long double) const;
+  virtual iter_type do_put(iter_type, ios_base&, char_type, const void*) const;
+};
+
 template<typename Char> class numpunct;
 template<typename Char> class numpunct_byname;
 
@@ -370,6 +409,11 @@ extern template bool locale::operator()(basic_string_ref<wchar_t>,
 extern template class ctype<char16_t>;
 extern template class ctype<char32_t>;
 extern template class ctype<wchar_t>;
+
+extern template class num_put<char>;
+extern template class num_put<char16_t>;
+extern template class num_put<char32_t>;
+extern template class num_put<wchar_t>;
 
 extern template class collate<char>;
 extern template class collate<char16_t>;
