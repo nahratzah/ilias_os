@@ -359,6 +359,12 @@ facet_vector_map_ptr classic_facet_vector_map(const string_ref name) {
   facets.push_back(classic_facet<ctype<char32_t>>());
   facets.push_back(classic_facet<ctype<wchar_t>>());
 
+  /* Add num_put facets. */
+  facets.push_back(classic_facet<num_put<char>>());
+  facets.push_back(classic_facet<num_put<char16_t>>());
+  facets.push_back(classic_facet<num_put<char32_t>>());
+  facets.push_back(classic_facet<num_put<wchar_t>>());
+
   /* XXX other facets. */
 
   /* Sort facets. */
