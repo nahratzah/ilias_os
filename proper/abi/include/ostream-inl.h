@@ -389,12 +389,12 @@ auto op_lshift_stream(basic_ostream<Char, Traits>& os,
                               ios_base::left);
                          out_iter out{ os };
 
-                         if (left && width > s.length())
+                         if (!left && width > s.length())
                            out = fill_n(out, width - s.length(), os.fill());
 
                          out = copy(begin(s), end(s), out);
 
-                         if (!left && width > s.length())
+                         if (left && width > s.length())
                            out = fill_n(out, width - s.length(), os.fill());
 
                          os.width(0);
@@ -417,12 +417,12 @@ auto op_lshift_stream(basic_ostream<Char, Traits>& os,
                               ios_base::left);
                          out_iter out{ os };
 
-                         if (left && width > s.length())
+                         if (!left && width > s.length())
                            out = fill_n(out, width - s.length(), os.fill());
 
                          out = transform(begin(s), end(s), out, move(tf));
 
-                         if (!left && width > s.length())
+                         if (left && width > s.length())
                            out = fill_n(out, width - s.length(), os.fill());
 
                          os.width(0);
@@ -441,10 +441,8 @@ auto operator<< (basic_ostream<Char, Traits>& os, Char ch) ->
 template<typename Char, typename Traits>
 auto operator<< (basic_ostream<Char, Traits>& os, char ch) ->
     basic_ostream<Char, Traits>& {
-  using placeholders::_1;
-
   return impl::op_lshift_stream(os, basic_string_ref<char>(&ch, 1),
-                                bind(&basic_ostream<Char, Traits>::widen, _1));
+                                [&os](char c) { return os.widen(c); });
 }
 
 template<typename Traits>
@@ -474,10 +472,8 @@ auto operator<< (basic_ostream<Char, Traits>& os, const Char* s) ->
 template<typename Char, typename Traits>
 auto operator<< (basic_ostream<Char, Traits>& os, const char* s) ->
     basic_ostream<Char, Traits>& {
-  using placeholders::_1;
-
   return impl::op_lshift_stream(os, basic_string_ref<char>(s),
-                                bind(&basic_ostream<Char, Traits>::widen, _1));
+                                [&os](char c) { return os.widen(c); });
 }
 
 template<typename Traits>

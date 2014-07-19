@@ -11,13 +11,13 @@ namespace impl {
 
 template<typename Char, typename Traits, typename SChar, typename STraits>
 auto op_lshift_stream(basic_ostream<Char, Traits>&,
-                      basic_string_ref<Char, Traits>) ->
+                      basic_string_ref<SChar, STraits>) ->
     enable_if_t<is_same<Char, SChar>::value, basic_ostream<Char, Traits>&>;
 
 template<typename Char, typename Traits, typename SChar, typename STraits,
          typename Fn>
 auto op_lshift_stream(basic_ostream<Char, Traits>&,
-                      basic_string_ref<Char, Traits>,
+                      basic_string_ref<SChar, STraits>,
                       Fn) ->
     enable_if_t<!is_same<Char, SChar>::value, basic_ostream<Char, Traits>&>;
 
@@ -29,16 +29,18 @@ class basic_ostream
 : public basic_ios<Char, Traits>
 {
   template<typename OChar, typename OTraits, typename SChar, typename STraits>
-  friend auto op_lshift_stream(basic_ostream<OChar, OTraits>&,
-                               basic_string_ref<Char, Traits>) ->
-      enable_if_t<is_same<Char, SChar>::value, basic_ostream<Char, Traits>&>;
+  friend auto impl::op_lshift_stream(basic_ostream<OChar, OTraits>&,
+                                     basic_string_ref<SChar, STraits>) ->
+      enable_if_t<is_same<OChar, SChar>::value,
+                  basic_ostream<OChar, OTraits>&>;
 
   template<typename OChar, typename OTraits, typename SChar, typename STraits,
            typename Fn>
-  friend auto op_lshift_stream(basic_ostream<OChar, OTraits>&,
-                               basic_string_ref<Char, Traits>,
-                               Fn) ->
-      enable_if_t<!is_same<Char, SChar>::value, basic_ostream<Char, Traits>&>;
+  friend auto impl::op_lshift_stream(basic_ostream<OChar, OTraits>&,
+                                     basic_string_ref<SChar, STraits>,
+                                     Fn) ->
+      enable_if_t<!is_same<OChar, SChar>::value,
+                  basic_ostream<OChar, OTraits>&>;
 
  public:
   using char_type = typename basic_ios<Char, Traits>::char_type;
