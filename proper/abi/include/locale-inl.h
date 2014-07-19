@@ -484,47 +484,61 @@ num_put<Char, Iter>::~num_put() noexcept {}
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                                  bool v) const -> iter_type {
+  using impl::render_num_encoder;
+
   if ((str.flags() & ios_base::boolalpha) != ios_base::boolalpha)
     return do_put(out, str, fill, static_cast<long>(v));
 
   const numpunct<char_type>& punct =
       use_facet<numpunct<char_type>>(str.getloc());
   const auto vname = (v ? punct.truename() : punct.falsename());
-  return render_num_encoder(out, str.width(), str.flags(),
-                            basic_string_ref<char_type>(), vname,
+  return render_num_encoder(out, str,
+                            basic_string_ref<char_type>(),
+                            basic_string_ref<char_type>(vname),
                             fill, false);
 }
 
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                                  long v) const -> iter_type {
-  return render_num_encoder(out, str.width(), str.flags(),
-                            impl::num_encoder<char_type, long>(v, str),
+  using impl::render_num_encoder;
+  using impl::num_encoder;
+
+  return render_num_encoder(out, str,
+                            num_encoder<char_type, long>(v, str),
                             fill);
 }
 
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                                  long long v) const -> iter_type {
-  return render_num_encoder(out, str.width(), str.flags(),
-                            impl::num_encoder<char_type, long long>(v, str),
+  using impl::render_num_encoder;
+  using impl::num_encoder;
+
+  return render_num_encoder(out, str,
+                            num_encoder<char_type, long long>(v, str),
                             fill);
 }
 
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                                  unsigned long v) const -> iter_type {
-  return render_num_encoder(out, str.width(), str.flags(),
-                            impl::num_encoder<char_type, unsigned long>(v, str),
+  using impl::render_num_encoder;
+  using impl::num_encoder;
+
+  return render_num_encoder(out, str,
+                            num_encoder<char_type, unsigned long>(v, str),
                             fill);
 }
 
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                                  unsigned long long v) const -> iter_type {
-  return render_num_encoder(out, str.width(), str.flags(),
-                            impl::num_encoder<char_type, unsigned long long>(
-                                v, str),
+  using impl::render_num_encoder;
+  using impl::num_encoder;
+
+  return render_num_encoder(out, str,
+                            num_encoder<char_type, unsigned long long>(v, str),
                             fill);
 }
 
@@ -533,16 +547,22 @@ auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                                  int128_t v) const -> iter_type {
-  return render_num_encoder(out, str.width(), str.flags(),
-                            impl::num_encoder<char_type, int128_t>(v, str),
+  using impl::render_num_encoder;
+  using impl::num_encoder;
+
+  return render_num_encoder(out, str,
+                            num_encoder<char_type, int128_t>(v, str),
                             fill);
 }
 
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                                  int128_t v) const -> iter_type {
-  return render_num_encoder(out, str.width(), str.flags(),
-                            impl::num_encoder<char_type, uint128_t>(v, str),
+  using impl::render_num_encoder;
+  using impl::num_encoder;
+
+  return render_num_encoder(out, str,
+                            num_encoder<char_type, uint128_t>(v, str),
                             fill);
 }
 #endif
@@ -584,9 +604,61 @@ auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                                                     i - begin(data));
   const auto prefix = data_str.substr(0, 2);
   const auto digits = data_str.substr(2);
-  return impl::render_num_encoder(out, str.width(), str.flags(),
+  return impl::render_num_encoder(out, str,
                                   prefix, digits, fill, false);
 }
+
+
+template<typename Char>
+numpunct<Char>::numpunct(size_t refs)
+: locale::facet(refs)
+{}
+
+template<typename Char>
+auto numpunct<Char>::decimal_point() const -> char_type {
+  return do_decimal_point();
+}
+
+template<typename Char>
+auto numpunct<Char>::thousands_sep() const -> char_type {
+  return do_thousands_sep();
+}
+
+template<typename Char>
+auto numpunct<Char>::grouping() const -> string {
+  return do_grouping();
+}
+
+template<typename Char>
+auto numpunct<Char>::truename() const -> string_type {
+  return do_truename();
+}
+
+template<typename Char>
+auto numpunct<Char>::falsename() const -> string_type {
+  return do_falsename();
+}
+
+template<typename Char>
+numpunct<Char>::~numpunct() noexcept {}
+
+inline numpunct<char>::numpunct(size_t refs)
+: locale::facet(refs)
+{}
+inline numpunct<char16_t>::numpunct(size_t refs)
+: locale::facet(refs)
+{}
+inline numpunct<char32_t>::numpunct(size_t refs)
+: locale::facet(refs)
+{}
+inline numpunct<wchar_t>::numpunct(size_t refs)
+: locale::facet(refs)
+{}
+
+_LOCALE_INLINE numpunct<char>::~numpunct() noexcept {}
+_LOCALE_INLINE numpunct<char16_t>::~numpunct() noexcept {}
+_LOCALE_INLINE numpunct<char32_t>::~numpunct() noexcept {}
+_LOCALE_INLINE numpunct<wchar_t>::~numpunct() noexcept {}
 
 
 template<typename Char>

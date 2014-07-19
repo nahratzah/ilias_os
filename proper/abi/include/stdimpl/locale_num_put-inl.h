@@ -136,7 +136,7 @@ auto render_num_encoder_with_sep(Iter out, basic_string_ref<Char> digits,
                                  string_ref spec, Char sep) -> Iter {
   /* Handle case for no grouping. */
   if (spec.empty() || spec[0] <= 0 || spec[0] == CHAR_MAX ||
-      digits.length() < spec[0])
+      digits.length() < static_cast<unsigned char>(spec[0]))
     return copy(digits.begin(), digits.end(), out);
 
   /* Save grouping count. */

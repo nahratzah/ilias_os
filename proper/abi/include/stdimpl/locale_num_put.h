@@ -106,11 +106,11 @@ template<typename Char, typename Iter>
 Iter render_num_encoder_with_sep(Iter, basic_string_ref<Char>,
                                  string_ref, Char);
 template<typename Char, typename Iter>
-Iter render_num_encoder(Iter, streamsize, ios_base::fmtflags,
+Iter render_num_encoder(Iter, ios_base&,
                         basic_string_ref<Char>, basic_string_ref<Char>, Char,
                         bool);
 template<typename Char, typename Iter, typename T>
-Iter render_num_encoder(Iter, streamsize, ios_base::fmtflags,
+Iter render_num_encoder(Iter, ios_base&,
                         const num_encoder<Char, T>&, Char);
 
 
