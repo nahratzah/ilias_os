@@ -53,7 +53,7 @@ auto basic_ostream<Char, Traits>::seekp(pos_type pos) ->
     basic_ostream& {
   sentry s{ *this };
   if (s) {
-    if (this->rdbuf()->pubseekpos(pos, ios_base::out) == -1)
+    if (this->rdbuf()->pubseekpos(pos, ios_base::out) == pos_type(-1))
       this->setstate(ios_base::failbit);
   }
   return *this;
@@ -64,7 +64,7 @@ auto basic_ostream<Char, Traits>::seekp(off_type off, ios_base::seekdir dir) ->
     basic_ostream& {
   sentry s{ *this };
   if (s) {
-    if (this->rdbuf()->pubseekoff(off, dir, ios_base::out) == -1)
+    if (this->rdbuf()->pubseekoff(off, dir, ios_base::out) == pos_type(-1))
       this->setstate(ios_base::failbit);
   }
   return *this;
@@ -363,9 +363,10 @@ auto basic_ostream<Char, Traits>::unformatted_(Fn fn, Args&&... args) ->
     basic_ostream& {
   try {
     sentry s{ *this };
-    if (s)
+    if (s) {
       const bool failed = impl::invoke(fn, forward<Args>(args)...);
       if (failed) this->setstate(ios_base::failbit | ios_base::badbit);
+    }
   } catch (...) {
     this->setstate_nothrow_(ios_base::badbit);
     if (this->exceptions() & ios_base::badbit) throw;
@@ -499,18 +500,21 @@ auto operator<< (basic_ostream<char, Traits>& os, const unsigned char* s) ->
 
 
 template<typename Char, typename Traits>
-basic_ostream<Char, Traits>::sentry::sentry(basic_ostream& os) {
-  if (os.good() && os.tie())
-    os.tie()->flush();
-  ok_ = os.good();
-  if (!ok_) os.setstate(ios_base::failbit);
+basic_ostream<Char, Traits>::sentry::sentry(basic_ostream& os)
+: os_(os)
+{
+  if (os_.good() && os_.tie())
+    os_.tie()->flush();
+  ok_ = os_.good();
+  if (!ok_) os_.setstate(ios_base::failbit);
 }
 
 template<typename Char, typename Traits>
 basic_ostream<Char, Traits>::sentry::~sentry() noexcept {
-  if ((os.flags() & ios_base::unitbuf) && !uncaught_exception && os.good()) {
-    if (os.rdbuf()->pubsync() == -1)
-      os.setstate_nothrow_(ios_base::bad_bit);
+  if ((os_.flags() & ios_base::unitbuf) == ios_base::unitbuf &&
+      !uncaught_exception() && os_.good()) {
+    if (os_.rdbuf()->pubsync() == -1)
+      os_.setstate_nothrow_(ios_base::badbit);
   }
 }
 

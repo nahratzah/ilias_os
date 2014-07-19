@@ -139,6 +139,7 @@ class basic_ostream<Char, Traits>::sentry {
   sentry& operator=(const sentry&) = delete;
 
  private:
+  basic_ostream& os_;
   bool ok_;
 };
 
