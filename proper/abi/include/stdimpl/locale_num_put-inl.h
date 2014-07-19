@@ -176,7 +176,7 @@ auto render_num_encoder(Iter out, ios_base& str,
   const auto emit_count = prefix.length() + digits.length() + n_thousand_seps;
 
   /* Calculate required padding. */
-  const auto width = str.width(0);
+  const make_unsigned_t<streamsize> width = str.width(0);
   auto pad = (width <= emit_count ? 0 : width - emit_count);
 
   /* Calculate where the padding should occur. */
