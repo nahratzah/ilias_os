@@ -246,7 +246,20 @@ class ios_base::Init {
 };
 
 
+template<typename State> class fpos;
+
+template<typename State>
+bool operator==(const fpos<State>& a, const fpos<State>& b)
+    noexcept(noexcept(a.state() == b.state()));
+
+template<typename State>
+bool operator!=(const fpos<State>& a, const fpos<State>& b)
+    noexcept(noexcept(!(a == b)));
+
 template<typename State> class fpos {
+  friend bool operator==(const fpos<State>& a, const fpos<State>& b)
+      noexcept(noexcept(a.state() == b.state()));
+
  public:
   State state() const;
   void state(State);
@@ -265,14 +278,6 @@ template<typename State> class fpos {
   _TYPES(fpos_t) pos_;
   State state_;
 };
-
-template<typename State>
-bool operator==(const fpos<State>& a, const fpos<State>& b)
-    noexcept(noexcept(a.state() == b.state()));
-
-template<typename State>
-bool operator!=(const fpos<State>& a, const fpos<State>& b)
-    noexcept(noexcept(!(a == b)));
 
 
 namespace impl {
