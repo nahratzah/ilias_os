@@ -126,6 +126,13 @@ enum _ABI_TYPES(buffer_style) {
 struct _ABI_TYPES(mbstate_t)
 {
 	char no_clue[8];	/* XXX figure out what mbstate is supposed to do and implement whatever. */
+
+#ifdef __cplusplus
+	bool operator==(const _ABI_TYPES(mbstate_t)& o) const
+	{ return no_clue == o.no_clue; }
+	bool operator!=(const _ABI_TYPES(mbstate_t)& o) const
+	{ return !(*this == o); }
+#endif
 };
 
 struct _ABI_TYPES(stack32_t)	/* 32-bit register stack. */
