@@ -318,7 +318,7 @@ facet_vector_map_* new_facet_vector_map(size_t nelem,
 
   /* Initialize header. */
   facet_vector_map_size(m) = 0;
-  atomic_init(facet_vector_map_refcounter(m), 0U);
+  atomic_init(facet_vector_map_refcounter(m), uintptr_t(0));
 
   /* Initialize fields. */
   for (auto i = begin(*m); i != end(*m); ++i) {
