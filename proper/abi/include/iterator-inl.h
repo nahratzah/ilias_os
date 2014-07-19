@@ -731,6 +731,11 @@ auto ostreambuf_iterator<Char, Traits>::operator=(Char ch) ->
 }
 
 template<typename Char, typename Traits>
+auto ostreambuf_iterator<Char, Traits>::operator*() -> ostreambuf_iterator& {
+  return *this;
+}
+
+template<typename Char, typename Traits>
 auto ostreambuf_iterator<Char, Traits>::operator++() -> ostreambuf_iterator& {
   return *this;
 }
