@@ -561,142 +561,6 @@ auto locale::use_facet_(const id* idp) const -> const facet& {
 }
 
 
-constexpr locale::id numpunct<char>::id;
-constexpr locale::id numpunct<char16_t>::id;
-constexpr locale::id numpunct<char32_t>::id;
-constexpr locale::id numpunct<wchar_t>::id;
-
-auto numpunct<char>::decimal_point() const -> char_type {
-  return do_decimal_point();
-}
-auto numpunct<char16_t>::decimal_point() const -> char_type {
-  return do_decimal_point();
-}
-auto numpunct<char32_t>::decimal_point() const -> char_type {
-  return do_decimal_point();
-}
-auto numpunct<wchar_t>::decimal_point() const -> char_type {
-  return do_decimal_point();
-}
-
-auto numpunct<char>::thousands_sep() const -> char_type {
-  return do_thousands_sep();
-}
-auto numpunct<char16_t>::thousands_sep() const -> char_type {
-  return do_thousands_sep();
-}
-auto numpunct<char32_t>::thousands_sep() const -> char_type {
-  return do_thousands_sep();
-}
-auto numpunct<wchar_t>::thousands_sep() const -> char_type {
-  return do_thousands_sep();
-}
-
-auto numpunct<char>::grouping() const -> string {
-  return do_grouping();
-}
-auto numpunct<char16_t>::grouping() const -> string {
-  return do_grouping();
-}
-auto numpunct<char32_t>::grouping() const -> string {
-  return do_grouping();
-}
-auto numpunct<wchar_t>::grouping() const -> string {
-  return do_grouping();
-}
-
-auto numpunct<char>::truename() const -> string_type {
-  return do_truename();
-}
-auto numpunct<char16_t>::truename() const -> string_type {
-  return do_truename();
-}
-auto numpunct<char32_t>::truename() const -> string_type {
-  return do_truename();
-}
-auto numpunct<wchar_t>::truename() const -> string_type {
-  return do_truename();
-}
-
-auto numpunct<char>::falsename() const -> string_type {
-  return do_falsename();
-}
-auto numpunct<char16_t>::falsename() const -> string_type {
-  return do_falsename();
-}
-auto numpunct<char32_t>::falsename() const -> string_type {
-  return do_falsename();
-}
-auto numpunct<wchar_t>::falsename() const -> string_type {
-  return do_falsename();
-}
-
-auto numpunct<char>::do_decimal_point() const -> char_type {
-  return '.';
-}
-auto numpunct<char16_t>::do_decimal_point() const -> char_type {
-  return '.';
-}
-auto numpunct<char32_t>::do_decimal_point() const -> char_type {
-  return '.';
-}
-auto numpunct<wchar_t>::do_decimal_point() const -> char_type {
-  return L'.';
-}
-
-auto numpunct<char>::do_thousands_sep() const -> char_type {
-  return ',';
-}
-auto numpunct<char16_t>::do_thousands_sep() const -> char_type {
-  return u',';
-}
-auto numpunct<char32_t>::do_thousands_sep() const -> char_type {
-  return U',';
-}
-auto numpunct<wchar_t>::do_thousands_sep() const -> char_type {
-  return L',';
-}
-
-auto numpunct<char>::do_grouping() const -> string {
-  return string();
-}
-auto numpunct<char16_t>::do_grouping() const -> string {
-  return string();
-}
-auto numpunct<char32_t>::do_grouping() const -> string {
-  return string();
-}
-auto numpunct<wchar_t>::do_grouping() const -> string {
-  return string();
-}
-
-auto numpunct<char>::do_truename() const -> string_type {
-  return "true";
-}
-auto numpunct<char16_t>::do_truename() const -> string_type {
-  return u"true";
-}
-auto numpunct<char32_t>::do_truename() const -> string_type {
-  return U"true";
-}
-auto numpunct<wchar_t>::do_truename() const -> string_type {
-  return L"true";
-}
-
-auto numpunct<char>::do_falsename() const -> string_type {
-  return "false";
-}
-auto numpunct<char16_t>::do_falsename() const -> string_type {
-  return u"false";
-}
-auto numpunct<char32_t>::do_falsename() const -> string_type {
-  return U"false";
-}
-auto numpunct<wchar_t>::do_falsename() const -> string_type {
-  return L"false";
-}
-
-
 locale_t duplocale(locale_t loc) noexcept {
   return facet_vector_map_ptr(loc).release();
 }
@@ -794,8 +658,6 @@ constexpr ctype_base::mask ctype_base::space,
                            ctype_base::blank,
                            ctype_base::graph,
                            ctype_base::alnum;
-
-constexpr locale::id ctype<char>::id;
 
 
 namespace {
@@ -1104,6 +966,593 @@ auto ctype<char>::classic_table() noexcept -> const mask* {
 }
 
 
+ctype<char16_t>::ctype(size_t refs)
+: locale::facet(refs)
+{}
+
+auto ctype<char16_t>::is(mask m, char_type c) const -> bool {
+  return do_is(m, c);
+}
+
+auto ctype<char16_t>::is(const char_type* b, const char_type* e,
+                         mask* vec) const -> const char_type* {
+  return do_is(b, e, vec);
+}
+
+auto ctype<char16_t>::scan_is(mask m, const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return do_scan_is(m, b, e);
+}
+
+auto ctype<char16_t>::scan_not(mask m, const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return do_scan_not(m, b, e);
+}
+
+auto ctype<char16_t>::toupper(char_type c) const -> char_type {
+  return do_toupper(c);
+}
+
+auto ctype<char16_t>::toupper(char_type* b, const char_type* e) const ->
+    const char_type* {
+  return do_toupper(b, e);
+}
+
+auto ctype<char16_t>::tolower(char_type c) const -> char_type {
+  return do_tolower(c);
+}
+
+auto ctype<char16_t>::tolower(char_type* b, const char_type* e) const ->
+    const char_type* {
+  return do_tolower(b, e);
+}
+
+auto ctype<char16_t>::widen(char c) const -> char_type {
+  return do_widen(c);
+}
+
+auto ctype<char16_t>::widen(const char* b, const char* e,
+                            char_type* out) const -> const char* {
+  return do_widen(b, e, out);
+}
+
+auto ctype<char16_t>::narrow(char_type c, char dfl) const -> char {
+  return do_narrow(c, dfl);
+}
+
+auto ctype<char16_t>::narrow(const char_type* b, const char_type* e,
+                             char dfl, char* out) const -> const char_type* {
+  return do_narrow(b, e, dfl, out);
+}
+
+ctype<char16_t>::~ctype() noexcept {}
+
+auto ctype<char16_t>::do_is(mask m, char_type c) const -> bool {
+  return (c >= 0 && c <= 0x7f && bool(ascii_masks[c] & m));  // XXX: all the code points!
+}
+
+auto ctype<char16_t>::do_is(const char_type* b, const char_type* e, mask* vec)
+    const -> const char_type* {
+  transform(b, e, vec,
+            [this](char_type c) -> mask {
+              if (c >= 0 && c <= 0x7f) return ascii_masks[c];  // XXX: all the code points!
+              return 0;
+            });
+  return e;
+}
+
+auto ctype<char16_t>::do_scan_is(mask m,
+                                 const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return find_if(b, e,
+                 [m, this](char_type c) -> bool {
+                   return this->is(m, c);
+                 });
+}
+
+auto ctype<char16_t>::do_scan_not(mask m,
+                                  const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return find_if_not(b, e,
+                     [m, this](char_type c) -> bool {
+                       return this->is(m, c);
+                     });
+}
+
+auto ctype<char16_t>::do_toupper(char_type c) const -> char_type {
+  // XXX: all the code points!
+  return (c >= 'a' && c <= 'z' ?
+          c - 'a' + 'A' :
+          c);
+}
+
+auto ctype<char16_t>::do_toupper(char_type* b, const char_type* e) const ->
+    const char_type* {
+  const char_type* bb = b;
+  return transform(bb, e, b,
+                   [this](char_type c) -> char_type {
+                     return this->toupper(c);
+                   });
+}
+
+auto ctype<char16_t>::do_tolower(char_type c) const -> char_type {
+  // XXX: all the code points!
+  return (c >= 'A' && c <= 'A' ?
+          c - 'A' + 'a' :
+          c);
+}
+
+auto ctype<char16_t>::do_tolower(char_type* b, const char_type* e) const ->
+    const char_type* {
+  const char_type* bb = b;
+  return transform(bb, e, b,
+                   [this](char_type c) -> char_type {
+                     return this->tolower(c);
+                   });
+}
+
+auto ctype<char16_t>::do_widen(char c) const -> char_type {
+  return c;
+}
+
+auto ctype<char16_t>::do_widen(const char* b, const char* e,
+                              char_type* out) const -> const char* {
+  transform(b, e, out,
+            [this](char c) -> char_type {
+              return this->widen(c);
+            });
+  return e;
+}
+
+auto ctype<char16_t>::do_narrow(char_type c, char dfl) const -> char {
+  return (c <= 0 || c > 0x7f ? dfl : c);
+}
+
+auto ctype<char16_t>::do_narrow(const char_type* b, const char_type* e,
+                               char dfl, char* out) const -> const char_type* {
+  transform(b, e, out,
+            [this, dfl](char c) -> char_type {
+              return this->narrow(c, dfl);
+            });
+  return e;
+}
+
+
+ctype<char32_t>::ctype(size_t refs)
+: locale::facet(refs)
+{}
+
+auto ctype<char32_t>::is(mask m, char_type c) const -> bool {
+  return do_is(m, c);
+}
+
+auto ctype<char32_t>::is(const char_type* b, const char_type* e,
+                         mask* vec) const -> const char_type* {
+  return do_is(b, e, vec);
+}
+
+auto ctype<char32_t>::scan_is(mask m, const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return do_scan_is(m, b, e);
+}
+
+auto ctype<char32_t>::scan_not(mask m, const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return do_scan_not(m, b, e);
+}
+
+auto ctype<char32_t>::toupper(char_type c) const -> char_type {
+  return do_toupper(c);
+}
+
+auto ctype<char32_t>::toupper(char_type* b, const char_type* e) const ->
+    const char_type* {
+  return do_toupper(b, e);
+}
+
+auto ctype<char32_t>::tolower(char_type c) const -> char_type {
+  return do_tolower(c);
+}
+
+auto ctype<char32_t>::tolower(char_type* b, const char_type* e) const ->
+    const char_type* {
+  return do_tolower(b, e);
+}
+
+auto ctype<char32_t>::widen(char c) const -> char_type {
+  return do_widen(c);
+}
+
+auto ctype<char32_t>::widen(const char* b, const char* e,
+                            char_type* out) const -> const char* {
+  return do_widen(b, e, out);
+}
+
+auto ctype<char32_t>::narrow(char_type c, char dfl) const -> char {
+  return do_narrow(c, dfl);
+}
+
+auto ctype<char32_t>::narrow(const char_type* b, const char_type* e,
+                             char dfl, char* out) const -> const char_type* {
+  return do_narrow(b, e, dfl, out);
+}
+
+ctype<char32_t>::~ctype() noexcept {}
+
+auto ctype<char32_t>::do_is(mask m, char_type c) const -> bool {
+  return (c >= 0 && c <= 0x7f && bool(ascii_masks[c] & m));  // XXX: all the code points!
+}
+
+auto ctype<char32_t>::do_is(const char_type* b, const char_type* e, mask* vec)
+    const -> const char_type* {
+  transform(b, e, vec,
+            [this](char_type c) -> mask {
+              if (c >= 0 && c <= 0x7f) return ascii_masks[c];  // XXX: all the code points!
+              return 0;
+            });
+  return e;
+}
+
+auto ctype<char32_t>::do_scan_is(mask m,
+                                 const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return find_if(b, e,
+                 [m, this](char_type c) -> bool {
+                   return this->is(m, c);
+                 });
+}
+
+auto ctype<char32_t>::do_scan_not(mask m,
+                                  const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return find_if_not(b, e,
+                     [m, this](char_type c) -> bool {
+                       return this->is(m, c);
+                     });
+}
+
+auto ctype<char32_t>::do_toupper(char_type c) const -> char_type {
+  // XXX: all the code points!
+  return (c >= 'a' && c <= 'z' ?
+          c - 'a' + 'A' :
+          c);
+}
+
+auto ctype<char32_t>::do_toupper(char_type* b, const char_type* e) const ->
+    const char_type* {
+  const char_type* bb = b;
+  return transform(bb, e, b,
+                   [this](char_type c) -> char_type {
+                     return this->toupper(c);
+                   });
+}
+
+auto ctype<char32_t>::do_tolower(char_type c) const -> char_type {
+  // XXX: all the code points!
+  return (c >= 'A' && c <= 'A' ?
+          c - 'A' + 'a' :
+          c);
+}
+
+auto ctype<char32_t>::do_tolower(char_type* b, const char_type* e) const ->
+    const char_type* {
+  const char_type* bb = b;
+  return transform(bb, e, b,
+                   [this](char_type c) -> char_type {
+                     return this->tolower(c);
+                   });
+}
+
+auto ctype<char32_t>::do_widen(char c) const -> char_type {
+  return c;
+}
+
+auto ctype<char32_t>::do_widen(const char* b, const char* e,
+                              char_type* out) const -> const char* {
+  transform(b, e, out,
+            [this](char c) -> char_type {
+              return this->widen(c);
+            });
+  return e;
+}
+
+auto ctype<char32_t>::do_narrow(char_type c, char dfl) const -> char {
+  return (c <= 0 || c > 0x7f ? dfl : c);
+}
+
+auto ctype<char32_t>::do_narrow(const char_type* b, const char_type* e,
+                               char dfl, char* out) const -> const char_type* {
+  transform(b, e, out,
+            [this, dfl](char c) -> char_type {
+              return this->narrow(c, dfl);
+            });
+  return e;
+}
+
+
+ctype<wchar_t>::ctype(size_t refs)
+: locale::facet(refs)
+{}
+
+auto ctype<wchar_t>::is(mask m, char_type c) const -> bool {
+  return do_is(m, c);
+}
+
+auto ctype<wchar_t>::is(const char_type* b, const char_type* e,
+                        mask* vec) const -> const char_type* {
+  return do_is(b, e, vec);
+}
+
+auto ctype<wchar_t>::scan_is(mask m, const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return do_scan_is(m, b, e);
+}
+
+auto ctype<wchar_t>::scan_not(mask m, const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return do_scan_not(m, b, e);
+}
+
+auto ctype<wchar_t>::toupper(char_type c) const -> char_type {
+  return do_toupper(c);
+}
+
+auto ctype<wchar_t>::toupper(char_type* b, const char_type* e) const ->
+    const char_type* {
+  return do_toupper(b, e);
+}
+
+auto ctype<wchar_t>::tolower(char_type c) const -> char_type {
+  return do_tolower(c);
+}
+
+auto ctype<wchar_t>::tolower(char_type* b, const char_type* e) const ->
+    const char_type* {
+  return do_tolower(b, e);
+}
+
+auto ctype<wchar_t>::widen(char c) const -> char_type {
+  return do_widen(c);
+}
+
+auto ctype<wchar_t>::widen(const char* b, const char* e,
+                           char_type* out) const -> const char* {
+  return do_widen(b, e, out);
+}
+
+auto ctype<wchar_t>::narrow(char_type c, char dfl) const -> char {
+  return do_narrow(c, dfl);
+}
+
+auto ctype<wchar_t>::narrow(const char_type* b, const char_type* e,
+                            char dfl, char* out) const -> const char_type* {
+  return do_narrow(b, e, dfl, out);
+}
+
+ctype<wchar_t>::~ctype() noexcept {}
+
+auto ctype<wchar_t>::do_is(mask m, char_type c) const -> bool {
+  return (c >= 0 && c <= 0x7f && bool(ascii_masks[c] & m));  // XXX: all the code points!
+}
+
+auto ctype<wchar_t>::do_is(const char_type* b, const char_type* e, mask* vec)
+    const -> const char_type* {
+  transform(b, e, vec,
+            [this](char_type c) -> mask {
+              if (c >= 0 && c <= 0x7f) return ascii_masks[c];  // XXX: all the code points!
+              return 0;
+            });
+  return e;
+}
+
+auto ctype<wchar_t>::do_scan_is(mask m,
+                                const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return find_if(b, e,
+                 [m, this](char_type c) -> bool {
+                   return this->is(m, c);
+                 });
+}
+
+auto ctype<wchar_t>::do_scan_not(mask m,
+                                 const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return find_if_not(b, e,
+                     [m, this](char_type c) -> bool {
+                       return this->is(m, c);
+                     });
+}
+
+auto ctype<wchar_t>::do_toupper(char_type c) const -> char_type {
+  // XXX: all the code points!
+  return (c >= 'a' && c <= 'z' ?
+          c - 'a' + 'A' :
+          c);
+}
+
+auto ctype<wchar_t>::do_toupper(char_type* b, const char_type* e) const ->
+    const char_type* {
+  const char_type* bb = b;
+  return transform(bb, e, b,
+                   [this](char_type c) -> char_type {
+                     return this->toupper(c);
+                   });
+}
+
+auto ctype<wchar_t>::do_tolower(char_type c) const -> char_type {
+  // XXX: all the code points!
+  return (c >= 'A' && c <= 'A' ?
+          c - 'A' + 'a' :
+          c);
+}
+
+auto ctype<wchar_t>::do_tolower(char_type* b, const char_type* e) const ->
+    const char_type* {
+  const char_type* bb = b;
+  return transform(bb, e, b,
+                   [this](char_type c) -> char_type {
+                     return this->tolower(c);
+                   });
+}
+
+auto ctype<wchar_t>::do_widen(char c) const -> char_type {
+  return c;
+}
+
+auto ctype<wchar_t>::do_widen(const char* b, const char* e,
+                              char_type* out) const -> const char* {
+  transform(b, e, out,
+            [this](char c) -> char_type {
+              return this->widen(c);
+            });
+  return e;
+}
+
+auto ctype<wchar_t>::do_narrow(char_type c, char dfl) const -> char {
+  return (c <= 0 || c > 0x7f ? dfl : c);
+}
+
+auto ctype<wchar_t>::do_narrow(const char_type* b, const char_type* e,
+                               char dfl, char* out) const -> const char_type* {
+  transform(b, e, out,
+            [this, dfl](char c) -> char_type {
+              return this->narrow(c, dfl);
+            });
+  return e;
+}
+
+
+auto numpunct<char>::decimal_point() const -> char_type {
+  return do_decimal_point();
+}
+auto numpunct<char16_t>::decimal_point() const -> char_type {
+  return do_decimal_point();
+}
+auto numpunct<char32_t>::decimal_point() const -> char_type {
+  return do_decimal_point();
+}
+auto numpunct<wchar_t>::decimal_point() const -> char_type {
+  return do_decimal_point();
+}
+
+auto numpunct<char>::thousands_sep() const -> char_type {
+  return do_thousands_sep();
+}
+auto numpunct<char16_t>::thousands_sep() const -> char_type {
+  return do_thousands_sep();
+}
+auto numpunct<char32_t>::thousands_sep() const -> char_type {
+  return do_thousands_sep();
+}
+auto numpunct<wchar_t>::thousands_sep() const -> char_type {
+  return do_thousands_sep();
+}
+
+auto numpunct<char>::grouping() const -> string {
+  return do_grouping();
+}
+auto numpunct<char16_t>::grouping() const -> string {
+  return do_grouping();
+}
+auto numpunct<char32_t>::grouping() const -> string {
+  return do_grouping();
+}
+auto numpunct<wchar_t>::grouping() const -> string {
+  return do_grouping();
+}
+
+auto numpunct<char>::truename() const -> string_type {
+  return do_truename();
+}
+auto numpunct<char16_t>::truename() const -> string_type {
+  return do_truename();
+}
+auto numpunct<char32_t>::truename() const -> string_type {
+  return do_truename();
+}
+auto numpunct<wchar_t>::truename() const -> string_type {
+  return do_truename();
+}
+
+auto numpunct<char>::falsename() const -> string_type {
+  return do_falsename();
+}
+auto numpunct<char16_t>::falsename() const -> string_type {
+  return do_falsename();
+}
+auto numpunct<char32_t>::falsename() const -> string_type {
+  return do_falsename();
+}
+auto numpunct<wchar_t>::falsename() const -> string_type {
+  return do_falsename();
+}
+
+auto numpunct<char>::do_decimal_point() const -> char_type {
+  return '.';
+}
+auto numpunct<char16_t>::do_decimal_point() const -> char_type {
+  return '.';
+}
+auto numpunct<char32_t>::do_decimal_point() const -> char_type {
+  return '.';
+}
+auto numpunct<wchar_t>::do_decimal_point() const -> char_type {
+  return L'.';
+}
+
+auto numpunct<char>::do_thousands_sep() const -> char_type {
+  return ',';
+}
+auto numpunct<char16_t>::do_thousands_sep() const -> char_type {
+  return u',';
+}
+auto numpunct<char32_t>::do_thousands_sep() const -> char_type {
+  return U',';
+}
+auto numpunct<wchar_t>::do_thousands_sep() const -> char_type {
+  return L',';
+}
+
+auto numpunct<char>::do_grouping() const -> string {
+  return string();
+}
+auto numpunct<char16_t>::do_grouping() const -> string {
+  return string();
+}
+auto numpunct<char32_t>::do_grouping() const -> string {
+  return string();
+}
+auto numpunct<wchar_t>::do_grouping() const -> string {
+  return string();
+}
+
+auto numpunct<char>::do_truename() const -> string_type {
+  return "true";
+}
+auto numpunct<char16_t>::do_truename() const -> string_type {
+  return u"true";
+}
+auto numpunct<char32_t>::do_truename() const -> string_type {
+  return U"true";
+}
+auto numpunct<wchar_t>::do_truename() const -> string_type {
+  return L"true";
+}
+
+auto numpunct<char>::do_falsename() const -> string_type {
+  return "false";
+}
+auto numpunct<char16_t>::do_falsename() const -> string_type {
+  return u"false";
+}
+auto numpunct<char32_t>::do_falsename() const -> string_type {
+  return U"false";
+}
+auto numpunct<wchar_t>::do_falsename() const -> string_type {
+  return L"false";
+}
+
+
 template bool locale::operator()(basic_string_ref<char>,
                                  basic_string_ref<char>) const;
 template bool locale::operator()(basic_string_ref<char16_t>,
@@ -1113,19 +1562,25 @@ template bool locale::operator()(basic_string_ref<char32_t>,
 template bool locale::operator()(basic_string_ref<wchar_t>,
                                  basic_string_ref<wchar_t>) const;
 
-template class ctype<char16_t>;
-template class ctype<char32_t>;
-template class ctype<wchar_t>;
+template class collate<char>;
+template class collate<char16_t>;
+template class collate<char32_t>;
+template class collate<wchar_t>;
+
+constexpr locale::id ctype<char>::id;
+constexpr locale::id ctype<char16_t>::id;
+constexpr locale::id ctype<char32_t>::id;
+constexpr locale::id ctype<wchar_t>::id;
 
 template class num_put<char>;
 template class num_put<char16_t>;
 template class num_put<char32_t>;
 template class num_put<wchar_t>;
 
-template class collate<char>;
-template class collate<char16_t>;
-template class collate<char32_t>;
-template class collate<wchar_t>;
+constexpr locale::id numpunct<char>::id;
+constexpr locale::id numpunct<char16_t>::id;
+constexpr locale::id numpunct<char32_t>::id;
+constexpr locale::id numpunct<wchar_t>::id;
 
 
 _namespace_end(std)
