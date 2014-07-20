@@ -1601,4 +1601,65 @@ template class collate_byname<char32_t>;
 template class collate_byname<wchar_t>;
 
 
+template bool isspace(char, const locale&);
+template bool isprint(char, const locale&);
+template bool iscntrl(char, const locale&);
+template bool isupper(char, const locale&);
+template bool islower(char, const locale&);
+template bool isalpha(char, const locale&);
+template bool isdigit(char, const locale&);
+template bool ispunct(char, const locale&);
+template bool isxdigit(char, const locale&);
+template bool isalnum(char, const locale&);
+template bool isgraph(char, const locale&);
+template bool isblank(char, const locale&);
+template char toupper(char, const locale&);
+template char tolower(char, const locale&);
+
+template bool isspace(char16_t, const locale&);
+template bool isprint(char16_t, const locale&);
+template bool iscntrl(char16_t, const locale&);
+template bool isupper(char16_t, const locale&);
+template bool islower(char16_t, const locale&);
+template bool isalpha(char16_t, const locale&);
+template bool isdigit(char16_t, const locale&);
+template bool ispunct(char16_t, const locale&);
+template bool isxdigit(char16_t, const locale&);
+template bool isalnum(char16_t, const locale&);
+template bool isgraph(char16_t, const locale&);
+template bool isblank(char16_t, const locale&);
+template char16_t toupper(char16_t, const locale&);
+template char16_t tolower(char16_t, const locale&);
+
+template bool isspace(char32_t, const locale&);
+template bool isprint(char32_t, const locale&);
+template bool iscntrl(char32_t, const locale&);
+template bool isupper(char32_t, const locale&);
+template bool islower(char32_t, const locale&);
+template bool isalpha(char32_t, const locale&);
+template bool isdigit(char32_t, const locale&);
+template bool ispunct(char32_t, const locale&);
+template bool isxdigit(char32_t, const locale&);
+template bool isalnum(char32_t, const locale&);
+template bool isgraph(char32_t, const locale&);
+template bool isblank(char32_t, const locale&);
+template char32_t toupper(char32_t, const locale&);
+template char32_t tolower(char32_t, const locale&);
+
+template bool isspace(wchar_t, const locale&);
+template bool isprint(wchar_t, const locale&);
+template bool iscntrl(wchar_t, const locale&);
+template bool isupper(wchar_t, const locale&);
+template bool islower(wchar_t, const locale&);
+template bool isalpha(wchar_t, const locale&);
+template bool isdigit(wchar_t, const locale&);
+template bool ispunct(wchar_t, const locale&);
+template bool isxdigit(wchar_t, const locale&);
+template bool isalnum(wchar_t, const locale&);
+template bool isgraph(wchar_t, const locale&);
+template bool isblank(wchar_t, const locale&);
+template wchar_t toupper(wchar_t, const locale&);
+template wchar_t tolower(wchar_t, const locale&);
+
+
 _namespace_end(std)

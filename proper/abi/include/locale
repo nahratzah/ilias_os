@@ -793,6 +793,67 @@ extern template class collate_byname<char32_t>;
 extern template class collate_byname<wchar_t>;
 
 
+extern template bool isspace(char, const locale&);
+extern template bool isprint(char, const locale&);
+extern template bool iscntrl(char, const locale&);
+extern template bool isupper(char, const locale&);
+extern template bool islower(char, const locale&);
+extern template bool isalpha(char, const locale&);
+extern template bool isdigit(char, const locale&);
+extern template bool ispunct(char, const locale&);
+extern template bool isxdigit(char, const locale&);
+extern template bool isalnum(char, const locale&);
+extern template bool isgraph(char, const locale&);
+extern template bool isblank(char, const locale&);
+extern template char toupper(char, const locale&);
+extern template char tolower(char, const locale&);
+
+extern template bool isspace(char16_t, const locale&);
+extern template bool isprint(char16_t, const locale&);
+extern template bool iscntrl(char16_t, const locale&);
+extern template bool isupper(char16_t, const locale&);
+extern template bool islower(char16_t, const locale&);
+extern template bool isalpha(char16_t, const locale&);
+extern template bool isdigit(char16_t, const locale&);
+extern template bool ispunct(char16_t, const locale&);
+extern template bool isxdigit(char16_t, const locale&);
+extern template bool isalnum(char16_t, const locale&);
+extern template bool isgraph(char16_t, const locale&);
+extern template bool isblank(char16_t, const locale&);
+extern template char16_t toupper(char16_t, const locale&);
+extern template char16_t tolower(char16_t, const locale&);
+
+extern template bool isspace(char32_t, const locale&);
+extern template bool isprint(char32_t, const locale&);
+extern template bool iscntrl(char32_t, const locale&);
+extern template bool isupper(char32_t, const locale&);
+extern template bool islower(char32_t, const locale&);
+extern template bool isalpha(char32_t, const locale&);
+extern template bool isdigit(char32_t, const locale&);
+extern template bool ispunct(char32_t, const locale&);
+extern template bool isxdigit(char32_t, const locale&);
+extern template bool isalnum(char32_t, const locale&);
+extern template bool isgraph(char32_t, const locale&);
+extern template bool isblank(char32_t, const locale&);
+extern template char32_t toupper(char32_t, const locale&);
+extern template char32_t tolower(char32_t, const locale&);
+
+extern template bool isspace(wchar_t, const locale&);
+extern template bool isprint(wchar_t, const locale&);
+extern template bool iscntrl(wchar_t, const locale&);
+extern template bool isupper(wchar_t, const locale&);
+extern template bool islower(wchar_t, const locale&);
+extern template bool isalpha(wchar_t, const locale&);
+extern template bool isdigit(wchar_t, const locale&);
+extern template bool ispunct(wchar_t, const locale&);
+extern template bool isxdigit(wchar_t, const locale&);
+extern template bool isalnum(wchar_t, const locale&);
+extern template bool isgraph(wchar_t, const locale&);
+extern template bool isblank(wchar_t, const locale&);
+extern template wchar_t toupper(wchar_t, const locale&);
+extern template wchar_t tolower(wchar_t, const locale&);
+
+
 _namespace_end(std)
 
 #ifndef _LOCALE_SKIP_INL_INCLUDE
