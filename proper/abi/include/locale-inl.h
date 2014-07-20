@@ -265,32 +265,32 @@ auto ctype<char>::is(mask m, char_type c) const -> bool {
 _LOCALE_INLINE
 auto ctype<char>::is(const char_type* b, const char_type* e, mask* vec)
     const -> const char_type* {
-  std::transform(b, e, vec,
-                 [this](char_type c) -> mask {
-                   const size_t idx = static_cast<unsigned char>(c);
-                   return (idx < table_size && table() != nullptr ?
-                           table()[idx] :
-                           0);
-                 });
+  transform(b, e, vec,
+            [this](char_type c) -> mask {
+              const size_t idx = static_cast<unsigned char>(c);
+              return (idx < table_size && table() != nullptr ?
+                      table()[idx] :
+                      0);
+            });
   return e;
 }
 
 _LOCALE_INLINE
 auto ctype<char>::scan_is(mask m, const char_type* b, const char_type* e)
     const -> const char_type* {
-  return std::find_if(b, e,
-                      [m, this](char_type c) -> bool {
-                        return this->is(m, c);
-                      });
+  return find_if(b, e,
+                 [m, this](char_type c) -> bool {
+                   return this->is(m, c);
+                 });
 }
 
 _LOCALE_INLINE
 auto ctype<char>::scan_not(mask m, const char_type* b, const char_type* e)
     const -> const char_type* {
-  return std::find_if_not(b, e,
-                          [m, this](char_type c) -> bool {
-                            return this->is(m, c);
-                          });
+  return find_if_not(b, e,
+                     [m, this](char_type c) -> bool {
+                       return this->is(m, c);
+                     });
 }
 
 _LOCALE_INLINE
@@ -356,10 +356,10 @@ _LOCALE_INLINE
 auto ctype<char>::do_toupper(char_type* b, const char_type* e) const ->
     const char_type* {
   const char_type* bb = b;
-  return std::transform(bb, e, b,
-                        [this](char_type c) -> char_type {
-                          return this->toupper(c);
-                        });
+  return transform(bb, e, b,
+                   [this](char_type c) -> char_type {
+                     return this->toupper(c);
+                   });
 }
 
 _LOCALE_INLINE
@@ -371,10 +371,10 @@ _LOCALE_INLINE
 auto ctype<char>::do_tolower(char_type* b, const char_type* e) const ->
     const char_type* {
   const char_type* bb = b;
-  return std::transform(bb, e, b,
-                        [this](char_type c) -> char_type {
-                          return this->tolower(c);
-                        });
+  return transform(bb, e, b,
+                   [this](char_type c) -> char_type {
+                     return this->tolower(c);
+                   });
 }
 
 _LOCALE_INLINE
@@ -385,10 +385,10 @@ auto ctype<char>::do_widen(char c) const -> char_type {
 _LOCALE_INLINE
 auto ctype<char>::do_widen(const char* b, const char* e, char_type* out)
     const -> const char* {
-  std::transform(b, e, out,
-                 [this](char c) -> char_type {
-                   return this->widen(c);
-                 });
+  transform(b, e, out,
+            [this](char c) -> char_type {
+              return this->widen(c);
+            });
   return e;
 }
 
@@ -400,10 +400,10 @@ auto ctype<char>::do_narrow(char_type c, char) const -> char {
 _LOCALE_INLINE
 auto ctype<char>::do_narrow(const char_type* b, const char_type* e,
                             char dfl, char* out) const -> const char_type* {
-  std::transform(b, e, out,
-                 [this, dfl](char c) -> char_type {
-                   return this->narrow(c, dfl);
-                 });
+  transform(b, e, out,
+            [this, dfl](char c) -> char_type {
+              return this->narrow(c, dfl);
+            });
   return e;
 }
 
@@ -542,7 +542,6 @@ auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                             fill);
 }
 
-#if 0 // XXX implement numeric_limits<int128_t>
 #if _USE_INT128
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
@@ -557,7 +556,7 @@ auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
 
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
-                                 int128_t v) const -> iter_type {
+                                 uint128_t v) const -> iter_type {
   using impl::render_num_encoder;
   using impl::num_encoder;
 
@@ -566,19 +565,20 @@ auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                             fill);
 }
 #endif
-#endif
 
-#if 0
 template<typename Char, typename Iter>
-auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
-                                 double v) const -> iter_type {
+auto num_put<Char, Iter>::do_put(iter_type out, ios_base& /*str*/, char_type /*fill*/,
+                                 double /*v*/) const -> iter_type {
+  assert_msg(false, "XXX implement");  // XXX implement
+  return out;
 }
 
 template<typename Char, typename Iter>
-auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
-                                 long double v) const -> iter_type {
+auto num_put<Char, Iter>::do_put(iter_type out, ios_base& /*str*/, char_type /*fill*/,
+                                 long double /*v*/) const -> iter_type {
+  assert_msg(false, "XXX implement");  // XXX implement
+  return out;
 }
-#endif
 
 template<typename Char, typename Iter>
 auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
@@ -608,39 +608,6 @@ auto num_put<Char, Iter>::do_put(iter_type out, ios_base& str, char_type fill,
                                   prefix, digits, fill, false);
 }
 
-
-template<typename Char>
-numpunct<Char>::numpunct(size_t refs)
-: locale::facet(refs)
-{}
-
-template<typename Char>
-auto numpunct<Char>::decimal_point() const -> char_type {
-  return do_decimal_point();
-}
-
-template<typename Char>
-auto numpunct<Char>::thousands_sep() const -> char_type {
-  return do_thousands_sep();
-}
-
-template<typename Char>
-auto numpunct<Char>::grouping() const -> string {
-  return do_grouping();
-}
-
-template<typename Char>
-auto numpunct<Char>::truename() const -> string_type {
-  return do_truename();
-}
-
-template<typename Char>
-auto numpunct<Char>::falsename() const -> string_type {
-  return do_falsename();
-}
-
-template<typename Char>
-numpunct<Char>::~numpunct() noexcept {}
 
 inline numpunct<char>::numpunct(size_t refs)
 : locale::facet(refs)
