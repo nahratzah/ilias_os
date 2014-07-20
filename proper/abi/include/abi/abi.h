@@ -28,9 +28,6 @@ namespace __cxxabiv1 {
 # define _USE_INT128	1
 #endif
 
-const unsigned int _ABI_VALUE(bits_per_byte) = 8;
-
-
 typedef unsigned char		_ABI_TYPES(uint8_t);
 typedef unsigned short		_ABI_TYPES(uint16_t);
 typedef unsigned int		_ABI_TYPES(uint32_t);
