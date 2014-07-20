@@ -1,0 +1,71 @@
+#ifndef _CLOCALE_
+#define _CLOCALE_
+
+#include <cdecl.h>
+#include <locale_misc/locale_t.h>
+#include <locale_misc/lc_mask.h>
+#include <cstddef_misc/null.h>
+
+_namespace_begin(std)
+_cdecl_begin
+
+
+struct lconv {
+  char*	currency_symbol;
+  char*	decimal_point;
+  char	frac_digits;
+  char* grouping;
+  char*	int_curr_symbol;
+  char	int_frac_digits;
+  char	int_n_cs_precedes;
+  char	int_n_sep_by_space;
+  char	int_n_sign_posn;
+  char	int_p_cs_precedes;
+  char	int_p_sep_by_space;
+  char	int_p_sign_posn;
+  char*	mon_decimal_point;
+  char*	mon_grouping;
+  char*	mon_thousands_sep;
+  char*	negative_sign;
+  char	n_cs_precedes;
+  char	n_sep_by_space;
+  char	n_sign_posn;
+  char*	positive_sign;
+  char	p_cs_precedes;
+  char	p_sep_by_space;
+  char	p_sign_posn;
+  char	thousands_sep;
+};
+
+struct lconv* localeconv() noexcept;
+
+/* Implementation provided by locale.cc */
+locale_t duplocale(locale_t) noexcept;
+void freelocale(locale_t) noexcept;
+locale_t newlocale(int, const char*, locale_t) noexcept;
+char* setlocale(int, const char*) noexcept;
+locale_t uselocale(locale_t) noexcept;
+
+
+_cdecl_end
+_namespace_end(std)
+
+#if defined(__cplusplus) && !defined(_TEST)
+
+using _namespace(std)::lconv;
+using _namespace(std)::duplocale;
+using _namespace(std)::freelocale;
+using _namespace(std)::localeconv;
+using _namespace(std)::newlocale;
+using _namespace(std)::setlocale;
+using _namespace(std)::uselocale;
+
+#endif
+
+#ifdef __cplusplus
+# define LC_GLOBAL_LOCALE	(uselocale(nullptr))
+#else
+# define LC_GLOBAL_LOCALE	(uselocale(NULL))
+#endif
+
+#endif /* _CLOCALE_ */

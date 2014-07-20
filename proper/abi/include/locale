@@ -10,7 +10,7 @@
 #include <locale_misc/locale_t.h>
 
 #ifdef _COMPILING_LOCALE
-# include <locale.h>
+# include <clocale>
 #endif
 
 _namespace_begin(std)
