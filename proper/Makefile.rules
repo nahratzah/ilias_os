@@ -20,10 +20,12 @@ LOADER_FLAGS +=		-Os						\
 			-D_LOADER=1					\
 			-fno-pic
 
-CFLAGS_32 +=		-target i386-eabi
+CFLAGS_32 +=		-target i386-eabi				\
+			-D__ELF__
 CFLAGS_64 +=		-target amd64-eabi				\
 			-mcmodel=large					\
-			-mno-red-zone
+			-mno-red-zone					\
+			-D__ELF__
 
 CXXFLAGS +=		${COMPILER_FLAGS}				\
 			-std=c++11					\

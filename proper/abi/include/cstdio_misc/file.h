@@ -7,11 +7,11 @@ _namespace_begin(std)
 
 #ifdef __cplusplus
 class _file;
+typedef _file* FILE;
 #else
 struct _file;
+typedef struct _file* FILE;
 #endif
-
-typedef _file* FILE;
 
 _namespace_end(std)
 
