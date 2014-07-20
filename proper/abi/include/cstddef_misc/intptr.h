@@ -14,7 +14,7 @@ typedef _TYPES(intptr_t)	intptr_t;
 _namespace_end(std)
 
 
-#ifndef _TEST
+#if defined(__cplusplus) && !defined(_TEST)
 using std::uintptr_t;
 using std::intptr_t;
 #endif

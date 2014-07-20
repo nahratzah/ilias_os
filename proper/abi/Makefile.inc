@@ -47,10 +47,7 @@ ILIAS_STD_SRCS += abi/src/ilias_linked_list.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_set.cc
 ILIAS_STD_SRCS += abi/src/ilias_stats.cc
 
-SRCS_32 += abi/i386/divdi3.s
-SRCS_32 += abi/i386/moddi3.s
-SRCS_32 += abi/i386/udivdi3.s
-SRCS_32 += abi/i386/umoddi3.s
+include abi/Makefile.compiler_rt.inc
 
 SRCS += ${ABI_SRCS} ${ILIAS_STD_SRCS}
 SRCS_LOADER += ${ABI_SRCS} ${ILIAS_STD_SRCS}
