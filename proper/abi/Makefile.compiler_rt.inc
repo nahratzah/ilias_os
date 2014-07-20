@@ -18,6 +18,7 @@ COMPILER_RT_BLACKLIST += $(wildcard abi/compiler_rt/lib/builtins/x86_64/float*)
 SRCS += $(filter-out ${COMPILER_RT_BLACKLIST}, ${COMPILER_RT_SRCS})
 SRCS_32 += $(filter-out ${COMPILER_RT_BLACKLIST}, ${COMPILER_RT_SRCS_32})
 SRCS_64 += $(filter-out ${COMPILER_RT_BLACKLIST}, ${COMPILER_RT_SRCS_64})
+SRCS_LOADER += $(filter-out ${COMPILER_RT_BLACKLIST}, ${COMPILER_RT_SRCS_32})
 
 # Allow int_endiannes.h to succeed, by supplying non-detected macros.
 COMPILER_FLAGS += -D_YUGA_LITTLE_ENDIAN=__LITTLE_ENDIAN__
