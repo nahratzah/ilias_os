@@ -6,6 +6,7 @@
 #include <array>
 #include <limits>
 #include <string>
+#include <locale-fwd.h>
 
 _namespace_begin(std)
 namespace impl {

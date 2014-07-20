@@ -1,6 +1,7 @@
 #ifndef _LOCALE_
 #define _LOCALE_
 
+#include <locale-fwd.h>
 #include <cdecl.h>
 #include <iosfwd>
 #include <type_traits>
@@ -196,29 +197,31 @@ class ctype
   const char_type* narrow(const char_type*, const char_type*, char, char*)
       const;
 
-  static constexpr locale::id id{ locale::ctype };
+  static const locale::id id;
 
  protected:
   ~ctype() noexcept override;
 
-  virtual bool do_is(mask, char_type) const;
+  virtual bool do_is(mask, char_type) const = 0;
   virtual const char_type* do_is(const char_type*, const char_type*, mask*)
-      const;
+      const = 0;
   virtual const char_type* do_scan_is(mask, const char_type*, const char_type*)
-      const;
+      const = 0;
   virtual const char_type* do_scan_not(mask,
                                        const char_type*, const char_type*)
-      const;
-  virtual char_type do_toupper(char_type) const;
-  virtual const char_type* do_toupper(char_type*, const char_type*) const;
-  virtual char_type do_tolower(char_type) const;
-  virtual const char_type* do_tolower(char_type*, const char_type*) const;
-  virtual char_type do_widen(char) const;
-  virtual const char* do_widen(const char*, const char*, char_type*) const;
-  virtual char do_narrow(char_type, char) const;
+      const = 0;
+  virtual char_type do_toupper(char_type) const = 0;
+  virtual const char_type* do_toupper(char_type*, const char_type*) const = 0;
+  virtual char_type do_tolower(char_type) const = 0;
+  virtual const char_type* do_tolower(char_type*, const char_type*) const = 0;
+  virtual char_type do_widen(char) const = 0;
+  virtual const char* do_widen(const char*, const char*, char_type*) const = 0;
+  virtual char do_narrow(char_type, char) const = 0;
   virtual const char_type* do_narrow(const char_type*, const char_type*, char,
-                                     char*) const;
+                                     char*) const = 0;
 };
+
+template<typename Char> const locale::id ctype<Char>::id{ locale::ctype };
 
 template<> class ctype<char>
 : public locale::facet,
@@ -267,6 +270,153 @@ template<> class ctype<char>
   bool del_;
 };
 
+template<>
+class ctype<char16_t>
+: public locale::facet,
+  public ctype_base
+{
+ public:
+  using char_type = char16_t;
+
+  explicit ctype(size_t = 0);
+
+  bool is(mask, char_type) const;
+  const char_type* is(const char_type*, const char_type*, mask*) const;
+  const char_type* scan_is(mask, const char_type*, const char_type*) const;
+  const char_type* scan_not(mask, const char_type*, const char_type*) const;
+  char_type toupper(char_type) const;
+  const char_type* toupper(char_type*, const char_type*) const;
+  char_type tolower(char_type) const;
+  const char_type* tolower(char_type*, const char_type*) const;
+
+  char_type widen(char) const;
+  const char* widen(const char*, const char*, char_type*) const;
+  char narrow(char_type, char) const;
+  const char_type* narrow(const char_type*, const char_type*, char, char*)
+      const;
+
+  static constexpr locale::id id{ locale::ctype };
+
+ protected:
+  ~ctype() noexcept override;
+
+  virtual bool do_is(mask, char_type) const;
+  virtual const char_type* do_is(const char_type*, const char_type*, mask*)
+      const;
+  virtual const char_type* do_scan_is(mask, const char_type*, const char_type*)
+      const;
+  virtual const char_type* do_scan_not(mask,
+                                       const char_type*, const char_type*)
+      const;
+  virtual char_type do_toupper(char_type) const;
+  virtual const char_type* do_toupper(char_type*, const char_type*) const;
+  virtual char_type do_tolower(char_type) const;
+  virtual const char_type* do_tolower(char_type*, const char_type*) const;
+  virtual char_type do_widen(char) const;
+  virtual const char* do_widen(const char*, const char*, char_type*) const;
+  virtual char do_narrow(char_type, char) const;
+  virtual const char_type* do_narrow(const char_type*, const char_type*, char,
+                                     char*) const;
+};
+
+template<>
+class ctype<char32_t>
+: public locale::facet,
+  public ctype_base
+{
+ public:
+  using char_type = char32_t;
+
+  explicit ctype(size_t = 0);
+
+  bool is(mask, char_type) const;
+  const char_type* is(const char_type*, const char_type*, mask*) const;
+  const char_type* scan_is(mask, const char_type*, const char_type*) const;
+  const char_type* scan_not(mask, const char_type*, const char_type*) const;
+  char_type toupper(char_type) const;
+  const char_type* toupper(char_type*, const char_type*) const;
+  char_type tolower(char_type) const;
+  const char_type* tolower(char_type*, const char_type*) const;
+
+  char_type widen(char) const;
+  const char* widen(const char*, const char*, char_type*) const;
+  char narrow(char_type, char) const;
+  const char_type* narrow(const char_type*, const char_type*, char, char*)
+      const;
+
+  static constexpr locale::id id{ locale::ctype };
+
+ protected:
+  ~ctype() noexcept override;
+
+  virtual bool do_is(mask, char_type) const;
+  virtual const char_type* do_is(const char_type*, const char_type*, mask*)
+      const;
+  virtual const char_type* do_scan_is(mask, const char_type*, const char_type*)
+      const;
+  virtual const char_type* do_scan_not(mask,
+                                       const char_type*, const char_type*)
+      const;
+  virtual char_type do_toupper(char_type) const;
+  virtual const char_type* do_toupper(char_type*, const char_type*) const;
+  virtual char_type do_tolower(char_type) const;
+  virtual const char_type* do_tolower(char_type*, const char_type*) const;
+  virtual char_type do_widen(char) const;
+  virtual const char* do_widen(const char*, const char*, char_type*) const;
+  virtual char do_narrow(char_type, char) const;
+  virtual const char_type* do_narrow(const char_type*, const char_type*, char,
+                                     char*) const;
+};
+
+template<>
+class ctype<wchar_t>
+: public locale::facet,
+  public ctype_base
+{
+ public:
+  using char_type = wchar_t;
+
+  explicit ctype(size_t = 0);
+
+  bool is(mask, char_type) const;
+  const char_type* is(const char_type*, const char_type*, mask*) const;
+  const char_type* scan_is(mask, const char_type*, const char_type*) const;
+  const char_type* scan_not(mask, const char_type*, const char_type*) const;
+  char_type toupper(char_type) const;
+  const char_type* toupper(char_type*, const char_type*) const;
+  char_type tolower(char_type) const;
+  const char_type* tolower(char_type*, const char_type*) const;
+
+  char_type widen(char) const;
+  const char* widen(const char*, const char*, char_type*) const;
+  char narrow(char_type, char) const;
+  const char_type* narrow(const char_type*, const char_type*, char, char*)
+      const;
+
+  static constexpr locale::id id{ locale::ctype };
+
+ protected:
+  ~ctype() noexcept override;
+
+  virtual bool do_is(mask, char_type) const;
+  virtual const char_type* do_is(const char_type*, const char_type*, mask*)
+      const;
+  virtual const char_type* do_scan_is(mask, const char_type*, const char_type*)
+      const;
+  virtual const char_type* do_scan_not(mask,
+                                       const char_type*, const char_type*)
+      const;
+  virtual char_type do_toupper(char_type) const;
+  virtual const char_type* do_toupper(char_type*, const char_type*) const;
+  virtual char_type do_tolower(char_type) const;
+  virtual const char_type* do_tolower(char_type*, const char_type*) const;
+  virtual char_type do_widen(char) const;
+  virtual const char* do_widen(const char*, const char*, char_type*) const;
+  virtual char do_narrow(char_type, char) const;
+  virtual const char_type* do_narrow(const char_type*, const char_type*, char,
+                                     char*) const;
+};
+
 template<typename Char>
 class ctype_byname
 : public ctype<Char>
@@ -289,10 +439,10 @@ class codecvt_base;
 template<typename Intern, typename Extern, typename St> class codecvt;
 template<typename Intern, typename Extern, typename St> class codecvt_byname;
 
-template<typename Char, typename InputIter = istreambuf_iterator<Char>>
+template<typename Char, typename InputIter>
 class num_get;
 
-template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
+template<typename Char, typename OutputIter>
 class num_put
 : public locale::facet
 {
@@ -307,11 +457,15 @@ class num_put
   iter_type put(iter_type, ios_base&, char_type, long long) const;
   iter_type put(iter_type, ios_base&, char_type, unsigned long) const;
   iter_type put(iter_type, ios_base&, char_type, unsigned long long) const;
+#if _USE_INT128
+  iter_type put(iter_type, ios_base&, char_type, int128_t) const;
+  iter_type put(iter_type, ios_base&, char_type, uint128_t) const;
+#endif
   iter_type put(iter_type, ios_base&, char_type, double) const;
   iter_type put(iter_type, ios_base&, char_type, long double) const;
   iter_type put(iter_type, ios_base&, char_type, const void*) const;
 
-  static constexpr locale::id id{ locale::numeric };
+  static const locale::id id;
 
  protected:
   ~num_put() noexcept override;
@@ -323,38 +477,20 @@ class num_put
       const;
   virtual iter_type do_put(iter_type, ios_base&, char_type, unsigned long long)
       const;
+#if _USE_INT128
+  virtual iter_type do_put(iter_type, ios_base&, char_type, int128_t) const;
+  virtual iter_type do_put(iter_type, ios_base&, char_type, uint128_t) const;
+#endif
   virtual iter_type do_put(iter_type, ios_base&, char_type, double) const;
   virtual iter_type do_put(iter_type, ios_base&, char_type, long double) const;
   virtual iter_type do_put(iter_type, ios_base&, char_type, const void*) const;
 };
 
-template<typename Char>
-class numpunct
-: public locale::facet
-{
- public:
-  using char_type = Char;
-  using string_type = basic_string<char_type>;
+template<typename Char, typename OutputIter>
+const locale::id num_put<Char, OutputIter>::id{ locale::collate };
 
-  explicit numpunct(size_t = 0);
 
-  char_type decimal_point() const;
-  char_type thousands_sep() const;
-  string grouping() const;
-  string_type truename() const;
-  string_type falsename() const;
-
-  static constexpr locale::id id{ locale::numeric };
-
- protected:
-  ~numpunct() noexcept override;
-
-  virtual char_type do_decimal_point() const = 0;
-  virtual char_type do_thousands_sep() const = 0;
-  virtual string do_grouping() const = 0;
-  virtual string_type do_truename() const = 0;
-  virtual string_type do_falsename() const = 0;
-};
+template<typename Char> class numpunct;
 
 template<>
 class numpunct<char>
@@ -383,6 +519,7 @@ class numpunct<char>
   virtual string_type do_truename() const;
   virtual string_type do_falsename() const;
 };
+
 template<>
 class numpunct<char16_t>
 : public locale::facet
@@ -410,6 +547,7 @@ class numpunct<char16_t>
   virtual string_type do_truename() const;
   virtual string_type do_falsename() const;
 };
+
 template<>
 class numpunct<char32_t>
 : public locale::facet
@@ -437,6 +575,7 @@ class numpunct<char32_t>
   virtual string_type do_truename() const;
   virtual string_type do_falsename() const;
 };
+
 template<>
 class numpunct<wchar_t>
 : public locale::facet
@@ -482,7 +621,7 @@ class collate
   string_type transform(const char_type*, const char_type*) const;
   long hash(const char_type*, const char_type*) const;
 
-  static constexpr locale::id id{ locale::collate };
+  static const locale::id id;
 
  protected:
   ~collate() noexcept override;
@@ -491,6 +630,8 @@ class collate
   virtual string_type do_transform(const char_type*, const char_type*) const;
   virtual long do_hash(const char_type*, const char_type*) const;
 };
+
+template<typename Char> const locale::id collate<Char>::id{ locale::collate };
 
 template<typename Char>
 class collate_byname
@@ -510,21 +651,21 @@ class collate_byname
 };
 
 class time_base;
-template<typename Char, typename InputIter = istreambuf_iterator<Char>>
+template<typename Char, typename InputIter>
 class time_get;
 template<typename Char, typename InputIter = istreambuf_iterator<Char>>
 class time_get_byname;
-template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
+template<typename Char, typename OutputIter>
 class time_put;
 template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
 class time_put_byname;
 
 class money_base;
-template<typename Char, typename InputIter = istreambuf_iterator<Char>>
+template<typename Char, typename InputIter>
 class money_get;
-template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
+template<typename Char, typename OutputIter>
 class money_put;
-template<typename Char, bool Intl = false> class moneypunct;
+template<typename Char, bool Intl> class moneypunct;
 template<typename Char, bool Intl = false> class moneypunct_byname;
 
 class messages_base;
@@ -542,14 +683,11 @@ extern template bool locale::operator()(basic_string_ref<wchar_t>,
                                         basic_string_ref<wchar_t>) const;
 
 
-extern template class ctype<char16_t>;
-extern template class ctype<char32_t>;
-extern template class ctype<wchar_t>;
-
 extern template class num_put<char>;
 extern template class num_put<char16_t>;
 extern template class num_put<char32_t>;
 extern template class num_put<wchar_t>;
+
 
 extern template class collate<char>;
 extern template class collate<char16_t>;
@@ -559,6 +697,8 @@ extern template class collate<wchar_t>;
 
 _namespace_end(std)
 
-#include <locale-inl.h>
+#ifndef _LOCALE_SKIP_INL_INCLUDE
+# include <locale-inl.h>
+#endif
 
 #endif /* _LOCALE_ */
