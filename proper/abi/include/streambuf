@@ -35,10 +35,8 @@ template<typename Char, typename Traits> class basic_streambuf {
 
   virtual ~basic_streambuf() = default;
 
-#if _ILIAS_LOCALE
   locale pubimbue(const locale&);
   locale getloc() const;
-#endif
 
   basic_streambuf* pubsetbuf(char_type*, streamsize);
   pos_type pubseekoff(off_type, ios_base::seekdir,
@@ -78,9 +76,7 @@ template<typename Char, typename Traits> class basic_streambuf {
   void pbump(int);
   void setp(char_type*, char_type*);
 
-#if _ILIAS_LOCALE
   virtual void imbue(const locale&);
-#endif
 
   virtual basic_streambuf* setbuf(char_type*, streamsize);
   virtual pos_type seekoff(off_type, ios_base::seekdir,
@@ -106,9 +102,7 @@ template<typename Char, typename Traits> class basic_streambuf {
   char_type* pbase_ = nullptr;
   char_type* pptr_ = nullptr;
   char_type* epptr_ = nullptr;
-#if _ILIAS_LOCALE
   locale loc_;
-#endif
 };
 
 

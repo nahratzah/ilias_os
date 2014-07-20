@@ -34,7 +34,6 @@ ios_base::Init::~Init() noexcept {
 }
 
 
-#if _ILIAS_LOCALE
 locale ios_base::imbue(const locale& l) {
   auto rv = exchange(loc_, l);
   invoke_event_cb(imbue_event);
@@ -44,7 +43,6 @@ locale ios_base::imbue(const locale& l) {
 locale ios_base::getloc() const {
   return loc_;
 }
-#endif /* _ILIAS_LOCALE */
 
 bool ios_base::sync_with_stdio(bool /*sync*/) {
   return true; // XXX implement

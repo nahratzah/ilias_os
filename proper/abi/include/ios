@@ -12,14 +12,7 @@
 #include <string>
 #include <vector>
 #include <stdimpl/convertible_enum.h>
-
-#ifndef _ILIAS_LOCALE
-# define _ILIAS_LOCALE	__has_include(<locale>)
-#endif
-
-#if _ILIAS_LOCALE
-# include <locale>
-#endif
+#include <locale>
 
 _namespace_begin(std)
 
@@ -179,10 +172,8 @@ class ios_base {
   streamsize width() const noexcept;
   streamsize width(streamsize) noexcept;
 
-#if _ILIAS_LOCALE
   locale imbue(const locale&);
   locale getloc() const;
-#endif
 
   static int xalloc();
   long& iword(int);
@@ -223,9 +214,7 @@ class ios_base {
     void invoke(event ev, ios_base& self) noexcept { cb(ev, self, index); }
   };
 
-#if _ILIAS_LOCALE
   locale loc_;
-#endif
   streamsize precision_;
   streamsize width_;
   fmtflags fmtflags_;
@@ -356,9 +345,7 @@ template<typename Char, typename Traits> class basic_ios
   char_type fill() const noexcept;
   char_type fill(char_type) noexcept;
 
-#if _ILIAS_LOCALE
   locale imbue(const locale&);
-#endif
 
   char narrow(char_type, char) const;
   char_type widen(char) const;
