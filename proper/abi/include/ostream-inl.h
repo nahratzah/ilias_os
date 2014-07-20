@@ -383,7 +383,8 @@ auto op_lshift_stream(basic_ostream<Char, Traits>& os,
   return os.op_lshift_([&]() -> bool {
                          using out_iter = ostreambuf_iterator<Char, Traits>;
 
-                         const auto width = os.width();
+                         const make_unsigned_t<streamsize> width =
+                             (os.width() < 0 ? 0 : os.width());
                          const bool left =
                              ((os.flags() & ios_base::adjustfield) ==
                               ios_base::left);
@@ -411,7 +412,8 @@ auto op_lshift_stream(basic_ostream<Char, Traits>& os,
   return os.op_lshift_([&]() -> bool {
                          using out_iter = ostreambuf_iterator<Char, Traits>;
 
-                         const auto width = os.width();
+                         const make_unsigned_t<streamsize> width =
+                             (os.width() < 0 ? 0 : os.width());
                          const bool left =
                              ((os.flags() & ios_base::adjustfield) ==
                               ios_base::left);
