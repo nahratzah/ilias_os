@@ -12,16 +12,25 @@
 #endif
 
 _namespace_begin(std)
+namespace impl {
+
+template<typename Facet>
+facet_ref<Facet>::facet_ref(locale loc_arg)
+: loc(move(loc_arg)),
+  impl(use_facet<Facet>(this->loc))
+{}
+
+} /* namespace impl */
 
 
 template<typename Facet>
 const Facet& use_facet(const locale& loc) {
-  return static_cast<const Facet&>(loc.use_facet_(&Facet::id));
+  return dynamic_cast<const Facet&>(loc.use_facet_(&Facet::id));
 }
 
 template<typename Facet>
 bool has_facet(const locale& loc) noexcept {
-  return loc.has_facet_(&Facet::id);
+  return dynamic_cast<const Facet*>(loc.has_facet_(&Facet::id)) != nullptr;
 }
 
 
@@ -421,8 +430,141 @@ ctype_byname<Char>::ctype_byname(const string& name, size_t refs)
 template<typename Char>
 ctype_byname<Char>::ctype_byname(string_ref name, size_t refs)
 : ctype<Char>(refs),
-  name_(name)
+  impl::facet_ref<ctype<Char>>(locale(name))
 {}
+
+template<typename Char>
+auto ctype_byname<Char>::do_is(mask m, char_type c) const -> bool {
+  return this->impl.is(m, c);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_is(const char_type* b, const char_type* e,
+                               mask* vec) const -> const char_type* {
+  return this->impl.is(b, e, vec);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_scan_is(mask m,
+                                    const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return this->impl.scan_is(m, b, e);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_scan_not(mask m,
+                                     const char_type* b, const char_type* e)
+    const -> const char_type* {
+  return this->impl.scan_not(m, b, e);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_toupper(char_type c) const -> char_type {
+  return this->impl.toupper(c);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_toupper(char_type* b, const char_type* e)
+    const -> const char_type* {
+  return this->impl.toupper(b, e);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_tolower(char_type c) const -> char_type {
+  return this->impl.tolower(c);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_tolower(char_type* b, const char_type* e)
+    const -> const char_type* {
+  return this->impl.tolower(b, e);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_widen(char c) const -> char_type {
+  return this->impl.widen(c);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_widen(const char* b, const char* e, char_type* out)
+    const -> const char* {
+  return this->impl.widen(b, e, out);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_narrow(char_type c, char dfl) const -> char {
+  return this->impl.narrow(c, dfl);
+}
+
+template<typename Char>
+auto ctype_byname<Char>::do_narrow(const char_type* b, const char_type* e,
+                                   char dfl, char* out)
+    const -> const char_type* {
+  return this->impl.narrow(b, e, dfl, out);
+}
+
+
+inline ctype_byname<char>::ctype_byname(const char* name, size_t refs)
+: ctype_byname(string_ref(name), refs)
+{}
+
+inline ctype_byname<char>::ctype_byname(const string& name, size_t refs)
+: ctype_byname(string_ref(name), refs)
+{}
+
+_LOCALE_INLINE
+ctype_byname<char>::ctype_byname(string_ref name, size_t refs)
+: impl::facet_ref<ctype<char>>(locale(name)),
+  ctype<char>(this->impl.table(), false, refs)
+{}
+
+_LOCALE_INLINE
+ctype_byname<char>::~ctype_byname() noexcept {}
+
+_LOCALE_INLINE
+auto ctype_byname<char>::do_toupper(char_type c) const -> char_type {
+  return this->impl.toupper(c);
+}
+
+_LOCALE_INLINE
+auto ctype_byname<char>::do_toupper(char_type* b, const char_type* e)
+    const -> const char_type* {
+  return this->impl.toupper(b, e);
+}
+
+_LOCALE_INLINE
+auto ctype_byname<char>::do_tolower(char_type c) const -> char_type {
+  return this->impl.tolower(c);
+}
+
+_LOCALE_INLINE
+auto ctype_byname<char>::do_tolower(char_type* b, const char_type* e)
+    const -> const char_type* {
+  return this->impl.tolower(b, e);
+}
+
+_LOCALE_INLINE
+auto ctype_byname<char>::do_widen(char c) const -> char_type {
+  return this->impl.widen(c);
+}
+
+_LOCALE_INLINE
+auto ctype_byname<char>::do_widen(const char* b, const char* e, char_type* out)
+    const -> const char* {
+  return this->impl.widen(b, e, out);
+}
+
+_LOCALE_INLINE
+auto ctype_byname<char>::do_narrow(char_type c, char dfl) const -> char {
+  return this->impl.narrow(c, dfl);
+}
+
+_LOCALE_INLINE
+auto ctype_byname<char>::do_narrow(const char_type* b, const char_type* e,
+                                   char dfl, char* out)
+    const -> const char_type* {
+  return this->impl.narrow(b, e, dfl, out);
+}
 
 
 template<typename Char, typename Iter>
@@ -629,6 +771,48 @@ _LOCALE_INLINE numpunct<wchar_t>::~numpunct() noexcept {}
 
 
 template<typename Char>
+numpunct_byname<Char>::numpunct_byname(const char* name, size_t refs)
+: numpunct_byname(string_ref(name), refs)
+{}
+
+template<typename Char>
+numpunct_byname<Char>::numpunct_byname(const string& name, size_t refs)
+: numpunct_byname(string_ref(name), refs)
+{}
+
+template<typename Char>
+numpunct_byname<Char>::numpunct_byname(string_ref name, size_t refs)
+: numpunct<Char>(refs),
+  impl::facet_ref<numpunct<Char>>(locale(name))
+{}
+
+template<typename Char>
+auto numpunct_byname<Char>::do_decimal_point() const -> char_type {
+  return this->impl.decimal_point();
+}
+
+template<typename Char>
+auto numpunct_byname<Char>::do_thousands_sep() const -> char_type {
+  return this->impl.thousands_sep();
+}
+
+template<typename Char>
+auto numpunct_byname<Char>::do_grouping() const -> string {
+  return this->impl.grouping();
+}
+
+template<typename Char>
+auto numpunct_byname<Char>::do_truename() const -> string_type {
+  return this->impl.truename();
+}
+
+template<typename Char>
+auto numpunct_byname<Char>::do_falsename() const -> string_type {
+  return this->impl.falsename();
+}
+
+
+template<typename Char>
 collate<Char>::collate(size_t refs)
 : locale::facet(refs)
 {}
@@ -695,8 +879,27 @@ collate_byname<Char>::collate_byname(const string& name, size_t refs)
 template<typename Char>
 collate_byname<Char>::collate_byname(string_ref name, size_t refs)
 : collate<Char>(refs),
-  name_(name)
+  impl::facet_ref<collate<Char>>(locale(name))
 {}
+
+template<typename Char>
+auto collate_byname<Char>::do_compare(const char_type* b1, const char_type* e1,
+                                      const char_type* b2, const char_type* e2)
+    const -> int {
+  return this->impl.compare(b1, e1, b2, e2);
+}
+
+template<typename Char>
+auto collate_byname<Char>::do_transform(const char_type* b, const char_type* e)
+    const -> string_type {
+  return this->impl.transform(b, e);
+}
+
+template<typename Char>
+auto collate_byname<Char>::do_hash(const char_type* b, const char_type* e)
+    const -> long {
+  return this->impl.hash(b, e);
+}
 
 
 _namespace_end(std)

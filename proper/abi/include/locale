@@ -16,8 +16,6 @@
 _namespace_begin(std)
 
 
-class locale;
-
 template<typename Facet> const Facet& use_facet(const locale&);
 template<typename Facet> bool has_facet(const locale&) noexcept;
 
@@ -86,7 +84,7 @@ class locale {
  private:
   explicit locale(locale_t) noexcept;
   locale(const locale&, const id*, const facet*);
-  bool has_facet_(const id*) const noexcept;
+  const facet* has_facet_(const id*) const noexcept;
   const facet& use_facet_(const id*) const;
 
   locale_t data_ = nullptr;
@@ -99,6 +97,21 @@ static_assert(!has_virtual_destructor<locale>::value,
               "Standard explicitly mandates locale has a non-virtual "
               "destructor.");
 #endif
+
+
+namespace impl {
+
+template<typename Facet>
+class facet_ref {
+ protected:
+  explicit facet_ref(locale);
+  ~facet_ref() noexcept = default;
+
+  locale loc;
+  const Facet& impl;
+};
+
+} /* namespace std::impl */
 
 
 class locale::facet {
@@ -419,19 +432,63 @@ class ctype<wchar_t>
 
 template<typename Char>
 class ctype_byname
-: public ctype<Char>
+: public ctype<Char>,
+  private impl::facet_ref<ctype<Char>>
 {
  public:
   using mask = typename ctype<Char>::mask;
+  using char_type = typename ctype<Char>::char_type;
+
   explicit ctype_byname(const char*, size_t = 0);
   explicit ctype_byname(const string&, size_t = 0);
   explicit ctype_byname(string_ref, size_t = 0);
 
  protected:
-  ~ctype_byname() noexcept = default;
+  ~ctype_byname() noexcept override = default;
 
- private:
-  string name_;
+  bool do_is(mask, char_type) const override;
+  const char_type* do_is(const char_type*, const char_type*, mask*)
+      const override;
+  const char_type* do_scan_is(mask, const char_type*, const char_type*)
+      const override;
+  const char_type* do_scan_not(mask, const char_type*, const char_type*)
+      const override;
+  char_type do_toupper(char_type) const override;
+  const char_type* do_toupper(char_type*, const char_type*) const override;
+  char_type do_tolower(char_type) const override;
+  const char_type* do_tolower(char_type*, const char_type*) const override;
+  char_type do_widen(char) const override;
+  const char* do_widen(const char*, const char*, char_type*) const override;
+  char do_narrow(char_type, char) const override;
+  const char_type* do_narrow(const char_type*, const char_type*, char,
+                             char*) const override;
+};
+
+template<>
+class ctype_byname<char>
+: private impl::facet_ref<ctype<char>>,
+  public ctype<char>
+{
+ public:
+  using mask = typename ctype<char>::mask;
+  using char_type = typename ctype<char>::char_type;
+
+  explicit ctype_byname(const char*, size_t = 0);
+  explicit ctype_byname(const string&, size_t = 0);
+  explicit ctype_byname(string_ref, size_t = 0);
+
+ protected:
+  ~ctype_byname() noexcept override;
+
+  char_type do_toupper(char_type) const override;
+  const char_type* do_toupper(char_type*, const char_type*) const override;
+  char_type do_tolower(char_type) const override;
+  const char_type* do_tolower(char_type*, const char_type*) const override;
+  char_type do_widen(char) const override;
+  const char* do_widen(const char*, const char*, char_type*) const override;
+  char do_narrow(char_type, char) const override;
+  const char_type* do_narrow(const char_type*, const char_type*, char,
+                             char*) const override;
 };
 
 
@@ -604,7 +661,28 @@ class numpunct<wchar_t>
   virtual string_type do_falsename() const;
 };
 
-template<typename Char> class numpunct_byname;
+template<typename Char>
+class numpunct_byname
+: public numpunct<Char>,
+  private impl::facet_ref<numpunct<Char>>
+{
+ public:
+  using char_type = typename numpunct<Char>::char_type;
+  using string_type = typename numpunct<Char>::string_type;
+
+  explicit numpunct_byname(const char*, size_t = 0);
+  explicit numpunct_byname(const string&, size_t = 0);
+  explicit numpunct_byname(string_ref, size_t = 0);
+
+ protected:
+  ~numpunct_byname() noexcept override = default;
+
+  char_type do_decimal_point() const override;
+  char_type do_thousands_sep() const override;
+  string do_grouping() const override;
+  string_type do_truename() const override;
+  string_type do_falsename() const override;
+};
 
 template<typename Char>
 class collate
@@ -625,6 +703,7 @@ class collate
 
  protected:
   ~collate() noexcept override;
+
   virtual int do_compare(const char_type*, const char_type*,
                          const char_type*, const char_type*) const;
   virtual string_type do_transform(const char_type*, const char_type*) const;
@@ -635,19 +714,24 @@ template<typename Char> const locale::id collate<Char>::id{ locale::collate };
 
 template<typename Char>
 class collate_byname
-: public collate<Char>
+: public collate<Char>,
+  private impl::facet_ref<collate<Char>>
 {
  public:
+  using char_type = typename collate<Char>::char_type;
   using string_type = typename collate<Char>::string_type;
+
   explicit collate_byname(const char*, size_t = 0);
   explicit collate_byname(const string&, size_t = 0);
   explicit collate_byname(string_ref, size_t = 0);
 
  protected:
-  ~collate_byname() noexcept = default;
+  ~collate_byname() noexcept override = default;
 
- private:
-  string name_;
+  int do_compare(const char_type*, const char_type*,
+                 const char_type*, const char_type*) const override;
+  string_type do_transform(const char_type*, const char_type*) const override;
+  long do_hash(const char_type*, const char_type*) const override;
 };
 
 class time_base;
@@ -683,16 +767,30 @@ extern template bool locale::operator()(basic_string_ref<wchar_t>,
                                         basic_string_ref<wchar_t>) const;
 
 
+extern template class ctype_byname<char>;
+extern template class ctype_byname<char16_t>;
+extern template class ctype_byname<char32_t>;
+extern template class ctype_byname<wchar_t>;
+
 extern template class num_put<char>;
 extern template class num_put<char16_t>;
 extern template class num_put<char32_t>;
 extern template class num_put<wchar_t>;
 
+extern template class numpunct_byname<char>;
+extern template class numpunct_byname<char16_t>;
+extern template class numpunct_byname<char32_t>;
+extern template class numpunct_byname<wchar_t>;
 
 extern template class collate<char>;
 extern template class collate<char16_t>;
 extern template class collate<char32_t>;
 extern template class collate<wchar_t>;
+
+extern template class collate_byname<char>;
+extern template class collate_byname<char16_t>;
+extern template class collate_byname<char32_t>;
+extern template class collate_byname<wchar_t>;
 
 
 _namespace_end(std)

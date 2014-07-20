@@ -543,10 +543,13 @@ auto locale::posix() -> const locale& {
   return classic_singleton;
 }
 
-auto locale::has_facet_(const id* idp) const noexcept -> bool {
-  return _predict_true(data_ != nullptr) &&
-         binary_search(begin(*data_), end(*data_),
-                       idp, facet_vector_map_less());
+auto locale::has_facet_(const id* idp) const noexcept -> const facet* {
+  if (_predict_false(data_ == nullptr)) return nullptr;
+
+  auto range = equal_range(begin(*data_), end(*data_), idp,
+                           facet_vector_map_less());
+  if (range.first == range.second) return nullptr;
+  return &*get<1>(*range.first);
 }
 
 auto locale::use_facet_(const id* idp) const -> const facet& {
@@ -1562,15 +1565,15 @@ template bool locale::operator()(basic_string_ref<char32_t>,
 template bool locale::operator()(basic_string_ref<wchar_t>,
                                  basic_string_ref<wchar_t>) const;
 
-template class collate<char>;
-template class collate<char16_t>;
-template class collate<char32_t>;
-template class collate<wchar_t>;
-
 constexpr locale::id ctype<char>::id;
 constexpr locale::id ctype<char16_t>::id;
 constexpr locale::id ctype<char32_t>::id;
 constexpr locale::id ctype<wchar_t>::id;
+
+template class ctype_byname<char>;
+template class ctype_byname<char16_t>;
+template class ctype_byname<char32_t>;
+template class ctype_byname<wchar_t>;
 
 template class num_put<char>;
 template class num_put<char16_t>;
@@ -1581,6 +1584,21 @@ constexpr locale::id numpunct<char>::id;
 constexpr locale::id numpunct<char16_t>::id;
 constexpr locale::id numpunct<char32_t>::id;
 constexpr locale::id numpunct<wchar_t>::id;
+
+template class numpunct_byname<char>;
+template class numpunct_byname<char16_t>;
+template class numpunct_byname<char32_t>;
+template class numpunct_byname<wchar_t>;
+
+template class collate<char>;
+template class collate<char16_t>;
+template class collate<char32_t>;
+template class collate<wchar_t>;
+
+template class collate_byname<char>;
+template class collate_byname<char16_t>;
+template class collate_byname<char32_t>;
+template class collate_byname<wchar_t>;
 
 
 _namespace_end(std)
