@@ -13,3 +13,6 @@
 [submodule "compiler/binutils"]
 	path = compiler/binutils
 	url = git://sourceware.org/git/binutils-gdb.git
+[submodule "proper/abi/compiler_rt"]
+	path = proper/abi/compiler_rt
+	url = https://github.com/llvm-mirror/compiler-rt.git

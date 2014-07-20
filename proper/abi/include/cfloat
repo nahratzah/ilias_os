@@ -3,8 +3,7 @@
 
 #include <cdecl.h>
 
-namespace std {
-
+_namespace_begin(std)
 _cdecl_begin
 
 #define HUGE_VALF	(__builtin_huge_valf())
@@ -24,7 +23,6 @@ _cdecl_begin
 // (__builtin_nansl())
 
 _cdecl_end
-
-} /* namespace std */
+_namespace_end(std)
 
 #endif /* _CFLOAT_ */
