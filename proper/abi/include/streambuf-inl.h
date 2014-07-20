@@ -118,7 +118,7 @@ auto basic_streambuf<Char, Traits>::swap(basic_streambuf& rhs) noexcept ->
   swap(pptr_, rhs.pptr_);
   swap(epptr_, rhs.epptr_);
 #if _ILIAS_LOCALE
-  loc_.swap(rhs.loc_);
+  swap(loc_, rhs.loc_);
 #endif
 }
 

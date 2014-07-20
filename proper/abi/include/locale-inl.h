@@ -35,8 +35,7 @@ bool has_facet(const locale& loc) noexcept {
 
 
 inline locale::locale(locale&& loc) noexcept {
-  using _namespace(std)::swap;
-  swap(data_, loc.data_);
+  swap(*this, loc);
 }
 
 inline locale::locale(locale_t data) noexcept
@@ -57,8 +56,7 @@ inline locale::locale(const locale& loc, const string& name, category cat)
 {}
 
 inline auto locale::operator=(locale&& loc) noexcept -> const locale& {
-  using _namespace(std)::swap;
-  swap(data_, loc.data_);
+  swap(*this, loc);
   return *this;
 }
 
@@ -91,13 +89,9 @@ bool locale::operator()(basic_string_ref<Char, Traits> x,
                                              y.begin(), y.end()) < 0;
 }
 
-inline auto locale::swap(locale& other) noexcept -> void {
-  using _namespace(std)::swap;
-  swap(data_, other.data_);
-}
-
 inline auto swap(locale& x, locale& y) noexcept -> void {
-  x.swap(y);
+  using _namespace(std)::swap;
+  swap(x.data_, y.data_);
 }
 
 

@@ -21,6 +21,8 @@ template<typename Facet> bool has_facet(const locale&) noexcept;
 
 
 class locale {
+  friend void swap(locale&, locale&) noexcept;  // extension
+
   template<typename Facet> friend const Facet& use_facet(const locale&);
   template<typename Facet> friend bool has_facet(const locale&) noexcept;
 #ifdef _COMPILING_LOCALE
@@ -79,8 +81,6 @@ class locale {
   static const locale& classic();
   static const locale& posix();
 
-  void swap(locale&) noexcept;  // extension
-
  private:
   explicit locale(locale_t) noexcept;
   locale(const locale&, const id*, const facet*);
@@ -89,8 +89,6 @@ class locale {
 
   locale_t data_ = nullptr;
 };
-
-void swap(locale&, locale&) noexcept;  // extension
 
 #if 0 // XXX fix type_traits
 static_assert(!has_virtual_destructor<locale>::value,
