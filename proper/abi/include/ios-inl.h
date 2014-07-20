@@ -2,58 +2,10 @@
 #define _IOS_INL_H_
 
 #include <ios>
+#include <streambuf>
+
 
 _namespace_begin(std)
-
-
-#define _GENERATE_BITMASK_OPS(_TYPE)					\
-inline constexpr _TYPE operator&(_TYPE x, _TYPE y) noexcept {		\
-  using int_type = typename underlying_type<_TYPE>::type;		\
-									\
-  return static_cast<_TYPE>(						\
-      static_cast<int_type>(x) & static_cast<int_type>(y));		\
-}									\
-									\
-inline constexpr _TYPE operator|(_TYPE x, _TYPE y) noexcept {		\
-  using int_type = typename underlying_type<_TYPE>::type;		\
-									\
-  return static_cast<_TYPE>(						\
-      static_cast<int_type>(x) | static_cast<int_type>(y));		\
-}									\
-									\
-inline constexpr _TYPE operator^(_TYPE x, _TYPE y) noexcept {		\
-  using int_type = typename underlying_type<_TYPE>::type;		\
-									\
-  return static_cast<_TYPE>(						\
-      static_cast<int_type>(x) ^ static_cast<int_type>(y));		\
-}									\
-									\
-inline constexpr _TYPE operator~(_TYPE x) noexcept {			\
-  using int_type = typename underlying_type<_TYPE>::type;		\
-									\
-  return static_cast<_TYPE>(~static_cast<int_type>(x));			\
-}									\
-									\
-inline _TYPE& operator&=(_TYPE& x, _TYPE y) {				\
-  x = x & y;								\
-  return x;								\
-}									\
-									\
-inline _TYPE& operator|=(_TYPE& x, _TYPE y) {				\
-  x = x & y;								\
-  return x;								\
-}									\
-									\
-inline _TYPE& operator^=(_TYPE& x, _TYPE y) {				\
-  x = x & y;								\
-  return x;								\
-}
-
-_GENERATE_BITMASK_OPS(ios_base::fmtflags)
-_GENERATE_BITMASK_OPS(ios_base::iostate)
-_GENERATE_BITMASK_OPS(ios_base::openmode)
-
-#undef _GENERATE_BITMASK_OPS
 
 
 inline auto ios_base::flags() const noexcept -> fmtflags {

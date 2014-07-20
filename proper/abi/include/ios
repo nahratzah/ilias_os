@@ -9,6 +9,7 @@
 #include <utility>
 #include <string>
 #include <vector>
+#include <stdimpl/convertible_enum.h>
 
 #ifndef _ILIAS_LOCALE
 # define _ILIAS_LOCALE	__has_include(<locale>)
@@ -70,7 +71,8 @@ class ios_base {
  public:
   class failure;
 
-  enum class fmtflags : _TYPES(uint16_t) {
+ private:
+  enum class fmtflags_ : _TYPES(uint16_t) {
     boolalpha   =    0x1,
     showbase    =    0x2,
     showpoint   =    0x4,
@@ -94,46 +96,46 @@ class ios_base {
     internal    = 0x8000,
   };
 
-  static constexpr fmtflags boolalpha   = fmtflags::boolalpha;
-  static constexpr fmtflags dec         = fmtflags::dec;
-  static constexpr fmtflags fixed       = fmtflags::fixed;
-  static constexpr fmtflags hex         = fmtflags::hex;
-  static constexpr fmtflags internal    = fmtflags::internal;
-  static constexpr fmtflags left        = fmtflags::left;
-  static constexpr fmtflags oct         = fmtflags::oct;
-  static constexpr fmtflags right       = fmtflags::right;
-  static constexpr fmtflags scientific  = fmtflags::scientific;
-  static constexpr fmtflags showbase    = fmtflags::showbase;
-  static constexpr fmtflags showpoint   = fmtflags::showpoint;
-  static constexpr fmtflags showpos     = fmtflags::showpos;
-  static constexpr fmtflags skipws      = fmtflags::skipws;
-  static constexpr fmtflags unitbuf     = fmtflags::unitbuf;
-  static constexpr fmtflags uppercase   = fmtflags::uppercase;
-  static constexpr fmtflags adjustfield = static_cast<fmtflags>(
-      static_cast<typename underlying_type<fmtflags>::type>(left) |
-      static_cast<typename underlying_type<fmtflags>::type>(right) |
-      static_cast<typename underlying_type<fmtflags>::type>(internal));
-  static constexpr fmtflags basefield   = static_cast<fmtflags>(
-      static_cast<typename underlying_type<fmtflags>::type>(dec) |
-      static_cast<typename underlying_type<fmtflags>::type>(oct) |
-      static_cast<typename underlying_type<fmtflags>::type>(hex));
-  static constexpr fmtflags floatfield  = static_cast<fmtflags>(
-      static_cast<typename underlying_type<fmtflags>::type>(scientific) |
-      static_cast<typename underlying_type<fmtflags>::type>(fixed));
+ public:
+  using fmtflags = impl::convertible_enum<fmtflags_>;
 
-  enum class iostate : _TYPES(uint8_t) {
+  static constexpr fmtflags boolalpha   = fmtflags(fmtflags_::boolalpha);
+  static constexpr fmtflags dec         = fmtflags(fmtflags_::dec);
+  static constexpr fmtflags fixed       = fmtflags(fmtflags_::fixed);
+  static constexpr fmtflags hex         = fmtflags(fmtflags_::hex);
+  static constexpr fmtflags internal    = fmtflags(fmtflags_::internal);
+  static constexpr fmtflags left        = fmtflags(fmtflags_::left);
+  static constexpr fmtflags oct         = fmtflags(fmtflags_::oct);
+  static constexpr fmtflags right       = fmtflags(fmtflags_::right);
+  static constexpr fmtflags scientific  = fmtflags(fmtflags_::scientific);
+  static constexpr fmtflags showbase    = fmtflags(fmtflags_::showbase);
+  static constexpr fmtflags showpoint   = fmtflags(fmtflags_::showpoint);
+  static constexpr fmtflags showpos     = fmtflags(fmtflags_::showpos);
+  static constexpr fmtflags skipws      = fmtflags(fmtflags_::skipws);
+  static constexpr fmtflags unitbuf     = fmtflags(fmtflags_::unitbuf);
+  static constexpr fmtflags uppercase   = fmtflags(fmtflags_::uppercase);
+  static constexpr fmtflags adjustfield = left | right | internal;
+  static constexpr fmtflags basefield   = dec | oct | hex;
+  static constexpr fmtflags floatfield  = scientific | fixed;
+
+ private:
+  enum class iostate_ : _TYPES(uint8_t) {
     goodbit =   0,
     badbit  = 0x1,
     eofbit  = 0x2,
     failbit = 0x4,
   };
 
-  static constexpr iostate badbit  = iostate::badbit;
-  static constexpr iostate eofbit  = iostate::eofbit;
-  static constexpr iostate failbit = iostate::failbit;
-  static constexpr iostate goodbit = iostate::goodbit;
+ public:
+  using iostate = impl::convertible_enum<iostate_>;
 
-  enum class openmode : _TYPES(uint8_t) {
+  static constexpr iostate badbit  = iostate(iostate_::badbit);
+  static constexpr iostate eofbit  = iostate(iostate_::eofbit);
+  static constexpr iostate failbit = iostate(iostate_::failbit);
+  static constexpr iostate goodbit = iostate(iostate_::goodbit);
+
+ private:
+  enum class openmode_ : _TYPES(uint8_t) {
     app    =  0x1,
     ate    =  0x2,
     binary =  0x4,
@@ -142,12 +144,15 @@ class ios_base {
     trunc  = 0x20,
   };
 
-  static constexpr openmode app    = openmode::app;
-  static constexpr openmode ate    = openmode::ate;
-  static constexpr openmode binary = openmode::binary;
-  static constexpr openmode in     = openmode::in;
-  static constexpr openmode out    = openmode::out;
-  static constexpr openmode trunc  = openmode::trunc;
+ public:
+  using openmode = impl::convertible_enum<openmode_>;
+
+  static constexpr openmode app    = openmode(openmode_::app);
+  static constexpr openmode ate    = openmode(openmode_::ate);
+  static constexpr openmode binary = openmode(openmode_::binary);
+  static constexpr openmode in     = openmode(openmode_::in);
+  static constexpr openmode out    = openmode(openmode_::out);
+  static constexpr openmode trunc  = openmode(openmode_::trunc);
 
   enum class seekdir {
     beg,
