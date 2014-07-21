@@ -490,9 +490,101 @@ class ctype_byname<char>
 };
 
 
-class codecvt_base;
-template<typename Intern, typename Extern, typename St> class codecvt;
-template<typename Intern, typename Extern, typename St> class codecvt_byname;
+class codecvt_base {
+ public:
+  enum result {
+    ok,
+    partial,
+    error,
+    noconv
+  };
+};
+
+template<typename Intern, typename Extern, typename St>
+class codecvt
+: public locale::facet,
+  public codecvt_base
+{
+ public:
+  using intern_type = Intern;
+  using extern_type = Extern;
+  using state_type = St;
+
+  explicit codecvt(size_t = 0);
+
+  result out(state_type&,
+             const intern_type*, const intern_type*, const intern_type*&,
+             extern_type*, extern_type*, extern_type*&) const;
+  result in(state_type&,
+            const extern_type*, const extern_type*, const extern_type*&,
+            intern_type*, intern_type*, intern_type*&) const;
+  result unshift(state_type&,
+                 extern_type*, extern_type*, extern_type*&) const;
+  int encoding() const noexcept;
+  bool always_noconv() const noexcept;
+  int length(state_type&, const extern_type*, const extern_type*,
+             size_t) const;
+  int max_length() const noexcept;
+
+  static const locale::id id;
+
+ protected:
+  ~codecvt() noexcept override;
+
+  virtual result do_out(state_type&,
+                        const intern_type*, const intern_type*,
+                        const intern_type*&,
+                        extern_type*, extern_type*, extern_type*&) const;
+  virtual result do_in(state_type&,
+                       const extern_type*, const extern_type*,
+                       const extern_type*&,
+                       intern_type*, intern_type*, intern_type*&) const;
+  virtual result do_unshift(state_type&,
+                            extern_type*, extern_type*, extern_type*&) const;
+  virtual int do_encoding() const noexcept;
+  virtual bool do_always_noconv() const noexcept;
+  virtual int do_length(state_type&, const extern_type*, const extern_type*,
+                        size_t) const;
+  virtual int do_max_length() const noexcept;
+};
+
+template<typenaem Intern, typename Extern, typename St>
+const locale::id codecvt<Intern, Extern, St>::id{ locale::codecvt };
+
+template<typename Intern, typename Extern, typename St>
+class codecvt_byname
+: public codecvt<Intern, Extern, St>,
+  private impl::facet_ref<codecvt<Intern, Extern, St>>
+{
+ public:
+  using intern_type = typename codecvt<Intern, Extern, St>::intern_type;
+  using extern_type = typename codecvt<Intern, Extern, St>::extern_type;
+  using state_type = typename codecvt<Intern, Extern, St>::state_type;
+  using result = typename codecvt<Intern, Extern, St>::result;
+
+  explicit codecvt_byname(const char*, size_t = 0);
+  explicit codecvt_byname(const string&, size_t = 0);
+  explicit codecvt_byname(string_ref, size_t = 0);
+
+ protected:
+  ~codecvt_byname() noexcept override = default;
+
+  result do_out(state_type&,
+                const intern_type*, const intern_type*,
+                const intern_type*&,
+                extern_type*, extern_type*, extern_type*&) const override;
+  result do_in(state_type&,
+               const extern_type*, const extern_type*,
+               const extern_type*&,
+               intern_type*, intern_type*, intern_type*&) const override;
+  result do_unshift(state_type&,
+                    extern_type*, extern_type*, extern_type*&) const override;
+  int do_encoding() const noexcept override;
+  bool do_always_noconv() const noexcept override;
+  int do_length(state_type&, const extern_type*, const extern_type*,
+                size_t) const override;
+  int do_max_length() const noexcept override;
+};
 
 template<typename Char, typename InputIter>
 class num_get;
@@ -750,9 +842,59 @@ class money_put;
 template<typename Char, bool Intl> class moneypunct;
 template<typename Char, bool Intl = false> class moneypunct_byname;
 
-class messages_base;
-template<typename Char> class messages;
-template<typename Char> class messages_byname;
+class messages_base {
+ public:
+  using catalog = int;
+};
+
+template<typename Char>
+class messages
+: public locale::facet,
+  public messages_base
+{
+ public:
+  using char_type = Char;
+  using string_type = basic_string<char_type>;
+
+  explicit messages(size_t = 0);
+
+  catalog open(const string&, const locale&) const;
+  string_type get(catalog, int, int, const string_type&) const;
+  void close(catalog) const;
+
+  static const locale::id id;
+
+ protected:
+  ~messages() noexcept override;
+
+  virtual catalog do_open(const string&, const locale&) const = 0;
+  virtual string_type do_get(catalog, int, int, const string_type&) const = 0;
+  virtual void do_close(catalog) const = 0;
+};
+
+template<typename Char> const locale::id messages::id{ locale::messages };
+
+template<typename Char>
+class messages_byname
+: public messages<Char>,
+  private impl::facet_ref<messages<Char>>
+{
+ public:
+  using catalog = typename messages<Char>::catalog;
+  using char_type = typename messages<Char>::char_type;
+  using string_type = typename messages<Char>::string_type;
+
+  explicit messages_byname(const char*, size_t = 0);
+  explicit messages_byname(const string&, size_t = 0);
+  explicit messages_byname(string_ref, size_t = 0);
+
+ protected:
+  ~messages_byname() noexcept override = default;
+
+  catalog do_open(const string&, const locale&) const override;
+  string_type do_get(catalog, int, int, const string_type&) const override;
+  void do_close(catalog) const override;
+};
 
 
 extern template bool locale::operator()(basic_string_ref<char>,
@@ -769,6 +911,40 @@ extern template class ctype_byname<char>;
 extern template class ctype_byname<char16_t>;
 extern template class ctype_byname<char32_t>;
 extern template class ctype_byname<wchar_t>;
+
+extern template class codecvt<char,     char,     mbstate_t>;
+extern template class codecvt<char16_t, char,     mbstate_t>;
+extern template class codecvt<char32_t, char,     mbstate_t>;
+extern template class codecvt<wchar_t,  char,     mbstate_t>;
+extern template class codecvt<char,     char16_t, mbstate_t>;
+extern template class codecvt<char16_t, char16_t, mbstate_t>;
+extern template class codecvt<char32_t, char16_t, mbstate_t>;
+extern template class codecvt<wchar_t,  char16_t, mbstate_t>;
+extern template class codecvt<char,     char32_t, mbstate_t>;
+extern template class codecvt<char16_t, char32_t, mbstate_t>;
+extern template class codecvt<char32_t, char32_t, mbstate_t>;
+extern template class codecvt<wchar_t,  char32_t, mbstate_t>;
+extern template class codecvt<char,     wchar_t,  mbstate_t>;
+extern template class codecvt<char16_t, wchar_t,  mbstate_t>;
+extern template class codecvt<char32_t, wchar_t,  mbstate_t>;
+extern template class codecvt<wchar_t,  wchar_t,  mbstate_t>;
+
+extern template class codecvt_byname<char,     char,     mbstate_t>;
+extern template class codecvt_byname<char16_t, char,     mbstate_t>;
+extern template class codecvt_byname<char32_t, char,     mbstate_t>;
+extern template class codecvt_byname<wchar_t,  char,     mbstate_t>;
+extern template class codecvt_byname<char,     char16_t, mbstate_t>;
+extern template class codecvt_byname<char16_t, char16_t, mbstate_t>;
+extern template class codecvt_byname<char32_t, char16_t, mbstate_t>;
+extern template class codecvt_byname<wchar_t,  char16_t, mbstate_t>;
+extern template class codecvt_byname<char,     char32_t, mbstate_t>;
+extern template class codecvt_byname<char16_t, char32_t, mbstate_t>;
+extern template class codecvt_byname<char32_t, char32_t, mbstate_t>;
+extern template class codecvt_byname<wchar_t,  char32_t, mbstate_t>;
+extern template class codecvt_byname<char,     wchar_t,  mbstate_t>;
+extern template class codecvt_byname<char16_t, wchar_t,  mbstate_t>;
+extern template class codecvt_byname<char32_t, wchar_t,  mbstate_t>;
+extern template class codecvt_byname<wchar_t,  wchar_t,  mbstate_t>;
 
 extern template class num_put<char>;
 extern template class num_put<char16_t>;
@@ -789,6 +965,16 @@ extern template class collate_byname<char>;
 extern template class collate_byname<char16_t>;
 extern template class collate_byname<char32_t>;
 extern template class collate_byname<wchar_t>;
+
+extern template class messages<char>;
+extern template class messages<char16_t>;
+extern template class messages<char32_t>;
+extern template class messages<wchar_t>;
+
+extern template class messages_byname<char>;
+extern template class messages_byname<char16_t>;
+extern template class messages_byname<char32_t>;
+extern template class messages_byname<wchar_t>;
 
 
 extern template bool isspace(char, const locale&);

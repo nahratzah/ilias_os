@@ -1575,6 +1575,40 @@ template class ctype_byname<char16_t>;
 template class ctype_byname<char32_t>;
 template class ctype_byname<wchar_t>;
 
+template class codecvt<char,     char,     mbstate_t>;
+template class codecvt<char16_t, char,     mbstate_t>;
+template class codecvt<char32_t, char,     mbstate_t>;
+template class codecvt<wchar_t,  char,     mbstate_t>;
+template class codecvt<char,     char16_t, mbstate_t>;
+template class codecvt<char16_t, char16_t, mbstate_t>;
+template class codecvt<char32_t, char16_t, mbstate_t>;
+template class codecvt<wchar_t,  char16_t, mbstate_t>;
+template class codecvt<char,     char32_t, mbstate_t>;
+template class codecvt<char16_t, char32_t, mbstate_t>;
+template class codecvt<char32_t, char32_t, mbstate_t>;
+template class codecvt<wchar_t,  char32_t, mbstate_t>;
+template class codecvt<char,     wchar_t,  mbstate_t>;
+template class codecvt<char16_t, wchar_t,  mbstate_t>;
+template class codecvt<char32_t, wchar_t,  mbstate_t>;
+template class codecvt<wchar_t,  wchar_t,  mbstate_t>;
+
+template class codecvt_byname<char,     char,     mbstate_t>;
+template class codecvt_byname<char16_t, char,     mbstate_t>;
+template class codecvt_byname<char32_t, char,     mbstate_t>;
+template class codecvt_byname<wchar_t,  char,     mbstate_t>;
+template class codecvt_byname<char,     char16_t, mbstate_t>;
+template class codecvt_byname<char16_t, char16_t, mbstate_t>;
+template class codecvt_byname<char32_t, char16_t, mbstate_t>;
+template class codecvt_byname<wchar_t,  char16_t, mbstate_t>;
+template class codecvt_byname<char,     char32_t, mbstate_t>;
+template class codecvt_byname<char16_t, char32_t, mbstate_t>;
+template class codecvt_byname<char32_t, char32_t, mbstate_t>;
+template class codecvt_byname<wchar_t,  char32_t, mbstate_t>;
+template class codecvt_byname<char,     wchar_t,  mbstate_t>;
+template class codecvt_byname<char16_t, wchar_t,  mbstate_t>;
+template class codecvt_byname<char32_t, wchar_t,  mbstate_t>;
+template class codecvt_byname<wchar_t,  wchar_t,  mbstate_t>;
+
 template class num_put<char>;
 template class num_put<char16_t>;
 template class num_put<char32_t>;
@@ -1599,6 +1633,16 @@ template class collate_byname<char>;
 template class collate_byname<char16_t>;
 template class collate_byname<char32_t>;
 template class collate_byname<wchar_t>;
+
+template class messages<char>;
+template class messages<char16_t>;
+template class messages<char32_t>;
+template class messages<wchar_t>;
+
+template class messages_byname<char>;
+template class messages_byname<char16_t>;
+template class messages_byname<char32_t>;
+template class messages_byname<wchar_t>;
 
 
 template bool isspace(char, const locale&);

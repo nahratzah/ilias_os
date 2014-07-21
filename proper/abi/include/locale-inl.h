@@ -561,6 +561,147 @@ auto ctype_byname<char>::do_narrow(const char_type* b, const char_type* e,
 }
 
 
+template<typename Intern, typename Extern, typename St>
+codecvt<Intern, Extern, St>::codecvt(size_t refs)
+: locale::facet(refs)
+{}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt<Intern, Extern, St>::out(state_type& s,
+                                      const intern_type* from,
+                                      const intern_type* from_end,
+                                      const intern_type*& from_next,
+                                      extern_type* to,
+                                      extern_type* to_end,
+                                      extern_type*& to_next) const -> result {
+  return do_out(s, from, from_end, from_next, to, to_end, to_next);
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt<Intern, Extern, St>::in(state_type& s,
+                                     const extern_type* from,
+                                     const extern_type* from_end,
+                                     const extern_type*& from_next,
+                                     intern_type* to,
+                                     intern_type* to_end,
+                                     intern_type*& to_next) const -> result {
+  return do_in(s, from, from_end, from_next, to, to_end, to_next);
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt<Intern, Extern, St>::unshift(state_type& s,
+                                          extern_type* to,
+                                          extern_type* to_end,
+                                          extern_type*& to_next)
+    const -> result {
+  return do_unshift(s, to, to_end, to_next);
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt<Intern, Extern, St>::encoding() const noexcept -> int {
+  return do_encoding();
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt<Intern, Extern, St>::always_noconv() const noexcept -> bool {
+  return do_always_noconv();
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt<Intern, Extern, St>::length(state_type& s,
+                                         const extern_type* from,
+                                         const extern_type* end,
+                                         size_t max) const -> int {
+  return do_length(s, from, end, max);
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt<Intern, Extern, St>::max_length() const noexcept -> int {
+  return do_max_length();
+}
+
+template<typename Intern, typename Extern, typename St>
+codecvt<Intern, Extern, St>::~codecvt() noexcept {}
+
+
+template<typename Intern, typename Extern, typename St>
+codecvt_byname<Intern, Extern, St>::codecvt_byname(const char* name,
+                                                   size_t refs)
+: codecvt_byname(string_ref(name), refs)
+{}
+
+template<typename Intern, typename Extern, typename St>
+codecvt_byname<Intern, Extern, St>::codecvt_byname(const string& name,
+                                                   size_t refs)
+: codecvt_byname(string_ref(name), refs)
+{}
+
+template<typename Intern, typename Extern, typename St>
+codecvt_byname<Intern, Extern, St>::codecvt_byname(string_ref name,
+                                                   size_t refs)
+: codecvt<Intern, Extern, St>(refs),
+  impl::facet_ref<codecvt<Intern, Extern, St>>(locale(name))
+{}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt_byname<Intern, Extern, St>::do_out(state_type& s,
+                                                const intern_type* from,
+                                                const intern_type* from_end,
+                                                const intern_type*& from_next,
+                                                extern_type* to,
+                                                extern_type* to_end,
+                                                extern_type*& to_next)
+    const -> result {
+  return this->impl.out(s, from, from_end, from_next, to, to_end, to_next);
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt_byname<Intern, Extern, St>::do_in(state_type& s,
+                                               const extern_type* from,
+                                               const extern_type* from_end,
+                                               const extern_type*& from_next,
+                                               intern_type* to,
+                                               intern_type* to_end,
+                                               intern_type*& to_next)
+    const -> result {
+  return this->impl.in(s, from, from_end, from_next, to, to_end, to_next);
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt_byname<Intern, Extern, St>::do_unshift(state_type& s,
+                                                    extern_type* to,
+                                                    extern_type* to_end,
+                                                    extern_type*& to_next)
+    const -> result {
+  return this->impl.unshift(s, to, to_end, to_next);
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt_byname<Intern, Extern, St>::do_encoding() const noexcept -> int {
+  return this->impl.encoding();
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt_byname<Intern, Extern, St>::do_always_noconv()
+    const noexcept -> bool {
+  return this->impl.always_noconv();
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt_byname<Intern, Extern, St>::do_length(state_type& s,
+                                                   const extern_type* from,
+                                                   const extern_type* end,
+                                                   size_t max) const -> int {
+  return this->impl.length(s, from, end, max);
+}
+
+template<typename Intern, typename Extern, typename St>
+auto codecvt_byname<Intern, Extern, St>::do_max_length()
+    const noexcept -> int {
+  return this->impl.max_length();
+}
+
+
 template<typename Char, typename Iter>
 num_put<Char, Iter>::num_put(size_t refs)
 : locale::facet(refs)
@@ -893,6 +1034,67 @@ template<typename Char>
 auto collate_byname<Char>::do_hash(const char_type* b, const char_type* e)
     const -> long {
   return this->impl.hash(b, e);
+}
+
+
+template<typename Char>
+messages<Char>::messages(size_t refs)
+: locale::facet(refs)
+{}
+
+template<typename Char>
+auto messages<Char>::open(const string& name, const locale& loc) const ->
+    catalog {
+  return do_open(name, loc);
+}
+
+template<typename Char>
+auto messages<Char>::get(catalog cat, int set, int msgid,
+                         const string_type& dfl) const -> string_type {
+  return do_get(cat, set, msgid, dfl);
+}
+
+template<typename Char>
+auto messages<Char>::close(catalog cat) const -> void {
+  do_close(cat);
+}
+
+template<typename Char>
+messages<Char>::~messages() noexcept {}
+
+
+template<typename Char>
+messages_byname<Char>::messages_byname(const char* name, size_t refs)
+: messages_byname(string_ref(name))
+{}
+
+template<typename Char>
+messages_byname<Char>::messages_byname(const string& name, size_t refs)
+: messages_byname(string_ref(name))
+{}
+
+template<typename Char>
+messages_byname<Char>::messages_byname(string_ref name, size_t refs)
+: messages<Char>(refs),
+  impl::facet_ref<messages<Char>>(locale(name))
+{}
+
+template<typename Char>
+auto messages_byname<Char>::do_open(const string& name, const locale& loc)
+    const -> catalog {
+  return this->impl.open(name, loc);
+}
+
+template<typename Char>
+auto messages_byname<Char>::do_get(catalog cat, int set, int msgid,
+                                   const string_type& dfl) const ->
+    string_type {
+  return this->impl.get(cat, set, msgid, dfl);
+}
+
+template<typename Char>
+auto messages_byname<Char>::do_close(catalog cat) const -> void {
+  return this->impl.close(cat);
 }
 
 
