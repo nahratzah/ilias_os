@@ -14,6 +14,17 @@ COMPILER_RT_BLACKLIST += $(wildcard abi/compiler_rt/lib/builtins/float*)
 COMPILER_RT_BLACKLIST += $(wildcard abi/compiler_rt/lib/builtins/i386/float*)
 COMPILER_RT_BLACKLIST += $(wildcard abi/compiler_rt/lib/builtins/x86_64/float*)
 
+# Exclude specific floating point functions (not caught by wildcard match above).
+COMPILER_RT_BLACKLIST += abi/compiler_rt/lib/builtins/muldc3.c
+COMPILER_RT_BLACKLIST += abi/compiler_rt/lib/builtins/mulsc3.c
+COMPILER_RT_BLACKLIST += abi/compiler_rt/lib/builtins/mulxc3.c
+COMPILER_RT_BLACKLIST += abi/compiler_rt/lib/builtins/divdc3.c
+COMPILER_RT_BLACKLIST += abi/compiler_rt/lib/builtins/divsc3.c
+COMPILER_RT_BLACKLIST += abi/compiler_rt/lib/builtins/divxc3.c
+
+# Exclude gcc personality (needs _Unwind implementation to be finished).
+COMPILER_RT_BLACKLIST += abi/compiler_rt/lib/builtins/gcc_personality_v0.c
+
 # Build sources list from scanned includes, excluding the blacklist.
 SRCS += $(filter-out ${COMPILER_RT_BLACKLIST}, ${COMPILER_RT_SRCS})
 SRCS_32 += $(filter-out ${COMPILER_RT_BLACKLIST}, ${COMPILER_RT_SRCS_32})
