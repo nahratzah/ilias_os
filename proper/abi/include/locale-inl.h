@@ -1065,12 +1065,12 @@ messages<Char>::~messages() noexcept {}
 
 template<typename Char>
 messages_byname<Char>::messages_byname(const char* name, size_t refs)
-: messages_byname(string_ref(name))
+: messages_byname(string_ref(name), refs)
 {}
 
 template<typename Char>
 messages_byname<Char>::messages_byname(const string& name, size_t refs)
-: messages_byname(string_ref(name))
+: messages_byname(string_ref(name), refs)
 {}
 
 template<typename Char>

@@ -548,8 +548,8 @@ class codecvt
   virtual int do_max_length() const noexcept;
 };
 
-template<typenaem Intern, typename Extern, typename St>
-const locale::id codecvt<Intern, Extern, St>::id{ locale::codecvt };
+template<typename Intern, typename Extern, typename St>
+const locale::id codecvt<Intern, Extern, St>::id{ locale::ctype };
 
 template<typename Intern, typename Extern, typename St>
 class codecvt_byname
@@ -872,7 +872,8 @@ class messages
   virtual void do_close(catalog) const = 0;
 };
 
-template<typename Char> const locale::id messages::id{ locale::messages };
+template<typename Char>
+const locale::id messages<Char>::id{ locale::messages };
 
 template<typename Char>
 class messages_byname
