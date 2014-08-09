@@ -702,6 +702,172 @@ auto codecvt_byname<Intern, Extern, St>::do_max_length()
 }
 
 
+/* Implement codecvt classes. */
+#define _SPECIALIZE_CODECVT(Intern, Extern)				\
+_LOCALE_INLINE								\
+codecvt<Intern, Extern, mbstate_t>::codecvt(size_t refs)		\
+: locale::facet(refs)							\
+{}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::out(				\
+    state_type& s,							\
+    const intern_type* from, const intern_type* from_end,		\
+    const intern_type*& from_next,					\
+    extern_type* to, extern_type* to_end,				\
+    extern_type*& to_next) const -> result {				\
+  return do_out(s, from, from_end, from_next, to, to_end, to_next);	\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::in(				\
+    state_type& s,							\
+    const extern_type* from, const extern_type* from_end,		\
+    const extern_type*& from_next,					\
+    intern_type* to, intern_type* to_end,				\
+    intern_type*& to_next) const -> result {				\
+  return do_in(s, from, from_end, from_next, to, to_end, to_next);	\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::unshift(			\
+    state_type& s,							\
+    extern_type* to, extern_type* to_end,				\
+    extern_type*& to_next) const -> result {				\
+  return do_unshift(s, to, to_end, to_next);				\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::encoding()			\
+    const noexcept -> int {						\
+  return do_encoding();							\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::always_noconv()		\
+    const noexcept -> bool {						\
+  return do_always_noconv();						\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::length(			\
+    state_type& s,							\
+    const extern_type* from, const extern_type* end,			\
+    size_t max) const -> int {						\
+  return do_length(s, from, end, max);					\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::max_length()			\
+    const noexcept -> int {						\
+  return do_max_length();						\
+}									\
+									\
+_LOCALE_INLINE								\
+codecvt<Intern, Extern, mbstate_t>::~codecvt() noexcept {}
+
+
+/* Allow identity mapping to be inlined easily. */
+#define _SPECIALIZE_CODECVT_IDENTITY(Intern, Extern)			\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::do_out(			\
+    state_type&,							\
+    const intern_type* from, const intern_type* from_end,		\
+    const intern_type*& from_next,					\
+    extern_type* to, extern_type* to_end,				\
+    extern_type*& to_next) const -> result {				\
+  assert(from <= from_end);						\
+  assert(to <= to_end);							\
+									\
+  from_next = from;							\
+  to_next = to;								\
+  return noconv;							\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::do_in(				\
+    state_type&,							\
+    const extern_type* from, const extern_type* from_end,		\
+    const extern_type*& from_next,					\
+    intern_type* to, intern_type* to_end,				\
+    intern_type*& to_next) const -> result {				\
+  assert(from <= from_end);						\
+  assert(to <= to_end);							\
+									\
+  from_next = from;							\
+  to_next = to;								\
+  return noconv;							\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::do_unshift(			\
+    state_type&,							\
+    extern_type* to, extern_type* to_end,				\
+    extern_type*& to_next) const -> result {				\
+  assert(to <= to_end);							\
+									\
+  to_next = to;								\
+  return noconv;							\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::do_encoding()			\
+    const noexcept -> int {						\
+  return 1;								\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::do_always_noconv()		\
+    const noexcept -> bool {						\
+  return true;								\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::do_length(			\
+    state_type&,							\
+    const extern_type* from,						\
+    const extern_type* from_end,					\
+    size_t max) const -> int {						\
+  assert(from <= from_end);						\
+									\
+  /* Calculate result. */						\
+  const auto rv = min(uintptr_t(from_end - from), uintptr_t(max));	\
+									\
+  /*									\
+   * Handle int overflow.						\
+   * Interface really does specify an int return type...		\
+   */									\
+  if (_predict_false(rv > size_t(INT_MAX)))				\
+    throw overflow_error("codecvt::do_length");				\
+  return rv;								\
+}									\
+									\
+_LOCALE_INLINE								\
+auto codecvt<Intern, Extern, mbstate_t>::do_max_length()		\
+    const noexcept -> int {						\
+  return 1;								\
+}
+
+_SPECIALIZE_CODECVT(char,     char)
+_SPECIALIZE_CODECVT(char16_t, char16_t)
+_SPECIALIZE_CODECVT(char32_t, char32_t)
+_SPECIALIZE_CODECVT(wchar_t,  wchar_t)
+
+_SPECIALIZE_CODECVT_IDENTITY(char,     char)
+_SPECIALIZE_CODECVT_IDENTITY(char16_t, char16_t)
+_SPECIALIZE_CODECVT_IDENTITY(char32_t, char32_t)
+_SPECIALIZE_CODECVT_IDENTITY(wchar_t,  wchar_t)
+
+/*
+ * Clean up temporary macros, unless compiling locale.cc, in which case
+ * we leave them, for locale.cc to use.
+ */
+#ifndef _COMPILING_LOCALE
+# undef _SPECIALIZE_CODECVT
+# undef _SPECIALIZE_CODECVT_IDENTITY
+#endif
+
+
 template<typename Char, typename Iter>
 num_put<Char, Iter>::num_put(size_t refs)
 : locale::facet(refs)

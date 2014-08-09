@@ -122,11 +122,11 @@ enum _ABI_TYPES(buffer_style) {
 
 struct _ABI_TYPES(mbstate_t)
 {
-	char no_clue[8];	/* XXX figure out what mbstate is supposed to do and implement whatever. */
+	_ABI_TYPES(uint64_t) _data;  // 8 byte of state data
 
 #ifdef __cplusplus
 	bool operator==(const _ABI_TYPES(mbstate_t)& o) const
-	{ return no_clue == o.no_clue; }
+	{ return _data == o._data; }
 	bool operator!=(const _ABI_TYPES(mbstate_t)& o) const
 	{ return !(*this == o); }
 #endif
