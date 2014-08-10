@@ -6,7 +6,8 @@
 #include <exception>
 #include <iterator>
 #include <algorithm>
-#include <locale>
+#include <locale_misc/locale.h>
+#include <locale_misc/num_put.h>
 #include <string>
 #include <streambuf>
 #include <stdimpl/invoke.h>

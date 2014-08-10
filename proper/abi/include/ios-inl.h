@@ -3,6 +3,7 @@
 
 #include <ios>
 #include <streambuf>
+#include <locale_misc/ctype.h>
 
 
 _namespace_begin(std)

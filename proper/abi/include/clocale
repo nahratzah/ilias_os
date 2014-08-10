@@ -39,7 +39,7 @@ struct lconv {
 
 struct lconv* localeconv() noexcept;
 
-/* Implementation provided by locale.cc */
+/* Implementation provided by locale_misc_locale.cc */
 locale_t duplocale(locale_t) noexcept;
 void freelocale(locale_t) noexcept;
 locale_t newlocale(int, const char*, locale_t) noexcept;

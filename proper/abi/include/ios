@@ -1,8 +1,6 @@
 #ifndef _IOS_
 #define _IOS_
 
-#define _LOCALE_SKIP_INL_INCLUDE  // Handle locale inline include ourselves.
-
 #include <cdecl.h>
 #include <abi/abi.h>
 #include <iosfwd>
@@ -12,7 +10,7 @@
 #include <string>
 #include <vector>
 #include <stdimpl/convertible_enum.h>
-#include <locale>
+#include <locale_misc/locale.h>
 #include <ios_misc/streamsize.h>
 
 _namespace_begin(std)
@@ -378,7 +376,5 @@ extern template class basic_ios<wchar_t>;
 _namespace_end(std)
 
 #include <ios-inl.h>
-#include <locale-inl.h>
-#undef _LOCALE_SKIP_INL_INCLUDE
 
 #endif /* _IOS_ */
