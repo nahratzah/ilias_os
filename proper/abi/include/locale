@@ -8,6 +8,7 @@
 #include <string>
 #include <locale_misc/lc_mask.h>
 #include <locale_misc/locale_t.h>
+#include <ios_misc/streamsize.h>
 
 #ifdef _COMPILING_LOCALE
 # include <clocale>
@@ -168,7 +169,6 @@ class wstring_convert {
   wstring_convert(Codecvt* = new Codecvt());
   wstring_convert(Codecvt*, state_type);
   wstring_convert(const byte_string&, const wide_string& = wide_string());
-  ~wstring_convert() noexcept = default;
 
   wide_string from_bytes(char);
   wide_string from_bytes(const char*);
@@ -197,7 +197,41 @@ class wstring_convert {
 
 template<typename Codecvt, typename Elem = wchar_t,
          typename Tr = char_traits<Elem>>
-class wbuffer_convert;
+class wbuffer_convert
+: public basic_streambuf<Elem, Tr>
+{
+ public:
+  using state_type = typename Tr::state_type;
+
+  wbuffer_convert(streambuf* = nullptr, Codecvt* = new Codecvt(),
+                  state_type = state_type());
+
+  streambuf* rdbuf() const;
+  streambuf* rdbuf(streambuf*);
+
+  state_type state() const;
+
+ protected:
+  streamsize showmanyc() override;
+  streamsize xsgetn(typename basic_streambuf<Elem, Tr>::char_type*, streamsize)
+      override;
+  typename basic_streambuf<Elem, Tr>::int_type underflow() override;
+  typename basic_streambuf<Elem, Tr>::int_type uflow() override;
+
+  streamsize xsputn(const typename basic_streambuf<Elem, Tr>::char_type*,
+                    streamsize) override;
+  typename basic_streambuf<Elem, Tr>::int_type overflow(
+      typename basic_streambuf<Elem, Tr>::int_type) override;
+
+ private:
+  auto underflow_(bool) ->
+      tuple<typename basic_streambuf<Elem, Tr>::int_type, streamsize, bool>;
+
+  streambuf* buf_;
+  unique_ptr<Codecvt> cvt_;
+  state_type cvt_state_;
+  const bool always_noconv_;
+};
 
 
 class ctype_base {
