@@ -166,6 +166,192 @@ Char tolower(Char c, const locale& loc) {
 }
 
 
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+wstring_convert<Codecvt, Elem, WA, BA>::wstring_convert(Codecvt* cvt)
+: cvt_(cvt)
+{
+  __builtin_bzero(&cvt_state_, sizeof(cvt_state_));
+  if (!cvt_) throw invalid_argument("wstring_convert: null codecvt");
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+wstring_convert<Codecvt, Elem, WA, BA>::wstring_convert(
+    Codecvt* cvt, state_type cvt_state)
+: cvt_(cvt),
+  cvt_state_(cvt_state)
+{}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+wstring_convert<Codecvt, Elem, WA, BA>::wstring_convert(
+    const byte_string& byte_err_string, const wide_string& wide_err_string)
+: wstring_convert(),
+  byte_err_string_(byte_err_string),
+  wide_err_string_(wide_err_string)
+{}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::from_bytes(char c) ->
+    wide_string {
+  using string_ref = basic_string_ref<char, typename byte_string::traits_type>;
+  return from_bytes(string_ref(&c, 1));
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::from_bytes(const char* s) ->
+    wide_string {
+  using string_ref = basic_string_ref<char, typename byte_string::traits_type>;
+  return from_bytes(string_ref(s));
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::from_bytes(
+    const byte_string& s) -> wide_string {
+  using string_ref = basic_string_ref<char, typename byte_string::traits_type>;
+  return from_bytes(string_ref(s));
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::from_bytes(
+    basic_string_ref<char, typename byte_string::traits_type> s) ->
+    wide_string {
+  return from_bytes(s.begin(), s.end());
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::from_bytes(
+    const char* b, const char* e) -> wide_string {
+  assert(cvt_);
+  assert(e >= b);
+
+  wide_string result;
+  const auto mul = 1;  // Expected Elems per byte.
+  const auto maxlen = 1;  // Expected additional Elems for empty input.
+
+  for (bool do_continue = true; do_continue; do_continue = true) {
+    /* Set up space in output string. */
+    const auto result_pre_size = result.size();
+    const typename wide_string::size_type min_resize =
+        result.size() + mul * (e - b) + maxlen;
+    result.resize(max(min_resize, result.capacity()));
+    const auto out_begin = result.begin() + result_pre_size;
+    auto out_end = out_begin;
+
+    /* Perform conversion. */
+    const auto old_b = b;
+    auto rv = cvt_->in(cvt_state_, b, e, b, out_begin, result.end(), out_end);
+    result.resize(out_end - result.begin());
+    cvt_count_ += size_t(b - old_b);
+
+    /* Handle conversion result. */
+    switch (rv) {
+    case codecvt_base::partial:
+      /* SKIP: keep converting, we need more output Elems. */
+      break;
+    case codecvt_base::ok:
+      do_continue = false;  // Done, successful conversion
+      break;
+    case codecvt_base::error:
+      if (wide_err_string_.empty()) throw range_error("wstring_convert");
+      result = wide_err_string_;
+      do_continue = false;  // Failed, returning error string
+      break;
+    case codecvt_base::noconv:
+      result.append(b, e);
+      do_continue = false;  // No conversion required
+      break;
+    }
+  }
+
+  return result;
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::to_bytes(Elem c) -> byte_string {
+  using string_ref = basic_string_ref<Elem, typename wide_string::traits_type>;
+  return to_bytes(string_ref(&c, 1));
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::to_bytes(const Elem* s) ->
+    byte_string {
+  using string_ref = basic_string_ref<Elem, typename wide_string::traits_type>;
+  return to_bytes(string_ref(s));
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::to_bytes(const wide_string& s) ->
+    byte_string {
+  using string_ref = basic_string_ref<Elem, typename wide_string::traits_type>;
+  return to_bytes(string_ref(s));
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::to_bytes(
+    basic_string_ref<Elem, typename wide_string::traits_type> s) ->
+    byte_string {
+  return to_bytes(s.begin(), s.end());
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::to_bytes(
+    const Elem* b, const Elem* e) -> byte_string {
+  assert(cvt_);
+  assert(e >= b);
+
+  byte_string result;
+  const auto mul = max(cvt_->encoding(), 1);  // Expected Elems per byte.
+  const auto maxlen = max(cvt_->max_length(), 1);  // Expected additional Elems
+                                                   // for empty input.
+
+  for (bool do_continue = true; do_continue; do_continue = true) {
+    /* Set up space in output string. */
+    const auto result_pre_size = result.size();
+    const typename wide_string::size_type min_resize =
+        result.size() + mul * (e - b) + maxlen;
+    result.resize(max(min_resize, result.capacity()));
+    const auto out_begin = result.begin() + result_pre_size;
+    auto out_end = out_begin;
+
+    /* Perform conversion. */
+    const auto old_b = b;
+    auto rv = cvt_->out(cvt_state_, b, e, b, out_begin, result.end(), out_end);
+    result.resize(out_end - result.begin());
+    cvt_count_ += size_t(b - old_b);
+
+    /* Handle conversion result. */
+    switch (rv) {
+    case codecvt_base::partial:
+      /* SKIP: keep converting, we need more output Elems. */
+      break;
+    case codecvt_base::ok:
+      do_continue = false;  // Done, successful conversion
+      break;
+    case codecvt_base::error:
+      if (wide_err_string_.empty()) throw range_error("wstring_convert");
+      result = wide_err_string_;
+      do_continue = false;  // Failed, returning error string
+      break;
+    case codecvt_base::noconv:
+      result.append(b, e);
+      do_continue = false;  // No conversion required
+      break;
+    }
+  }
+
+  return result;
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::converted() const -> size_t {
+  return cvt_count_;
+}
+
+template<typename Codecvt, typename Elem, typename WA, typename BA>
+auto wstring_convert<Codecvt, Elem, WA, BA>::state() const -> state_type {
+  return cvt_state_;
+}
+
+
 inline locale::facet::facet(size_t refs)
 : refs_(refs)
 {}
