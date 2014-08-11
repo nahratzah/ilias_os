@@ -3,6 +3,7 @@
 
 #include <locale_misc/num_get.h>
 #include <locale_misc/numpunct.h>
+#include <stdimpl/locale_numeric.h>
 #include <ios>
 #include <string>
 
@@ -200,6 +201,246 @@ auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
       break;  // GUARD
   }
 
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
+                                 ios_base& str, ios_base::iostate& err,
+                                 long& v) const -> iter_type {
+  using decoder_t = impl::num_decoder<Char, long>;
+
+  auto decoder = decoder_t(in, end, in, str);
+  v = decoder.get();
+  err = (decoder.valid() ? ios_base::goodbit : ios_base::failbit);
+  if (decoder.eof()) err |= ios_base::eofbit;
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
+                                 ios_base& str, ios_base::iostate& err,
+                                 long long& v) const -> iter_type {
+  using decoder_t = impl::num_decoder<Char, long long>;
+
+  auto decoder = decoder_t(in, end, in, str);
+  v = decoder.get();
+  err = (decoder.valid() ? ios_base::goodbit : ios_base::failbit);
+  if (decoder.eof()) err |= ios_base::eofbit;
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
+                                 ios_base& str, ios_base::iostate& err,
+                                 unsigned short& v) const -> iter_type {
+  using decoder_t = impl::num_decoder<Char, unsigned short>;
+
+  auto decoder = decoder_t(in, end, in, str);
+  v = decoder.get();
+  err = (decoder.valid() ? ios_base::goodbit : ios_base::failbit);
+  if (decoder.eof()) err |= ios_base::eofbit;
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
+                                 ios_base& str, ios_base::iostate& err,
+                                 unsigned int& v) const -> iter_type {
+  using decoder_t = impl::num_decoder<Char, unsigned int>;
+
+  auto decoder = decoder_t(in, end, in, str);
+  v = decoder.get();
+  err = (decoder.valid() ? ios_base::goodbit : ios_base::failbit);
+  if (decoder.eof()) err |= ios_base::eofbit;
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
+                                 ios_base& str, ios_base::iostate& err,
+                                 unsigned long& v) const -> iter_type {
+  using decoder_t = impl::num_decoder<Char, unsigned long>;
+
+  auto decoder = decoder_t(in, end, in, str);
+  v = decoder.get();
+  err = (decoder.valid() ? ios_base::goodbit : ios_base::failbit);
+  if (decoder.eof()) err |= ios_base::eofbit;
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
+                                 ios_base& str, ios_base::iostate& err,
+                                 unsigned long long& v) const -> iter_type {
+  using decoder_t = impl::num_decoder<Char, unsigned long long>;
+
+  auto decoder = decoder_t(in, end, in, str);
+  v = decoder.get();
+  err = (decoder.valid() ? ios_base::goodbit : ios_base::failbit);
+  if (decoder.eof()) err |= ios_base::eofbit;
+  return in;
+}
+
+#if _USE_INT128
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
+                                 ios_base& str, ios_base::iostate& err,
+                                 int128_t& v) const -> iter_type {
+  using decoder_t = impl::num_decoder<Char, int128_t>;
+
+  auto decoder = decoder_t(in, end, in, str);
+  v = decoder.get();
+  err = (decoder.valid() ? ios_base::goodbit : ios_base::failbit);
+  if (decoder.eof()) err |= ios_base::eofbit;
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
+                                 ios_base& str, ios_base::iostate& err,
+                                 uint128_t& v) const -> iter_type {
+  using decoder_t = impl::num_decoder<Char, uint128_t>;
+
+  auto decoder = decoder_t(in, end, in, str);
+  v = decoder.get();
+  err = (decoder.valid() ? ios_base::goodbit : ios_base::failbit);
+  if (decoder.eof()) err |= ios_base::eofbit;
+  return in;
+}
+#endif
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type /*end*/,
+                                 ios_base& /*str*/, ios_base::iostate& /*err*/,
+                                 float& /*v*/) const -> iter_type {
+  assert_msg(false, "XXX implement");  // XXX implement
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type /*end*/,
+                                 ios_base& /*str*/, ios_base::iostate& /*err*/,
+                                 double& /*v*/) const -> iter_type {
+  assert_msg(false, "XXX implement");  // XXX implement
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type /*end*/,
+                                 ios_base& /*str*/, ios_base::iostate& /*err*/,
+                                 long double& /*v*/) const -> iter_type {
+  assert_msg(false, "XXX implement");  // XXX implement
+  return in;
+}
+
+template<typename Char, typename Iter>
+auto num_get<Char, Iter>::do_get(iter_type in, iter_type end,
+                                 ios_base&, ios_base::iostate& err,
+                                 void*& v) const -> iter_type {
+  if (in == end || *in != '0') {
+    v = nullptr;
+    err = ios_base::failbit | ios_base::eofbit;
+    return in;
+  }
+  ++in;
+
+  if (in == end || *in != 'x') {
+    v = nullptr;
+    err = ios_base::failbit | ios_base::eofbit;
+    return in;
+  }
+  ++in;
+
+  uintptr_t ptr;
+  bool saw_digits = false;
+  err = ios_base::goodbit;
+  for (ptr = 0; in != end; ++in, saw_digits = true) {
+    const uintptr_t old_ptr = ptr;
+    const auto c = *in;
+    switch (c) {
+    default:
+      v = reinterpret_cast<void*>(ptr);
+      if (!saw_digits) err = ios_base::badbit;
+      return in;
+    case '0':
+      ptr <<= 4;
+      ptr |= 0x0;
+      break;
+    case '1':
+      ptr <<= 4;
+      ptr |= 0x1;
+      break;
+    case '2':
+      ptr <<= 4;
+      ptr |= 0x2;
+      break;
+    case '3':
+      ptr <<= 4;
+      ptr |= 0x3;
+      break;
+    case '4':
+      ptr <<= 4;
+      ptr |= 0x4;
+      break;
+    case '5':
+      ptr <<= 4;
+      ptr |= 0x5;
+      break;
+    case '6':
+      ptr <<= 4;
+      ptr |= 0x6;
+      break;
+    case '7':
+      ptr <<= 4;
+      ptr |= 0x7;
+      break;
+    case '8':
+      ptr <<= 4;
+      ptr |= 0x8;
+      break;
+    case '9':
+      ptr <<= 4;
+      ptr |= 0x9;
+      break;
+    case 'a':
+    case 'A':
+      ptr <<= 4;
+      ptr |= 0xa;
+      break;
+    case 'b':
+    case 'B':
+      ptr <<= 4;
+      ptr |= 0xb;
+      break;
+    case 'c':
+    case 'C':
+      ptr <<= 4;
+      ptr |= 0xc;
+      break;
+    case 'd':
+    case 'D':
+      ptr <<= 4;
+      ptr |= 0xd;
+      break;
+    case 'e':
+    case 'E':
+      ptr <<= 4;
+      ptr |= 0xe;
+      break;
+    case 'f':
+    case 'F':
+      ptr <<= 4;
+      ptr |= 0xf;
+      break;
+    }
+
+    if (old_ptr >> 4 != ptr)
+      err = ios_base::badbit;  // Overflow.
+  }
+
+  err |= ios_base::eofbit;
+  v = reinterpret_cast<void*>(ptr);
   return in;
 }
 

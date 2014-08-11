@@ -24,23 +24,24 @@ auto num_encoder_base::abs(const T& v) ->
   return static_cast<make_unsigned_t<T>>(v);
 }
 
-
-template<typename Char>
-basic_num_encoder<Char>::basic_num_encoder(ios_base& str)
-: ctype(use_facet<_namespace(std)::ctype<char_type>>(str.getloc())),
-  digits(this->get_digits_(
-         (str.flags() & ios_base::uppercase) == ios_base::uppercase))
-{}
-
-template<typename Char>
-auto basic_num_encoder<Char>::get_digits_(bool upper) ->
-    array<char_type, 16> {
-  array<char_type, 16> rv;
+template<typename CType>
+auto num_encoder_base::get_digits_(bool upper, const CType& ctype) ->
+    array<typename CType::char_type, 16> {
+  array<typename CType::char_type, 16> rv;
   const char (&source)[16] = (upper ? digits_char_upper : digits_char_lower);
 
   ctype.widen(begin(source), end(source), begin(rv));
   return rv;
 }
+
+
+template<typename Char>
+basic_num_encoder<Char>::basic_num_encoder(ios_base& str)
+: ctype(use_facet<_namespace(std)::ctype<char_type>>(str.getloc())),
+  digits(num_encoder_base::get_digits_(
+             (str.flags() & ios_base::uppercase) == ios_base::uppercase,
+             this->ctype))
+{}
 
 
 template<typename Char, typename T>
@@ -110,6 +111,230 @@ auto num_encoder<Char, T>::get_prefix() const noexcept ->
 template<typename Char, typename T>
 auto num_encoder<Char, T>::is_decimal() const noexcept -> bool {
   return decimal_;
+}
+
+
+template<typename Char>
+basic_num_decoder<Char>::basic_num_decoder(ios_base& str)
+: ctype(use_facet<_namespace(std)::ctype<char_type>>(str.getloc())),
+  punct(use_facet<_namespace(std)::numpunct<char_type>>(str.getloc())),
+  digits_lower(num_encoder_base::get_digits_(false, this->ctype)),
+  digits_upper(num_encoder_base::get_digits_(true, this->ctype)),
+  decimal_point(this->punct.decimal_point()),
+  thousands_sep(this->punct.thousands_sep()),
+  oct_leadin(this->ctype.widen('0')),
+  hex_leadin_lower(this->ctype.widen('x')),
+  hex_leadin_upper(this->ctype.widen('X')),
+  sign_neg(this->ctype.widen('-')),
+  sign_pos(this->ctype.widen('+')),
+  grouping(this->punct.grouping())
+{}
+
+template<typename Char>
+auto basic_num_decoder<Char>::validate_grouping() const noexcept -> bool {
+  return !tsep_seen_ ||
+         compare_grouping_measure_spec(tsep_, before_tsep_, grouping);
+}
+
+
+template<typename Char, typename T>
+template<typename Iter>
+num_decoder<Char, T>::num_decoder(Iter b, Iter e, Iter& next, ios_base& str)
+: basic_num_decoder<Char>(str)
+{
+  using traits = char_traits<char_type>;
+
+  /*
+   * Enforce numeric base, if given.
+   */
+  unsigned_type base;
+  switch (str.flags() & ios_base::basefield) {
+  default:
+    base = 0;  // Unknown base.
+    break;
+  case ios_base::dec:
+    base = 10;
+    break;
+  case ios_base::oct:
+    base = 8;
+    break;
+  case ios_base::hex:
+    base = 16;
+    break;
+  }
+  assert(this->digits_lower.size() >= base);
+  assert(this->digits_upper.size() >= base);
+
+  /* Initialize digits lists, using current base.
+   * Note that base == 0 will be fixed up in the loop below. */
+  auto digits_lower = basic_string_ref<char_type>(this->digits_lower.data(),
+                                                  base);
+  auto digits_upper = basic_string_ref<char_type>(this->digits_upper.data(),
+                                                  base);
+
+  /*
+   * Parse, using a loop to consume characters.
+   */
+  bool sign_seen = false;
+  bool maybe_oct = false;
+  streamsize ndigits_since_tsep = 0;
+  for (next = b; !(eof_ = (next == e)); ++next) {
+    const auto c = *next;
+
+    /* Handle sign detection. */
+    if (!sign_seen) {
+      if (traits::eq(c, this->sign_neg)) {
+        sign_seen = true;
+        negative_ = true;
+        continue;  // Character consumed.
+      } else if (traits::eq(c, this->sign_pos)) {
+        sign_seen = true;
+        continue;  // Character consumed.
+      } else {
+        sign_seen = true;  // Absense -> positive.
+        // Fall through: character was not consumed.
+      }
+    }
+
+    /* Handle base detection. */
+    if (base == 0) {
+      bool do_continue;
+
+      /* Try to detect the base. */
+      if (traits::eq(c, this->oct_leadin)) {
+        maybe_oct = true;
+        saw_at_least_one_digit_ = true;  // Saw a zero.
+        do_continue = true;  // Character consumed.
+      } else if (maybe_oct &&
+                 (traits::eq(c, this->hex_leadin_upper) ||
+                  traits::eq(c, this->hex_leadin_lower))) {
+        base = 16;
+        saw_at_least_one_digit_ = false;  // Undo above.
+        do_continue = true;  // Character consumed.
+      } else {
+        base = (maybe_oct ? 8 : 10);
+        do_continue = false;  // Fall through: character was not consumed.
+      }
+
+      /* Initialize detected base. */
+      if (base != 0) {
+        assert(this->digits_lower.size() >= base);
+        assert(this->digits_upper.size() >= base);
+        digits_lower = basic_string_ref<char_type>(this->digits_lower.data(),
+                                                   base);
+        digits_upper = basic_string_ref<char_type>(this->digits_upper.data(),
+                                                   base);
+      }
+
+      /* If this is not a digit, skip detection. */
+      if (do_continue) continue;
+    }
+
+    /* Try to treat c as a digit. */
+    const auto dl_off = digits_lower.find(c);
+    const auto du_off = digits_upper.find(c);
+    if (dl_off != basic_string_ref<char_type>::npos ||
+        du_off != basic_string_ref<char_type>::npos) {
+      unsigned_type digit;
+      if (dl_off != basic_string_ref<char_type>::npos)
+        digit = dl_off;
+      else
+        digit = du_off;
+
+      /* Multiply and add, taking care to detect overflow. */
+      unsigned_type tmp = unsigned_result_ * base;
+      overflow_ |= (tmp < unsigned_result_);  // XXX: use <abi/misc_int.h>
+      tmp += digit;
+      overflow_ |= (tmp < unsigned_result_);  // XXX: use <abi/misc_int.h>
+
+      /* Record that we consumed a digit. */
+      ++ndigits_since_tsep;
+      saw_at_least_one_digit_ = true;
+
+      continue;  // Character consumed.
+    }
+
+    /* Try to treat c as a thousands separator. */
+    if (!this->grouping.empty() &&
+        traits::eq(c, this->thousands_sep) &&
+        ndigits_since_tsep > 0) {
+      if (this->tsep_seen_)
+        this->tsep_.push_back(static_cast<char>(ndigits_since_tsep));
+      else
+        this->before_tsep_ = ndigits_since_tsep;
+      this->tsep_seen_ = true;
+      ndigits_since_tsep = 0;
+      continue;  // Character consumed.
+    }
+
+    /*
+     * Not a character we expect.
+     */
+    break;  // GUARD
+  }
+
+  /* Add last set of thousand separators. */
+  if (this->tsep_seen_)
+    this->tsep_.push_back(static_cast<char>(ndigits_since_tsep));
+  else
+    this->before_tsep_ = ndigits_since_tsep;
+
+  /* Set overflow if the unsigned value exceeds the possible result. */
+  if (overflow_) {
+    /* SKIP */
+  } else if (!negative_) {
+    if (unsigned_result_ > numeric_limits<T>::max())
+      overflow_ = true;
+  } else if (numeric_limits<T>::is_signed) {
+    if (unsigned_result_ > this->abs(numeric_limits<T>::min()))
+      overflow_ = true;
+  } else {
+    /* Negative number for non-negative value. */
+    overflow_ = true;
+  }
+}
+
+template<typename Char, typename T>
+auto num_decoder<Char, T>::get() const -> value_type {
+  /* In the case of overflow, return the closest number. */
+  if (overflow_) return (negative_ ?
+                         numeric_limits<value_type>::min() :
+                         numeric_limits<value_type>::max());
+
+  /* If negative, negate the unsigned result value.
+   * Note that abs(INT_MIN) is not representable in signed numbers,
+   * so we do a small trick:
+   *   -x  ==  1 - x - 1  ==  -(x - 1) - 1
+   * This allows us to correctly convert INT_MIN (and other *_MIN values).
+   */
+  value_type rv;
+  if (negative_)
+    rv = -static_cast<value_type>(unsigned_result_ - 1U) - 1;
+  else
+    rv = static_cast<value_type>(unsigned_result_);
+
+  assert(this->abs(rv) == unsigned_result_);  // Paranoid about math/overflow.
+  return rv;
+}
+
+template<typename Char, typename T>
+auto num_decoder<Char, T>::saw_digits() const noexcept -> bool {
+  return saw_at_least_one_digit_;
+}
+
+template<typename Char, typename T>
+auto num_decoder<Char, T>::overflow() const noexcept -> bool {
+  return overflow_;
+}
+
+template<typename Char, typename T>
+auto num_decoder<Char, T>::eof() const noexcept -> bool {
+  return eof_;
+}
+
+template<typename Char, typename T>
+auto num_decoder<Char, T>::valid() const noexcept -> bool {
+  return !overflow() && saw_digits() && this->validate_grouping();
 }
 
 
@@ -216,6 +441,17 @@ auto render_num_encoder(Iter out, ios_base& str,
                             ne.get_prefix(), ne.get_digits(), fill,
                             ne.is_decimal());
 }
+
+
+extern template class basic_num_encoder<char>;
+extern template class basic_num_encoder<char16_t>;
+extern template class basic_num_encoder<char32_t>;
+extern template class basic_num_encoder<wchar_t>;
+
+extern template class basic_num_decoder<char>;
+extern template class basic_num_decoder<char16_t>;
+extern template class basic_num_decoder<char32_t>;
+extern template class basic_num_decoder<wchar_t>;
 
 
 } /* namespace std::impl */
