@@ -11,13 +11,12 @@
 #include <vector>
 #include <stdimpl/convertible_enum.h>
 #include <locale_misc/locale.h>
-#include <ios_misc/streamsize.h>
 
 _namespace_begin(std)
 
 
 /* streamoff: declared in iosfwd. */
-/* streamsize: declared in ios_misc/streamsize.h. */
+using streamsize = _TYPES(fpos_t);
 
 class ios_base;
 
