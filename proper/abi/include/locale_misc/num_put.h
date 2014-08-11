@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <locale_misc/locale.h>
+#include <iosfwd>
 #include <cstdint>
 
 _namespace_begin(std)
@@ -53,7 +54,7 @@ class num_put
 };
 
 template<typename Char, typename OutputIter>
-const locale::id num_put<Char, OutputIter>::id{ locale::collate };
+const locale::id num_put<Char, OutputIter>::id{ locale::numeric };
 
 
 extern template class num_put<char>;
