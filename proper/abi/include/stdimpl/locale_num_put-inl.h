@@ -2,7 +2,10 @@
 #define _STDIMPL_LOCALE_NUM_PUT_INL_H_
 
 #include <stdimpl/locale_num_put.h>
-#include <locale>
+#include <locale_misc/locale.h>
+#include <locale_misc/ctype.h>
+#include <locale_misc/numpunct.h>
+#include <ios>
 
 _namespace_begin(std)
 namespace impl {
