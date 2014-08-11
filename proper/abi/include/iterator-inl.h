@@ -2,6 +2,7 @@
 #define _ITERATOR_INL_H_
 
 #include <iterator>
+#include <cassert>
 
 _namespace_begin(std)
 
