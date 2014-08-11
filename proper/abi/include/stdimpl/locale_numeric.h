@@ -1,5 +1,5 @@
-#ifndef _STDIMPL_LOCALE_NUM_PUT_H_
-#define _STDIMPL_LOCALE_NUM_PUT_H_
+#ifndef _STDIMPL_LOCALE_NUMERIC_H_
+#define _STDIMPL_LOCALE_NUMERIC_H_
 
 #include <cdecl.h>
 #include <type_traits>
@@ -118,6 +118,6 @@ Iter render_num_encoder(Iter, ios_base&,
 } /* namespace std::impl */
 _namespace_end(std)
 
-#include <stdimpl/locale_num_put-inl.h>
+#include <stdimpl/locale_numeric-inl.h>
 
-#endif /* _STDIMPL_LOCALE_NUM_PUT_H_ */
+#endif /* _STDIMPL_LOCALE_NUMERIC_H_ */

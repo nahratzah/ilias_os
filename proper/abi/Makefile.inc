@@ -48,7 +48,7 @@ ABI_SRCS += abi/src/stdimpl_allocator_cloneable.cc
 ABI_SRCS += abi/src/stdimpl_simple_bitset.cc
 ABI_SRCS += abi/src/stdimpl_stats.cc
 ABI_SRCS += abi/src/stdimpl_shared_ptr_ownership.cc
-ABI_SRCS += abi/src/stdimpl_locale_num_put.cc
+ABI_SRCS += abi/src/stdimpl_locale_numeric.cc
 
 ILIAS_STD_SRCS += abi/src/ilias_linked_list.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_set.cc

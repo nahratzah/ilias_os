@@ -1,7 +1,7 @@
-#ifndef _STDIMPL_LOCALE_NUM_PUT_INL_H_
-#define _STDIMPL_LOCALE_NUM_PUT_INL_H_
+#ifndef _STDIMPL_LOCALE_NUMERIC_INL_H_
+#define _STDIMPL_LOCALE_NUMERIC_INL_H_
 
-#include <stdimpl/locale_num_put.h>
+#include <stdimpl/locale_numeric.h>
 #include <locale_misc/locale.h>
 #include <locale_misc/ctype.h>
 #include <locale_misc/numpunct.h>
@@ -221,4 +221,4 @@ auto render_num_encoder(Iter out, ios_base& str,
 } /* namespace std::impl */
 _namespace_end(std)
 
-#endif /* _STDIMPL_LOCALE_NUM_PUT_INL_H_ */
+#endif /* _STDIMPL_LOCALE_NUMERIC_INL_H_ */

@@ -1,4 +1,4 @@
-#include <stdimpl/locale_num_put.h>
+#include <stdimpl/locale_numeric.h>
 
 _namespace_begin(std)
 namespace impl {

@@ -4,7 +4,7 @@
 #include <cdecl.h>
 #include <locale_misc/locale.h>
 #include <locale_misc/numpunct.h>
-#include <stdimpl/locale_num_put.h>
+#include <stdimpl/locale_numeric.h>
 #include <ios>
 
 _namespace_begin(std)
