@@ -9,6 +9,7 @@
 #include <utility>
 #include <locale_misc/ctype.h>
 #include <locale_misc/codecvt.h>
+#include <locale_misc/num_get.h>
 #include <locale_misc/num_put.h>
 #include <locale_misc/numpunct.h>
 
@@ -391,6 +392,12 @@ facet_vector_map_ptr classic_facet_vector_map(const string_ref name) {
   facets.push_back(classic_facet<messages<char32_t>>());
   facets.push_back(classic_facet<messages<wchar_t>>());
 #endif
+
+  /* Add num_get facets. */
+  facets.push_back(classic_facet<num_get<char>>());
+  facets.push_back(classic_facet<num_get<char16_t>>());
+  facets.push_back(classic_facet<num_get<char32_t>>());
+  facets.push_back(classic_facet<num_get<wchar_t>>());
 
   /* Add num_put facets. */
   facets.push_back(classic_facet<num_put<char>>());

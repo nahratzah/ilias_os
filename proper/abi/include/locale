@@ -7,15 +7,12 @@
 #include <locale_misc/codecvt.h>
 #include <locale_misc/collate.h>
 #include <locale_misc/convert.h>
+#include <locale_misc/num_get.h>
 #include <locale_misc/num_put.h>
 #include <locale_misc/numpunct.h>
 #include <locale_misc/messages.h>
 
 _namespace_begin(std)
-
-
-template<typename Char, typename InputIter>
-class num_get;
 
 
 class time_base;

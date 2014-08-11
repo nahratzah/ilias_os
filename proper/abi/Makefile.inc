@@ -37,6 +37,7 @@ ABI_SRCS += abi/src/locale_misc_collate.cc
 ABI_SRCS += abi/src/locale_misc_ctype.cc
 ABI_SRCS += abi/src/locale_misc_locale.cc
 ABI_SRCS += abi/src/locale_misc_messages.cc
+ABI_SRCS += abi/src/locale_misc_num_get.cc
 ABI_SRCS += abi/src/locale_misc_num_put.cc
 ABI_SRCS += abi/src/locale_misc_numpunct.cc
 ABI_SRCS += abi/src/sstream.cc
