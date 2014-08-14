@@ -2,6 +2,7 @@
 #define _STREAMBUF_INL_H_
 
 #include <streambuf>
+#include <algorithm>
 
 _namespace_begin(std)
 
@@ -313,6 +314,62 @@ streamsize copybuf(basic_streambuf<Char, Traits>& dst,
       src.gbump(copylen);
       dst.pbump(copylen);
       count += copylen;
+    }
+  }
+  return count;
+}
+
+template<typename Char, typename Traits>
+streamsize copybuf(basic_streambuf<Char, Traits>& dst,
+                   basic_streambuf<Char, Traits>& src,
+                   Char delim) {
+  assert(&dst != &src);
+  streamsize count = 0;
+
+  for (bool delim_seen = false; !delim_seen; ) {
+    /*
+     * Figure out avail bytes.  Clamp to INT_MAX, otherwise
+     * dst.pbump() and src.gbump() will fail.
+     */
+    const auto src_delim = find_if(src.gptr(), src.egptr(),
+                                   [delim](Char c) {
+                                     return Traits::eq(c, delim);
+                                   });
+    streamsize dst_avail = dst.epptr() - dst.pptr();
+    streamsize src_avail = src_delim - src.gptr();
+    delim_seen = (src_delim != src.egptr());
+    if (dst_avail > INT_MAX) dst_avail = INT_MAX;
+    if (src_avail > INT_MAX) {
+      src_avail = INT_MAX;
+      delim_seen = false;
+    }
+
+    if (src_avail == 0) {
+      /* No buffer available: transfer a single char across. */
+      const typename Traits::int_type cc = src.sgetc();
+      if (Traits::eq_int_type(cc, Traits::eof())) break;
+      const typename Traits::char_type c = Traits::to_char_type(cc);
+      if (Traits::eq(c, delim)) {
+        delim_seen = true;
+        continue;
+      }
+      if (Traits::eq_int_type(dst.sputc(c), Traits::eof())) break;
+      src.sbumpc();
+      ++count;
+    } else if (dst_avail == 0) {
+      /* Dst buffer unavailable: invoke virtual function for transfer. */
+      const streamsize put_sz = dst.sputn(src.gptr(), src_avail);
+      if (put_sz == 0) break;
+      count += put_sz;
+      src.gbump(put_sz);
+    } else {
+      /* Buffers available, use memcpy to transfer. */
+      auto copylen = min(dst_avail, src_avail);
+      Traits::copy(dst.pptr(), src.gptr(), copylen);
+      src.gbump(copylen);
+      dst.pbump(copylen);
+      count += copylen;
+      if (delim_seen) delim_seen = (copylen == src_avail);
     }
   }
   return count;

@@ -41,6 +41,7 @@ ABI_SRCS += abi/src/locale_misc_num_get.cc
 ABI_SRCS += abi/src/locale_misc_num_put.cc
 ABI_SRCS += abi/src/locale_misc_numpunct.cc
 ABI_SRCS += abi/src/sstream.cc
+ABI_SRCS += abi/src/istream.cc
 ABI_SRCS += abi/src/ostream.cc
 ABI_SRCS += abi/src/system_error.cc
 ABI_SRCS += abi/src/typeinfo.cc

@@ -17,6 +17,11 @@ namespace impl {
 template<typename Char, typename Traits>
 streamsize copybuf(basic_streambuf<Char, Traits>&,
                    basic_streambuf<Char, Traits>&);
+template<typename Char, typename Traits>
+streamsize copybuf(basic_streambuf<Char, Traits>&,
+                   basic_streambuf<Char, Traits>&,
+                   Char);
+
 
 
 } /* namespace std::impl */
@@ -25,6 +30,8 @@ streamsize copybuf(basic_streambuf<Char, Traits>&,
 template<typename Char, typename Traits> class basic_streambuf {
   template friend streamsize impl::copybuf<>(basic_streambuf&,
                                              basic_streambuf&);
+  template friend streamsize impl::copybuf<>(basic_streambuf&,
+                                             basic_streambuf&, Char);
 
  public:
   using char_type = Char;
@@ -122,6 +129,19 @@ extern template streamsize copybuf(basic_streambuf<char32_t>&,
                                    basic_streambuf<char32_t>&);
 extern template streamsize copybuf(basic_streambuf<wchar_t>&,
                                    basic_streambuf<wchar_t>&);
+
+extern template streamsize copybuf(basic_streambuf<char>&,
+                                   basic_streambuf<char>&,
+                                   char);
+extern template streamsize copybuf(basic_streambuf<char16_t>&,
+                                   basic_streambuf<char16_t>&,
+                                   char16_t);
+extern template streamsize copybuf(basic_streambuf<char32_t>&,
+                                   basic_streambuf<char32_t>&,
+                                   char32_t);
+extern template streamsize copybuf(basic_streambuf<wchar_t>&,
+                                   basic_streambuf<wchar_t>&,
+                                   wchar_t);
 
 } /* namespace impl */
 _namespace_end(std)
