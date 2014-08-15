@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#include <locale>
 
 _namespace_begin(std)
 
@@ -29,14 +30,32 @@ constexpr unsigned char CHAR_ZERO = 0;
 } /* namespace std::<unnamed> */
 
 
-#if __has_include(<clocale>)
-int strcoll(const char*, const char*) noexcept;  // XXX implement: strcmp based on current locale
-int strcoll_l(const char*, const char*, locale_t) noexcept;  // XXX implement: strcmp based on given locale
+int strcoll(const char* s1, const char* s2) noexcept {
+  const string_ref s1_{ s1 }, s2_{ s2 };
+  try {
+    return use_facet<collate<char>>(locale()).compare(s1_.begin(), s1_.end(),
+                                                      s2_.begin(), s2_.end());
+  } catch (const bad_cast&) {
+    return s1_.compare(s2_);
+  }
+}
+
+int strcoll_l(const char* s1, const char* s2, locale_t loc) noexcept {
+  const string_ref s1_{ s1 }, s2_{ s2 };
+
+  try {
+    const locale& loc_ = reinterpret_cast<const locale&>(loc);
+    return use_facet<collate<char>>(loc_).compare(s1_.begin(), s1_.end(),
+                                                  s2_.begin(), s2_.end());
+  } catch (const bad_cast&) {
+    return s1_.compare(s2_);
+  }
+}
+
 char* strerror_l(int e, locale_t loc) noexcept;  // XXX return string for errno e in given locale
 char* strsignal(int sig) noexcept;  // XXX return signal name in current locale
 size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n) noexcept;  // XXX find current locale, invoke strxfrm_l(..., current_locale())
 size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n, locale_t loc) noexcept;  // XXX transform b into a (at most n chars long), such that strcoll_l(b, ..., loc) returns the same result as strcmp(a, ...).  Return length of a, if n was infinite.
-#endif /* __has_include(<clocale>) */
 
 
 size_t strlen(const char* s) noexcept {
@@ -756,8 +775,8 @@ int strerror_r(int errnum, char* buf, size_t buflen) noexcept {
   using abi::sys_nerr;
   using abi::sys_errlist;
 
-#if !defined(_TEST) && __has_include(<clocale>)
-  ...
+#if 0 // XXX _ILIAS_LOCALE
+  ...  // XXX
 #else /* __has_include(<clocale>) */
   if (_predict_false(errnum < 0 || errnum >= sys_nerr)) {
     snprintf(buf, buflen, "Unknown error: %d", errnum);

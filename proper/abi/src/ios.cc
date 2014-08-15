@@ -34,7 +34,6 @@ ios_base::Init::~Init() noexcept {
 }
 
 
-#if _ILIAS_LOCALE
 locale ios_base::imbue(const locale& l) {
   auto rv = exchange(loc_, l);
   invoke_event_cb(imbue_event);
@@ -44,7 +43,6 @@ locale ios_base::imbue(const locale& l) {
 locale ios_base::getloc() const {
   return loc_;
 }
-#endif /* _ILIAS_LOCALE */
 
 bool ios_base::sync_with_stdio(bool /*sync*/) {
   return true; // XXX implement
@@ -129,12 +127,13 @@ namespace impl {
 
 basic_ios_derived::~basic_ios_derived() noexcept {}
 
-auto basic_ios_derived::clear_(ios_base::iostate state) ->
+auto basic_ios_derived::clear_(ios_base::iostate state, bool throw_allowed) ->
     ios_base::iostate {
   const auto rv = exchange(iostate_, state);
 
   ios_base::iostate masked = rdstate() & exceptions();
-  if (_predict_false(masked != static_cast<ios_base::iostate>(0))) {
+  if (_predict_false(masked != static_cast<ios_base::iostate>(0)) &&
+      throw_allowed) {
     string msg;
     if ((masked & ios_base::eofbit) != static_cast<ios_base::iostate>(0)) {
       if (!msg.empty()) msg += ", ";
@@ -212,6 +211,41 @@ template class basic_ios<char>;
 template class basic_ios<char16_t>;
 template class basic_ios<char32_t>;
 template class basic_ios<wchar_t>;
+
+constexpr ios_base::fmtflags ios_base::boolalpha;
+constexpr ios_base::fmtflags ios_base::dec;
+constexpr ios_base::fmtflags ios_base::fixed;
+constexpr ios_base::fmtflags ios_base::hex;
+constexpr ios_base::fmtflags ios_base::internal;
+constexpr ios_base::fmtflags ios_base::left;
+constexpr ios_base::fmtflags ios_base::oct;
+constexpr ios_base::fmtflags ios_base::right;
+constexpr ios_base::fmtflags ios_base::scientific;
+constexpr ios_base::fmtflags ios_base::showbase;
+constexpr ios_base::fmtflags ios_base::showpoint;
+constexpr ios_base::fmtflags ios_base::showpos;
+constexpr ios_base::fmtflags ios_base::skipws;
+constexpr ios_base::fmtflags ios_base::unitbuf;
+constexpr ios_base::fmtflags ios_base::uppercase;
+constexpr ios_base::fmtflags ios_base::adjustfield;
+constexpr ios_base::fmtflags ios_base::basefield;
+constexpr ios_base::fmtflags ios_base::floatfield;
+
+constexpr ios_base::iostate ios_base::badbit;
+constexpr ios_base::iostate ios_base::eofbit;
+constexpr ios_base::iostate ios_base::failbit;
+constexpr ios_base::iostate ios_base::goodbit;
+
+constexpr ios_base::openmode ios_base::app;
+constexpr ios_base::openmode ios_base::ate;
+constexpr ios_base::openmode ios_base::binary;
+constexpr ios_base::openmode ios_base::in;
+constexpr ios_base::openmode ios_base::out;
+constexpr ios_base::openmode ios_base::trunc;
+
+constexpr ios_base::seekdir ios_base::beg;
+constexpr ios_base::seekdir ios_base::cur;
+constexpr ios_base::seekdir ios_base::end;
 
 
 _namespace_end(std)

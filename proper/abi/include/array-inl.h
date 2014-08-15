@@ -26,7 +26,7 @@ auto array<T, N>::begin() noexcept -> iterator {
 
 template<typename T, size_t N>
 auto array<T, N>::begin() const noexcept -> const_iterator {
-  return pointer_traits<pointer>::pointer_to(elems_[0]);
+  return pointer_traits<const_pointer>::pointer_to(elems_[0]);
 }
 
 template<typename T, size_t N>

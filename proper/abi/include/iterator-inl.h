@@ -2,6 +2,7 @@
 #define _ITERATOR_INL_H_
 
 #include <iterator>
+#include <cassert>
 
 _namespace_begin(std)
 
@@ -731,6 +732,11 @@ auto ostreambuf_iterator<Char, Traits>::operator=(Char ch) ->
 }
 
 template<typename Char, typename Traits>
+auto ostreambuf_iterator<Char, Traits>::operator*() -> ostreambuf_iterator& {
+  return *this;
+}
+
+template<typename Char, typename Traits>
 auto ostreambuf_iterator<Char, Traits>::operator++() -> ostreambuf_iterator& {
   return *this;
 }
@@ -785,10 +791,10 @@ template<typename C> auto rend(C& c) -> decltype(c.rend()) {
 template<typename C> auto rend(const C& c) -> decltype(c.rend()) {
   return c.rend();
 }
-template<typename T, size_t N> reverse_iterator<T*> begin(T (&array)[N]) {
+template<typename T, size_t N> reverse_iterator<T*> rbegin(T (&array)[N]) {
   return reverse_iterator<T*>(array + N);
 }
-template<typename T, size_t N> reverse_iterator<T*> end(T (&array)[N]) {
+template<typename T, size_t N> reverse_iterator<T*> rend(T (&array)[N]) {
   return reverse_iterator<T*>(array);
 }
 template<typename E> reverse_iterator<const E*> rbegin(

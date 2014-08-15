@@ -32,12 +32,24 @@ ABI_SRCS += abi/src/new.cc
 ABI_SRCS += abi/src/stdexcept.cc
 ABI_SRCS += abi/src/streambuf.cc
 ABI_SRCS += abi/src/string.cc
+ABI_SRCS += abi/src/locale_misc_codecvt.cc
+ABI_SRCS += abi/src/locale_misc_collate.cc
+ABI_SRCS += abi/src/locale_misc_ctype.cc
+ABI_SRCS += abi/src/locale_misc_locale.cc
+ABI_SRCS += abi/src/locale_misc_messages.cc
+ABI_SRCS += abi/src/locale_misc_num_get.cc
+ABI_SRCS += abi/src/locale_misc_num_put.cc
+ABI_SRCS += abi/src/locale_misc_numpunct.cc
+ABI_SRCS += abi/src/sstream.cc
+ABI_SRCS += abi/src/istream.cc
+ABI_SRCS += abi/src/ostream.cc
 ABI_SRCS += abi/src/system_error.cc
 ABI_SRCS += abi/src/typeinfo.cc
 ABI_SRCS += abi/src/stdimpl_allocator_cloneable.cc
 ABI_SRCS += abi/src/stdimpl_simple_bitset.cc
 ABI_SRCS += abi/src/stdimpl_stats.cc
 ABI_SRCS += abi/src/stdimpl_shared_ptr_ownership.cc
+ABI_SRCS += abi/src/stdimpl_locale_numeric.cc
 
 ILIAS_STD_SRCS += abi/src/ilias_linked_list.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_set.cc
@@ -47,12 +59,6 @@ include abi/Makefile.compiler_rt.inc
 
 SRCS += ${ABI_SRCS} ${ILIAS_STD_SRCS}
 SRCS_LOADER += ${ABI_SRCS} ${ILIAS_STD_SRCS}
-
-SRCS_LOADER += abi/i386/divdi3.s
-SRCS_LOADER += abi/i386/moddi3.s
-SRCS_LOADER += abi/i386/udivdi3.s
-SRCS_LOADER += abi/i386/umoddi3.s
-
 ABI_TEST_SRCS = ${ABI_SRCS} ${ILIAS_STD_SRCS}
 
 include abi/test/Makefile.inc

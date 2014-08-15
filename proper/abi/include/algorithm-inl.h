@@ -597,7 +597,7 @@ OutputIterator transform(InputIterator b, InputIterator e,
     ++b;
     ++out;
   }
-  return *out;
+  return out;
 }
 
 template<typename InputIterator1, typename InputIterator2,
@@ -611,7 +611,7 @@ OutputIterator transform(InputIterator1 b1, InputIterator1 e1,
     ++b2;
     ++out;
   }
-  return *out;
+  return out;
 }
 
 template<typename ForwardIterator, typename T>

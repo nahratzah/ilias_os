@@ -12,6 +12,8 @@ LLVM_OPTS += -DLLVM_ENABLE_CXX11:BOOL=OFF
 LLVM_OPTS += -DLLVM_ENABLE_LIBCXX:BOOL=OFF
 LLVM_OPTS += -DLLVM_ENABLE_PIC:BOOL=OFF
 LLVM_OPTS += -DLLVM_FORCE_USE_OLD_TOOLCHAIN:BOOL=ON
+LLVM_OPTS += -DLLVM_EXTERNAL_CLANG_SOURCE_DIR:PATH=../../clang
+LLVM_OPTS += -DLLVM_EXTERNAL_LLD_SOURCE_DIR:PATH=../../lld
 
 CC ?= cc
 CXX ?= c++
@@ -19,7 +21,7 @@ CFLAGS ?= -I/usr/local/include
 CXXFLAGS ?= -I/usr/local/include
 LDFLAGS ?= -L/usr/local/lib
 
-all: llvm clang binutils
+all: llvm binutils
 
 clean:
 	${RM} -rf "${BUILDDIR}"

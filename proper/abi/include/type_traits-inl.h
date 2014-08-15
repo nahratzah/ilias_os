@@ -26,6 +26,10 @@ template<> struct _is_integral<long> : true_type {};
 template<> struct _is_integral<unsigned long> : true_type {};
 template<> struct _is_integral<long long> : true_type {};
 template<> struct _is_integral<unsigned long long> : true_type {};
+#if _USE_INT128
+template<> struct _is_integral<int128_t> : true_type {};
+template<> struct _is_integral<uint128_t> : true_type {};
+#endif
 template<typename T> struct is_integral : _is_integral<remove_cv_t<T>> {};
 
 template<typename T> struct _is_floating_point : false_type {};
@@ -84,7 +88,7 @@ template<typename T> struct is_reference<T&> : true_type {};
 template<typename T> struct is_reference<T&&> : true_type {};
 template<typename T> struct is_arithmetic
 : integral_constant<bool,
-                    is_integral<T>::value || is_floating_point<T>::value> {};
+                    (is_integral<T>::value || is_floating_point<T>::value)> {};
 template<typename T> struct is_fundamental;  // XXX
 template<typename T> struct is_object;  // XXX
 template<typename T> struct is_scalar;  // XXX
@@ -322,8 +326,8 @@ template<typename T> struct _make_signed_ll;
 template<typename T> struct _make_signed {
   using type =
       conditional_t<is_integral<T>::value,
-          conditional_t<is_signed<T>::value, T,
-                        typename _make_signed_ll<T>::type>,
+          typename conditional_t<is_signed<T>::value, identity<T>,
+                                 _make_signed_ll<T>>::type,
           conditional_t<sizeof(T) <= sizeof(signed char),
               signed char,
               conditional_t<sizeof(T) <= sizeof(short),
@@ -332,8 +336,16 @@ template<typename T> struct _make_signed {
                       int,
                       conditional_t<sizeof(T) <= sizeof(long),
                           long,
+#if _USE_INT128
+                          conditional_t<sizeof(T) <= sizeof(long long),
+                              long long,
+                              enable_if_t<sizeof(T) <= sizeof(int128_t),
+                                  int128_t>>
+#else
                           enable_if_t<sizeof(T) <= sizeof(long long),
-                              long long>>>>>>;
+                              long long>
+#endif
+                          >>>>>;
 };
 #ifdef __CHAR_UNSIGNED__
 template<> struct _make_signed_ll<char>
@@ -353,6 +365,10 @@ template<> struct _make_signed_ll<unsigned long>
 { using type = long; };
 template<> struct _make_signed_ll<unsigned long long>
 { using type = long long; };
+#if _USE_INT128
+template<> struct _make_signed_ll<uint128_t>
+{ using type = int128_t; };
+#endif
 template<typename T> struct _make_signed_hl
 { using type = typename _make_signed<T>::type; };
 template<typename T> struct _make_signed_hl<const T>
@@ -368,8 +384,8 @@ template<typename T> struct _make_unsigned_ll;
 template<typename T> struct _make_unsigned {
   using type =
       conditional_t<is_integral<T>::value,
-          conditional_t<is_unsigned<T>::value, T,
-                        typename _make_unsigned_ll<T>::type>,
+          typename conditional_t<is_unsigned<T>::value, identity<T>,
+                                 _make_unsigned_ll<T>>::type,
           conditional_t<sizeof(T) <= sizeof(unsigned char),
               unsigned char,
               conditional_t<sizeof(T) <= sizeof(unsigned short),
@@ -378,8 +394,16 @@ template<typename T> struct _make_unsigned {
                       unsigned int,
                       conditional_t<sizeof(T) <= sizeof(unsigned long),
                           unsigned long,
+#if _USE_INT128
+                          conditional_t<sizeof(T) <= sizeof(unsigned long long),
+                              unsigned long long,
+                              enable_if_t<sizeof(T) <= sizeof(uint128_t),
+                                  uint128_t>>
+#else
                           enable_if_t<sizeof(T) <= sizeof(unsigned long long),
-                              unsigned long long>>>>>>;
+                              unsigned long long>
+#endif
+                          >>>>>;
 };
 #ifndef __CHAR_UNSIGNED__
 template<> struct _make_unsigned_ll<char>
@@ -389,7 +413,7 @@ template<> struct _make_unsigned_ll<char>
 template<> struct _make_unsigned_ll<wchar_t>
 { using type = unsigned int; };
 #endif
-template<> struct _make_unsigned_ll<unsigned char>
+template<> struct _make_unsigned_ll<signed char>
 { using type = unsigned char; };
 template<> struct _make_unsigned_ll<short>
 { using type = unsigned short; };
@@ -399,6 +423,10 @@ template<> struct _make_unsigned_ll<long>
 { using type = unsigned long; };
 template<> struct _make_unsigned_ll<long long>
 { using type = unsigned long long; };
+#if _USE_INT128
+template<> struct _make_unsigned_ll<int128_t>
+{ using type = uint128_t; };
+#endif
 template<typename T> struct _make_unsigned_hl
 { using type = typename _make_unsigned<T>::type; };
 template<typename T> struct _make_unsigned_hl<const T>
