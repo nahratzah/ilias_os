@@ -9,9 +9,25 @@ _namespace_begin(std)
 
 
 template<typename Char, typename Traits>
+basic_istream<Char, Traits>& ws(basic_istream<Char, Traits>&);
+
+template<typename Char, typename Traits>
+basic_istream<Char, Traits>& operator>> (basic_istream<Char, Traits>&, Char&);
+template<typename Char, typename Traits>
+basic_istream<Char, Traits>& operator>> (basic_istream<Char, Traits>&, Char*);
+
+
+template<typename Char, typename Traits>
 class basic_istream
 : public basic_ios<Char, Traits>
 {
+  template<typename C, typename T> friend basic_istream<C, T>& ws(
+      basic_istream<C, T>&);
+  template<typename C, typename T> friend basic_istream<C, T>& operator>> (
+      basic_istream<C, T>&, C&);
+  template<typename C, typename T> friend basic_istream<C, T>& operator>> (
+      basic_istream<C, T>&, C*);
+
  public:
   using char_type = typename basic_ios<Char, Traits>::char_type;
   using traits_type = typename basic_ios<Char, Traits>::traits_type;
@@ -88,16 +104,12 @@ class basic_istream
 };
 
 
-template<typename Char, typename Traits>
-basic_istream<Char, Traits>& operator>> (basic_istream<Char, Traits>&, Char&);
 template<typename Traits>
 basic_istream<char, Traits>& operator>> (basic_istream<char, Traits>&,
                                          unsigned char&);
 template<typename Traits>
 basic_istream<char, Traits>& operator>> (basic_istream<char, Traits>&,
                                          signed char&);
-template<typename Char, typename Traits>
-basic_istream<Char, Traits>& operator>> (basic_istream<Char, Traits>&, Char*);
 template<typename Traits>
 basic_istream<char, Traits>& operator>> (basic_istream<char, Traits>&,
                                          unsigned char*);
@@ -126,6 +138,29 @@ extern template class basic_istream<char>;
 extern template class basic_istream<char16_t>;
 extern template class basic_istream<char32_t>;
 extern template class basic_istream<wchar_t>;
+
+extern template basic_istream<char>& operator>> (basic_istream<char>&,
+                                                 char&);
+extern template basic_istream<char16_t>& operator>> (basic_istream<char16_t>&,
+                                                     char16_t&);
+extern template basic_istream<char32_t>& operator>> (basic_istream<char32_t>&,
+                                                     char32_t&);
+extern template basic_istream<wchar_t>& operator>> (basic_istream<wchar_t>&,
+                                                    wchar_t&);
+
+extern template basic_istream<char>& operator>> (basic_istream<char>&,
+                                                 char*);
+extern template basic_istream<char16_t>& operator>> (basic_istream<char16_t>&,
+                                                     char16_t*);
+extern template basic_istream<char32_t>& operator>> (basic_istream<char32_t>&,
+                                                     char32_t*);
+extern template basic_istream<wchar_t>& operator>> (basic_istream<wchar_t>&,
+                                                    wchar_t*);
+
+extern template basic_istream<char>& ws(basic_istream<char>&);
+extern template basic_istream<char16_t>& ws(basic_istream<char16_t>&);
+extern template basic_istream<char32_t>& ws(basic_istream<char32_t>&);
+extern template basic_istream<wchar_t>& ws(basic_istream<wchar_t>&);
 
 
 _namespace_end(std)

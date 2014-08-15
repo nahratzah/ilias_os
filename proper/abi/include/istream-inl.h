@@ -739,17 +739,19 @@ auto operator>> (basic_istream<Char, Traits>& is, Char& c) ->
   using traits_type = typename basic_istream<Char, Traits>::traits_type;
   using int_type = typename basic_istream<Char, Traits>::int_type;
 
-  return is.formatted_([&]() {
-                         int_type cc = is.rdbuf()->sbumpc();
-                         if (traits_type::eq_int_type(cc,
-                                                      traits_type::eof())) {
-                           is.setstate(ios_base::failbit |
-                                       traits_type::eofbit);
-                         } else {
-                           is.setstate(ios_base::goodbit);
-                           c = traits_type::to_char_type(cc);
-                         }
-                       });
+  return is.unformatted_([&]() -> streamsize {
+                           int_type cc = is.rdbuf()->sbumpc();
+                           if (traits_type::eq_int_type(cc,
+                                                        traits_type::eof())) {
+                             is.setstate(ios_base::failbit |
+                                         ios_base::eofbit);
+                             return 0;
+                           } else {
+                             is.setstate(ios_base::goodbit);
+                             c = traits_type::to_char_type(cc);
+                             return 1;
+                           }
+                         });
 }
 
 template<typename Traits>
@@ -781,7 +783,7 @@ auto operator>> (basic_istream<Char, Traits>& is, Char* s) ->
 
   return is.op_rshift_([&]() -> streamsize {
                          streamsize n_read = 0;
-                         auto& buf = *is->rdbuf();
+                         auto& buf = *is.rdbuf();
                          const _namespace(std)::ctype<char_type>& ctype =
                              use_facet<_namespace(std)::ctype<char_type>>(
                                  is.getloc());
@@ -872,6 +874,40 @@ basic_istream<Char, Traits>::sentry::sentry(basic_istream& is, bool noskipws)
 template<typename Char, typename Traits>
 basic_istream<Char, Traits>::sentry::operator bool() const noexcept {
   return ok_;
+}
+
+
+template<typename Char, typename Traits>
+auto ws(basic_istream<Char, Traits>& is) -> basic_istream<Char, Traits>& {
+  using traits_type = typename basic_istream<Char, Traits>::traits_type;
+  using int_type = typename basic_istream<Char, Traits>::int_type;
+  using char_type = typename basic_istream<Char, Traits>::char_type;
+  using sentry = typename basic_istream<Char, Traits>::sentry;
+
+  try {
+    sentry s{ is, true };
+    if (_predict_false(!s)) return is;
+
+    const _namespace(std)::ctype<char_type>& ctype =
+        use_facet<_namespace(std)::ctype<char_type>>(is.getloc());
+    ios_base::iostate err = ios_base::goodbit;
+    for (;;) {
+      int_type cc = is.rdbuf()->sgetc();
+      if (traits_type::eq_int_type(cc, traits_type::eof())) {
+        err |= ios_base::eofbit;
+        break;
+      }
+
+      char_type c = traits_type::to_char_type(cc);
+      if (ctype.is(ctype.space, c)) break;
+      is.rdbuf()->sbumpc();
+    }
+    is.setstate(err);
+  } catch (...) {
+    is.setstate_nothrow_(ios_base::badbit);
+    if (is.exceptions() & ios_base::badbit) throw;
+  }
+  return is;
 }
 
 
