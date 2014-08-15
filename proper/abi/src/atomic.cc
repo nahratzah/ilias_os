@@ -23,6 +23,7 @@
 using _namespace(std)::memory_order_acquire;
 using _namespace(std)::memory_order_release;
 using _namespace(std)::memory_order_relaxed;
+using _namespace(std)::memory_order_seq_cst;
 using _namespace(std)::enable_if_t;
 using _namespace(std)::forward;
 
@@ -988,5 +989,62 @@ int __atomic_is_lock_free_c(_namespace(std)::size_t sz, const void* atom)
     noexcept {
   return (MAYBE_OP(is_lock_free(sz, atom)) ? 1 : 0);
 }
+
+
+#if _USE_INT128
+#pragma redefine_extname __sync_fetch_and_add_16_c __sync_fetch_and_add_16
+uint128_t __sync_fetch_and_add_16_c(uint128_t* atom, uint128_t src, ...) {
+  return __atomic_fetch_add_16(atom, src, memory_order_seq_cst);
+}
+
+#pragma redefine_extname __sync_fetch_and_sub_16_c __sync_fetch_and_sub_16
+uint128_t __sync_fetch_and_sub_16_c(uint128_t* atom, uint128_t src, ...) {
+  return __atomic_fetch_sub_16(atom, src, memory_order_seq_cst);
+}
+
+#pragma redefine_extname __sync_fetch_and_and_16_c __sync_fetch_and_and_16
+uint128_t __sync_fetch_and_and_16_c(uint128_t* atom, uint128_t src, ...) {
+  return __atomic_fetch_and_16(atom, src, memory_order_seq_cst);
+}
+
+#pragma redefine_extname __sync_fetch_and_or_16_c __sync_fetch_and_or_16
+uint128_t __sync_fetch_and_or_16_c(uint128_t* atom, uint128_t src, ...) {
+  return __atomic_fetch_or_16(atom, src, memory_order_seq_cst);
+}
+
+#pragma redefine_extname __sync_fetch_and_xor_16_c __sync_fetch_and_xor_16
+uint128_t __sync_fetch_and_xor_16_c(uint128_t* atom, uint128_t src, ...) {
+  return __atomic_fetch_xor_16(atom, src, memory_order_seq_cst);
+}
+
+#pragma redefine_extname __sync_lock_test_and_set_16_c __sync_lock_test_and_set_16
+uint128_t __sync_lock_test_and_set_16_c(uint128_t* atom, uint128_t src, ...) {
+  return __atomic_exchange_16(atom, src, memory_order_acquire);
+}
+
+#pragma redefine_extname __sync_lock_release_16_c __sync_lock_release_16
+void __sync_lock_release_16_c(uint128_t* atom, ...) {
+  __atomic_store_16(atom, 0, memory_order_release);
+}
+
+#pragma redefine_extname __sync_val_compare_and_swap_16_c __sync_val_compare_and_swap_16
+uint128_t __sync_val_compare_and_swap_16_c(uint128_t* atom,
+                                           uint128_t oldval, uint128_t newval,
+                                           ...) {
+  __atomic_compare_exchange_16(atom, &oldval, newval,
+                               memory_order_seq_cst, memory_order_seq_cst);
+  return oldval;
+}
+
+#pragma redefine_extname __sync_bool_compare_and_swap_16_c __sync_bool_compare_and_swap_16
+bool __sync_bool_compare_and_swap_16_c(uint128_t* atom,
+                                       uint128_t oldval, uint128_t newval,
+                                      ...) {
+  return __atomic_compare_exchange_16(atom, &oldval, newval,
+                                      memory_order_seq_cst,
+                                      memory_order_seq_cst);
+}
+#endif
+
 
 _cdecl_end
