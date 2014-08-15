@@ -911,6 +911,39 @@ auto ws(basic_istream<Char, Traits>& is) -> basic_istream<Char, Traits>& {
 }
 
 
+template<typename Char, typename Traits, typename T>
+auto operator>> (basic_istream<Char, Traits>&& is, T& x) ->
+    basic_istream<Char, Traits>& {
+  return is >> x;
+}
+
+
+template<typename Char, typename Traits>
+basic_iostream<Char, Traits>::basic_iostream(basic_streambuf<Char, Traits>* sb)
+: basic_istream<Char, Traits>(sb),
+  basic_ostream<Char, Traits>(sb)
+{}
+
+template<typename Char, typename Traits>
+basic_iostream<Char, Traits>::basic_iostream(basic_iostream&& other)
+: basic_istream<Char, Traits>(move(other)),
+  basic_ostream<Char, Traits>(move(other))
+{}
+
+template<typename Char, typename Traits>
+auto basic_iostream<Char, Traits>::operator=(basic_iostream&& rhs) ->
+    basic_iostream& {
+  swap(rhs);
+  return *this;
+}
+
+template<typename Char, typename Traits>
+auto basic_iostream<Char, Traits>::swap(basic_iostream& rhs) -> void {
+  this->basic_istream<Char, Traits>::swap(rhs);
+  this->basic_ostream<Char, Traits>::swap(rhs);
+}
+
+
 _namespace_end(std)
 
 #endif /* _ISTREAM_INL_H_ */
