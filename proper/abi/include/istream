@@ -20,7 +20,7 @@ basic_istream<Char, Traits>& operator>> (basic_istream<Char, Traits>&, Char*);
 
 template<typename Char, typename Traits>
 class basic_istream
-: public basic_ios<Char, Traits>
+: public virtual basic_ios<Char, Traits>
 {
   template<typename C, typename T> friend basic_istream<C, T>& ws(
       basic_istream<C, T>&);

@@ -26,7 +26,7 @@ auto op_lshift_stream(basic_ostream<Char, Traits>&,
 
 template<typename Char, typename Traits>
 class basic_ostream
-: public basic_ios<Char, Traits>
+: public virtual basic_ios<Char, Traits>
 {
   template<typename OChar, typename OTraits, typename SChar, typename STraits>
   friend auto impl::op_lshift_stream(basic_ostream<OChar, OTraits>&,
