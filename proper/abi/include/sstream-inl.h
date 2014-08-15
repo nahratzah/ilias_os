@@ -284,6 +284,232 @@ auto swap(basic_stringbuf<Char, Traits, Allocator>& x,
 }
 
 
+template<typename Char, typename Traits, typename Allocator>
+basic_istringstream<Char, Traits, Allocator>::basic_istringstream(
+    ios_base::openmode which)
+: basic_istream<Char, Traits>(&this->sb_),
+  sb_(which)
+{}
+
+template<typename Char, typename Traits, typename Allocator>
+basic_istringstream<Char, Traits, Allocator>::basic_istringstream(
+    const basic_string<char_type, traits_type, allocator_type>& s,
+    ios_base::openmode which)
+: basic_istream<Char, Traits>(&this->sb_),
+  sb_(s, which)
+{}
+
+template<typename Char, typename Traits, typename Allocator>
+basic_istringstream<Char, Traits, Allocator>::basic_istringstream(
+    basic_string_ref<char_type, traits_type> s,
+    ios_base::openmode which)
+: basic_istream<Char, Traits>(&this->sb_),
+  sb_(s, which)
+{}
+
+template<typename Char, typename Traits, typename Allocator>
+basic_istringstream<Char, Traits, Allocator>::basic_istringstream(
+    basic_istringstream&& other)
+: basic_istream<Char, Traits>(move(other)),
+  sb_(move(other.sb_))
+{
+  this->set_rdbuf(&sb_);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_istringstream<Char, Traits, Allocator>::operator=(
+    basic_istringstream&& other) -> basic_istringstream& {
+  this->basic_istream<Char, Traits>::operator=(move(other));
+  sb_ = move(other.sb_);
+  this->set_rdbuf(&sb_);
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_istringstream<Char, Traits, Allocator>::swap(
+    basic_istringstream& other) -> void {
+  this->basic_istream<Char, Traits>::swap(other);
+  sb_.swap(other.sb_);
+  this->set_rdbuf(&sb_);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_istringstream<Char, Traits, Allocator>::rdbuf() const ->
+    basic_stringbuf<char_type, traits_type, allocator_type>* {
+  return &this->sb_;
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_istringstream<Char, Traits, Allocator>::str() const ->
+    basic_string<char_type, traits_type, allocator_type> {
+  return sb_.str();
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_istringstream<Char, Traits, Allocator>::str(
+    const basic_string<char_type, traits_type, allocator_type>& s) -> void {
+  sb_.str(s);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_istringstream<Char, Traits, Allocator>::str(
+    basic_string_ref<char_type, traits_type> s) -> void {
+  sb_.str(s);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto swap(basic_istringstream<Char, Traits, Allocator>& x,
+          basic_istringstream<Char, Traits, Allocator>& y) -> void {
+  x.swap(y);
+}
+
+
+template<typename Char, typename Traits, typename Allocator>
+basic_ostringstream<Char, Traits, Allocator>::basic_ostringstream(
+    const basic_string<char_type, traits_type, allocator_type>& s,
+    ios_base::openmode which)
+: basic_ostream<Char, Traits>(&this->sb_),
+  sb_(s, which)
+{}
+
+template<typename Char, typename Traits, typename Allocator>
+basic_ostringstream<Char, Traits, Allocator>::basic_ostringstream(
+    basic_string_ref<char_type, traits_type> s,
+    ios_base::openmode which)
+: basic_ostream<Char, Traits>(&this->sb_),
+  sb_(s, which)
+{}
+
+template<typename Char, typename Traits, typename Allocator>
+basic_ostringstream<Char, Traits, Allocator>::basic_ostringstream(
+    basic_ostringstream&& other)
+: basic_ostream<Char, Traits>(move(other)),
+  sb_(move(other.sb_))
+{
+  this->set_rdbuf(&sb_);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_ostringstream<Char, Traits, Allocator>::operator=(
+    basic_ostringstream&& other) -> basic_ostringstream& {
+  this->basic_ostream<Char, Traits>::operator=(move(other));
+  sb_ = move(other.sb_);
+  this->set_rdbuf(&sb_);
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_ostringstream<Char, Traits, Allocator>::swap(
+    basic_ostringstream& other) -> void {
+  this->basic_ostream<Char, Traits>::swap(other);
+  sb_.swap(other.sb_);
+  this->set_rdbuf(&sb_);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_ostringstream<Char, Traits, Allocator>::rdbuf() const ->
+    basic_stringbuf<char_type, traits_type, allocator_type>* {
+  return &this->sb_;
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_ostringstream<Char, Traits, Allocator>::str() const ->
+    basic_string<char_type, traits_type, allocator_type> {
+  return sb_.str();
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_ostringstream<Char, Traits, Allocator>::str(
+    const basic_string<char_type, traits_type, allocator_type>& s) -> void {
+  sb_.str(s);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_ostringstream<Char, Traits, Allocator>::str(
+    basic_string_ref<char_type, traits_type> s) -> void {
+  sb_.str(s);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto swap(basic_ostringstream<Char, Traits, Allocator>& x,
+          basic_ostringstream<Char, Traits, Allocator>& y) -> void {
+  x.swap(y);
+}
+
+
+template<typename Char, typename Traits, typename Allocator>
+basic_stringstream<Char, Traits, Allocator>::basic_stringstream(
+    const basic_string<char_type, traits_type, allocator_type>& s,
+    ios_base::openmode which)
+: basic_iostream<Char, Traits>(&this->sb_),
+  sb_(s, which)
+{}
+
+template<typename Char, typename Traits, typename Allocator>
+basic_stringstream<Char, Traits, Allocator>::basic_stringstream(
+    basic_string_ref<char_type, traits_type> s,
+    ios_base::openmode which)
+: basic_iostream<Char, Traits>(&this->sb_),
+  sb_(s, which)
+{}
+
+template<typename Char, typename Traits, typename Allocator>
+basic_stringstream<Char, Traits, Allocator>::basic_stringstream(
+    basic_stringstream&& other)
+: basic_iostream<Char, Traits>(move(other)),
+  sb_(move(other.sb_))
+{
+  this->set_rdbuf(&sb_);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_stringstream<Char, Traits, Allocator>::operator=(
+    basic_stringstream&& other) -> basic_stringstream& {
+  this->basic_ostream<Char, Traits>::operator=(move(other));
+  sb_ = move(other.sb_);
+  this->set_rdbuf(&sb_);
+  return *this;
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_stringstream<Char, Traits, Allocator>::swap(
+    basic_stringstream& other) -> void {
+  this->basic_ostream<Char, Traits>::swap(other);
+  sb_.swap(other.sb_);
+  this->set_rdbuf(&sb_);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_stringstream<Char, Traits, Allocator>::rdbuf() const ->
+    basic_stringbuf<char_type, traits_type, allocator_type>* {
+  return &this->sb_;
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_stringstream<Char, Traits, Allocator>::str() const ->
+    basic_string<char_type, traits_type, allocator_type> {
+  return sb_.str();
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_stringstream<Char, Traits, Allocator>::str(
+    const basic_string<char_type, traits_type, allocator_type>& s) -> void {
+  sb_.str(s);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_stringstream<Char, Traits, Allocator>::str(
+    basic_string_ref<char_type, traits_type> s) -> void {
+  sb_.str(s);
+}
+
+template<typename Char, typename Traits, typename Allocator>
+auto swap(basic_stringstream<Char, Traits, Allocator>& x,
+          basic_stringstream<Char, Traits, Allocator>& y) -> void {
+  x.swap(y);
+}
+
+
 _namespace_end(std)
 
 #endif /* _SSTREAM_INL_H_ */

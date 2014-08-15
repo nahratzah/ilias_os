@@ -4,6 +4,7 @@
 #include <cdecl.h>
 #include <ios>
 #include <streambuf>
+#include <istream>
 #include <string>
 
 _namespace_begin(std)
@@ -90,19 +91,146 @@ using wstringstream = basic_stringstream<wchar_t>;
 
 
 template<typename Char, typename Traits, typename Allocator>
-class basic_istringstream;
+class basic_istringstream
+: public basic_istream<Char, Traits>
+{
+ public:
+  using char_type = typename basic_istream<Char, Traits>::char_type;
+  using traits_type = typename basic_istream<Char, Traits>::traits_type;
+  using int_type = typename basic_istream<Char, Traits>::int_type;
+  using pos_type = typename basic_istream<Char, Traits>::pos_type;
+  using off_type = typename basic_istream<Char, Traits>::off_type;
+  using allocator_type = Allocator;
+
+  explicit basic_istringstream(ios_base::openmode = ios_base::in);
+  explicit basic_istringstream(
+      const basic_string<char_type, traits_type, allocator_type>&,
+      ios_base::openmode = ios_base::in);
+  explicit basic_istringstream(
+      basic_string_ref<char_type, traits_type>,
+      ios_base::openmode = ios_base::in);
+  basic_istringstream(basic_istringstream&&);
+  ~basic_istringstream() noexcept override = default;
+
+  basic_istringstream& operator=(basic_istringstream&&);
+  void swap(basic_istringstream&);
+
+  basic_stringbuf<char_type, traits_type, allocator_type>* rdbuf() const;
+
+  basic_string<char_type, traits_type, allocator_type> str() const;
+  void str(const basic_string<char_type, traits_type, allocator_type>&);
+  void str(basic_string_ref<char_type, traits_type>);
+
+ private:
+  mutable basic_stringbuf<char_type, traits_type, allocator_type> sb_;
+};
 
 template<typename Char, typename Traits, typename Allocator>
-class basic_ostringstream;
+void swap(basic_istringstream<Char, Traits, Allocator>&,
+          basic_istringstream<Char, Traits, Allocator>&);
+
 
 template<typename Char, typename Traits, typename Allocator>
-class basic_stringstream;
+class basic_ostringstream
+: public basic_ostream<Char, Traits>
+{
+ public:
+  using char_type = typename basic_ostream<Char, Traits>::char_type;
+  using traits_type = typename basic_ostream<Char, Traits>::traits_type;
+  using int_type = typename basic_ostream<Char, Traits>::int_type;
+  using pos_type = typename basic_ostream<Char, Traits>::pos_type;
+  using off_type = typename basic_ostream<Char, Traits>::off_type;
+  using allocator_type = Allocator;
+
+  explicit basic_ostringstream(ios_base::openmode = ios_base::out);
+  explicit basic_ostringstream(
+      const basic_string<char_type, traits_type, allocator_type>&,
+      ios_base::openmode = ios_base::out);
+  explicit basic_ostringstream(
+      basic_string_ref<char_type, traits_type>,
+      ios_base::openmode = ios_base::out);
+  basic_ostringstream(basic_ostringstream&&);
+  ~basic_ostringstream() noexcept override = default;
+
+  basic_ostringstream& operator=(basic_ostringstream&&);
+  void swap(basic_ostringstream&);
+
+  basic_stringbuf<char_type, traits_type, allocator_type>* rdbuf() const;
+
+  basic_string<char_type, traits_type, allocator_type> str() const;
+  void str(const basic_string<char_type, traits_type, allocator_type>&);
+  void str(basic_string_ref<char_type, traits_type>);
+
+ private:
+  mutable basic_stringbuf<char_type, traits_type, allocator_type> sb_;
+};
+
+template<typename Char, typename Traits, typename Allocator>
+void swap(basic_ostringstream<Char, Traits, Allocator>&,
+          basic_ostringstream<Char, Traits, Allocator>&);
+
+
+
+template<typename Char, typename Traits, typename Allocator>
+class basic_stringstream
+: public basic_iostream<Char, Traits>
+{
+ public:
+  using char_type = typename basic_iostream<Char, Traits>::char_type;
+  using traits_type = typename basic_iostream<Char, Traits>::traits_type;
+  using int_type = typename basic_iostream<Char, Traits>::int_type;
+  using pos_type = typename basic_iostream<Char, Traits>::pos_type;
+  using off_type = typename basic_iostream<Char, Traits>::off_type;
+  using allocator_type = Allocator;
+
+  explicit basic_stringstream(
+      ios_base::openmode = ios_base::in | ios_base::out);
+  explicit basic_stringstream(
+      const basic_string<char_type, traits_type, allocator_type>&,
+      ios_base::openmode = ios_base::in | ios_base::out);
+  explicit basic_stringstream(
+      basic_string_ref<char_type, traits_type>,
+      ios_base::openmode = ios_base::in | ios_base::out);
+  basic_stringstream(basic_stringstream&&);
+  ~basic_stringstream() noexcept override = default;
+
+  basic_stringstream& operator=(basic_stringstream&&);
+  void swap(basic_stringstream&);
+
+  basic_stringbuf<char_type, traits_type, allocator_type>* rdbuf() const;
+
+  basic_string<char_type, traits_type, allocator_type> str() const;
+  void str(const basic_string<char_type, traits_type, allocator_type>&);
+  void str(basic_string_ref<char_type, traits_type>);
+
+ private:
+  mutable basic_stringbuf<char_type, traits_type, allocator_type> sb_;
+};
+
+template<typename Char, typename Traits, typename Allocator>
+void swap(basic_stringstream<Char, Traits, Allocator>&,
+          basic_stringstream<Char, Traits, Allocator>&);
 
 
 extern template class basic_stringbuf<char>;
 extern template class basic_stringbuf<char16_t>;
 extern template class basic_stringbuf<char32_t>;
 extern template class basic_stringbuf<wchar_t>;
+
+extern template class basic_istringstream<char>;
+extern template class basic_istringstream<char16_t>;
+extern template class basic_istringstream<char32_t>;
+extern template class basic_istringstream<wchar_t>;
+
+extern template class basic_ostringstream<char>;
+extern template class basic_ostringstream<char16_t>;
+extern template class basic_ostringstream<char32_t>;
+extern template class basic_ostringstream<wchar_t>;
+
+extern template class basic_stringstream<char>;
+extern template class basic_stringstream<char16_t>;
+extern template class basic_stringstream<char32_t>;
+extern template class basic_stringstream<wchar_t>;
 
 
 _namespace_end(std)
