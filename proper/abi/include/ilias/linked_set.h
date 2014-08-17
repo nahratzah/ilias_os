@@ -225,6 +225,8 @@ class linked_set
 
   using basic_linked_set::empty;
 
+  iterator root() noexcept;
+  const_iterator root() const noexcept;
   iterator begin() noexcept;
   iterator end() noexcept;
   reverse_iterator rbegin() noexcept;

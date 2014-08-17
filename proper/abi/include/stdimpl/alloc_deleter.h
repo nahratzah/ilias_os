@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <memory>
+#include <type_traits>
 
 _namespace_begin(std)
 namespace impl {
@@ -28,17 +29,15 @@ class alloc_deleter {
 template<typename T, typename Alloc> using alloc_deleter_ptr =
     unique_ptr<T, alloc_deleter<Alloc>>;
 
-template<typename T, typename Alloc, typename Hint, Args&&...>
+template<typename T, typename Alloc, typename Hint, typename... Args>
 auto new_alloc_deleter(Alloc&, Hint&&, Args&&...) ->
     alloc_deleter_ptr<T, Alloc>;
 
 template<typename T, typename Alloc>
-auto existing_alloc_deleter(Alloc&, T*) ->
-    alloc_deleter_ptr<T, Alloc>;
+auto existing_alloc_deleter(Alloc&, T*) -> alloc_deleter_ptr<T, Alloc>;
 
 template<typename Alloc>
-auto alloc_deleter_visitor(Alloc&) noexcept ->
-    alloc_deleter<Alloc>;
+auto alloc_deleter_visitor(Alloc&) noexcept -> alloc_deleter<Alloc>;
 
 
 } /* namespace std::impl */

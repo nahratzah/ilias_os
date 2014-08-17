@@ -4,6 +4,8 @@
 #include <stdimpl/alloc_deleter.h>
 #include <cdecl.h>
 #include <memory>
+#include <utility>
+#include <type_traits>
 
 _namespace_begin(std)
 namespace impl {
@@ -11,7 +13,7 @@ namespace impl {
 
 template<typename Alloc>
 alloc_deleter<Alloc>::alloc_deleter(Alloc& alloc) noexcept
-: alloc(alloc)
+: alloc_(&alloc)
 {}
 
 template<typename Alloc>
@@ -21,17 +23,18 @@ auto alloc_deleter<Alloc>::mark_constructed() noexcept -> void {
 
 template<typename Alloc>
 template<typename T>
-auto alloc_deleter<Alloc>::operator()(T* v) const noexcept {
+auto alloc_deleter<Alloc>::operator()(T* v) const noexcept -> void {
   using alloc_traits = allocator_traits<Alloc>;
 
   assert(v != nullptr);
   assert(alloc_ != nullptr);
 
   if (destroy_) alloc_traits::destroy(*alloc_, v);
-  alloc_traits::deallocate(*alloc_, v);
+  alloc_traits::deallocate(*alloc_, v, 1);
 }
 
-template<typename T, typename Alloc, typename Hint, Args&&...>
+
+template<typename T, typename Alloc, typename Hint, typename... Args>
 auto new_alloc_deleter(Alloc& alloc, Hint&& hint, Args&&... args) ->
     alloc_deleter_ptr<T, Alloc> {
   using alloc_traits = allocator_traits<Alloc>;
@@ -53,7 +56,7 @@ auto existing_alloc_deleter(Alloc& alloc, T* p) ->
 template<typename Alloc>
 auto alloc_deleter_visitor(Alloc& alloc) noexcept ->
     alloc_deleter<Alloc> {
-  alloc_deleter<Alloc> rv = alloc_deleter<Alloc>(alloc);
+  auto rv = alloc_deleter<Alloc>(alloc);
   rv.mark_constructed();
   return rv;
 }

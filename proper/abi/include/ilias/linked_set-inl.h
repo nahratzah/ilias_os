@@ -670,6 +670,18 @@ auto linked_set<T, Tag, Cmp, Augments...>::unlink_all(Visitor v) -> void {
 }
 
 template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::root() noexcept ->
+    iterator {
+  return iterator(basic_linked_set::root());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
+auto linked_set<T, Tag, Cmp, Augments...>::root() const noexcept ->
+    const_iterator {
+  return const_iterator(basic_linked_set::root());
+}
+
+template<typename T, class Tag, typename Cmp, typename... Augments>
 auto linked_set<T, Tag, Cmp, Augments...>::begin() noexcept ->
     iterator {
   return iterator(basic_linked_set::begin());

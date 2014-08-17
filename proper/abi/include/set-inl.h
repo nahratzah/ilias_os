@@ -5,17 +5,9 @@
 #include <set>
 #include <algorithm>
 #include <iterator>
+#include <stdimpl/alloc_deleter.h>
 
 _namespace_begin(std)
-namespace impl {
-
-template<typename T, class Tag>
-template<typename... Args>
-set_elem<T, Tag>::set_elem(Args&&... args)
-: value(forward<Args>(args)...)
-{}
-
-} /* namespace std::impl */
 
 
 template<typename Key, typename Cmp, typename A>
@@ -196,9 +188,12 @@ auto set<Key, Cmp, A>::max_size() const noexcept -> size_type {
 template<typename Key, typename Cmp, typename A>
 template<typename... Args>
 auto set<Key, Cmp, A>::emplace(Args&&... args) -> pair<iterator, bool> {
-  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
-                                          (empty() ? this : &*root()),
-                                          forward<Args>(args)...);
+  void* hint = (empty() ?
+                static_cast<void*>(this) :
+                static_cast<void*>(&*data_.root()));
+  auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
+                                           hint,
+                                           forward<Args>(args)...);
   auto rv = data_.link(ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -211,9 +206,12 @@ template<typename Key, typename Cmp, typename A>
 template<typename... Args>
 auto set<Key, Cmp, A>::emplace_hint(const_iterator pos, Args&&... args) ->
     iterator {
-  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
-                                          (empty() ? this : &*root()),
-                                          forward<Args>(args)...);
+  void* hint = (empty() ?
+                static_cast<void*>(this) :
+                static_cast<void*>(&*data_.root()));
+  auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
+                                           hint,
+                                           forward<Args>(args)...);
   auto rv = data_.link(pos, ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -224,9 +222,12 @@ auto set<Key, Cmp, A>::emplace_hint(const_iterator pos, Args&&... args) ->
 
 template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::insert(const value_type& v) -> pair<iterator, bool> {
-  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
-                                          (empty() ? this : &*root()),
-                                          v);
+  void* hint = (empty() ?
+                static_cast<void*>(this) :
+                static_cast<void*>(&*data_.root()));
+  auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
+                                           hint,
+                                           v);
   auto rv = data_.link(ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -237,9 +238,12 @@ auto set<Key, Cmp, A>::insert(const value_type& v) -> pair<iterator, bool> {
 
 template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::insert(value_type&& v) -> pair<iterator, bool> {
-  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
-                                          (empty() ? this : &*root()),
-                                          move(v));
+  void* hint = (empty() ?
+                static_cast<void*>(this) :
+                static_cast<void*>(&*data_.root()));
+  auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
+                                           hint,
+                                           move(v));
   auto rv = data_.link(ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -251,9 +255,12 @@ auto set<Key, Cmp, A>::insert(value_type&& v) -> pair<iterator, bool> {
 template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::insert(const_iterator pos, const value_type& v) ->
     iterator {
-  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
-                                          (empty() ? this : &*root()),
-                                          v);
+  void* hint = (empty() ?
+                static_cast<void*>(this) :
+                static_cast<void*>(&*data_.root()));
+  auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
+                                           hint,
+                                           v);
   auto rv = data_.link(pos.impl(), ptr.get(), false);
   if (rv.second) {
     ptr.release();
@@ -265,9 +272,12 @@ auto set<Key, Cmp, A>::insert(const_iterator pos, const value_type& v) ->
 template<typename Key, typename Cmp, typename A>
 auto set<Key, Cmp, A>::insert(const_iterator pos, value_type&& v) ->
     iterator {
-  auto ptr = impl::new_alloc_deleter<Key>(this->get_allocator_(),
-                                          (empty() ? this : &*root()),
-                                          move(v));
+  void* hint = (empty() ?
+                static_cast<void*>(this) :
+                static_cast<void*>(&*data_.root()));
+  auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
+                                           hint,
+                                           move(v));
   auto rv = data_.link(pos.impl(), ptr.get(), false);
   if (rv.second) {
     ptr.release();
