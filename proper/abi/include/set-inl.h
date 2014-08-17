@@ -212,7 +212,7 @@ auto set<Key, Cmp, A>::emplace_hint(const_iterator pos, Args&&... args) ->
   auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
                                            hint,
                                            forward<Args>(args)...);
-  auto rv = data_.link(pos, ptr.get(), false);
+  auto rv = data_.link(pos.impl(), ptr.get(), false);
   if (rv.second) {
     ptr.release();
     ++size_;
