@@ -122,7 +122,7 @@ class basic_istringstream
   void str(basic_string_ref<char_type, traits_type>);
 
  private:
-  mutable basic_stringbuf<char_type, traits_type, allocator_type> sb_;
+  basic_stringbuf<char_type, traits_type, allocator_type> sb_;
 };
 
 template<typename Char, typename Traits, typename Allocator>
@@ -162,7 +162,7 @@ class basic_ostringstream
   void str(basic_string_ref<char_type, traits_type>);
 
  private:
-  mutable basic_stringbuf<char_type, traits_type, allocator_type> sb_;
+  basic_stringbuf<char_type, traits_type, allocator_type> sb_;
 };
 
 template<typename Char, typename Traits, typename Allocator>
@@ -204,7 +204,7 @@ class basic_stringstream
   void str(basic_string_ref<char_type, traits_type>);
 
  private:
-  mutable basic_stringbuf<char_type, traits_type, allocator_type> sb_;
+  basic_stringbuf<char_type, traits_type, allocator_type> sb_;
 };
 
 template<typename Char, typename Traits, typename Allocator>

@@ -336,7 +336,8 @@ auto basic_istringstream<Char, Traits, Allocator>::swap(
 template<typename Char, typename Traits, typename Allocator>
 auto basic_istringstream<Char, Traits, Allocator>::rdbuf() const ->
     basic_stringbuf<char_type, traits_type, allocator_type>* {
-  return &this->sb_;
+  return const_cast<basic_stringbuf<char_type, traits_type, allocator_type>*>(
+      &this->sb_);
 }
 
 template<typename Char, typename Traits, typename Allocator>
@@ -409,7 +410,8 @@ auto basic_ostringstream<Char, Traits, Allocator>::swap(
 template<typename Char, typename Traits, typename Allocator>
 auto basic_ostringstream<Char, Traits, Allocator>::rdbuf() const ->
     basic_stringbuf<char_type, traits_type, allocator_type>* {
-  return &this->sb_;
+  return const_cast<basic_stringbuf<char_type, traits_type, allocator_type>*>(
+      &this->sb_);
 }
 
 template<typename Char, typename Traits, typename Allocator>
@@ -482,7 +484,8 @@ auto basic_stringstream<Char, Traits, Allocator>::swap(
 template<typename Char, typename Traits, typename Allocator>
 auto basic_stringstream<Char, Traits, Allocator>::rdbuf() const ->
     basic_stringbuf<char_type, traits_type, allocator_type>* {
-  return &this->sb_;
+  return const_cast<basic_stringbuf<char_type, traits_type, allocator_type>*>(
+      &this->sb_);
 }
 
 template<typename Char, typename Traits, typename Allocator>
