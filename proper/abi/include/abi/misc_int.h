@@ -43,6 +43,12 @@ inline unsigned long long addcll(unsigned long long x, unsigned long long y,
   return __builtin_addcll(x, y, carry_in, carry_out);
 }
 
+#if _USE_INT128
+_ABI_TYPES(uint128_t) addc128(_ABI_TYPES(uint128_t) x, _ABI_TYPES(uint128_t) y,
+                              _ABI_TYPES(uint128_t) carry_in,
+                              _ABI_TYPES(uint128_t)* carry_out) noexcept;
+#endif
+
 #ifdef __cplusplus
 
 inline unsigned char addc(unsigned char x, unsigned char y,
@@ -68,6 +74,15 @@ inline unsigned long long addc(unsigned long long x, unsigned long long y,
                                unsigned long long* carry_out) noexcept {
   return __builtin_addcll(x, y, carry_in, carry_out);
 }
+
+# if _USE_INT128
+inline _ABI_TYPES(uint128_t) addc(_ABI_TYPES(uint128_t) x,
+                                  _ABI_TYPES(uint128_t) y,
+                                  _ABI_TYPES(uint128_t) carry_in,
+                                  _ABI_TYPES(uint128_t)* carry_out) noexcept {
+  return addc128(x, y, carry_in, carry_out);
+}
+# endif
 
 
 template<typename T, typename = _namespace(std)::enable_if_t<
@@ -112,6 +127,12 @@ inline unsigned long long subcll(unsigned long long x, unsigned long long y,
   return __builtin_subcll(x, y, carry_in, carry_out);
 }
 
+#if _USE_INT128
+_ABI_TYPES(uint128_t) subc128(_ABI_TYPES(uint128_t) x, _ABI_TYPES(uint128_t) y,
+                              _ABI_TYPES(uint128_t) carry_in,
+                              _ABI_TYPES(uint128_t)* carry_out) noexcept;
+#endif
+
 #ifdef __cplusplus
 
 inline unsigned char subc(unsigned char x, unsigned char y,
@@ -137,6 +158,15 @@ inline unsigned long long subc(unsigned long long x, unsigned long long y,
                                unsigned long long* carry_out) noexcept {
   return __builtin_subcll(x, y, carry_in, carry_out);
 }
+
+# if _USE_INT128
+inline _ABI_TYPES(uint128_t) subc(_ABI_TYPES(uint128_t) x,
+                                  _ABI_TYPES(uint128_t) y,
+                                  _ABI_TYPES(uint128_t) carry_in,
+                                  _ABI_TYPES(uint128_t)* carry_out) noexcept {
+  return subc128(x, y, carry_in, carry_out);
+}
+# endif
 
 
 template<typename T, typename = _namespace(std)::enable_if_t<
@@ -182,6 +212,11 @@ inline bool umulll_overflow(unsigned long long x, unsigned long long y,
   return __builtin_umulll_overflow(x, y, result);
 }
 
+#if _USE_INT128
+bool umul128_overflow(_ABI_TYPES(uint128_t) x, _ABI_TYPES(uint128_t) y,
+                      _ABI_TYPES(uint128_t)* result) noexcept;
+#endif
+
 #ifdef __cplusplus
 
 inline bool umul_overflow(unsigned char x, unsigned char y,
@@ -203,6 +238,13 @@ inline bool umul_overflow(unsigned long long x, unsigned long long y,
                           unsigned long long* result) noexcept {
   return __builtin_umulll_overflow(x, y, result);
 }
+
+#if _USE_INT128
+inline bool umul_overflow(_ABI_TYPES(uint128_t) x, _ABI_TYPES(uint128_t) y,
+                          _ABI_TYPES(uint128_t)* result) noexcept {
+  return umul128_overflow(x, y, result);
+}
+#endif
 
 
 template<typename T, typename = _namespace(std)::enable_if_t<
@@ -302,6 +344,18 @@ inline unsigned long long umul_extend(unsigned long long x,
   return result;
 }
 
+# if _USE_INT128
+inline _ABI_TYPES(uint128_t) umul_extend(_ABI_TYPES(uint128_t) x,
+                                         _ABI_TYPES(uint128_t) y,
+                                         _ABI_TYPES(uint128_t)* hi) noexcept {
+  using _namespace(std)::tie;
+
+  _ABI_TYPES(uint128_t) result;
+  tie(result, *hi) = umul_extend(x, y);
+  return result;
+}
+# endif
+
 #ifndef _ABI_MISC_INT_INLINE
 # define _ABI_MISC_INT_INLINE extern inline
 #endif
@@ -374,6 +428,10 @@ constexpr int ctz(int x) noexcept {
 
 constexpr int ctz(unsigned char x) noexcept {
   return (x == 0 ? sizeof(unsigned char) * CHAR_BIT : __builtin_ctz(x));
+}
+
+constexpr int ctz(signed char x) noexcept {
+  return (x == 0 ? sizeof(signed char) * CHAR_BIT : __builtin_ctz(x));
 }
 
 constexpr int ctz(char x) noexcept {
