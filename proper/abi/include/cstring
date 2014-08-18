@@ -121,6 +121,7 @@ int    strcoll(const char*, const char*) noexcept
 int    strcoll_l(const char*, const char*, locale_t) noexcept
            __attribute__((nonnull));
 char*  strerror_l(int, locale_t) noexcept
+           __attribute__((nonnull));
 char*  strsignal(int) noexcept;
 size_t strxfrm(char*__restrict, const char*__restrict, size_t) noexcept
            __attribute__((nonnull));

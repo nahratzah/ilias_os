@@ -324,16 +324,16 @@ template<typename T> struct add_rvalue_reference { using type = T&&; };
 
 template<typename T> struct _make_signed_ll;
 template<typename T> struct _make_signed {
-  using type = typename
+  using type =
       conditional_t<is_integral<T>::value,
           typename conditional_t<is_signed<T>::value, identity<T>,
                                  _make_signed_ll<T>>::type,
           conditional_t<sizeof(T) <= sizeof(signed char),
-              identity<signed char>,
+              signed char,
               conditional_t<sizeof(T) <= sizeof(short),
-                  identity<short>,
+                  short,
                   conditional_t<sizeof(T) <= sizeof(int),
-                      identity<int>,
+                      int,
                       conditional_t<sizeof(T) <= sizeof(long),
                           long,
 #if _USE_INT128
@@ -382,16 +382,16 @@ template<typename T> struct make_signed
 
 template<typename T> struct _make_unsigned_ll;
 template<typename T> struct _make_unsigned {
-  using type = typename
+  using type =
       conditional_t<is_integral<T>::value,
           typename conditional_t<is_unsigned<T>::value, identity<T>,
                                  _make_unsigned_ll<T>>::type,
           conditional_t<sizeof(T) <= sizeof(unsigned char),
-              identity<unsigned char>,
+              unsigned char,
               conditional_t<sizeof(T) <= sizeof(unsigned short),
-                  identity<unsigned short>,
+                  unsigned short,
                   conditional_t<sizeof(T) <= sizeof(unsigned int),
-                      identity<unsigned int>,
+                      unsigned int,
                       conditional_t<sizeof(T) <= sizeof(unsigned long),
                           unsigned long,
 #if _USE_INT128
