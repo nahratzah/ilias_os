@@ -3,9 +3,11 @@
 
 #include <cstdarg>
 #include <string>
+#include <tuple>
 
 namespace loader {
 
+std::tuple<uintptr_t, uintptr_t> vram_ram() noexcept;
 void bios_put_char(char) noexcept;
 void bios_put_str(std::string_ref) noexcept;
 
