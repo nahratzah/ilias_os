@@ -6,6 +6,7 @@
 #include <locale_misc/ctype.h>
 #include <locale_misc/numpunct.h>
 #include <ios>
+#include <abi/misc_int.h>
 
 _namespace_begin(std)
 namespace impl {
@@ -242,10 +243,13 @@ num_decoder<Char, T>::num_decoder(Iter b, Iter e, Iter& next, ios_base& str)
         digit = du_off;
 
       /* Multiply and add, taking care to detect overflow. */
-      unsigned_type tmp = unsigned_result_ * base;
-      overflow_ |= (tmp < unsigned_result_);  // XXX: use <abi/misc_int.h>
-      tmp += digit;
-      overflow_ |= (tmp < unsigned_result_);  // XXX: use <abi/misc_int.h>
+      if (abi::umul_overflow(unsigned_result_, base, &unsigned_result_))
+        overflow_ = true;
+      {
+        unsigned_type tmp;
+        unsigned_result_ = abi::addc(unsigned_result_, digit, 0, &tmp);
+        if (tmp != 0) overflow_ = true;
+      }
 
       /* Record that we consumed a digit. */
       ++ndigits_since_tsep;
