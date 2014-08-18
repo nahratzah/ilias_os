@@ -82,6 +82,8 @@ template<size_t I, typename T> class cons_elem<I, T, true>
   using id = cons_elem_id<remove_reference_t<T>>;
 
   constexpr cons_elem() : T() {}
+  constexpr cons_elem(const cons_elem&) = default;
+  constexpr cons_elem(cons_elem&&) = default;
   constexpr cons_elem(const T& v) : T(v) {}
   template<typename U>
   constexpr cons_elem(U&& v) : T(forward<U>(v)) {}
