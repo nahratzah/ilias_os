@@ -7,8 +7,8 @@ COMPILER_FLAGS +=	-ffreestanding					\
 			-Wno-tautological-compare			\
 			-Wno-c++1y-extensions				\
 			-ftls-model=initial-exec			\
-			-g						\
-			-mno-sse -mno-sse2 -mno-sse3 -mno-3dnow -mno-mmx -mno-avx -msoft-float
+			-g
+# -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow -mno-mmx -mno-avx -msoft-float
 
 # Disable TLS for now, since clang has a code generation bug.
 COMPILER_FLAGS +=	-D_SINGLE_THREADED=1
@@ -20,10 +20,12 @@ LOADER_FLAGS +=		-Os						\
 			-D_LOADER=1					\
 			-fno-pic
 
-CFLAGS_32 +=		-target i386-eabi
+CFLAGS_32 +=		-target i386-eabi				\
+			-D__ELF__
 CFLAGS_64 +=		-target amd64-eabi				\
 			-mcmodel=large					\
-			-mno-red-zone
+			-mno-red-zone					\
+			-D__ELF__
 
 CXXFLAGS +=		${COMPILER_FLAGS}				\
 			-std=c++11					\

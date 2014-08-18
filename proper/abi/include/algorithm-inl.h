@@ -1,3 +1,7 @@
+#ifndef _ALGORITHM_INL_H_
+#define _ALGORITHM_INL_H_
+
+#include <algorithm>
 #include <stdimpl/heap_array.h>
 #include <stdimpl/heap_support.h>
 
@@ -593,7 +597,7 @@ OutputIterator transform(InputIterator b, InputIterator e,
     ++b;
     ++out;
   }
-  return *out;
+  return out;
 }
 
 template<typename InputIterator1, typename InputIterator2,
@@ -607,7 +611,7 @@ OutputIterator transform(InputIterator1 b1, InputIterator1 e1,
     ++b2;
     ++out;
   }
-  return *out;
+  return out;
 }
 
 template<typename ForwardIterator, typename T>
@@ -2115,3 +2119,5 @@ bool next_permutation(BidirectionalIterator b, BidirectionalIterator e,
 
 
 _namespace_end(std)
+
+#endif /* _ALGORITHM_INL_H_ */

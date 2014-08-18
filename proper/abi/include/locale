@@ -1,0 +1,39 @@
+#ifndef _LOCALE_
+#define _LOCALE_
+
+#include <cdecl.h>
+#include <locale-fwd.h>
+#include <locale_misc/locale.h>
+#include <locale_misc/codecvt.h>
+#include <locale_misc/collate.h>
+#include <locale_misc/convert.h>
+#include <locale_misc/num_get.h>
+#include <locale_misc/num_put.h>
+#include <locale_misc/numpunct.h>
+#include <locale_misc/messages.h>
+
+_namespace_begin(std)
+
+
+class time_base;
+template<typename Char, typename InputIter>
+class time_get;
+template<typename Char, typename InputIter = istreambuf_iterator<Char>>
+class time_get_byname;
+template<typename Char, typename OutputIter>
+class time_put;
+template<typename Char, typename OutputIter = ostreambuf_iterator<Char>>
+class time_put_byname;
+
+class money_base;
+template<typename Char, typename InputIter>
+class money_get;
+template<typename Char, typename OutputIter>
+class money_put;
+template<typename Char, bool Intl> class moneypunct;
+template<typename Char, bool Intl = false> class moneypunct_byname;
+
+
+_namespace_end(std)
+
+#endif /* _LOCALE_ */

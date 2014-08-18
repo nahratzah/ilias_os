@@ -31,7 +31,8 @@ inline constexpr bool is_valid_unicode(wchar_t c) noexcept {
 
 template<typename CB>
 int unicode_conv_in<char>::operator()(char c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>()))) {
+    noexcept(noexcept(_namespace(std)::declval<CB>()(
+                          _namespace(std)::declval<const wchar_t>()))) {
   if (_predict_true(!(c & 0x80))) {
     if (_predict_false(need_ != 0))
       return _ABI_EILSEQ;  // Expected continuation.
@@ -73,7 +74,8 @@ inline void unicode_conv_in<char>::reset() noexcept {
 
 template<typename CB>
 int unicode_conv_in<char16_t>::operator()(char16_t c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>()))) {
+    noexcept(noexcept(_namespace(std)::declval<CB>()(
+                          _namespace(std)::declval<const wchar_t>()))) {
   if (_predict_false(c >= 0xd800 && c <= 0xdbff)) {
     if (need_) return _ABI_EILSEQ;
     partial_ = (c - 0xd800);
@@ -104,7 +106,8 @@ inline void unicode_conv_in<char16_t>::reset() noexcept {
 
 template<typename CB>
 int unicode_conv_in<char32_t>::operator()(char32_t c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>()))) {
+    noexcept(noexcept(_namespace(std)::declval<CB>()(
+                          _namespace(std)::declval<const wchar_t>()))) {
   wchar_t cc = c;
   if (!is_valid_unicode(cc)) return _ABI_EILSEQ;
   return cb(cc);
@@ -119,7 +122,8 @@ inline void unicode_conv_in<char32_t>::reset() noexcept {}
 
 template<typename CB>
 int unicode_conv_in<wchar_t>::operator()(wchar_t c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>()))) {
+    noexcept(noexcept(_namespace(std)::declval<CB>()(
+                          _namespace(std)::declval<const wchar_t>()))) {
   return cb(c);
 }
 
@@ -132,7 +136,8 @@ inline void unicode_conv_in<wchar_t>::reset() noexcept {}
 
 template<typename CB>
 int unicode_conv_out<char>::operator()(wchar_t c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const char>()))) {
+    noexcept(noexcept(_namespace(std)::declval<CB>()(
+                          _namespace(std)::declval<const char>()))) {
   if (!is_valid_unicode(c)) return _ABI_EILSEQ;
 
   constexpr char mask1 = 0x80;
@@ -165,7 +170,8 @@ inline void unicode_conv_out<char>::reset() noexcept {}
 
 template<typename CB>
 int unicode_conv_out<char16_t>::operator()(wchar_t c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const char16_t>()))) {
+    noexcept(noexcept(_namespace(std)::declval<CB>()(
+                          _namespace(std)::declval<const char16_t>()))) {
   if (!is_valid_unicode(c)) return _ABI_EILSEQ;
 
   if (_predict_true(c <= 0xd7ff || (c >= 0xe000 && c <= 0xffff)))
@@ -186,7 +192,8 @@ inline void unicode_conv_out<char16_t>::reset() noexcept {}
 
 template<typename CB>
 int unicode_conv_out<char32_t>::operator()(wchar_t c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const char32_t>()))) {
+    noexcept(noexcept(_namespace(std)::declval<CB>()(
+                          _namespace(std)::declval<const char32_t>()))) {
   if (c > 0x7fffffff) return _ABI_EILSEQ;  // Cannot encode this.
   if (!is_valid_unicode(c)) return _ABI_EILSEQ;  // Invalid code point.
   return cb(char32_t(c));
@@ -201,7 +208,7 @@ inline void unicode_conv_out<char32_t>::reset() noexcept {}
 
 template<typename CB>
 int unicode_conv_out<wchar_t>::operator()(wchar_t c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const wchar_t>()))) {
+    noexcept(noexcept(_namespace(std)::declval<CB>()(_namespace(std)::declval<const wchar_t>()))) {
   return cb(c);
 }
 
@@ -215,10 +222,11 @@ inline void unicode_conv_out<wchar_t>::reset() noexcept {}
 template<typename COut, typename CIn>
 template<typename CB>
 auto unicode_conv<COut, CIn>::operator()(CIn c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const COut>()))) ->
+    noexcept(noexcept(_namespace(std)::declval<CB>()(_namespace(std)::declval<const COut>()))) ->
     int {
   auto intermediate = [&](wchar_t c)
-        noexcept(noexcept(std::declval<CB>()(std::declval<const COut>()))) ->
+        noexcept(noexcept(_namespace(std)::declval<CB>()(
+                              _namespace(std)::declval<const COut>()))) ->
         int {
       return out_(c, cb);
     };
@@ -241,7 +249,8 @@ auto unicode_conv<COut, CIn>::reset() noexcept -> void {
 template<typename C>
 template<typename CB>
 auto unicode_conv<C, C>::operator()(C c, CB& cb)
-    noexcept(noexcept(std::declval<CB>()(std::declval<const C>()))) ->
+    noexcept(noexcept(_namespace(std)::declval<CB>()(
+                          _namespace(std)::declval<const C>()))) ->
     int {
   int err = in_(c, [](wchar_t) noexcept -> int { return 0; });
   return (err ? err : in_(c, cb));

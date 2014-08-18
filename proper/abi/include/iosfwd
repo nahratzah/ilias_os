@@ -1,5 +1,5 @@
-#ifndef _IOSFWD_H_
-#define _IOSFWD_H_
+#ifndef _IOSFWD_
+#define _IOSFWD_
 
 #include <cdecl.h>
 #include <abi/abi.h>
@@ -8,6 +8,8 @@
 
 _namespace_begin(std)
 
+
+class ios_base;
 
 using streamoff = _TYPES(off_t);
 
@@ -115,4 +117,4 @@ using wfstream = basic_fstream<wchar_t>;
 
 _namespace_end(std)
 
-#endif /* _IOSFWD_H_ */
+#endif /* _IOSFWD_ */

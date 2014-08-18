@@ -7,7 +7,7 @@ printf_renderer<Char, Traits>::~printf_renderer() noexcept {}
 
 template<typename Char, typename Traits>
 auto printf_renderer<Char, Traits>::append(
-    std::basic_string_ref<Char, Traits> sp) noexcept -> int {
+    _namespace(std)::basic_string_ref<Char, Traits> sp) noexcept -> int {
   if (sp.empty()) return 0;
   len_ += sp.length();
   return do_append(sp);
@@ -30,7 +30,8 @@ auto printf_renderer<Char, Traits>::get_neg_sign() const noexcept -> Char {
 
 template<typename Char, typename Traits>
 template<typename C, typename T>
-auto printf_renderer<Char, Traits>::append(std::basic_string_ref<C, T> s)
+auto printf_renderer<Char, Traits>::append(
+    _namespace(std)::basic_string_ref<C, T> s)
     noexcept -> int {
   constexpr unsigned int N = 16;
   Char buf[N];
@@ -39,7 +40,7 @@ auto printf_renderer<Char, Traits>::append(std::basic_string_ref<C, T> s)
   const auto fn = [&](wchar_t c) noexcept -> int {
       int err = 0;
       if (n == N) {
-        append(std::basic_string_ref<Char, Traits>(&buf[0], N));
+        append(_namespace(std)::basic_string_ref<Char, Traits>(&buf[0], N));
         n = 0;
       }
       buf[n++] = c;
@@ -53,7 +54,7 @@ auto printf_renderer<Char, Traits>::append(std::basic_string_ref<C, T> s)
     if (err) return err;
   }
   if (!conv.is_clear()) return _ABI_EILSEQ;
-  return append(std::basic_string_ref<Char, Traits>(&buf[0], n));
+  return append(_namespace(std)::basic_string_ref<Char, Traits>(&buf[0], n));
 }
 
 
@@ -123,7 +124,7 @@ template<typename T> struct render_int {
   using type = T;
   static constexpr type ZERO = T(0);
   static constexpr type ONE = T(1);
-  static constexpr int N = std::numeric_limits<T>::digits10;
+  static constexpr int N = _namespace(std)::numeric_limits<T>::digits10;
 
   template<typename Char, typename Traits>
   int operator()(printf_renderer<Char, Traits>& renderer,
@@ -264,7 +265,7 @@ class printf_arg {
 
 
 template<typename Char, typename Traits>
-int parse_num(std::basic_string_ref<Char, Traits>& sp) noexcept {
+int parse_num(_namespace(std)::basic_string_ref<Char, Traits>& sp) noexcept {
   int rv = 0;
 
   while (!sp.empty() && sp[0] >= '0' && sp[0] <= '9') {
@@ -275,10 +276,10 @@ int parse_num(std::basic_string_ref<Char, Traits>& sp) noexcept {
 }
 
 template<typename Char, typename Traits>
-int parse_num_spec(std::basic_string_ref<Char, Traits>& sp,
+int parse_num_spec(_namespace(std)::basic_string_ref<Char, Traits>& sp,
                    int* v, bool* is_argidx, bool* is_argfield) noexcept {
-  if (sp.empty()) return EINVAL;
-  if (!v || !is_argidx || !is_argfield) return EINVAL;
+  if (sp.empty()) return _ABI_EINVAL;
+  if (!v || !is_argidx || !is_argfield) return _ABI_EINVAL;
   *is_argidx = false;
   *is_argfield = false;
 
@@ -292,11 +293,11 @@ int parse_num_spec(std::basic_string_ref<Char, Traits>& sp,
       *v = -1;  // auto-select next arg
       return 0;
     }
-    return EINVAL;
+    return _ABI_EINVAL;
   }
   *v = parse_num(sp);
 
-  if (sp.empty()) return (*is_argfield ? EINVAL : 0);
+  if (sp.empty()) return (*is_argfield ? _ABI_EINVAL : 0);
   if (sp[0] == '$') {
     *is_argidx = !*is_argfield;
     sp = sp.substr(1);
@@ -313,7 +314,7 @@ template<typename Char, typename Traits>
 int render_spaces(printf_renderer<Char, Traits>& renderer, int n) noexcept {
   const Char _spaces[] = { Char(' '), Char(' '), Char(' '), Char(' '),
                            Char(' '), Char(' '), Char(' '), Char(' ') };
-  std::basic_string_ref<Char, Traits> spaces(
+  _namespace(std)::basic_string_ref<Char, Traits> spaces(
       _spaces, sizeof(_spaces) / sizeof(_spaces[0]));
 
   int error = 0;
@@ -325,9 +326,10 @@ int render_spaces(printf_renderer<Char, Traits>& renderer, int n) noexcept {
 }
 
 template<typename Char, typename Traits>
-int render_partial_num_sp(printf_renderer<Char, Traits>& renderer, int pos,
-                          std::basic_string_ref<Char, Traits> content,
-                          std::basic_string_ref<Char, Traits> thousand_sep)
+int render_partial_num_sp(
+    printf_renderer<Char, Traits>& renderer, int pos,
+    _namespace(std)::basic_string_ref<Char, Traits> content,
+    _namespace(std)::basic_string_ref<Char, Traits> thousand_sep)
     noexcept {
   if (thousand_sep.empty()) return renderer.append(content);
 
@@ -347,12 +349,13 @@ int render_partial_num_sp(printf_renderer<Char, Traits>& renderer, int pos,
 }
 
 template<typename Char, typename Traits>
-int render_leading_zeroes(printf_renderer<Char, Traits>& renderer,
-                          int add_leading_zeroes, int numsz,
-                          std::basic_string_ref<Char, Traits> thousand_sep)
+int render_leading_zeroes(
+    printf_renderer<Char, Traits>& renderer,
+    int add_leading_zeroes, int numsz,
+    _namespace(std)::basic_string_ref<Char, Traits> thousand_sep)
     noexcept {
   const Char _zeroes[] = { Char('0'), Char('0'), Char('0'), Char('0') };
-  std::basic_string_ref<Char, Traits> zeroes(
+  _namespace(std)::basic_string_ref<Char, Traits> zeroes(
       _zeroes, sizeof(_zeroes) / sizeof(_zeroes[0]));
   int pos = add_leading_zeroes + numsz;
 
@@ -372,30 +375,31 @@ int render_leading_zeroes(printf_renderer<Char, Traits>& renderer,
 template<typename Char, typename Traits>
 int render_int_agnostic(printf_renderer<Char, Traits>& renderer,
                         bool negative, bool zero,
-                        std::basic_string_ref<Char, Traits> number,
+                        _namespace(std)::basic_string_ref<Char, Traits> number,
                         printf_spec spec) noexcept {
   int add_leading_zeroes = 0;
 
   /* Figure out how to render thousands-separator, if requested. */
   Char THOUSAND_SEP;
-  std::basic_string_ref<Char, Traits> thousand_sep;
+  _namespace(std)::basic_string_ref<Char, Traits> thousand_sep;
   if (spec.pff & PFF_THOUSANDS_GROUPING) {
     THOUSAND_SEP = renderer.get_thousand_sep();
-    thousand_sep = std::basic_string_ref<Char, Traits>(&THOUSAND_SEP, 1U);
+    thousand_sep =
+        _namespace(std)::basic_string_ref<Char, Traits>(&THOUSAND_SEP, 1U);
   }
 
   /* Figure out which sign to print. */
   Char SIGN;
-  std::basic_string_ref<Char, Traits> sign;
+  _namespace(std)::basic_string_ref<Char, Traits> sign;
   if (negative) {
     SIGN = renderer.get_neg_sign();
-    sign = std::basic_string_ref<Char, Traits>(&SIGN, 1);
+    sign = _namespace(std)::basic_string_ref<Char, Traits>(&SIGN, 1);
   } else if (spec.pff & PFF_SIGN) {
     SIGN = renderer.get_pos_sign();
-    sign = std::basic_string_ref<Char, Traits>(&SIGN, 1);
+    sign = _namespace(std)::basic_string_ref<Char, Traits>(&SIGN, 1);
   } else if (spec.pff & PFF_SIGN_SPACE) {
     SIGN = ' ';
-    sign = std::basic_string_ref<Char, Traits>(&SIGN, 1);
+    sign = _namespace(std)::basic_string_ref<Char, Traits>(&SIGN, 1);
   }
 
   /*
@@ -403,7 +407,7 @@ int render_int_agnostic(printf_renderer<Char, Traits>& renderer,
    * increasing precision to force a leading zero.
    * Note that the spec says 0 is never prefixed.
    */
-  std::basic_string_ref<Char, Traits> prefix;
+  _namespace(std)::basic_string_ref<Char, Traits> prefix;
   Char PREFIX[2];
   if (!zero && (spec.pff & PFF_ALT_FORM)) {
     if (spec.base == 8)
@@ -411,7 +415,7 @@ int render_int_agnostic(printf_renderer<Char, Traits>& renderer,
     else if (spec.base == 16) {
       PREFIX[0] = '0';
       PREFIX[1] = (spec.uppercase ? 'X' : 'x');
-      prefix = std::basic_string_ref<Char, Traits>(PREFIX, 2);
+      prefix = _namespace(std)::basic_string_ref<Char, Traits>(PREFIX, 2);
     }
   }
 
@@ -484,12 +488,13 @@ int render_int_agnostic(printf_renderer<Char, Traits>& renderer,
  * of positions forward.
  */
 template<typename Char, typename Traits>
-printf_len deduce_printf_len(std::basic_string_ref<Char, Traits>& sp)
+printf_len deduce_printf_len(
+    _namespace(std)::basic_string_ref<Char, Traits>& sp)
     noexcept {
   Char _hh[2] = { Char('h'), Char('h') };
   Char _ll[2] = { Char('l'), Char('l') };
-  const auto hh = std::basic_string_ref<Char, Traits>(_hh, 2);
-  const auto ll = std::basic_string_ref<Char, Traits>(_ll, 2);
+  const auto hh = _namespace(std)::basic_string_ref<Char, Traits>(_hh, 2);
+  const auto ll = _namespace(std)::basic_string_ref<Char, Traits>(_ll, 2);
 
   if (sp.empty()) return PFL_NONE;
 
@@ -748,14 +753,15 @@ unsigned char deduce_printf_base(Char c) noexcept {
 
 
 template<typename Char, typename Traits>
-bool find_percent(std::basic_string_ref<Char, Traits>* out,
-                  std::basic_string_ref<Char, Traits> fmt) noexcept {
+bool find_percent(_namespace(std)::basic_string_ref<Char, Traits>* out,
+                  _namespace(std)::basic_string_ref<Char, Traits> fmt)
+    noexcept {
   auto pos_percent = fmt.find('%');
-  if (pos_percent != std::basic_string_ref<Char, Traits>::npos)
+  if (pos_percent != _namespace(std)::basic_string_ref<Char, Traits>::npos)
     *out = fmt.substr(pos_percent);
   else
     out->clear();
-  return pos_percent != std::basic_string_ref<Char, Traits>::npos;
+  return pos_percent != _namespace(std)::basic_string_ref<Char, Traits>::npos;
 }
 
 
@@ -767,7 +773,7 @@ template<typename Char, typename Traits>
 int render_int<T>::operator()(printf_renderer<Char, Traits>& renderer,
                               type v, printf_spec spec) noexcept {
   /* Deduce base. */
-  if (spec.base <= 0 || spec.base > MAX_BASE) return EINVAL;
+  if (spec.base <= 0 || spec.base > MAX_BASE) return _ABI_EINVAL;
   const type BASE = spec.base;
 
   /* Select digits to use. */
@@ -793,16 +799,17 @@ int render_int<T>::operator()(printf_renderer<Char, Traits>& renderer,
                       "running too many digits.");
     buf[--i] = digits[m];
   } while (v != ZERO);
-  std::basic_string_ref<Char, Traits> number(&buf[i], N - i);
+  _namespace(std)::basic_string_ref<Char, Traits> number(&buf[i], N - i);
 
   return render_int_agnostic(renderer, negative, zero, number, spec);
 }
 
 template<printf_type Pft>
 template<typename Char, typename Traits, typename T>
-int render<Pft>::operator()(printf_renderer<Char, Traits>&, T, printf_spec) const noexcept {
+int render<Pft>::operator()(printf_renderer<Char, Traits>&, T, printf_spec)
+    const noexcept {
   panic("UNIMPLEMENTED printf TYPE");
-  return ENOSYS;
+  return _ABI_ENOSYS;
 }
 
 template<typename Char, typename Traits>
@@ -817,7 +824,8 @@ int render<PFT_CHAR>::operator()(printf_renderer<Char, Traits>& renderer,
       (error = render_spaces(renderer, pad_len))) return error;
 
   /* Print character. */
-  if ((error = renderer.append(std::basic_string_ref<char>(&c, 1))))
+  if ((error =
+           renderer.append(_namespace(std)::basic_string_ref<char>(&c, 1))))
     return error;
 
   /* Print spaces to the left, iff left justifying output. */
@@ -840,7 +848,8 @@ int render<PFT_WINT_T>::operator()(printf_renderer<Char, Traits>& renderer,
       (error = render_spaces(renderer, pad_len))) return error;
 
   /* Print character. */
-  if ((error = renderer.append(std::basic_string_ref<wchar_t>(&c, 1))))
+  if ((error =
+           renderer.append(_namespace(std)::basic_string_ref<wchar_t>(&c, 1))))
     return error;
 
   /* Print spaces to the left, iff left justifying output. */
@@ -871,7 +880,7 @@ template<typename Char, typename Traits>
 int render_str<Str>::operator()(printf_renderer<Char, Traits>& renderer,
                                 const Str* s,
                                 printf_spec spec) const noexcept {
-  std::basic_string_ref<Str> v;
+  _namespace(std)::basic_string_ref<Str> v;
   if (spec.precision >= 0) {
     /*
      * The standard seems to suggest that, if precision is specified,
@@ -879,10 +888,10 @@ int render_str<Str>::operator()(printf_renderer<Char, Traits>& renderer,
      * precision.  Therefore, limit searching for a nul byte to within
      * the precision length.
      */
-    v = std::basic_string_ref<Str>(s, spec.precision);
+    v = _namespace(std)::basic_string_ref<Str>(s, spec.precision);
     v = v.substr(0, v.find(Str()));
   } else {
-    v = std::basic_string_ref<Str>(s);
+    v = _namespace(std)::basic_string_ref<Str>(s);
   }
 
   int pad_len = (spec.fieldwidth >= 0 && v.size() < size_t(spec.fieldwidth) ?
@@ -985,54 +994,54 @@ int printf_arg::apply(printf_renderer<Char, Traits>& renderer,
     break;
   case PFT_SCHAR_PTR:
     if (data_.d_schar_ptr == nullptr)
-      error = EINVAL;
+      error = _ABI_EINVAL;
     else
       *data_.d_schar_ptr = renderer.length();
     break;
   case PFT_SHRT_PTR:
     if (data_.d_shrt_ptr == nullptr)
-      error = EINVAL;
+      error = _ABI_EINVAL;
     else
       *data_.d_shrt_ptr = renderer.length();
     break;
   case PFT_INT_PTR:
     if (data_.d_int_ptr == nullptr)
-      error = EINVAL;
+      error = _ABI_EINVAL;
     else
       *data_.d_int_ptr = renderer.length();
     break;
   case PFT_LONG_PTR:
     if (data_.d_long_ptr == nullptr)
-      error = EINVAL;
+      error = _ABI_EINVAL;
     else
       *data_.d_long_ptr = renderer.length();
     break;
   case PFT_LLONG_PTR:
     if (data_.d_llong_ptr == nullptr)
-      error = EINVAL;
+      error = _ABI_EINVAL;
     else
       *data_.d_llong_ptr = renderer.length();
     break;
   case PFT_SIZE_T_PTR:
     if (data_.d_size_t_ptr == nullptr)
-      error = EINVAL;
+      error = _ABI_EINVAL;
     else
       *data_.d_size_t_ptr = renderer.length();
     break;
   case PFT_PTRDIFF_T_PTR:
     if (data_.d_ptrdiff_t_ptr == nullptr)
-      error = EINVAL;
+      error = _ABI_EINVAL;
     else
       *data_.d_ptrdiff_t_ptr = renderer.length();
     break;
   case PFT_INTMAX_T_PTR:
     if (data_.d_intmax_t_ptr == nullptr)
-      error = EINVAL;
+      error = _ABI_EINVAL;
     else
       *data_.d_intmax_t_ptr = renderer.length();
     break;
   case PFT_INVAL:
-    error = EINVAL;
+    error = _ABI_EINVAL;
     break;
   }
   return error;
@@ -1140,29 +1149,29 @@ int printf_arg::read(T& ap) noexcept {
     data_.d_intmax_t_ptr = va_arg(ap, intmax_t*);
     break;
   case PFT_INVAL:
-    error = EINVAL;
+    error = _ABI_EINVAL;
     break;
   }
   return error;
 }
 
 inline int printf_arg::as_int(int* v) const noexcept {
-  if (pft_ != PFT_INT) return EINVAL;
+  if (pft_ != PFT_INT) return _ABI_EINVAL;
   *v = data_.d_int;
   return 0;
 }
 
 inline int printf_arg::assign_type(printf_type pft) noexcept {
-  if (pft_ != PFT_INVAL && pft_ != pft) return EINVAL;
+  if (pft_ != PFT_INVAL && pft_ != pft) return _ABI_EINVAL;
   pft_ = pft;
   return 0;
 }
 
 
 template<typename Char, typename Traits>
-int deduce_printf_spec(std::basic_string_ref<Char, Traits>& sp,
+int deduce_printf_spec(_namespace(std)::basic_string_ref<Char, Traits>& sp,
                        printf_spec* spec, printf_type* type) noexcept {
-  if (_predict_false(!spec || !type)) return EINVAL;
+  if (_predict_false(!spec || !type)) return _ABI_EINVAL;
 
   bool argidx_seen = false;
   bool flag_seen = false;
@@ -1177,23 +1186,23 @@ int deduce_printf_spec(std::basic_string_ref<Char, Traits>& sp,
     printf_flags fl_mod = 0;
     int error = 0;
 
-    if (sp.empty()) return EINVAL;
+    if (sp.empty()) return _ABI_EINVAL;
     switch (sp[0]) {
     case '.':
-      if (precision_seen) return EINVAL;
+      if (precision_seen) return _ABI_EINVAL;
       precision_seen = true;
       sp = sp.substr(1);
       error = parse_num_spec(sp, &n, &is_argidx, &is_argfield);
-      if (is_argidx) return EINVAL;
+      if (is_argidx) return _ABI_EINVAL;
       spec->precision = n;
       if (is_argfield) spec->pff |= PFF_PRECISION_IS_ARGIDX;
       break;
     case '*':
-      if (fieldwidth_seen) return EINVAL;
-      if (precision_seen) return EINVAL;
+      if (fieldwidth_seen) return _ABI_EINVAL;
+      if (precision_seen) return _ABI_EINVAL;
       fieldwidth_seen = true;
       error = parse_num_spec(sp, &n, &is_argidx, &is_argfield);
-      if (!is_argfield) return EINVAL;
+      if (!is_argfield) return _ABI_EINVAL;
       spec->fieldwidth = n;
       spec->pff |= PFF_FIELDWIDTH_IS_ARGIDX;
       break;
@@ -1208,13 +1217,13 @@ int deduce_printf_spec(std::basic_string_ref<Char, Traits>& sp,
     case '9':
       error = parse_num_spec(sp, &n, &is_argidx, &is_argfield);
       if (is_argidx) {
-        if (argidx_seen) return EINVAL;
-        if (flag_seen || fieldwidth_seen || precision_seen) return EINVAL;
+        if (argidx_seen) return _ABI_EINVAL;
+        if (flag_seen || fieldwidth_seen || precision_seen) return _ABI_EINVAL;
         argidx_seen = true;
         spec->argidx = n;
       } else {
-        if (fieldwidth_seen) return EINVAL;
-        if (precision_seen) return EINVAL;
+        if (fieldwidth_seen) return _ABI_EINVAL;
+        if (precision_seen) return _ABI_EINVAL;
         fieldwidth_seen = true;
         spec->fieldwidth = n;
         if (is_argfield) spec->pff |= PFF_FIELDWIDTH_IS_ARGIDX;
@@ -1246,9 +1255,9 @@ int deduce_printf_spec(std::basic_string_ref<Char, Traits>& sp,
 
     /* Apply flag modification. */
     if (fl_mod) {
-      if (spec->pff & fl_mod) return EINVAL;
+      if (spec->pff & fl_mod) return _ABI_EINVAL;
       spec->pff |= fl_mod;
-      if (fieldwidth_seen || precision_seen) return EINVAL;
+      if (fieldwidth_seen || precision_seen) return _ABI_EINVAL;
       flag_seen = true;
       sp = sp.substr(1);
     }
@@ -1256,10 +1265,10 @@ int deduce_printf_spec(std::basic_string_ref<Char, Traits>& sp,
 
   /* Figure out the argument type. */
   printf_len pfl = deduce_printf_len(sp);
-  if (sp.empty()) return EINVAL;
+  if (sp.empty()) return _ABI_EINVAL;
   char conv = sp[0];
   sp = sp.substr(1);
-  if ((*type = deduce_printf_type(conv, pfl)) == PFT_INVAL) return EINVAL;
+  if ((*type = deduce_printf_type(conv, pfl)) == PFT_INVAL) return _ABI_EINVAL;
   spec->base = deduce_printf_base(conv);
   spec->uppercase = (conv == 'X');
   return 0;
@@ -1285,24 +1294,24 @@ struct vxprintf_locals_base {
 template<typename Char, typename Traits>
 struct vxprintf_locals : vxprintf_locals_base {
  protected:
-  std::basic_string_ref<Char, Traits> tail;
-  std::basic_string_ref<Char, Traits> lit[NL_ARGMAX];
+  _namespace(std)::basic_string_ref<Char, Traits> tail;
+  _namespace(std)::basic_string_ref<Char, Traits> lit[NL_ARGMAX];
 
  public:
   vxprintf_locals() noexcept {}
   ~vxprintf_locals() = default;
 
-  int parse_fmt(std::basic_string_ref<Char, Traits>) noexcept;
+  int parse_fmt(_namespace(std)::basic_string_ref<Char, Traits>) noexcept;
   int render(printf_renderer<Char, Traits>& renderer) noexcept;
 };
 
 template<typename Char, typename Traits>
 int vxprintf_locals<Char, Traits>::parse_fmt(
-    std::basic_string_ref<Char, Traits> fmt) noexcept {
-  std::basic_string_ref<Char, Traits> p = fmt;
+    _namespace(std)::basic_string_ref<Char, Traits> fmt) noexcept {
+  _namespace(std)::basic_string_ref<Char, Traits> p = fmt;
 
   while (find_percent(&p, fmt = p)) {
-    if (lit_count >= NL_ARGMAX) return EINVAL;
+    if (lit_count >= NL_ARGMAX) return _ABI_EINVAL;
     lit[lit_count] = fmt.substr(0, p.begin() - fmt.begin());
     printf_spec* spec = &specs[lit_count];
 
@@ -1315,7 +1324,7 @@ int vxprintf_locals<Char, Traits>::parse_fmt(
       /* Process fieldwidth from argument list. */
       if (spec->pff & PFF_FIELDWIDTH_IS_ARGIDX) {
         if (spec->fieldwidth == -1) spec->fieldwidth = argsize++;
-        if (spec->fieldwidth >= NL_ARGMAX) return EINVAL;
+        if (spec->fieldwidth >= NL_ARGMAX) return _ABI_EINVAL;
         if (argsize <= spec->fieldwidth) argsize = spec->fieldwidth + 1U;
         if ((error = va[spec->fieldwidth].assign_type(PFT_INT)))
           return error;
@@ -1324,7 +1333,7 @@ int vxprintf_locals<Char, Traits>::parse_fmt(
       /* Process precision from argument list. */
       if (spec->pff & PFF_PRECISION_IS_ARGIDX) {
         if (spec->precision == -1) spec->precision = argsize++;
-        if (spec->precision >= NL_ARGMAX) return EINVAL;
+        if (spec->precision >= NL_ARGMAX) return _ABI_EINVAL;
         if (argsize <= spec->precision) argsize = spec->precision + 1U;
         if ((error = va[spec->precision].assign_type(PFT_INT)))
           return error;
@@ -1333,7 +1342,7 @@ int vxprintf_locals<Char, Traits>::parse_fmt(
       /* Process the argument itself list. */
       if (spec->argidx == -1) spec->argidx = argsize++;
       if (argsize <= spec->argidx) argsize = spec->argidx + 1U;
-      if (spec->argidx >= NL_ARGMAX) return EINVAL;
+      if (spec->argidx >= NL_ARGMAX) return _ABI_EINVAL;
 
       /* Save the type information. */
       if ((error = va[spec->argidx].assign_type(type))) return error;
@@ -1382,55 +1391,67 @@ int vxprintf(printf_renderer<Char, Traits>& r,
 }
 
 extern template int printf_renderer<char>::append(
-    std::basic_string_ref<wchar_t>) noexcept;
+    _namespace(std)::basic_string_ref<wchar_t>) noexcept;
 extern template int printf_renderer<char>::append(
-    std::basic_string_ref<char16_t>) noexcept;
+    _namespace(std)::basic_string_ref<char16_t>) noexcept;
 extern template int printf_renderer<char>::append(
-    std::basic_string_ref<char32_t>) noexcept;
+    _namespace(std)::basic_string_ref<char32_t>) noexcept;
 
 extern template int printf_renderer<wchar_t>::append(
-    std::basic_string_ref<char>) noexcept;
+    _namespace(std)::basic_string_ref<char>) noexcept;
 extern template int printf_renderer<wchar_t>::append(
-    std::basic_string_ref<char16_t>) noexcept;
+    _namespace(std)::basic_string_ref<char16_t>) noexcept;
 extern template int printf_renderer<wchar_t>::append(
-    std::basic_string_ref<char32_t>) noexcept;
+    _namespace(std)::basic_string_ref<char32_t>) noexcept;
 
 extern template int printf_renderer<char16_t>::append(
-    std::basic_string_ref<char>) noexcept;
+    _namespace(std)::basic_string_ref<char>) noexcept;
 extern template int printf_renderer<char16_t>::append(
-    std::basic_string_ref<wchar_t>) noexcept;
+    _namespace(std)::basic_string_ref<wchar_t>) noexcept;
 extern template int printf_renderer<char16_t>::append(
-    std::basic_string_ref<char32_t>) noexcept;
+    _namespace(std)::basic_string_ref<char32_t>) noexcept;
 
 extern template int printf_renderer<char32_t>::append(
-    std::basic_string_ref<char>) noexcept;
+    _namespace(std)::basic_string_ref<char>) noexcept;
 extern template int printf_renderer<char32_t>::append(
-    std::basic_string_ref<wchar_t>) noexcept;
+    _namespace(std)::basic_string_ref<wchar_t>) noexcept;
 extern template int printf_renderer<char32_t>::append(
-    std::basic_string_ref<char16_t>) noexcept;
+    _namespace(std)::basic_string_ref<char16_t>) noexcept;
 
-extern template int deduce_printf_spec(std::basic_string_ref<char>&,
-                                       printf_spec*, printf_type*) noexcept;
-extern template int deduce_printf_spec(std::basic_string_ref<wchar_t>&,
-                                       printf_spec*, printf_type*) noexcept;
-extern template int deduce_printf_spec(std::basic_string_ref<char16_t>&,
-                                       printf_spec*, printf_type*) noexcept;
-extern template int deduce_printf_spec(std::basic_string_ref<char32_t>&,
-                                       printf_spec*, printf_type*) noexcept;
+extern template int deduce_printf_spec(
+    _namespace(std)::basic_string_ref<char>&,
+    printf_spec*, printf_type*) noexcept;
+extern template int deduce_printf_spec(
+    _namespace(std)::basic_string_ref<wchar_t>&,
+    printf_spec*, printf_type*) noexcept;
+extern template int deduce_printf_spec(
+    _namespace(std)::basic_string_ref<char16_t>&,
+    printf_spec*, printf_type*) noexcept;
+extern template int deduce_printf_spec(
+    _namespace(std)::basic_string_ref<char32_t>&,
+    printf_spec*, printf_type*) noexcept;
 
-extern template int parse_num(std::basic_string_ref<char>&) noexcept;
-extern template int parse_num(std::basic_string_ref<wchar_t>&) noexcept;
-extern template int parse_num(std::basic_string_ref<char16_t>&) noexcept;
-extern template int parse_num(std::basic_string_ref<char32_t>&) noexcept;
+extern template int parse_num(_namespace(std)::basic_string_ref<char>&)
+    noexcept;
+extern template int parse_num(_namespace(std)::basic_string_ref<wchar_t>&)
+    noexcept;
+extern template int parse_num(_namespace(std)::basic_string_ref<char16_t>&)
+    noexcept;
+extern template int parse_num(_namespace(std)::basic_string_ref<char32_t>&)
+    noexcept;
 
-extern template int parse_num_spec(std::basic_string_ref<char>&,
-                                   int*, bool*, bool*) noexcept;
-extern template int parse_num_spec(std::basic_string_ref<wchar_t>&,
-                                   int*, bool*, bool*) noexcept;
-extern template int parse_num_spec(std::basic_string_ref<char16_t>&,
-                                   int*, bool*, bool*) noexcept;
-extern template int parse_num_spec(std::basic_string_ref<char32_t>&,
-                                   int*, bool*, bool*) noexcept;
+extern template int parse_num_spec(
+    _namespace(std)::basic_string_ref<char>&,
+    int*, bool*, bool*) noexcept;
+extern template int parse_num_spec(
+    _namespace(std)::basic_string_ref<wchar_t>&,
+    int*, bool*, bool*) noexcept;
+extern template int parse_num_spec(
+    _namespace(std)::basic_string_ref<char16_t>&,
+    int*, bool*, bool*) noexcept;
+extern template int parse_num_spec(
+    _namespace(std)::basic_string_ref<char32_t>&,
+    int*, bool*, bool*) noexcept;
 
 extern template int printf_arg::apply(printf_renderer<char>&,
                                       printf_spec) const noexcept;

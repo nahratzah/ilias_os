@@ -1,3 +1,7 @@
+#ifndef _ARRAY_INL_H_
+#define _ARRAY_INL_H_
+
+#include <array>
 #include <stdexcept>
 
 _namespace_begin(std)
@@ -22,7 +26,7 @@ auto array<T, N>::begin() noexcept -> iterator {
 
 template<typename T, size_t N>
 auto array<T, N>::begin() const noexcept -> const_iterator {
-  return pointer_traits<pointer>::pointer_to(elems_[0]);
+  return pointer_traits<const_pointer>::pointer_to(elems_[0]);
 }
 
 template<typename T, size_t N>
@@ -214,3 +218,5 @@ constexpr auto get(const array<T, N>& a) noexcept -> enable_if_t<(I < N),
 
 
 _namespace_end(std)
+
+#endif /* _ARRAY_INL_H_ */

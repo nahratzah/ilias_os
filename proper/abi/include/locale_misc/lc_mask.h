@@ -1,0 +1,17 @@
+#ifndef _LOCALE_MISC_LC_MASK_H_
+#define _LOCALE_MISC_LC_MASK_H_
+
+#define LC_COLLATE_MASK		0x01
+#define LC_CTYPE_MASK		0x02
+#define LC_MONETARY_MASK	0x04
+#define LC_NUMERIC_MASK		0x08
+#define LC_TIME_MASK		0x10
+#define LC_MESSAGES_MASK	0x20
+#define LC_ALL_MASK		(LC_COLLATE_MASK |			\
+				 LC_CTYPE_MASK |			\
+				 LC_MONETARY_MASK |			\
+				 LC_NUMERIC_MASK |			\
+				 LC_TIME_MASK |				\
+				 LC_MESSAGES_MASK)
+
+#endif /* _LOCALE_MISC_LC_MASK_H_ */

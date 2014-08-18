@@ -1,4 +1,10 @@
-namespace std {
+#ifndef _INITIALIZER_LIST_INL_H_
+#define _INITIALIZER_LIST_INL_H_
+
+#include <cdecl.h>
+#include <initializer_list>
+
+_namespace_begin(std)
 
 
 template<typename E>
@@ -68,4 +74,6 @@ inline typename initializer_list<E>::const_iterator end(
 }
 
 
-} /* namespace std */
+_namespace_end(std)
+
+#endif /* _INITIALIZER_LIST_INL_H_ */

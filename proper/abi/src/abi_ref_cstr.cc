@@ -18,7 +18,7 @@ ref_cstr::ref_cstr(const char* s) noexcept
   /* Allocate space for reference counter + str. */
   head_ = static_cast<atom_t*>(ref_cstr_heap.malloc(sizeof(*head_) +
                                                     len + 1U));
-  if (!head_) std::__throw_bad_alloc();
+  if (!head_) _namespace(std)::__throw_bad_alloc();
 
   /* Initialize reference counter. */
   atomic_init(head_, 1U);
@@ -29,7 +29,7 @@ ref_cstr::ref_cstr(const char* s) noexcept
 
 void ref_cstr::reset() noexcept {
   if (head_ == nullptr) return;
-  if (head_->fetch_sub(1U, std::memory_order_release) == 1U)
+  if (head_->fetch_sub(1U, _namespace(std)::memory_order_release) == 1U)
     ref_cstr_heap.free(head_);
   head_ = nullptr;
 }

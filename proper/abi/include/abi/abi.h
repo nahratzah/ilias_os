@@ -28,9 +28,6 @@ namespace __cxxabiv1 {
 # define _USE_INT128	1
 #endif
 
-const unsigned int _ABI_VALUE(bits_per_byte) = 8;
-
-
 typedef unsigned char		_ABI_TYPES(uint8_t);
 typedef unsigned short		_ABI_TYPES(uint16_t);
 typedef unsigned int		_ABI_TYPES(uint32_t);
@@ -85,8 +82,13 @@ typedef _ABI_TYPES(int64_t)	_ABI_TYPES(off_t);
 typedef _ABI_TYPES(int64_t)	_ABI_TYPES(fpos_t);
 
 /* Widest integrals. */
+#if _USE_INT128
+typedef _ABI_TYPES(int128_t)	_ABI_TYPES(intmax_t);
+typedef _ABI_TYPES(uint128_t)	_ABI_TYPES(uintmax_t);
+#else
 typedef _ABI_TYPES(int64_t)	_ABI_TYPES(intmax_t);
 typedef _ABI_TYPES(uint64_t)	_ABI_TYPES(uintmax_t);
+#endif
 
 /* Atomic (wrt signals) type. */
 typedef int			_ABI_TYPES(sig_atomic_t);
@@ -125,7 +127,14 @@ enum _ABI_TYPES(buffer_style) {
 
 struct _ABI_TYPES(mbstate_t)
 {
-	char no_clue[8];	/* XXX figure out what mbstate is supposed to do and implement whatever. */
+	_ABI_TYPES(uint64_t) _data;  // 8 byte of state data
+
+#ifdef __cplusplus
+	bool operator==(const _ABI_TYPES(mbstate_t)& o) const
+	{ return _data == o._data; }
+	bool operator!=(const _ABI_TYPES(mbstate_t)& o) const
+	{ return !(*this == o); }
+#endif
 };
 
 struct _ABI_TYPES(stack32_t)	/* 32-bit register stack. */

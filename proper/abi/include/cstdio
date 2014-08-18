@@ -10,10 +10,6 @@
 # include <string>
 #endif
 
-#if defined(_TEST) && __has_include_next(<cstdio>)
-# include_next <cstdio>
-#endif
-
 _namespace_begin(std)
 _cdecl_begin
 

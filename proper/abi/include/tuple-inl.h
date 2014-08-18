@@ -1,3 +1,8 @@
+#ifndef _TUPLE_INL_H_
+#define _TUPLE_INL_H_
+
+#include <tuple>
+
 _namespace_begin(std)
 
 
@@ -301,3 +306,5 @@ void swap(tuple<Types...>& lhs, tuple<Types...>& rhs)
 
 
 _namespace_end(std)
+
+#endif /* _TUPLE_INL_H_ */

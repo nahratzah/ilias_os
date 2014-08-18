@@ -34,7 +34,6 @@ ios_base::Init::~Init() noexcept {
 }
 
 
-#if __has_include(<locale>)
 locale ios_base::imbue(const locale& l) {
   auto rv = exchange(loc_, l);
   invoke_event_cb(imbue_event);
@@ -44,14 +43,13 @@ locale ios_base::imbue(const locale& l) {
 locale ios_base::getloc() const {
   return loc_;
 }
-#endif /* __has_include(<locale>) */
 
 bool ios_base::sync_with_stdio(bool /*sync*/) {
   return true; // XXX implement
 }
 
 int ios_base::xalloc() {
-  static std::atomic<unsigned int> impl;
+  static atomic<unsigned int> impl;
   const unsigned int rv = impl.fetch_add(1U, memory_order_relaxed);
   if (_predict_false(rv > INT_MAX)) {
     impl.fetch_sub(1, memory_order_relaxed);
@@ -70,7 +68,7 @@ void* pword_fallback;
 long& ios_base::iword(int idx) {
   try {
     if (_predict_false(idx < 0))
-      throw std::invalid_argument("ios_base::iword: idx");
+      throw invalid_argument("ios_base::iword: idx");
     unsigned int sz = idx;
     ++sz;
     if (_predict_false(sz > iarray_.size()))
@@ -88,7 +86,7 @@ long& ios_base::iword(int idx) {
 void*& ios_base::pword(int idx) {
   try {
     if (_predict_false(idx < 0))
-      throw std::invalid_argument("ios_base::pword: idx");
+      throw invalid_argument("ios_base::pword: idx");
     unsigned int sz = idx;
     ++sz;
     if (_predict_false(sz > parray_.size()))
@@ -129,12 +127,13 @@ namespace impl {
 
 basic_ios_derived::~basic_ios_derived() noexcept {}
 
-auto basic_ios_derived::clear_(ios_base::iostate state) ->
+auto basic_ios_derived::clear_(ios_base::iostate state, bool throw_allowed) ->
     ios_base::iostate {
   const auto rv = exchange(iostate_, state);
 
   ios_base::iostate masked = rdstate() & exceptions();
-  if (_predict_false(masked != static_cast<ios_base::iostate>(0))) {
+  if (_predict_false(masked != static_cast<ios_base::iostate>(0)) &&
+      throw_allowed) {
     string msg;
     if ((masked & ios_base::eofbit) != static_cast<ios_base::iostate>(0)) {
       if (!msg.empty()) msg += ", ";
@@ -182,7 +181,7 @@ string iostream_error_category::message(int code) const {
   if (buflen < 0) {
     switch (abi::errno) {
     case _ABI_ENOMEM:
-      throw std::bad_alloc();
+      throw bad_alloc();
     default:
       assert(false);
       throw runtime_error("iostream_error_category::message: printf failed");
@@ -212,6 +211,41 @@ template class basic_ios<char>;
 template class basic_ios<char16_t>;
 template class basic_ios<char32_t>;
 template class basic_ios<wchar_t>;
+
+constexpr ios_base::fmtflags ios_base::boolalpha;
+constexpr ios_base::fmtflags ios_base::dec;
+constexpr ios_base::fmtflags ios_base::fixed;
+constexpr ios_base::fmtflags ios_base::hex;
+constexpr ios_base::fmtflags ios_base::internal;
+constexpr ios_base::fmtflags ios_base::left;
+constexpr ios_base::fmtflags ios_base::oct;
+constexpr ios_base::fmtflags ios_base::right;
+constexpr ios_base::fmtflags ios_base::scientific;
+constexpr ios_base::fmtflags ios_base::showbase;
+constexpr ios_base::fmtflags ios_base::showpoint;
+constexpr ios_base::fmtflags ios_base::showpos;
+constexpr ios_base::fmtflags ios_base::skipws;
+constexpr ios_base::fmtflags ios_base::unitbuf;
+constexpr ios_base::fmtflags ios_base::uppercase;
+constexpr ios_base::fmtflags ios_base::adjustfield;
+constexpr ios_base::fmtflags ios_base::basefield;
+constexpr ios_base::fmtflags ios_base::floatfield;
+
+constexpr ios_base::iostate ios_base::badbit;
+constexpr ios_base::iostate ios_base::eofbit;
+constexpr ios_base::iostate ios_base::failbit;
+constexpr ios_base::iostate ios_base::goodbit;
+
+constexpr ios_base::openmode ios_base::app;
+constexpr ios_base::openmode ios_base::ate;
+constexpr ios_base::openmode ios_base::binary;
+constexpr ios_base::openmode ios_base::in;
+constexpr ios_base::openmode ios_base::out;
+constexpr ios_base::openmode ios_base::trunc;
+
+constexpr ios_base::seekdir ios_base::beg;
+constexpr ios_base::seekdir ios_base::cur;
+constexpr ios_base::seekdir ios_base::end;
 
 
 _namespace_end(std)

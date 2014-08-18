@@ -113,12 +113,11 @@ auto allocate(Alloc& alloc, Size&& n, T&&)
 
 template<typename Alloc, typename Pointer, typename Size>
 auto resize(Alloc& alloc, Pointer p, Size old_n, Size new_n)
-    noexcept(noexcept(alloc.resize(alloc, move(p), move(old_n),
-                      move(new_n)))) ->
+    noexcept(noexcept(alloc.resize(move(p), move(old_n), move(new_n)))) ->
     enable_if_t<
         member_function_check_resize<Alloc, Pointer&&, Size&&, Size&&>::value,
         bool> {
-  return alloc.resize(alloc, move(p), move(old_n), move(new_n));
+  return alloc.resize(move(p), move(old_n), move(new_n));
 }
 
 template<typename Alloc, typename Pointer, typename Size>

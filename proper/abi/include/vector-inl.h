@@ -1,3 +1,8 @@
+#ifndef _VECTOR_INL_H_
+#define _VECTOR_INL_H_
+
+#include <vector>
+
 _namespace_begin(std)
 
 
@@ -574,3 +579,5 @@ void swap(vector<T, Alloc>& a, vector<T, Alloc>& b)
 
 
 _namespace_end(std)
+
+#endif /* _VECTOR_INL_H_ */

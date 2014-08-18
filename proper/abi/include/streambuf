@@ -17,6 +17,11 @@ namespace impl {
 template<typename Char, typename Traits>
 streamsize copybuf(basic_streambuf<Char, Traits>&,
                    basic_streambuf<Char, Traits>&);
+template<typename Char, typename Traits>
+streamsize copybuf(basic_streambuf<Char, Traits>&,
+                   basic_streambuf<Char, Traits>&,
+                   Char);
+
 
 
 } /* namespace std::impl */
@@ -25,6 +30,8 @@ streamsize copybuf(basic_streambuf<Char, Traits>&,
 template<typename Char, typename Traits> class basic_streambuf {
   template friend streamsize impl::copybuf<>(basic_streambuf&,
                                              basic_streambuf&);
+  template friend streamsize impl::copybuf<>(basic_streambuf&,
+                                             basic_streambuf&, Char);
 
  public:
   using char_type = Char;
@@ -35,10 +42,8 @@ template<typename Char, typename Traits> class basic_streambuf {
 
   virtual ~basic_streambuf() = default;
 
-#if __has_include(<locale>)
   locale pubimbue(const locale&);
   locale getloc() const;
-#endif
 
   basic_streambuf* pubsetbuf(char_type*, streamsize);
   pos_type pubseekoff(off_type, ios_base::seekdir,
@@ -78,9 +83,7 @@ template<typename Char, typename Traits> class basic_streambuf {
   void pbump(int);
   void setp(char_type*, char_type*);
 
-#if __has_include(<locale>)
   virtual void imbue(const locale&);
-#endif
 
   virtual basic_streambuf* setbuf(char_type*, streamsize);
   virtual pos_type seekoff(off_type, ios_base::seekdir,
@@ -106,9 +109,7 @@ template<typename Char, typename Traits> class basic_streambuf {
   char_type* pbase_ = nullptr;
   char_type* pptr_ = nullptr;
   char_type* epptr_ = nullptr;
-#if __has_include(<locale>)
   locale loc_;
-#endif
 };
 
 
@@ -128,6 +129,19 @@ extern template streamsize copybuf(basic_streambuf<char32_t>&,
                                    basic_streambuf<char32_t>&);
 extern template streamsize copybuf(basic_streambuf<wchar_t>&,
                                    basic_streambuf<wchar_t>&);
+
+extern template streamsize copybuf(basic_streambuf<char>&,
+                                   basic_streambuf<char>&,
+                                   char);
+extern template streamsize copybuf(basic_streambuf<char16_t>&,
+                                   basic_streambuf<char16_t>&,
+                                   char16_t);
+extern template streamsize copybuf(basic_streambuf<char32_t>&,
+                                   basic_streambuf<char32_t>&,
+                                   char32_t);
+extern template streamsize copybuf(basic_streambuf<wchar_t>&,
+                                   basic_streambuf<wchar_t>&,
+                                   wchar_t);
 
 } /* namespace impl */
 _namespace_end(std)

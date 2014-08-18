@@ -1,5 +1,8 @@
 #include <abi/dynamic_cast.h>
 #include <cstdio>
+#include <cstddef>
+
+using _namespace(std)::ptrdiff_t;
 
 class base {
  public:

@@ -23,7 +23,7 @@ class ref_cstr {
   void reset() noexcept;
 
  private:
-  using atom_t = std::atomic<unsigned int>;
+  using atom_t = _namespace(std)::atomic<unsigned int>;
 
   atom_t* head_ = nullptr;
 };

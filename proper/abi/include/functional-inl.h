@@ -1,3 +1,8 @@
+#ifndef _FUNCTIONAL_INL_H_
+#define _FUNCTIONAL_INL_H_
+
+#include <functional>
+
 _namespace_begin(std)
 
 
@@ -748,7 +753,7 @@ template<typename R, typename... ArgTypes>
 template<typename F>
 auto function<R(ArgTypes...)>::data_type::assign(bool is_special,
                                                  F&& f) -> fn_type {
-  return assign(is_special, forward<F>(f), std::allocator<void>());
+  return assign(is_special, forward<F>(f), allocator<void>());
 }
 
 template<typename R, typename... ArgTypes>
@@ -864,3 +869,5 @@ size_t hash<T*>::operator()(T* p) const {
 
 
 _namespace_end(std)
+
+#endif /* _FUNCTIONAL_INL_H_ */

@@ -1,3 +1,7 @@
+#ifndef _ATOMIC_INL_H_
+#define _ATOMIC_INL_H_
+
+#include <atomic>
 #ifndef _ATOMIC_INLINE
 # define _ATOMIC_INLINE extern inline
 #endif
@@ -386,3 +390,5 @@ template<typename T> void atomic_init(atomic<T>* object,
 _namespace_end(std)
 
 #undef _ATOMIC_INLINE
+
+#endif /* _ATOMIC_INL_H_ */

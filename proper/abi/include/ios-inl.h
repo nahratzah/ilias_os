@@ -1,54 +1,12 @@
+#ifndef _IOS_INL_H_
+#define _IOS_INL_H_
+
+#include <ios>
+#include <streambuf>
+#include <locale_misc/ctype.h>
+
+
 _namespace_begin(std)
-
-
-#define _GENERATE_BITMASK_OPS(_TYPE)					\
-inline constexpr _TYPE operator&(_TYPE x, _TYPE y) noexcept {		\
-  using int_type = typename underlying_type<_TYPE>::type;		\
-									\
-  return static_cast<_TYPE>(						\
-      static_cast<int_type>(x) & static_cast<int_type>(y));		\
-}									\
-									\
-inline constexpr _TYPE operator|(_TYPE x, _TYPE y) noexcept {		\
-  using int_type = typename underlying_type<_TYPE>::type;		\
-									\
-  return static_cast<_TYPE>(						\
-      static_cast<int_type>(x) | static_cast<int_type>(y));		\
-}									\
-									\
-inline constexpr _TYPE operator^(_TYPE x, _TYPE y) noexcept {		\
-  using int_type = typename underlying_type<_TYPE>::type;		\
-									\
-  return static_cast<_TYPE>(						\
-      static_cast<int_type>(x) ^ static_cast<int_type>(y));		\
-}									\
-									\
-inline constexpr _TYPE operator~(_TYPE x) noexcept {			\
-  using int_type = typename underlying_type<_TYPE>::type;		\
-									\
-  return static_cast<_TYPE>(~static_cast<int_type>(x));			\
-}									\
-									\
-inline _TYPE& operator&=(_TYPE& x, _TYPE y) {				\
-  x = x & y;								\
-  return x;								\
-}									\
-									\
-inline _TYPE& operator|=(_TYPE& x, _TYPE y) {				\
-  x = x & y;								\
-  return x;								\
-}									\
-									\
-inline _TYPE& operator^=(_TYPE& x, _TYPE y) {				\
-  x = x & y;								\
-  return x;								\
-}
-
-_GENERATE_BITMASK_OPS(ios_base::fmtflags)
-_GENERATE_BITMASK_OPS(ios_base::iostate)
-_GENERATE_BITMASK_OPS(ios_base::openmode)
-
-#undef _GENERATE_BITMASK_OPS
 
 
 inline auto ios_base::flags() const noexcept -> fmtflags {
@@ -140,6 +98,11 @@ bool operator!=(const fpos<State>& a, const fpos<State>& b)
 
 
 namespace impl {
+
+inline void basic_ios_derived::setstate_nothrow_(ios_base::iostate s)
+    noexcept {
+  clear_(s, false);
+}
 
 inline void basic_ios_derived::move(basic_ios_derived&& rhs) noexcept {
   using _namespace(std)::move;
@@ -253,7 +216,6 @@ auto basic_ios<Char, Traits>::rdbuf(
   return exchange(rdbuf_, sb);
 }
 
-#if __has_include(<locale>)
 template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::imbue(const locale& loc) -> locale {
   auto rv = ios_base::imbue(loc);
@@ -270,17 +232,6 @@ template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::widen(char c) const -> char_type {
   return use_facet<ctype<char_type>>(getloc()).widen(c);
 }
-#else /* __has_include(<locale>) */
-template<typename Char, typename Traits>
-auto basic_ios<Char, Traits>::narrow(char_type c, char dfault) const -> char {
-  return ((c & 0x7f) == c ? c : dfault);
-}
-
-template<typename Char, typename Traits>
-auto basic_ios<Char, Traits>::widen(char c) const -> char_type {
-  return c;
-}
-#endif /* __has_include(<locale>) ... else */
 
 template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::fill() const noexcept -> char_type {
@@ -313,9 +264,7 @@ auto basic_ios<Char, Traits>::copyfmt(const basic_ios& rhs) -> basic_ios& {
   fill(rhs.fill());
   this->parray_ = move(parray);
   this->iarray_ = move(iarray);
-#if __has_include(<locale>)
   this->loc_ = move(rhs.loc_);
-#endif
 
   /* Notify events that the stream state has been copied. */
   this->invoke_event_cb(copyfmt_event);
@@ -330,9 +279,7 @@ template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::move(basic_ios& rhs) -> void {
   using _namespace(std)::move;
 
-#if __has_include(<locale>)
   loc_ = move(rhs.loc_);
-#endif
   precision_ = move(rhs.precision_);
   width_ = move(rhs.width_);
   fmtflags_ = move(rhs.fmtflags_);
@@ -358,9 +305,7 @@ template<typename Char, typename Traits>
 auto basic_ios<Char, Traits>::swap(basic_ios& rhs) noexcept -> void {
   using _namespace(std)::swap;
 
-#if __has_include(<locale>)
   swap(loc_, rhs.loc_);
-#endif
   swap(precision_, rhs.precision_);
   swap(width_, rhs.width_);
   swap(fmtflags_, rhs.fmtflags_);
@@ -493,3 +438,5 @@ inline error_condition make_error_condition(io_errc e) noexcept {
 
 
 _namespace_end(std)
+
+#endif /* _IOS_INL_H_ */

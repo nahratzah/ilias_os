@@ -1,0 +1,208 @@
+#ifndef _ISTREAM_
+#define _ISTREAM_
+
+#include <cdecl.h>
+#include <ios>
+#include <ostream>
+#include <cstdint>
+
+_namespace_begin(std)
+
+
+template<typename Char, typename Traits>
+basic_istream<Char, Traits>& ws(basic_istream<Char, Traits>&);
+
+template<typename Char, typename Traits>
+basic_istream<Char, Traits>& operator>> (basic_istream<Char, Traits>&, Char&);
+template<typename Char, typename Traits>
+basic_istream<Char, Traits>& operator>> (basic_istream<Char, Traits>&, Char*);
+
+
+template<typename Char, typename Traits>
+class basic_istream
+: public virtual basic_ios<Char, Traits>
+{
+  template<typename C, typename T> friend basic_istream<C, T>& ws(
+      basic_istream<C, T>&);
+  template<typename C, typename T> friend basic_istream<C, T>& operator>> (
+      basic_istream<C, T>&, C&);
+  template<typename C, typename T> friend basic_istream<C, T>& operator>> (
+      basic_istream<C, T>&, C*);
+
+ public:
+  using char_type = typename basic_ios<Char, Traits>::char_type;
+  using traits_type = typename basic_ios<Char, Traits>::traits_type;
+  using int_type = typename basic_ios<Char, Traits>::int_type;
+  using pos_type = typename basic_ios<Char, Traits>::pos_type;
+  using off_type = typename basic_ios<Char, Traits>::off_type;
+
+  explicit basic_istream(basic_streambuf<char_type, traits_type>*);
+  ~basic_istream() noexcept override;
+
+  class sentry;
+
+  basic_istream& operator>> (basic_istream& (*)(basic_istream&));
+  basic_istream& operator>> (
+      basic_ios<Char, Traits>& (*)(basic_ios<Char, Traits>&));
+  basic_istream& operator>> (ios_base& (*)(ios_base&));
+
+  basic_istream& operator>> (bool&);
+  basic_istream& operator>> (short&);
+  basic_istream& operator>> (unsigned short&);
+  basic_istream& operator>> (int&);
+  basic_istream& operator>> (unsigned int&);
+  basic_istream& operator>> (long&);
+  basic_istream& operator>> (unsigned long&);
+  basic_istream& operator>> (long long&);
+  basic_istream& operator>> (unsigned long long&);
+#if _USE_INT128
+  basic_istream& operator>> (int128_t&);
+  basic_istream& operator>> (uint128_t&);
+#endif
+  basic_istream& operator>> (float&);
+  basic_istream& operator>> (double&);
+  basic_istream& operator>> (long double&);
+  basic_istream& operator>> (void*&);
+  basic_istream& operator>> (basic_streambuf<char_type, traits_type>*);
+
+  streamsize gcount() const;
+  int_type get();
+  basic_istream& get(char_type&);
+  basic_istream& get(char_type*, streamsize);
+  basic_istream& get(char_type*, streamsize, char_type);
+  basic_istream& get(basic_streambuf<char_type, traits_type>&);
+  basic_istream& get(basic_streambuf<char_type, traits_type>&, char_type);
+
+  basic_istream& getline(char_type*, streamsize);
+  basic_istream& getline(char_type*, streamsize, char_type);
+
+  basic_istream& ignore(streamsize = 1, int_type = traits_type::eof());
+  int_type peek();
+  basic_istream& read(char_type*, streamsize);
+  streamsize readsome(char_type*, streamsize);
+
+  basic_istream& putback(char_type);
+  basic_istream& ungetc();
+  int sync();
+
+  pos_type tellg();
+  basic_istream& seekg(pos_type);
+  basic_istream& seekg(off_type, ios_base::seekdir);
+
+ protected:
+  basic_istream(basic_istream&&);
+
+  basic_istream& operator=(basic_istream&&);
+  void swap(basic_istream&);
+
+ private:
+  template<typename Fn, typename... Args>
+  basic_istream& op_rshift_(Fn fn, Args&&... args);
+  template<typename Fn, typename... Args>
+  basic_istream& unformatted_(Fn fn, Args&&... args);
+
+  streamsize gcount_ = 0;
+};
+
+
+template<typename Traits>
+basic_istream<char, Traits>& operator>> (basic_istream<char, Traits>&,
+                                         unsigned char&);
+template<typename Traits>
+basic_istream<char, Traits>& operator>> (basic_istream<char, Traits>&,
+                                         signed char&);
+template<typename Traits>
+basic_istream<char, Traits>& operator>> (basic_istream<char, Traits>&,
+                                         unsigned char*);
+template<typename Traits>
+basic_istream<char, Traits>& operator>> (basic_istream<char, Traits>&,
+                                         signed char*);
+
+template<typename Char, typename Traits, typename T>
+basic_istream<Char, Traits>& operator>> (basic_istream<Char, Traits>&&, T&);
+
+
+template<typename Char, typename Traits>
+class basic_istream<Char, Traits>::sentry {
+ public:
+  explicit sentry(basic_istream&, bool = false);
+  ~sentry() noexcept = default;
+  explicit operator bool() const noexcept;
+
+  sentry(const sentry&) = delete;
+  sentry& operator=(const sentry&) = delete;
+
+ private:
+  basic_istream& is_;
+  bool ok_;
+};
+
+
+template<typename Char, typename Traits>
+class basic_iostream
+: public basic_istream<Char, Traits>,
+  public basic_ostream<Char, Traits>
+{
+ public:
+  using char_type = Char;
+  using traits_type = Traits;
+  using int_type = typename traits_type::int_type;
+  using pos_type = typename traits_type::pos_type;
+  using off_type = typename traits_type::off_type;
+
+  explicit basic_iostream(basic_streambuf<Char, Traits>*);
+  ~basic_iostream() noexcept override = default;
+
+ protected:
+  basic_iostream(basic_iostream&&);
+  basic_iostream& operator=(basic_iostream&&);
+  void swap(basic_iostream&);
+};
+
+
+using istream = basic_istream<char>;
+using wistream = basic_istream<wchar_t>;
+
+using iostream = basic_iostream<char>;
+using wiostream = basic_iostream<wchar_t>;
+
+
+extern template class basic_istream<char>;
+extern template class basic_istream<char16_t>;
+extern template class basic_istream<char32_t>;
+extern template class basic_istream<wchar_t>;
+
+extern template basic_istream<char>& operator>> (basic_istream<char>&,
+                                                 char&);
+extern template basic_istream<char16_t>& operator>> (basic_istream<char16_t>&,
+                                                     char16_t&);
+extern template basic_istream<char32_t>& operator>> (basic_istream<char32_t>&,
+                                                     char32_t&);
+extern template basic_istream<wchar_t>& operator>> (basic_istream<wchar_t>&,
+                                                    wchar_t&);
+
+extern template basic_istream<char>& operator>> (basic_istream<char>&,
+                                                 char*);
+extern template basic_istream<char16_t>& operator>> (basic_istream<char16_t>&,
+                                                     char16_t*);
+extern template basic_istream<char32_t>& operator>> (basic_istream<char32_t>&,
+                                                     char32_t*);
+extern template basic_istream<wchar_t>& operator>> (basic_istream<wchar_t>&,
+                                                    wchar_t*);
+
+extern template basic_istream<char>& ws(basic_istream<char>&);
+extern template basic_istream<char16_t>& ws(basic_istream<char16_t>&);
+extern template basic_istream<char32_t>& ws(basic_istream<char32_t>&);
+extern template basic_istream<wchar_t>& ws(basic_istream<wchar_t>&);
+
+extern template class basic_iostream<char>;
+extern template class basic_iostream<char16_t>;
+extern template class basic_iostream<char32_t>;
+extern template class basic_iostream<wchar_t>;
+
+
+_namespace_end(std)
+
+#include <istream-inl.h>
+
+#endif /* _ISTREAM_ */

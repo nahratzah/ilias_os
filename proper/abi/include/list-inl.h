@@ -19,27 +19,6 @@ list_elem<T, Tag>::list_elem(Args&&... args)
 
 
 template<typename T, typename A>
-struct list<T, A>::deleter {
-  using elem = typename list<T, A>::elem;
-  using allocator_type = typename alloc_base::allocator_type;
-  using allocator_traits = _namespace(std)::allocator_traits<allocator_type>;
-
-  list<T, A>* owner = nullptr;
-  bool destroy = false;
-
-  deleter(list<T, A>& owner, bool destroy) noexcept
-  : owner(&owner),
-    destroy(destroy)
-  {}
-
-  void operator()(elem* e) const noexcept {
-    if (destroy) allocator_traits::destroy(owner->get_allocator_(), e);
-    allocator_traits::deallocate(owner->get_allocator_(), e, 1);
-  }
-};
-
-
-template<typename T, typename A>
 list<T, A>::list(const allocator_type& alloc)
 : alloc_base(alloc)
 {}
@@ -286,7 +265,9 @@ auto list<T, A>::back() const -> const_reference {
 template<typename T, typename A>
 template<typename... Args>
 auto list<T, A>::emplace_front(Args&&... args) -> void {
-  auto ptr = construct_(forward<Args>(args)...);
+  auto ptr = impl::new_alloc_deleter<T>(this->get_allocator_(),
+                                        (empty() ? this : &front()),
+                                        forward<Args>(args)...);
   data_.link_front(ptr.release());
   ++size_;
 }
@@ -303,16 +284,17 @@ auto list<T, A>::push_front(value_type&& v) -> void {
 
 template<typename T, typename A>
 auto list<T, A>::pop_front() -> void {
-  auto ptr = unique_ptr<elem, deleter>(
-      data_.unlink_front(),
-      deleter(*this, true));
+  auto ptr = impl::existing_alloc_deleter(this->get_allocator_(),
+                                          data_.unlink_front());
   if (ptr) --size_;
 }
 
 template<typename T, typename A>
 template<typename... Args>
 auto list<T, A>::emplace_back(Args&&... args) -> void {
-  auto ptr = construct_(forward<Args>(args)...);
+  auto ptr = impl::new_alloc_deleter<T>(this->get_allocator_(),
+                                        (empty() ? this : &back()),
+                                        forward<Args>(args)...);
   data_.link_back(ptr.release());
   ++size_;
 }
@@ -329,9 +311,8 @@ auto list<T, A>::push_back(value_type&& v) -> void {
 
 template<typename T, typename A>
 auto list<T, A>::pop_back() -> void {
-  auto ptr = unique_ptr<elem, deleter>(
-      data_.unlink_back(),
-      deleter(*this, true));
+  auto ptr = impl::existing_alloc_deleter(this->get_allocator_(),
+                                          data_.unlink_back());
   if (ptr) --size_;
 }
 
@@ -339,7 +320,10 @@ auto list<T, A>::pop_back() -> void {
 template<typename T, typename A>
 template<typename... Args>
 auto list<T, A>::emplace(const_iterator i, Args&&... args) -> iterator {
-  auto ptr = construct_(forward<Args>(args)...);
+  auto hint = (i != end() ? &*i : (empty() ? this : &back()));
+  auto ptr = impl::new_alloc_deleter<T>(this->get_allocator_(),
+                                        hint,
+                                        forward<Args>(args)...);
   ++size_;
   return iterator(data_.link(i.impl_, ptr.release()));
 }
@@ -360,20 +344,27 @@ auto list<T, A>::insert(const_iterator i, size_type n, const_reference v) ->
   typename data_type::iterator i_ = data_.nonconst_iterator(i.impl_);
 
   /* Use temporary storage to create all elements. */
-  auto array = impl::heap_array<unique_ptr<elem, deleter>>(n);
-  generate_n(back_inserter(array), n,
-             [this, &v]() { return this->construct_(v); });
+  auto hint = (i != end() ? &*i : (empty() ? this : &back()));
+  auto gen_fn = [this, &v, hint&]() {
+                  auto rv = impl::new_alloc_deleter<T>(this->get_allocator_(),
+                                                       hint, v);
+                  hint = rv.get();
+                  return rv;
+                };
+  using gen_t = impl::alloc_deleter_ptr<elem,
+                                        typename alloc_base::allocator_type>;
+  auto array = impl::heap_array<gen_t>(n);
+  generate_n(back_inserter(array), n, move(gen_fn));
 
   /* Now that all elements have been constructed, link them in. */
   iterator rv = iterator(i_);
   bool first = true;
   for (auto& ptr : array) {
     i_ = data_.link(i_, ptr.release());
-    ++size_;
-
     if (exchange(first, false)) rv = iterator(i_);
     ++i_;
   }
+  size_ += array.size();
   return rv;
 }
 
@@ -389,22 +380,28 @@ auto list<T, A>::insert(const_iterator i, InputIterator b, InputIterator e) ->
   typename data_type::iterator i_ = data_.nonconst_iterator(i.impl_);
 
   /* Use temporary storage to create all elements. */
-  auto array = impl::heap_array<unique_ptr<elem, deleter>>(n);
-  transform(b, e, back_inserter(array),
-            [this](typename iterator_traits<InputIterator>::value_type v) {
-              return this->construct_(move(v));
-            });
+  auto hint = (i != end() ? &*i : (empty() ? this : &back()));
+  auto gen_fn = [this, &v, hint&]() {
+                  auto rv = impl::new_alloc_deleter<T>(this->get_allocator_(),
+                                                       hint, move(v));
+                  hint = rv.get();
+                  return rv;
+                };
+  using gen_t = impl::alloc_deleter_ptr<elem,
+                                        typename alloc_base::allocator_type>;
+  using ii_value_type = typename iterator_traits<InputIterator>::value_type;
+  auto array = impl::heap_array<gen_t>(n);
+  transform(b, e, back_inserter(array), move(gen_fn));
 
   /* Now that all elements have been constructed, link them in. */
   iterator rv = iterator(i_);
   bool first = true;
   for (auto& ptr : array) {
     i_ = data_.link(i_, ptr.release());
-    ++size_;
-
     if (exchange(first, false)) rv = iterator(i_);
     ++i_;
   }
+  size_ += array.size();
   return rv;
 }
 
@@ -419,12 +416,18 @@ auto list<T, A>::insert(const_iterator i, InputIterator b, InputIterator e) ->
   typename data_type::iterator i_ = data_.nonconst_iterator(i.impl_);
 
   /* Use temporary storage to create all elements. */
-  auto array = vector<unique_ptr<elem, deleter>,
-                      temporary_buffer_allocator<unique_ptr<elem, deleter>>>();
-  transform(b, e, back_inserter(array),
-            [this](typename iterator_traits<InputIterator>::value_type v) {
-              return this->construct(move(v));
-            });
+  auto hint = (i != end() ? &*i : (empty() ? this : &back()));
+  auto gen_fn = [this, &v, hint&]() {
+                  auto rv = impl::new_alloc_deleter<T>(this->get_allocator_(),
+                                                       hint, move(v));
+                  hint = rv.get();
+                  return rv;
+                };
+  using gen_t = impl::alloc_deleter_ptr<elem,
+                                        typename alloc_base::allocator_type>;
+  using ii_value_type = typename iterator_traits<InputIterator>::value_type;
+  auto array = vector<gen_t, temporary_buffer_allocator<gen_t>>();
+  transform(b, e, back_inserter(array), move(gen_fn));
 
   /* Now that all elements have been constructed, link them in. */
   iterator rv = iterator(i_);
@@ -450,9 +453,8 @@ auto list<T, A>::erase(const_iterator i) -> iterator {
   typename data_type::iterator i_ = data_.nonconst_iterator(i.impl_);
   iterator rv = iterator(next(i_));
 
-  auto ptr = unique_ptr<elem, deleter>(
-      data_.unlink(i_),
-      deleter(*this, true));
+  auto ptr = impl::existing_alloc_deleter(this->get_allocator_(),
+                                          data_.unlink(i_));
   if (ptr) --size_;
   return rv;
 }
@@ -652,20 +654,6 @@ auto list<T, A>::sort(Compare compare) -> void {
 template<typename T, typename A>
 auto list<T, A>::reverse() noexcept -> void {
   data_.reverse();
-}
-
-template<typename T, typename A>
-template<typename... Args>
-auto list<T, A>::construct_(Args&&... args) -> unique_ptr<elem, deleter> {
-  using alloc_traits = allocator_traits<typename alloc_base::allocator_type>;
-
-  auto ptr = unique_ptr<elem, deleter>(
-      alloc_traits::allocate(this->get_allocator_(), 1, this),
-      deleter(*this, false));
-  alloc_traits::construct(this->get_allocator_(), ptr.get(),
-                          forward<Args>(args)...);
-  ptr.get_deleter().destroy = true;
-  return ptr;
 }
 
 

@@ -3,6 +3,7 @@
 
 #ifndef __cplusplus
 typedef int Bool;
+typedef Bool bool;
 #define true	(1)
 #define false	(0)
 #else

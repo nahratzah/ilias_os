@@ -26,7 +26,7 @@ _namespace(ilias)::global_stats_group emergency_group{
 };
 #endif
 
-using thr_emergency_use_t = std::atomic<unsigned int>;
+using thr_emergency_use_t = _namespace(std)::atomic<unsigned int>;
 thread_local thr_emergency_use_t thr_emergency_use;
 
 /* # threads that can use emergency buffers. */
@@ -45,14 +45,14 @@ class emergency_slot {
 
  private:
   emergency_space space_;
-  std::atomic<thr_emergency_use_t*> user_;
+  _namespace(std)::atomic<thr_emergency_use_t*> user_;
 };
 
 void* emergency_slot::claim() noexcept {
   thr_emergency_use_t* expect = nullptr;
   if (!user_.compare_exchange_strong(expect, &thr_emergency_use,
-                                     std::memory_order_acquire,
-                                     std::memory_order_relaxed))
+                                     _namespace(std)::memory_order_acquire,
+                                     _namespace(std)::memory_order_relaxed))
     return nullptr;
 
 #if __has_include(<ilias/stats.h>)
@@ -62,7 +62,7 @@ void* emergency_slot::claim() noexcept {
   claim_counter.add();
 #endif
 
-  bzero(&space_, space_size);
+  _namespace(std)::bzero(&space_, space_size);
   return &space_;
 }
 
@@ -76,9 +76,9 @@ bool emergency_slot::release(void* p) noexcept {
   claim_counter.add();
 #endif
 
-  thr_emergency_use_t* user = user_.exchange(nullptr,
-                                             std::memory_order_release);
-  if (user->fetch_sub(1U, std::memory_order_release) == 1U)
+  thr_emergency_use_t* user =
+      user_.exchange(nullptr, _namespace(std)::memory_order_release);
+  if (user->fetch_sub(1U, _namespace(std)::memory_order_release) == 1U)
     emergency_use_threads.increment();
   return true;
 }
@@ -91,7 +91,8 @@ _namespace(std)::array<emergency_slot, EMERGENCY_SZ> emergency;
 void* acquire_emergency_space(size_t sz) noexcept {
   if (sz > emergency_slot::space_size) return nullptr;
 
-  auto use = thr_emergency_use.fetch_add(1U, std::memory_order_acquire);
+  auto use =
+      thr_emergency_use.fetch_add(1U, _namespace(std)::memory_order_acquire);
   if (use <= 4U) {
     if (use == 0U) emergency_use_threads.decrement();  // May block.
     for (auto& e : emergency) {
@@ -100,7 +101,8 @@ void* acquire_emergency_space(size_t sz) noexcept {
     }
   }
 
-  if (thr_emergency_use.fetch_sub(1U, std::memory_order_release) == 1U)
+  if (thr_emergency_use.fetch_sub(1U,
+                                  _namespace(std)::memory_order_release) == 1U)
     emergency_use_threads.increment();
   return nullptr;
 }
@@ -176,7 +178,7 @@ void* __cxa_allocate_exception(size_t throw_sz) noexcept {
      * This point is reached if the current thread is using too many exceptions
      * (max allowed by abi is 4) or if the emergency storage is exhausted.
      */
-    std::terminate();
+    _namespace(std)::terminate();
   }
 
   /* Return address where exception is to be created. */
@@ -187,7 +189,7 @@ void __cxa_free_exception(void* exc_addr) noexcept {
   __cxa_exception* next = nullptr;
   __cxa_exception* exc = exc2hdr(exc_addr);
   do {
-    if (exc->refcount.load(std::memory_order_acquire) != 0U) {
+    if (exc->refcount.load(_namespace(std)::memory_order_acquire) != 0U) {
       panic("%s: %s", __func__, "exception reference count != 0");
       __builtin_unreachable();
     }
@@ -212,7 +214,7 @@ void __cxa_free_exception(void* exc_addr) noexcept {
   } while ((exc = next) != nullptr);
 }
 
-void __cxa_throw(void* exc_addr, const std::type_info* ti,
+void __cxa_throw(void* exc_addr, const _namespace(std)::type_info* ti,
                  void (*destructor)(void*)) noexcept {
 #if __has_include(<ilias/stats.h>)
   static _namespace(ilias)::stats_counter throw_counter{ eh_group, "throw" };
@@ -229,9 +231,9 @@ void __cxa_throw(void* exc_addr, const std::type_info* ti,
 
   exc->exceptionType = ti;
   exc->exceptionDestructor = destructor;
-  exc->unexpectedHandler = std::get_unexpected();
-  std::terminate_handler terminate = exc->terminateHandler =
-                                     std::get_terminate();
+  exc->unexpectedHandler = _namespace(std)::get_unexpected();
+  _namespace(std)::terminate_handler terminate = exc->terminateHandler =
+                                     _namespace(std)::get_terminate();
 
   exc->unwindHeader.exception_class = _Unwind_Exception::GNU_CXX();
 
@@ -281,7 +283,7 @@ bool __cxa_uncaught_exception() noexcept {
 
 void __cxa_rethrow_primary_exception(void* exc_addr) {
   if (_predict_false(!exc_addr)) {
-    std::terminate();
+    _namespace(std)::terminate();
     __builtin_unreachable();
   }
   /* Resolve primary exception. */
@@ -291,9 +293,9 @@ void __cxa_rethrow_primary_exception(void* exc_addr) {
   __cxa_exception* rv = exc2hdr(__cxa_allocate_exception(0));
   __cxa_exception::acquire(*rv);
 
-  std::terminate_handler terminate = rv->terminateHandler =
-                                     std::get_terminate();
-  rv->unexpectedHandler = std::get_unexpected();
+  _namespace(std)::terminate_handler terminate = rv->terminateHandler =
+                                     _namespace(std)::get_terminate();
+  rv->unexpectedHandler = _namespace(std)::get_unexpected();
   rv->nextException = exc;
   __cxa_exception::acquire(*exc);  // Because of rv->nextException above.
 
@@ -347,11 +349,11 @@ void* __cxa_current_primary_exception() noexcept {
 }
 
 void __cxa_bad_cast() {
-  throw std::bad_cast();
+  throw _namespace(std)::bad_cast();
 }
 
 void __cxa_bad_typeid() {
-  throw std::bad_typeid();
+  throw _namespace(std)::bad_typeid();
 }
 
 _Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action actions,

@@ -25,9 +25,9 @@ constexpr cons<Nitems, cons_elem<I, Type, B>...>::cons(
     enable_if_t<sizeof...(U) == Nitems, piecewise_construct_t>,
     U&&... v)
     noexcept(cons_and(is_nothrow_constructible<cons_elem<I, Type, B>,
-                        decltype(impl::get_value<I>(std::forward<U>(v)...))
+                        decltype(impl::get_value<I>(forward<U>(v)...))
                         >::value...))
-: cons_elem<I, Type, B>(impl::get_value<I>(std::forward<U>(v)...))...
+: cons_elem<I, Type, B>(impl::get_value<I>(forward<U>(v)...))...
 {}
 
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
