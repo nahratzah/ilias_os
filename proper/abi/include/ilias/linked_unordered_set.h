@@ -12,9 +12,7 @@
 _namespace_begin(ilias)
 namespace impl {
 
-
 template<class T> struct linked_unordered_set_tag {};
-
 
 } /* namespace ilias::impl */
 
@@ -28,7 +26,6 @@ template<typename T, class Tag = void,
          typename Allocator = _namespace(std)::allocator<void>>
 class linked_unordered_set {
  private:
-  // XXX: change to singly linked list (once that is implemented)
   using list_type = linked_list<T, impl::linked_unordered_set_tag<T>>;
 
  public:
@@ -61,9 +58,15 @@ class linked_unordered_set {
                     size_t,
                     typename bucket_set::size_type>;
 
-  linked_unordered_set();
+  explicit linked_unordered_set(bucket_size_type = 0,
+                                hasher = hasher(), key_equal = key_equal(),
+                                const allocator_type& = allocator_type());
+  linked_unordered_set(linked_unordered_set&&) noexcept;
+  linked_unordered_set& operator=(linked_unordered_set&&) noexcept;
+  linked_unordered_set(const linked_unordered_set&) = delete;
+  linked_unordered_set& operator=(const linked_unordered_set&) = delete;
 
-  _namespace(std)::pair<iterator, bool> link(pointer, bool);
+  _namespace(std)::pair<iterator, bool> link(pointer, bool, bool = false);
   pointer unlink(const_iterator) noexcept;
   pointer unlink(const_pointer) noexcept;
 
@@ -98,11 +101,17 @@ class linked_unordered_set {
   const_iterator end(bucket_size_type) const noxcept;
   const_iterator cend(bucket_size_type) const noxcept;
 
+  void swap(linked_unordered_set&) noexcept;
+
  private:
   list_type list_;
   tuple<hasher, key_equal, bucket_set, float> params_;
   size_type size_ = 0;
 };
+
+template<typename T, class Tag, typename Hash, typename Pred, typename A>
+void swap(linked_unordered_set<T, Tag, Hash, Pred, A>&,
+          linked_unordered_set<T, Tag, Hash, Pred, A>&) noexcept;
 
 
 _namespace_end(ilias)
