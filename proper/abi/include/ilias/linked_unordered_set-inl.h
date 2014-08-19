@@ -3,19 +3,32 @@
 
 #include <ilias/linked_unordered_set.h>
 #include <new>
+#include <limits>
+#include <abi/misc_int.h>
+#include <cmath>
+#include <utility>
 
 _namespace_begin(ilias)
 
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 linked_unordered_set<T, Tag, Hash, Pred, A>::linked_unordered_set(
-    bucket_size_type n, hasher h, key_equal eq, const allocator_type& a)
+    bucket_size_type n, const hasher& h, const key_equal& eq,
+    const allocator_type& a)
 : params_(h, eq, bucket_set(a), 1.0f)
 {
+  using _namespace(std)::get;
+
   if (n < 0) n = 0;
   auto& buckets_ = get<2>(params_);
   buckets_.resize(n, end());
 }
+
+template<typename T, class Tag, typename Hash, typename Pred, typename A>
+linked_unordered_set<T, Tag, Hash, Pred, A>::linked_unordered_set(
+    const allocator_type& a)
+: linked_unordered_set(0, hasher(), key_equal(), a)
+{}
 
 /*
  * Move constructor.
@@ -26,12 +39,15 @@ linked_unordered_set<T, Tag, Hash, Pred, A>::linked_unordered_set(
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 linked_unordered_set<T, Tag, Hash, Pred, A>::linked_unordered_set(
     linked_unordered_set&& rhs) noexcept
-: list_(move(rhs.list_)),
-  params_(move(rhs.params_)),
+: list_(_namespace(std)::move(rhs.list_)),
+  params_(_namespace(std)::move(rhs.params_)),
   size_(_namespace(std)::exchange(rhs.size_, 0))
 {
-  for (auto i = list_.rbegin();
-       i != list_.rend() && *i == rhs.list_.end();
+  using _namespace(std)::get;
+
+  auto& buckets_ = get<2>(params_);
+  for (auto i = buckets_.rbegin();
+       i != buckets_.rend() && *i == rhs.list_.end();
        ++i)
     *i = list_.end();
 }
@@ -39,13 +55,9 @@ linked_unordered_set<T, Tag, Hash, Pred, A>::linked_unordered_set(
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::operator=(
     linked_unordered_set&& rhs) noexcept -> linked_unordered_set& {
-  linked_unordered_set(move(rhs)).swap(*this);
+  linked_unordered_set(_namespace(std)::move(rhs)).swap(*this);
   return *this;
 }
-
-template<typename T, class Tag, typename Hash, typename Pred, typename A>
-linked_unordered_set<T, Tag, Hash, Pred, A>::linked_unordered_set(
-    linked_unordered_set&& rhs) {
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::link(pointer p,
@@ -55,6 +67,7 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::link(pointer p,
   using abi::umul_overflow;
   using _namespace(std)::next;
   using _namespace(std)::bad_alloc;
+  using _namespace(std)::get;
 
   assert(p != nullptr);
   auto& key_eq_ = get<1>(params_);
@@ -100,6 +113,7 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::link(pointer p,
   /* Lookup bucket and insertion position. */
   bucket_size_type idx = bucket(*p);
   const auto bucket_end = end(idx);
+  iterator insert_succ;
 
   /* Prevent duplicate insertion. */
   if (!allow_dup) {
@@ -107,6 +121,10 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::link(pointer p,
       if (key_eq_(*i, *p))
         return { i, false };
     }
+
+    insert_succ = bucket_end;
+  } else {
+    insert_succ = upper_bound(*p);
   }
 
   /*
@@ -115,13 +133,12 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::link(pointer p,
   auto op = [&]() noexcept -> _namespace(std)::pair<iterator, bool> {
               /* Link element into bucket set. */
               typename bucket_set::iterator bucket = buckets_.begin() + idx;
-              const auto p_iter = list_.link(bucket_end, p);
+              const auto p_iter = list_.link(insert_succ, p);
               ++size_;
 
               /* Update iterators into other buckets. */
-              if (*bucket == bucket_end) *bucket = p_iter;
-              for (auto i = next(bucket);
-                   i != buckets_.end() && *i == bucket_end;
+              for (typename bucket_set::reverse_iterator i = bucket;
+                   i != buckets_.rend() && key_eq_(*i, insert_succ);
                    ++i)
                 *i = p_iter;
               return { p_iter, true };
@@ -134,6 +151,7 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink(const_iterator p_arg)
     noexcept -> pointer {
   using _namespace(std)::next;
   using _namespace(std)::prev;
+  using _namespace(std)::get;
 
   if (_predict_false(bucket_count() == 0)) {
     --size_;
@@ -178,6 +196,7 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink(const_pointer p)
     noexcept -> pointer {
   using _namespace(std)::next;
   using _namespace(std)::prev;
+  using _namespace(std)::get;
 
   if (_predict_false(bucket_count() == 0)) {
     --size_;
@@ -216,8 +235,32 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink(const_pointer p)
 }
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
+auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink_all()
+    noexcept -> void {
+  unlink_all([](pointer) -> void {});
+}
+
+template<typename T, class Tag, typename Hash, typename Pred, typename A>
+template<typename Visitor>
+auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink_all(Visitor visitor)
+    noexcept -> void {
+  using _namespace(std)::get;
+  using _namespace(std)::fill;
+
+  /* Clear hash buckets. */
+  auto& buckets_ = get<2>(params_);
+  fill(buckets_.begin(), buckets_.end(), end());
+
+  /* Unlink all elements. */
+  while (!list_.empty())
+    visitor(list_.unlink_front());
+}
+
+template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::bucket_count()
     const noexcept -> bucket_size_type {
+  using _namespace(std)::get;
+
   auto& buckets_ = get<2>(params_);
   return buckets_.size();
 }
@@ -225,6 +268,8 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::bucket_count()
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::max_bucket_count()
     const noexcept -> bucket_size_type {
+  using _namespace(std)::get;
+
   auto& buckets_ = get<2>(params_);
   auto max = _namespace(std)::numeric_limits<bucket_size_type>::max();
   auto sz = buckets_.max_size();
@@ -246,7 +291,7 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::size()
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::max_size()
     const noexcept -> size_type {
-  return numeric_limits<size_type>::max();
+  return _namespace(std)::numeric_limits<size_type>::max();
 }
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
@@ -259,6 +304,8 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::load_factor()
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::max_load_factor()
     const noexcept -> float {
+  using _namespace(std)::get;
+
   auto& load_factor_ = get<3>(params_);
   return load_factor_;
 }
@@ -267,6 +314,8 @@ template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::max_load_factor(float lf) ->
     void {
   using _namespace(std)::ceil;
+  using _namespace(std)::get;
+  using _namespace(std)::numeric_limits;
 
   assert(lf > 0.0f);
   auto& load_factor_ = get<3>(params_);
@@ -286,6 +335,7 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::rehash(
     bucket_size_type n) -> void {
   using _namespace(std)::ceil;
   using _namespace(std)::next;
+  using _namespace(std)::get;
 
   auto& buckets_ = get<2>(params_);
   const auto buckets_for_lf = max(ceil(size() / max_load_factor()), 1);
@@ -327,7 +377,9 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::reserve(
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 template<typename K>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::bucket(const K& k)
-    const noexcept -> bucket_size_type {
+    const -> bucket_size_type {
+  using _namespace(std)::get;
+
   if (_predict_false(bucket_count() == 0)) return 0;
   return get<0>(params_)(k) % bucket_count();
 }
@@ -335,18 +387,24 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::bucket(const K& k)
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::hash_function()
     const -> hasher {
+  using _namespace(std)::get;
+
   return get<0>(params_);
 }
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::key_eq()
     const -> key_equal {
+  using _namespace(std)::get;
+
   return get<1>(params_);
 }
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::get_allocator()
     const -> allocator_type {
+  using _namespace(std)::get;
+
   return get<2>(params_).get_allocator();
 }
 
@@ -389,6 +447,8 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::cend() const noexcept ->
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::begin(bucket_size_type idx)
     noexcept -> iterator {
+  using _namespace(std)::get;
+
   if (_predict_false(bucket_count() == 0 && idx == 0)) return begin();
 
   assert(idx >= 0 && idx < bucket_count());
@@ -400,6 +460,8 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::begin(bucket_size_type idx)
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::begin(bucket_size_type idx)
     const noexcept -> const_iterator {
+  using _namespace(std)::get;
+
   if (_predict_false(bucket_count() == 0 && idx == 0)) return begin();
 
   assert(idx >= 0 && idx < bucket_count());
@@ -415,8 +477,10 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::cbegin(bucket_size_type idx)
 }
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
-auto linked_unordered_set<T, Tag, Hash, Pred, A>::begin(bucket_size_type idx)
+auto linked_unordered_set<T, Tag, Hash, Pred, A>::end(bucket_size_type idx)
     noexcept -> iterator {
+  using _namespace(std)::get;
+
   if (_predict_false(bucket_count() == 0 && idx == 0)) return end();
 
   assert(idx >= 0 && idx < bucket_count());
@@ -427,8 +491,10 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::begin(bucket_size_type idx)
 }
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
-auto linked_unordered_set<T, Tag, Hash, Pred, A>::begin(bucket_size_type idx)
+auto linked_unordered_set<T, Tag, Hash, Pred, A>::end(bucket_size_type idx)
     const noexcept -> const_iterator {
+  using _namespace(std)::get;
+
   if (_predict_false(bucket_count() == 0 && idx == 0)) return end();
 
   assert(idx >= 0 && idx < bucket_count());
@@ -439,7 +505,7 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::begin(bucket_size_type idx)
 }
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
-auto linked_unordered_set<T, Tag, Hash, Pred, A>::cbegin(bucket_size_type idx)
+auto linked_unordered_set<T, Tag, Hash, Pred, A>::cend(bucket_size_type idx)
     const noexcept -> const_iterator {
   return end(idx);
 }
@@ -448,6 +514,7 @@ template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::swap(
     linked_unordered_set& other) noexcept -> void {
   using _namespace(std)::swap;
+  using _namespace(std)::get;
 
   list_.swap(other.list_);
   swap(params_, other.params_);
@@ -468,7 +535,7 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::swap(
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto swap(linked_unordered_set<T, Tag, Hash, Pred, A>& x,
-          linked_unordered_set<T, Tag, Hash, Pred, A>& y) noexcept {
+          linked_unordered_set<T, Tag, Hash, Pred, A>& y) noexcept -> void {
   x.swap(y);
 }
 
