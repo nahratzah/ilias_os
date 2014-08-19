@@ -1,0 +1,231 @@
+#ifndef _UNORDERED_SET_
+#define _UNORDERED_SET_
+
+#include <cdecl.h>
+#include <ilias/linked_unordered_set.h>
+#include <stdimpl/alloc_base.h>
+#include <stdimpl/set_support.h>
+#include <initializer_list>
+#include <memory>
+#include <utility>
+
+_namespace_begin(std)
+namespace impl {
+
+template<typename Hash, typename T, typename TWrapped>
+struct set_hash_wrapper {
+ private:
+  Hash hash_;
+
+  template<typename X>
+  static const X& unwrap_(const X& x) noexcept { return x; }
+  static const T& unwrap_(const TWrapped& x) noexcept { return x.value; }
+
+ public:
+  set_hash_wrapper() = default;
+  set_hash_wrapper(const set_hash_wrapper&) = default;
+  set_hash_wrapper& operator=(const set_hash_wrapper&) = default;
+  set_hash_wrapper(set_hash_wrapper&&) = default;
+  set_hash_wrapper& operator=(set_hash_wrapper&&) = default;
+  set_hash_wrapper(const Hash& hash) : hash_(hash) {}
+
+  const Hash& get_hash() const noexcept { return hash_; }
+
+  template<typename X>
+  auto operator()(const X& x) const ->
+      decltype(declval<const Hash&>()(declval<const T&>())) {
+    return hash_(unwrap_(x));
+  }
+};
+
+template<typename Eq, typename T, typename TWrapped>
+struct set_equal_wrapper {
+ private:
+  Eq eq_;
+
+  template<typename X>
+  static const X& unwrap_(const X& x) noexcept { return x; }
+  static const T& unwrap_(const TWrapped& x) noexcept { return x.value; }
+
+ public:
+  set_equal_wrapper() = default;
+  set_equal_wrapper(const set_equal_wrapper&) = default;
+  set_equal_wrapper& operator=(const set_equal_wrapper&) = default;
+  set_equal_wrapper(set_equal_wrapper&&) = default;
+  set_equal_wrapper& operator=(set_equal_wrapper&&) = default;
+  set_equal_wrapper(const Eq& eq) : eq_(eq) {}
+
+  const Eq& get_eq() const noexcept { return eq_; }
+
+  template<typename X, typename Y>
+  bool operator()(const X& x, const Y& y) const {
+    return eq_(unwrap_(x), unwrap_(y));
+  }
+};
+
+} /* namespace std::impl */
+
+
+template<typename Key,
+         typename Hash = hash<Key>,
+         typename Pred = equal_to<Key>,
+         typename Allocator = allocator<Key>>
+class unordered_set
+: private impl::alloc_base<typename allocator_traits<Allocator>::
+      template rebind_alloc<impl::unordered_set_elem<Key, void>>>
+{
+ private:
+  using elem = impl::unordered_set_elem<Key, void>;
+  using data_type =
+      _namespace(ilias)::linked_unordered_set<elem, void,
+                                              impl::set_hash_wrapper<Hash,
+                                                                     Key,
+                                                                     elem>,
+                                              impl::set_equal_wrapper<Pred,
+                                                                      Key,
+                                                                      elem>,
+                                              Allocator>;
+  using alloc_base = impl::alloc_base<
+      typename allocator_traits<Allocator>::template rebind_alloc<elem>>;
+
+ public:
+  using key_type = Key;
+  using value_type = Key;
+  using hasher = Hash;
+  using key_equal = Pred;
+  using allocator_type = Allocator;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = typename allocator_traits<allocator_type>::pointer;
+  using const_pointer =
+      typename allocator_traits<allocator_type>::const_pointer;
+  using size_type = typename data_type::size_type;
+  using difference_type = typename data_type::difference_type;
+  using iterator =
+      impl::set_elem_iter<value_type,
+                          typename data_type::iterator>;
+  using const_iterator =
+      impl::set_elem_iter<value_type,
+                          typename data_type::const_iterator>;
+  using local_iterator =
+      impl::set_elem_iter<value_type,
+                          typename data_type::local_iterator>;
+  using const_local_iterator =
+      impl::set_elem_iter<value_type,
+                          typename data_type::const_local_iterator>;
+
+  explicit unordered_set(size_type = 0,
+                         const hasher& = hasher(),
+                         const key_equal& = key_equal(),
+                         const allocator_type& = allocator_type());
+  template<typename InputIter>
+  unordered_set(InputIter, InputIter,
+                size_type = 0,
+                const hasher& = hasher(),
+                const key_equal& = key_equal(),
+                const allocator_type& = allocator_type());
+  unordered_set(const unordered_set&);
+  unordered_set(unordered_set&&);
+  explicit unordered_set(const allocator_type&);
+  unordered_set(const unordered_set&, const allocator_type&);
+  unordered_set(unordered_set&&, const allocator_type&);
+  unordered_set(initializer_list<value_type>,
+                size_type = 0,
+                const hasher& = hasher(),
+                const key_equal& = key_equal(),
+                const allocator_type& = allocator_type());
+  ~unordered_set() noexcept;
+
+  unordered_set& operator=(const unordered_set&);
+  unordered_set& operator=(unordered_set&&);
+  unordered_set& operator=(initializer_list<value_type>);
+
+  allocator_type get_allocator() const;
+
+  bool empty() const noexcept;
+  size_type size() const noexcept;
+  size_type max_size() const noexcept;
+
+  iterator begin() noexcept;
+  const_iterator begin() const noexcept;
+  iterator end() noexcept;
+  const_iterator end() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+
+  template<typename... Args> pair<iterator, bool> emplace(Args&&...);
+  template<typename... Args> iterator emplace_hint(const_iterator, Args&&...);
+  pair<iterator, bool> insert(const value_type&);
+  pair<iterator, bool> insert(value_type&&);
+  iterator insert(const_iterator, const value_type&);
+  iterator insert(const_iterator, value_type&&);
+  template<typename InputIter> void insert(InputIter, InputIter);
+  void insert(initializer_list<value_type>);
+
+  iterator erase(const_iterator) noexcept;
+  size_type erase(const key_type&) noexcept;
+  iterator erase(const_iterator, const_iterator) noexcept;
+  void clear() noexcept;
+
+  void swap(unordered_set&);
+
+  hasher hash_function() const;
+  key_equal key_eq() const;
+
+  iterator find(const key_type&);
+  const_iterator find(const key_type&) const;
+  size_type count(const key_type&) const;
+  pair<iterator, iterator> equal_range(const key_type&);
+  pair<const_iterator, const_iterator> equal_range(const key_type&) const;
+
+  size_type bucket_count() const noexcept;
+  size_type max_bucket_count() const noexcept;
+  size_type bucket_size(size_type) const noexcept;
+  size_type bucket(const key_type&) const;
+  local_iterator begin(size_type);
+  const_local_iterator begin(size_type) const;
+  local_iterator end(size_type);
+  const_local_iterator end(size_type) const;
+  const_local_iterator cbegin(size_type) const;
+  const_local_iterator cend(size_type) const;
+
+  float load_factor() const noexcept;
+  float max_load_factor() const noexcept;
+  void max_load_factor(float);
+  void rehash(size_type);
+  void reserve(size_type);
+
+ private:
+  data_type data_;
+};
+
+template<typename Key, typename Hash, typename Pred, typename A>
+void swap(unordered_set<Key, Hash, Pred, A>&,
+          unordered_set<Key, Hash, Pred, A>&);
+
+template<typename Key, typename Hash, typename Pred, typename A>
+void operator==(const unordered_set<Key, Hash, Pred, A>&,
+                const unordered_set<Key, Hash, Pred, A>&);
+template<typename Key, typename Hash, typename Pred, typename A>
+void operator!=(const unordered_set<Key, Hash, Pred, A>&,
+                const unordered_set<Key, Hash, Pred, A>&);
+
+
+extern template class unordered_set<char>;
+extern template class unordered_set<signed char>;
+extern template class unordered_set<unsigned char>;
+extern template class unordered_set<short>;
+extern template class unordered_set<unsigned short>;
+extern template class unordered_set<int>;
+extern template class unordered_set<unsigned int>;
+extern template class unordered_set<long>;
+extern template class unordered_set<unsigned long>;
+extern template class unordered_set<long long>;
+extern template class unordered_set<unsigned long long>;
+
+
+_namespace_end(std)
+
+#include <unordered_set-inl.h>
+
+#endif /* _UNORDERED_SET_ */
