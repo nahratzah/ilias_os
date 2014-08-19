@@ -83,6 +83,11 @@ class basic_linked_list::iterator
   friend bool operator==(const basic_linked_list::iterator&,
                          const basic_linked_list::iterator&) noexcept;
 
+ public:
+  iterator() = default;
+  iterator(const iterator&) = default;
+  iterator& operator=(const iterator&) = default;
+
  private:
   explicit iterator(element*) noexcept;
 
@@ -192,6 +197,11 @@ class linked_list<T, Tag>::iterator
   friend linked_list;
 
  public:
+  iterator() = default;
+  iterator(const iterator&) = default;
+  iterator& operator=(const iterator&) = default;
+  iterator(iterator&&) = default;
+  iterator& operator=(iterator&&) = default;
   explicit iterator(const basic_linked_list::iterator&) noexcept;
 
   T& operator*() const noexcept;
@@ -219,6 +229,11 @@ class linked_list<T, Tag>::const_iterator
   friend linked_list;
 
  public:
+  const_iterator() = default;
+  const_iterator(const const_iterator&) = default;
+  const_iterator& operator=(const const_iterator&) = default;
+  const_iterator(const_iterator&&) = default;
+  const_iterator& operator=(const_iterator&&) = default;
   explicit const_iterator(const basic_linked_list::iterator&) noexcept;
   const_iterator(const iterator&) noexcept;
 
