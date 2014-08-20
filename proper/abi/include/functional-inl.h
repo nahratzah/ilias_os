@@ -210,7 +210,7 @@ auto resolve_argument(T& v, Args, ArgIndices) ->
   return v;
 }
 template<typename T, typename Args, typename ArgIndices>
-auto resolve_argument(reference_wrapper<T> v, Args, ArgIndices) -> T& {
+auto resolve_argument(const reference_wrapper<T>& v, Args, ArgIndices) -> T& {
   return v.get();
 }
 
