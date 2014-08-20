@@ -1,0 +1,30 @@
+#ifndef _CMATH_
+#define _CMATH_
+
+#include <cdecl.h>
+
+_namespace_begin(std)
+_cdecl_begin
+
+long double ceill(long double);
+double ceil(double);
+float ceilf(float);
+
+_cdecl_end
+
+#ifdef __cplusplus
+
+inline float ceil(float x) { return ceilf(x); }
+inline float ceil(long double x) { return ceill(x); }
+
+#endif // __cplusplus
+
+_namespace_end(std)
+
+#ifdef __cplusplus
+using _namespace(std)::ceill;
+using _namespace(std)::ceil;
+using _namespace(std)::ceilf;
+#endif
+
+#endif /* _CMATH_ */

@@ -109,7 +109,21 @@ class linked_unordered_set {
   const_iterator end(bucket_size_type) const noexcept;
   const_iterator cend(bucket_size_type) const noexcept;
 
+  template<typename K> iterator find(const K&);
+  template<typename K> const_iterator find(const K&) const;
+  template<typename K> iterator lower_bound(const K&);
+  template<typename K> const_iterator lower_bound(const K&) const;
+  template<typename K> iterator upper_bound(const K&);
+  template<typename K> const_iterator upper_bound(const K&) const;
+  template<typename K> _namespace(std)::pair<iterator, iterator>
+      equal_range(const K&);
+  template<typename K> _namespace(std)::pair<const_iterator, const_iterator>
+      equal_range(const K&) const;
+  template<typename K> size_type count(const K&) const;
+
   void swap(linked_unordered_set&) noexcept;
+
+  static iterator nonconst_iterator(const_iterator) noexcept;
 
  private:
   list_type list_;
@@ -120,6 +134,13 @@ class linked_unordered_set {
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 void swap(linked_unordered_set<T, Tag, Hash, Pred, A>&,
           linked_unordered_set<T, Tag, Hash, Pred, A>&) noexcept;
+
+template<typename T, class Tag, typename Hash, typename Pred, typename A>
+bool operator==(const linked_unordered_set<T, Tag, Hash, Pred, A>& x,
+                const linked_unordered_set<T, Tag, Hash, Pred, A>& y);
+template<typename T, class Tag, typename Hash, typename Pred, typename A>
+bool operator!=(const linked_unordered_set<T, Tag, Hash, Pred, A>& x,
+                const linked_unordered_set<T, Tag, Hash, Pred, A>& y);
 
 
 _namespace_end(ilias)

@@ -70,10 +70,25 @@ template<typename Key,
          typename Hash = hash<Key>,
          typename Pred = equal_to<Key>,
          typename Allocator = allocator<Key>>
+class unordered_set;
+
+template<typename Key, typename Hash, typename Pred, typename A>
+bool operator==(const unordered_set<Key, Hash, Pred, A>&,
+                const unordered_set<Key, Hash, Pred, A>&);
+template<typename Key, typename Hash, typename Pred, typename A>
+bool operator!=(const unordered_set<Key, Hash, Pred, A>&,
+                const unordered_set<Key, Hash, Pred, A>&);
+
+
+template<typename Key, typename Hash, typename Pred, typename Allocator>
 class unordered_set
 : private impl::alloc_base<typename allocator_traits<Allocator>::
       template rebind_alloc<impl::unordered_set_elem<Key, void>>>
 {
+  template<typename K, typename H, typename P, typename A>
+  friend bool operator==(const unordered_set<K, H, P, A>&,
+                         const unordered_set<K, H, P, A>&);
+
  private:
   using elem = impl::unordered_set_elem<Key, void>;
   using data_type =
@@ -105,13 +120,13 @@ class unordered_set
       impl::set_elem_iter<value_type,
                           typename data_type::iterator>;
   using const_iterator =
-      impl::set_elem_iter<value_type,
+      impl::set_elem_iter<const value_type,
                           typename data_type::const_iterator>;
   using local_iterator =
       impl::set_elem_iter<value_type,
                           typename data_type::local_iterator>;
   using const_local_iterator =
-      impl::set_elem_iter<value_type,
+      impl::set_elem_iter<const value_type,
                           typename data_type::const_local_iterator>;
 
   explicit unordered_set(size_type = 0,
@@ -175,6 +190,10 @@ class unordered_set
   iterator find(const key_type&);
   const_iterator find(const key_type&) const;
   size_type count(const key_type&) const;
+  iterator lower_bound(const key_type&);  // Extension
+  const_iterator lower_bound(const key_type&) const;  // Extension
+  iterator upper_bound(const key_type&);  // Extension
+  const_iterator upper_bound(const key_type&) const;  // Extension
   pair<iterator, iterator> equal_range(const key_type&);
   pair<const_iterator, const_iterator> equal_range(const key_type&) const;
 
@@ -182,12 +201,12 @@ class unordered_set
   size_type max_bucket_count() const noexcept;
   size_type bucket_size(size_type) const noexcept;
   size_type bucket(const key_type&) const;
-  local_iterator begin(size_type);
-  const_local_iterator begin(size_type) const;
-  local_iterator end(size_type);
-  const_local_iterator end(size_type) const;
-  const_local_iterator cbegin(size_type) const;
-  const_local_iterator cend(size_type) const;
+  local_iterator begin(size_type) noexcept;
+  const_local_iterator begin(size_type) const noexcept;
+  local_iterator end(size_type) noexcept;
+  const_local_iterator end(size_type) const noexcept;
+  const_local_iterator cbegin(size_type) const noexcept;
+  const_local_iterator cend(size_type) const noexcept;
 
   float load_factor() const noexcept;
   float max_load_factor() const noexcept;
@@ -203,13 +222,6 @@ template<typename Key, typename Hash, typename Pred, typename A>
 void swap(unordered_set<Key, Hash, Pred, A>&,
           unordered_set<Key, Hash, Pred, A>&);
 
-template<typename Key, typename Hash, typename Pred, typename A>
-void operator==(const unordered_set<Key, Hash, Pred, A>&,
-                const unordered_set<Key, Hash, Pred, A>&);
-template<typename Key, typename Hash, typename Pred, typename A>
-void operator!=(const unordered_set<Key, Hash, Pred, A>&,
-                const unordered_set<Key, Hash, Pred, A>&);
-
 
 extern template class unordered_set<char>;
 extern template class unordered_set<signed char>;
@@ -222,6 +234,29 @@ extern template class unordered_set<long>;
 extern template class unordered_set<unsigned long>;
 extern template class unordered_set<long long>;
 extern template class unordered_set<unsigned long long>;
+
+extern template bool operator==(const unordered_set<char>&,
+                                const unordered_set<char>&);
+extern template bool operator==(const unordered_set<signed char>&,
+                                const unordered_set<signed char>&);
+extern template bool operator==(const unordered_set<unsigned char>&,
+                                const unordered_set<unsigned char>&);
+extern template bool operator==(const unordered_set<short>&,
+                                const unordered_set<short>&);
+extern template bool operator==(const unordered_set<unsigned short>&,
+                                const unordered_set<unsigned short>&);
+extern template bool operator==(const unordered_set<int>&,
+                                const unordered_set<int>&);
+extern template bool operator==(const unordered_set<unsigned int>&,
+                                const unordered_set<unsigned int>&);
+extern template bool operator==(const unordered_set<long>&,
+                                const unordered_set<long>&);
+extern template bool operator==(const unordered_set<unsigned long>&,
+                                const unordered_set<unsigned long>&);
+extern template bool operator==(const unordered_set<long long>&,
+                                const unordered_set<long long>&);
+extern template bool operator==(const unordered_set<unsigned long long>&,
+                                const unordered_set<unsigned long long>&);
 
 
 _namespace_end(std)

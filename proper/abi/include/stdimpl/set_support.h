@@ -20,6 +20,11 @@ struct set_elem
   set_elem& operator=(const set_elem&) = default;
   template<typename... Args> set_elem(Args&&...);
 
+  bool operator==(const set_elem& x) const
+  { return value == x.value; }
+  bool operator!=(const set_elem& x) const
+  { return value == x.value; }
+
   value_type value;
 };
 
@@ -33,6 +38,11 @@ struct unordered_set_elem
   unordered_set_elem(const unordered_set_elem&) = default;
   unordered_set_elem& operator=(const unordered_set_elem&) = default;
   template<typename... Args> unordered_set_elem(Args&&...);
+
+  bool operator==(const unordered_set_elem& x) const
+  { return value == x.value; }
+  bool operator!=(const unordered_set_elem& x) const
+  { return value == x.value; }
 
   value_type value;
 };
