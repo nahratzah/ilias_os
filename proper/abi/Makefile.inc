@@ -47,6 +47,8 @@ ABI_SRCS += abi/src/system_error.cc
 ABI_SRCS += abi/src/typeinfo.cc
 ABI_SRCS += abi/src/set.cc
 ABI_SRCS += abi/src/map.cc
+ABI_SRCS += abi/src/unordered_set.cc
+ABI_SRCS += abi/src/unordered_map.cc
 ABI_SRCS += abi/src/stdimpl_allocator_cloneable.cc
 ABI_SRCS += abi/src/stdimpl_simple_bitset.cc
 ABI_SRCS += abi/src/stdimpl_stats.cc
@@ -55,6 +57,7 @@ ABI_SRCS += abi/src/stdimpl_locale_numeric.cc
 
 ILIAS_STD_SRCS += abi/src/ilias_linked_list.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_set.cc
+ILIAS_STD_SRCS += abi/src/ilias_linked_unordered_set.cc
 ILIAS_STD_SRCS += abi/src/ilias_stats.cc
 
 include abi/Makefile.compiler_rt.inc

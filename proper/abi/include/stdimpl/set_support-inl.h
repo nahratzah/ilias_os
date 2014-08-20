@@ -12,6 +12,13 @@ set_elem<T, Tag>::set_elem(Args&&... args)
 : value(forward<Args>(args)...)
 {}
 
+
+template<typename T, class Tag>
+template<typename... Args>
+unordered_set_elem<T, Tag>::unordered_set_elem(Args&&... args)
+: value(forward<Args>(args)...)
+{}
+
 } /* namespace std::impl */
 _namespace_end(std)
 

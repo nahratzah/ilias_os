@@ -138,11 +138,11 @@ class map
   template<typename... Args> iterator emplace_hint(const_iterator, Args&&...);
   pair<iterator, bool> insert(const value_type&);
   template<typename P>
-  enable_if_t<is_convertible<P, key_type>::value, pair<iterator, bool>>
+  enable_if_t<is_convertible<P, value_type>::value, pair<iterator, bool>>
       insert(P&&);
   iterator insert(const_iterator, const value_type&);
   template<typename P>
-  enable_if_t<is_convertible<P, key_type>::value, iterator>
+  enable_if_t<is_convertible<P, value_type>::value, iterator>
       insert(const_iterator, P&&);
   template<typename InputIter> void insert(InputIter, InputIter);
   void insert(initializer_list<value_type>);

@@ -262,7 +262,7 @@ auto map<Key, T, Cmp, A>::insert(const value_type& v) -> pair<iterator, bool> {
 template<typename Key, typename T, typename Cmp, typename A>
 template<typename P>
 auto map<Key, T, Cmp, A>::insert(P&& v) ->
-    enable_if_t<is_convertible<P, key_type>::value, pair<iterator, bool>> {
+    enable_if_t<is_convertible<P, value_type>::value, pair<iterator, bool>> {
   void* hint = (empty() ?
                 static_cast<void*>(this) :
                 static_cast<void*>(&*data_.root()));
@@ -297,7 +297,7 @@ auto map<Key, T, Cmp, A>::insert(const_iterator pos, const value_type& v) ->
 template<typename Key, typename T, typename Cmp, typename A>
 template<typename P>
 auto map<Key, T, Cmp, A>::insert(const_iterator pos, P&& v) ->
-    enable_if_t<is_convertible<P, key_type>::value, iterator> {
+    enable_if_t<is_convertible<P, value_type>::value, iterator> {
   void* hint = (empty() ?
                 static_cast<void*>(this) :
                 static_cast<void*>(&*data_.root()));
