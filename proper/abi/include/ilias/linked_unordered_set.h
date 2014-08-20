@@ -9,11 +9,17 @@
 #include <tuple>
 #include <vector>
 #include <ilias/linked_list.h>
+#include <cstdint>
 
 _namespace_begin(ilias)
 namespace impl {
 
 template<class T> struct linked_unordered_set_tag {};
+
+/*
+ * Ceil function, for use by linked unordered set.
+ */
+uint64_t ceil_uls_(long double, uint64_t = UINT64_MAX) noexcept;
 
 } /* namespace ilias::impl */
 

@@ -5,7 +5,6 @@
 #include <new>
 #include <limits>
 #include <abi/misc_int.h>
-#include <cmath>
 #include <utility>
 #include <algorithm>
 #include <functional>
@@ -319,18 +318,15 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::max_load_factor()
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::max_load_factor(float lf) ->
     void {
-  using _namespace(std)::ceil;
+  using impl::ceil_uls_;
   using _namespace(std)::get;
   using _namespace(std)::numeric_limits;
 
   assert(lf > 0.0f);
   auto& load_factor_ = get<3>(params_);
   auto& buckets_ = get<2>(params_);
-  const auto n = ceil(static_cast<long double>(size()) / lf);
-  if (lf <= 0 || n > numeric_limits<bucket_size_type>::max()) {
-    throw _namespace(std)::invalid_argument("ilias::linked_unordered_set: "
-                                            "invalid load factor");
-  }
+  const auto n = ceil_uls_(static_cast<long double>(size()) / lf,
+                           numeric_limits<bucket_size_type>::max());
 
   if (!empty() && buckets_.size() < n) rehash(n);
   load_factor_ = lf;
@@ -339,13 +335,15 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::max_load_factor(float lf) ->
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::rehash(
     bucket_size_type n) -> void {
-  using _namespace(std)::ceil;
+  using impl::ceil_uls_;
   using _namespace(std)::next;
   using _namespace(std)::get;
   using _namespace(std)::max;
+  using _namespace(std)::numeric_limits;
 
   auto& buckets_ = get<2>(params_);
-  auto buckets_for_lf = ceil(size() / max_load_factor());
+  auto buckets_for_lf = ceil_uls_(size() / max_load_factor(),
+                                  numeric_limits<bucket_size_type>::max());
   if (buckets_for_lf < 1) buckets_for_lf = 1;
   if (n < buckets_for_lf) n = buckets_for_lf;
   buckets_.reserve(n);  // May throw.
@@ -377,9 +375,11 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::rehash(
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::reserve(
     bucket_size_type n) -> void {
-  using _namespace(std)::ceil;
+  using impl::ceil_uls_;
+  using _namespace(std)::numeric_limits;
 
-  rehash(ceil(n / max_load_factor()));
+  rehash(ceil_uls_(n / max_load_factor(),
+                   numeric_limits<bucket_size_type>::max()));
 }
 
 template<typename T, class Tag, typename Hash, typename Pred, typename A>
