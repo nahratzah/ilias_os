@@ -438,6 +438,31 @@ extern template bool operator==(const vector<long long>&,
 extern template bool operator==(const vector<unsigned long long>&,
                                 const vector<unsigned long long>&);
 
+extern template bool operator<(const vector<bool>&,
+                               const vector<bool>&);
+extern template bool operator<(const vector<char>&,
+                               const vector<char>&);
+extern template bool operator<(const vector<signed char>&,
+                               const vector<signed char>&);
+extern template bool operator<(const vector<unsigned char>&,
+                               const vector<unsigned char>&);
+extern template bool operator<(const vector<short>&,
+                               const vector<short>&);
+extern template bool operator<(const vector<unsigned short>&,
+                               const vector<unsigned short>&);
+extern template bool operator<(const vector<int>&,
+                               const vector<int>&);
+extern template bool operator<(const vector<unsigned int>&,
+                               const vector<unsigned int>&);
+extern template bool operator<(const vector<long>&,
+                               const vector<long>&);
+extern template bool operator<(const vector<unsigned long>&,
+                               const vector<unsigned long>&);
+extern template bool operator<(const vector<long long>&,
+                               const vector<long long>&);
+extern template bool operator<(const vector<unsigned long long>&,
+                               const vector<unsigned long long>&);
+
 
 _namespace_end(std)
 
