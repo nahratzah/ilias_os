@@ -14,7 +14,9 @@ _namespace_begin(std)
 
 
 template<typename T, typename Alloc = allocator<T>>
-class vector : public impl::alloc_base<Alloc> {
+class vector
+: public impl::alloc_base<Alloc>
+{
  public:
   using value_type = T;
   using allocator_type = typename impl::alloc_base<Alloc>::allocator_type;
@@ -139,8 +141,307 @@ void swap(vector<T, Alloc>& a, vector<T, Alloc>& b)
     noexcept(noexcept(a.swap(b)));
 
 
+class _vector_bool_reference;
+
+namespace {
+
+template<typename T>
+struct _vector_bool_iterator_deref {
+  const T result;
+
+  _vector_bool_iterator_deref(uintptr_t* p, uintptr_t msk) noexcept
+  : result(p, msk) {}
+};
+
+template<>
+struct _vector_bool_iterator_deref<bool> {
+  const bool result;
+
+  _vector_bool_iterator_deref(const uintptr_t* p, uintptr_t msk) noexcept
+  : result(*p & msk) {}
+};
+
+} /* namespace std::<unnamed> */
+
+template<bool IsConst>
+class _vector_bool_iterator
+: public iterator<random_access_iterator_tag,
+                  conditional_t<IsConst, const bool, bool>,
+                  ptrdiff_t,
+                  conditional_t<IsConst, const bool*, bool*>,
+                  conditional_t<IsConst, bool, _vector_bool_reference>>
+{
+  friend _vector_bool_iterator<!IsConst>;
+
+ private:
+  using iterator_base =
+      _namespace(std)::iterator<random_access_iterator_tag,
+                                conditional_t<IsConst, const bool, bool>,
+                                ptrdiff_t,
+                                conditional_t<IsConst, const bool*, bool*>,
+                                conditional_t<IsConst,
+                                              bool,
+                                              _vector_bool_reference>>;
+  using elem = uintptr_t;
+  using elem_pointer = conditional_t<IsConst, const elem*, elem*>;
+
+ public:
+  using reference = typename iterator_base::reference;
+  using pointer = typename iterator_base::pointer;
+  using difference_type = typename iterator_base::difference_type;
+
+  constexpr _vector_bool_iterator() = default;
+  constexpr _vector_bool_iterator(const _vector_bool_iterator&) = default;
+  _vector_bool_iterator& operator=(const _vector_bool_iterator&) = default;
+  explicit constexpr _vector_bool_iterator(elem_pointer) noexcept;
+
+  /* _vector_bool_iterator<true>(const _vector_bool_iterator<false>&); */
+  template<typename Rhs>
+  _vector_bool_iterator(
+      const Rhs&,
+      enable_if_t<(is_base_of<_vector_bool_iterator<false>, Rhs>::value &&
+                   IsConst),
+                  int> = 0)
+      noexcept;
+
+ private:
+  constexpr _vector_bool_iterator(elem_pointer, unsigned char) noexcept;
+
+ public:
+  /* Omit operator->, since bool does not have methods. */
+  conditional_t<IsConst, const bool*, bool*> operator->() const noexcept =
+      delete;
+  reference operator*() const noexcept;
+
+  _vector_bool_iterator& operator++() noexcept;
+  _vector_bool_iterator operator++(int) noexcept;
+  _vector_bool_iterator& operator--() noexcept;
+  _vector_bool_iterator operator--(int) noexcept;
+
+  _vector_bool_iterator& operator+=(difference_type) noexcept;
+  _vector_bool_iterator& operator-=(difference_type) noexcept;
+  constexpr _vector_bool_iterator operator+(difference_type) const noexcept;
+  constexpr _vector_bool_iterator operator-(difference_type) const noexcept;
+  constexpr difference_type operator-(const _vector_bool_iterator&)
+      const noexcept;
+
+  reference operator[](difference_type) const noexcept;
+
+  friend bool operator==(const _vector_bool_iterator<true>&,
+                         const _vector_bool_iterator<true>&) noexcept;
+  friend bool operator<(const _vector_bool_iterator<true>&,
+                        const _vector_bool_iterator<true>&) noexcept;
+
+ private:
+  elem_pointer p_ = nullptr;
+  unsigned char shift_ = 0;
+};
+
+template<bool IsConst>
+bool operator!=(const _vector_bool_iterator<true>&,
+                const _vector_bool_iterator<true>&) noexcept;
+template<bool IsConst>
+bool operator>(const _vector_bool_iterator<true>&,
+               const _vector_bool_iterator<true>&) noexcept;
+template<bool IsConst>
+bool operator<=(const _vector_bool_iterator<true>&,
+                const _vector_bool_iterator<true>&) noexcept;
+template<bool IsConst>
+bool operator>=(const _vector_bool_iterator<true>&,
+                const _vector_bool_iterator<true>&) noexcept;
+
+
+class _vector_bool_reference {
+  template<typename, typename> friend class vector;
+  template<bool> friend class _vector_bool_iterator;
+  template<typename> friend struct _vector_bool_iterator_deref;
+
+ private:
+  using elem = uintptr_t;
+
+  constexpr _vector_bool_reference(elem*, elem) noexcept;
+
+ public:
+  _vector_bool_reference() = delete;
+  _vector_bool_reference(const _vector_bool_reference&) noexcept = default;
+
+  operator bool() const noexcept;
+  const _vector_bool_reference& operator=(const bool&) const noexcept;
+  const _vector_bool_reference& operator=(const _vector_bool_reference&)
+      const noexcept;
+  void flip() const noexcept;
+
+  friend bool exchange(const _vector_bool_reference&, const bool&) noexcept;
+  friend void swap(const _vector_bool_reference&,
+                   const _vector_bool_reference&) noexcept;
+  friend void swap(const _vector_bool_reference&, bool&) noexcept;
+  friend void swap(bool&, const _vector_bool_reference&) noexcept;
+
+ private:
+  elem*const p_;
+  const elem msk_;
+};
+
+template<typename Allocator>
+class vector<bool, Allocator>
+: private impl::alloc_base<
+      typename allocator_traits<Allocator>::template rebind_alloc<uintptr_t>>
+{
+  template<typename A> friend bool operator==(const vector<bool, A>&,
+                                              const vector<bool, A>&) noexcept;
+  template<typename A> friend bool operator<(const vector<bool, A>&,
+                                             const vector<bool, A>&) noexcept;
+
+ private:
+  using elem = uintptr_t;
+  using alloc_base = impl::alloc_base<typename allocator_traits<Allocator>::
+                         template rebind_alloc<elem>>;
+
+ public:
+  using value_type = bool;
+  using allocator_type = Allocator;
+  using size_type = typename allocator_traits<allocator_type>::size_type;
+  using reference = _vector_bool_reference;
+  using const_reference = bool;
+  using iterator = _vector_bool_iterator<false>;
+  using const_iterator = _vector_bool_iterator<true>;
+  using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
+  using const_reverse_iterator =
+      _namespace(std)::reverse_iterator<const_iterator>;
+  using difference_type = typename iterator_traits<iterator>::difference_type;
+  using pointer = iterator;  // XXX: maybe wrap to remove methods?
+  using const_pointer = const_iterator;  // XXX: maybe wrap to remove methods?
+
+  explicit vector(const allocator_type& = allocator_type());
+  explicit vector(size_type, const bool& = bool(),
+                  const allocator_type& = allocator_type());
+  template<typename InputIter>
+  vector(InputIter, InputIter,
+         const allocator_type& = allocator_type());
+  vector(const vector&);
+  vector(vector&&);
+  vector(const vector&, const allocator_type&);
+  vector(vector&&, const allocator_type&);
+  vector(initializer_list<value_type>,
+         const allocator_type& = allocator_type());
+  ~vector() noexcept;
+  vector& operator=(const vector&);
+  vector& operator=(vector&&);
+  vector& operator=(initializer_list<value_type>);
+
+  template<typename InputIter> void assign(InputIter, InputIter);
+  void assign(size_type, const value_type&);
+  void assign(initializer_list<value_type>);
+
+  allocator_type get_allocator() const;
+
+  iterator begin() noexcept;
+  iterator end() noexcept;
+  const_iterator begin() const noexcept;
+  const_iterator end() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+
+  reverse_iterator rbegin() noexcept;
+  reverse_iterator rend() noexcept;
+  const_reverse_iterator rbegin() const noexcept;
+  const_reverse_iterator rend() const noexcept;
+  const_reverse_iterator crbegin() const noexcept;
+  const_reverse_iterator crend() const noexcept;
+
+  size_type size() const noexcept;
+  size_type max_size() const noexcept;
+  void resize(size_type, value_type = false);
+  size_type capacity() const noexcept;
+  bool empty() const noexcept;
+  void reserve(size_type);
+  void shrink_to_fit();
+
+  reference operator[](size_type) noexcept;
+  const_reference operator[](size_type) const noexcept;
+  reference at(size_type);
+  const_reference at(size_type) const;
+  reference front() noexcept;
+  const_reference front() const noexcept;
+  reference back() noexcept;
+  const_reference back() const noexcept;
+
+  void push_back(const value_type&);
+  void pop_back() noexcept;
+
+  iterator insert(const_iterator, const value_type&);
+  iterator insert(const_iterator, size_type, const value_type&);
+  template<typename InputIter> iterator insert(const_iterator,
+                                               InputIter, InputIter);
+  iterator insert(const_iterator, initializer_list<value_type>);
+  iterator erase(const_iterator);
+  iterator erase(const_iterator, const_iterator);
+  void swap(vector& o)
+      noexcept(noexcept(declval<vector>().swap_(o)));
+  void clear() noexcept;
+
+ private:
+  size_type heap_size_() const noexcept;
+  size_type heap_avail_() const noexcept;
+
+  elem* heap_ = nullptr;
+  size_type avail_ = 0;
+  size_type size_ = 0;
+};
+
+/*
+ * Specialize comparison for vector<bool, ...>.
+ */
+template<typename Alloc>
+bool operator==(const vector<bool, Alloc>&, const vector<bool, Alloc>&)
+    noexcept;
+template<typename Alloc>
+bool operator<(const vector<bool, Alloc>&, const vector<bool, Alloc>&)
+    noexcept;
+
+
+extern template class vector<bool>;
+extern template class vector<char>;
+extern template class vector<signed char>;
+extern template class vector<unsigned char>;
+extern template class vector<short>;
+extern template class vector<unsigned short>;
+extern template class vector<int>;
+extern template class vector<unsigned int>;
+extern template class vector<long>;
+extern template class vector<unsigned long>;
+extern template class vector<long long>;
+extern template class vector<unsigned long long>;
+
+extern template bool operator==(const vector<bool>&,
+                                const vector<bool>&);
+extern template bool operator==(const vector<char>&,
+                                const vector<char>&);
+extern template bool operator==(const vector<signed char>&,
+                                const vector<signed char>&);
+extern template bool operator==(const vector<unsigned char>&,
+                                const vector<unsigned char>&);
+extern template bool operator==(const vector<short>&,
+                                const vector<short>&);
+extern template bool operator==(const vector<unsigned short>&,
+                                const vector<unsigned short>&);
+extern template bool operator==(const vector<int>&,
+                                const vector<int>&);
+extern template bool operator==(const vector<unsigned int>&,
+                                const vector<unsigned int>&);
+extern template bool operator==(const vector<long>&,
+                                const vector<long>&);
+extern template bool operator==(const vector<unsigned long>&,
+                                const vector<unsigned long>&);
+extern template bool operator==(const vector<long long>&,
+                                const vector<long long>&);
+extern template bool operator==(const vector<unsigned long long>&,
+                                const vector<unsigned long long>&);
+
+
 _namespace_end(std)
 
 #include <vector-inl.h>
+#include <vector-bool-inl.h>
 
 #endif /* _VECTOR_ */
