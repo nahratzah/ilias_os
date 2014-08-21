@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <abi/assert.h>
+#include <cstdbool>
 
 #ifdef NDEBUG
 # define assert_msg(p, msg)  do { /* nothing */ } while (0)

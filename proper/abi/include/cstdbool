@@ -8,6 +8,9 @@ typedef Bool bool;
 #define false	(0)
 #else
 using Bool = bool;
+
+static_assert(sizeof(bool) == sizeof(int),
+              "Bool and bool have different sizes!");
 #endif
 
 #define __bool_true_false_are_defined 1
