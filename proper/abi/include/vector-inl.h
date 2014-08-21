@@ -111,11 +111,11 @@ auto vector<T, Alloc>::operator=(const vector& o) -> vector& {
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator=(vector&& o) -> vector& {
-  reserve(o.size());
   if (this->get_allocator_() == o.get_allocator_()) {
     swap(o);
     o.clear();
   } else {
+    reserve(o.size());
     size_type delta = min(o.size(), size());
     move(o.begin(), o.begin() + delta, begin());
     if (delta < o.size())
@@ -266,7 +266,7 @@ auto vector<T, Alloc>::empty() const noexcept -> bool {
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::reserve(size_type rsv) -> void {
   if (avail_ < rsv) {
-    size_type new_sz = max(rsv, 2 * size());
+    size_type new_sz = max(rsv, 2 * capacity());
 
     /* First, try to use the resize extension. */
     if (allocator_traits<allocator_type>::resize(this->get_allocator_(),
