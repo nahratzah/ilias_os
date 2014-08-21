@@ -141,6 +141,9 @@ void swap(vector<T, Alloc>& a, vector<T, Alloc>& b)
     noexcept(noexcept(a.swap(b)));
 
 
+namespace impl {
+
+
 class _vector_bool_reference;
 
 namespace {
@@ -161,7 +164,7 @@ struct _vector_bool_iterator_deref<bool> {
   : result(*p & msk) {}
 };
 
-} /* namespace std::<unnamed> */
+} /* namespace std::impl::<unnamed> */
 
 template<bool IsConst>
 class _vector_bool_iterator
@@ -282,6 +285,10 @@ class _vector_bool_reference {
   const elem msk_;
 };
 
+
+} /* namespace std::impl */
+
+
 template<typename Allocator>
 class vector<bool, Allocator>
 : private impl::alloc_base<
@@ -301,10 +308,10 @@ class vector<bool, Allocator>
   using value_type = bool;
   using allocator_type = Allocator;
   using size_type = typename allocator_traits<allocator_type>::size_type;
-  using reference = _vector_bool_reference;
+  using reference = impl::_vector_bool_reference;
   using const_reference = bool;
-  using iterator = _vector_bool_iterator<false>;
-  using const_iterator = _vector_bool_iterator<true>;
+  using iterator = impl::_vector_bool_iterator<false>;
+  using const_iterator = impl::_vector_bool_iterator<true>;
   using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
   using const_reverse_iterator =
       _namespace(std)::reverse_iterator<const_iterator>;

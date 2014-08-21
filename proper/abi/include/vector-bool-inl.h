@@ -6,6 +6,7 @@
 #include <limits>
 
 _namespace_begin(std)
+namespace impl {
 
 
 template<bool IsConst>
@@ -257,6 +258,9 @@ inline auto swap(bool& a,
   a = b;
   b = tmp;
 }
+
+
+} /* namespace std::impl */
 
 
 template<typename Alloc>
@@ -793,9 +797,9 @@ auto operator<(const vector<bool, Alloc>& a, const vector<bool, Alloc>& b)
   tie(mismatch_a, mismatch_b) = mismatch(p_a, p_a_end, p_b, p_b_end);
 
   /* Compare partial integer at end of array, using iterators. */
-  return lexicographical_compare(_vector_bool_iterator<true>(mismatch_a),
+  return lexicographical_compare(impl::_vector_bool_iterator<true>(mismatch_a),
                                  a.end(),
-                                 _vector_bool_iterator<true>(mismatch_b),
+                                 impl::_vector_bool_iterator<true>(mismatch_b),
                                  b.end());
 }
 
