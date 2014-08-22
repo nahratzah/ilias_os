@@ -550,6 +550,69 @@ constexpr int clz(long long x) noexcept {
 #endif /* __cplusplus */
 
 
+constexpr int popcount(unsigned int x) noexcept {
+  return __builtin_popcount(x);
+}
+
+constexpr int popcountb(unsigned char x) noexcept {
+  unsigned int x_ = x;
+  return popcount(x_);
+}
+
+constexpr int popcounts(unsigned short x) noexcept {
+  unsigned int x_ = x;
+  return popcount(x_);
+}
+
+constexpr int popcountl(unsigned long x) noexcept {
+  return __builtin_popcountl(x);
+}
+
+constexpr int popcountll(unsigned long long x) noexcept {
+  return __builtin_popcountll(x);
+}
+
+#if _USE_INT128
+constexpr int popcount128(_ABI_TYPES(uint128_t) x) noexcept {
+  _ABI_TYPES(uint64_t) x_hi = x >> 64;
+  _ABI_TYPES(uint64_t) x_lo = x;
+#ifdef __cplusplus
+  static_assert(sizeof(unsigned long long) >= sizeof(uint64_t),
+                "popcount128 implementation failure");
+#endif
+  return popcountll(x_hi) + popcountll(x_lo);
+}
+#endif
+
+#ifdef __cplusplus
+
+constexpr int popcount(unsigned char x) noexcept {
+  return popcountb(x);
+}
+
+constexpr int popcount(unsigned short x) noexcept {
+  return popcounts(x);
+}
+
+constexpr int popcount(unsigned long x) noexcept {
+  return popcountl(x);
+}
+
+constexpr int popcount(unsigned long long x) noexcept {
+  return popcountll(x);
+}
+
+#if _USE_INT128
+
+constexpr int popcount(_ABI_TYPES(uint128_t) x) noexcept {
+  return popcount128(x);
+}
+
+#endif
+
+#endif /* __cplusplus */
+
+
 #ifdef __cplusplus
 } /* namespace __cxxabiv1 */
 #endif /* __cplusplus */
@@ -591,6 +654,12 @@ using abi::clzs;
 using abi::clz;
 using abi::clzl;
 using abi::clzll;
+
+using abi::popcountb;
+using abi::popcounts;
+using abi::popcount;
+using abi::popcountl;
+using abi::popcountll;
 #endif
 
 #endif /* _ABI_MISC_INT_H_ */

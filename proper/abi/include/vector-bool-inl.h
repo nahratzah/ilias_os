@@ -400,6 +400,14 @@ auto move(InputIter b, InputIter e,
   return impl::bitwise_move(b, e, out);
 }
 
+template<bool IsConst>
+auto count(impl::_vector_bool_iterator<IsConst> b,
+           impl::_vector_bool_iterator<IsConst> e,
+           const bool& v)
+    noexcept -> impl::_vector_bool_iterator<true>::difference_type {
+  return impl::_vector_bool_iterator_algorithms::bitwise_count(b, e, v);
+}
+
 inline auto copy(impl::_vector_bool_iterator<false> b,
                  impl::_vector_bool_iterator<false> e,
                  impl::_vector_bool_iterator<false> out) noexcept ->
