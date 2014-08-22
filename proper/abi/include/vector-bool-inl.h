@@ -9,6 +9,129 @@ _namespace_begin(std)
 namespace impl {
 
 
+template<typename InputIter>
+auto bitwise_copy(InputIter b, InputIter e,
+                  _vector_bool_iterator<false> out) ->
+    _vector_bool_iterator<false> {
+  using elem = _vector_bool_iterator<false>::elem;
+  constexpr unsigned int digits = numeric_limits<elem>::digits;
+
+  /* Empty range. */
+  if (b == e) return out;
+
+  /*
+   * First, handle case where out.shift_ may not be zero.
+   */
+  if (out.shift_ != 0) {
+    elem mask = (elem(1) << out.shift_);
+    elem keep_mask = ~elem(0);
+    elem assign = 0;
+    for (unsigned char i = out.shift_; i != digits; ++i, ++b, mask <<= 1) {
+      /* GUARD: End of sequence. */
+      if (_predict_false(b == e)) {
+        *out.p_ = (*out.p_ & keep_mask) | assign;
+        out.shift_ = i;
+        return out;
+      }
+
+      bool v = *b;
+      keep_mask &= ~mask;
+      assign |= (v ? mask : elem(0));
+    }
+    *out.p_ = (*out.p_ & keep_mask) | assign;
+    ++out.p_;
+    out.shift_ = 0;
+  }
+
+  /*
+   * Handle copying for out.shift_ == 0.
+   */
+  for (;;) {
+    elem mask = 0x1;
+    elem assign = 0;
+    for (unsigned char i = 0; i != digits; ++i, ++b, mask <<= 1) {
+      /* GUARD: End of sequence. */
+      if (_predict_false(b == e)) {
+        if (i != 0) {
+          elem keep_mask = ~(mask - 1U);
+          *out.p_ = (*out.p_ & keep_mask) | assign;
+          out.shift_ = i;
+        }
+        return out;
+      }
+
+      bool v = *b;
+      assign |= (v ? mask : elem(0));
+    }
+    *out.p_ = assign;
+    ++out.p_;
+  }
+
+  /* UNREACHABLE */
+}
+
+template<typename InputIter>
+auto bitwise_move(InputIter b, InputIter e,
+                  _vector_bool_iterator<false> out) ->
+    _vector_bool_iterator<false> {
+  using elem = _vector_bool_iterator<false>::elem;
+  constexpr unsigned int digits = numeric_limits<elem>::digits;
+
+  /* Empty range. */
+  if (b == e) return out;
+
+  /*
+   * First, handle case where out.shift_ may not be zero.
+   */
+  if (out.shift_ != 0) {
+    elem mask = (elem(1) << out.shift_);
+    elem keep_mask = ~elem(0);
+    elem assign = 0;
+    for (unsigned char i = out.shift_; i != digits; ++i, ++b, mask <<= 1) {
+      /* GUARD: End of sequence. */
+      if (_predict_false(b == e)) {
+        *out.p_ = (*out.p_ & keep_mask) | assign;
+        out.shift_ = i;
+        return out;
+      }
+
+      bool v = move(*b);
+      keep_mask &= ~mask;
+      assign |= (v ? mask : elem(0));
+    }
+    *out.p_ = (*out.p_ & keep_mask) | assign;
+    ++out.p_;
+    out.shift_ = 0;
+  }
+
+  /*
+   * Handle copying for out.shift_ == 0.
+   */
+  for (;;) {
+    elem mask = 0x1;
+    elem assign = 0;
+    for (unsigned char i = 0; i != digits; ++i, ++b, mask <<= 1) {
+      /* GUARD: End of sequence. */
+      if (_predict_false(b == e)) {
+        if (i != 0) {
+          elem keep_mask = ~(mask - 1U);
+          *out.p_ = (*out.p_ & keep_mask) | assign;
+          out.shift_ = i;
+        }
+        return out;
+      }
+
+      bool v = move(*b);
+      assign |= (v ? mask : elem(0));
+    }
+    *out.p_ = assign;
+    ++out.p_;
+  }
+
+  /* UNREACHABLE */
+}
+
+
 template<bool IsConst>
 constexpr _vector_bool_iterator<IsConst>::_vector_bool_iterator(elem_pointer p)
     noexcept
@@ -261,6 +384,44 @@ inline auto swap(bool& a,
 
 
 } /* namespace std::impl */
+
+
+template<typename InputIter>
+auto copy(InputIter b, InputIter e,
+          impl::_vector_bool_iterator<false> out) ->
+    impl::_vector_bool_iterator<false> {
+  return impl::bitwise_copy(b, e, out);
+}
+
+template<typename InputIter>
+auto move(InputIter b, InputIter e,
+          impl::_vector_bool_iterator<false> out) ->
+    impl::_vector_bool_iterator<false> {
+  return impl::bitwise_move(b, e, out);
+}
+
+inline auto copy(impl::_vector_bool_iterator<false> b,
+                 impl::_vector_bool_iterator<false> e,
+                 impl::_vector_bool_iterator<false> out) noexcept ->
+    impl::_vector_bool_iterator<false> {
+  using iter = impl::_vector_bool_iterator<true>;
+  return copy(iter(b), iter(e), out);
+}
+
+inline auto move(impl::_vector_bool_iterator<false> b,
+                 impl::_vector_bool_iterator<false> e,
+                 impl::_vector_bool_iterator<false> out) noexcept ->
+    impl::_vector_bool_iterator<false> {
+  using iter = impl::_vector_bool_iterator<true>;
+  return move(iter(b), iter(e), out);
+}
+
+inline auto move(impl::_vector_bool_iterator<true> b,
+                 impl::_vector_bool_iterator<true> e,
+                 impl::_vector_bool_iterator<false> out) noexcept ->
+    impl::_vector_bool_iterator<false> {
+  return copy(b, e, out);
+}
 
 
 template<typename Alloc>

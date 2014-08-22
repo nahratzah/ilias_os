@@ -166,6 +166,15 @@ struct _vector_bool_iterator_deref<bool> {
 
 } /* namespace std::impl::<unnamed> */
 
+template<bool> class _vector_bool_iterator;
+
+template<typename InputIter>
+_vector_bool_iterator<false> bitwise_copy(InputIter, InputIter,
+                                          _vector_bool_iterator<false>);
+template<typename InputIter>
+_vector_bool_iterator<false> bitwise_move(InputIter, InputIter,
+                                          _vector_bool_iterator<false>);
+
 template<bool IsConst>
 class _vector_bool_iterator
 : public iterator<random_access_iterator_tag,
@@ -175,6 +184,13 @@ class _vector_bool_iterator
                   conditional_t<IsConst, bool, _vector_bool_reference>>
 {
   friend _vector_bool_iterator<!IsConst>;
+
+  template<typename InputIter>
+  friend _vector_bool_iterator<false> bitwise_copy(
+      InputIter, InputIter, _vector_bool_iterator<false>);
+  template<typename InputIter>
+  friend _vector_bool_iterator<false> bitwise_move(
+      InputIter, InputIter, _vector_bool_iterator<false>);
 
  private:
   using iterator_base =
@@ -287,6 +303,33 @@ class _vector_bool_reference {
 
 
 } /* namespace std::impl */
+
+
+/*
+ * Specialize common algorithms for vector<bool>.
+ */
+template<typename InputIter>
+impl::_vector_bool_iterator<false> copy(InputIter, InputIter,
+                                        impl::_vector_bool_iterator<false>);
+template<typename InputIter>
+impl::_vector_bool_iterator<false> move(InputIter, InputIter,
+                                        impl::_vector_bool_iterator<false>);
+
+/*
+ * Specializations to reduce amount of generated code.
+ */
+impl::_vector_bool_iterator<false> copy(impl::_vector_bool_iterator<false>,
+                                        impl::_vector_bool_iterator<false>,
+                                        impl::_vector_bool_iterator<false>)
+    noexcept;
+impl::_vector_bool_iterator<false> move(impl::_vector_bool_iterator<false>,
+                                        impl::_vector_bool_iterator<false>,
+                                        impl::_vector_bool_iterator<false>)
+    noexcept;
+impl::_vector_bool_iterator<false> move(impl::_vector_bool_iterator<true>,
+                                        impl::_vector_bool_iterator<true>,
+                                        impl::_vector_bool_iterator<false>)
+    noexcept;
 
 
 template<typename Allocator>
