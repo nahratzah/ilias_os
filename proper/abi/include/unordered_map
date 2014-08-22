@@ -242,6 +242,175 @@ void swap(unordered_map<Key, T, Hash, Pred, A>&,
           unordered_map<Key, T, Hash, Pred, A>&);
 
 
+template<typename Key,
+         typename T,
+         typename Hash = hash<Key>,
+         typename Pred = equal_to<Key>,
+         typename Allocator = allocator<pair<Key, T>>>
+class unordered_multimap;
+
+template<typename Key, typename T, typename Hash, typename Pred, typename A>
+bool operator==(const unordered_multimap<Key, T, Hash, Pred, A>&,
+                const unordered_multimap<Key, T, Hash, Pred, A>&);
+template<typename Key, typename T, typename Hash, typename Pred, typename A>
+bool operator!=(const unordered_multimap<Key, T, Hash, Pred, A>&,
+                const unordered_multimap<Key, T, Hash, Pred, A>&);
+
+
+template<typename Key, typename T, typename Hash, typename Pred,
+         typename Allocator>
+class unordered_multimap
+: private impl::alloc_base<typename allocator_traits<Allocator>::
+      template rebind_alloc<impl::unordered_set_elem<pair<Key, T>, void>>>
+{
+  template<typename K, typename U, typename H, typename P, typename A>
+  friend bool operator==(const unordered_multimap<K, U, H, P, A>&,
+                         const unordered_multimap<K, U, H, P, A>&);
+
+ private:
+  using elem = impl::unordered_set_elem<pair<Key, T>, void>;
+  using data_type =
+      _namespace(ilias)::linked_unordered_set<elem, void,
+                                              impl::map_hash_wrapper<Hash,
+                                                                     Key, T,
+                                                                     elem>,
+                                              impl::map_equal_wrapper<Pred,
+                                                                      Key, T,
+                                                                      elem>,
+                                              Allocator>;
+  using alloc_base = impl::alloc_base<
+      typename allocator_traits<Allocator>::template rebind_alloc<elem>>;
+
+ public:
+  using key_type = Key;
+  using mapped_type = T;
+  using value_type = pair<Key, T>;
+  using hasher = Hash;
+  using key_equal = Pred;
+  using allocator_type = Allocator;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = typename allocator_traits<allocator_type>::pointer;
+  using const_pointer =
+      typename allocator_traits<allocator_type>::const_pointer;
+  using size_type = typename data_type::size_type;
+  using difference_type = typename data_type::difference_type;
+  using iterator =
+      impl::set_elem_iter<value_type,
+                          typename data_type::iterator>;
+  using const_iterator =
+      impl::set_elem_iter<const value_type,
+                          typename data_type::const_iterator>;
+  using local_iterator =
+      impl::set_elem_iter<value_type,
+                          typename data_type::local_iterator>;
+  using const_local_iterator =
+      impl::set_elem_iter<const value_type,
+                          typename data_type::const_local_iterator>;
+
+  explicit unordered_multimap(size_type = 0,
+                              const hasher& = hasher(),
+                              const key_equal& = key_equal(),
+                              const allocator_type& = allocator_type());
+  template<typename InputIter>
+  unordered_multimap(InputIter, InputIter,
+                     size_type = 0,
+                     const hasher& = hasher(),
+                     const key_equal& = key_equal(),
+                     const allocator_type& = allocator_type());
+  unordered_multimap(const unordered_multimap&);
+  unordered_multimap(unordered_multimap&&);
+  explicit unordered_multimap(const allocator_type&);
+  unordered_multimap(const unordered_multimap&, const allocator_type&);
+  unordered_multimap(unordered_multimap&&, const allocator_type&);
+  unordered_multimap(initializer_list<value_type>,
+                     size_type = 0,
+                     const hasher& = hasher(),
+                     const key_equal& = key_equal(),
+                     const allocator_type& = allocator_type());
+  ~unordered_multimap() noexcept;
+
+  unordered_multimap& operator=(const unordered_multimap&);
+  unordered_multimap& operator=(unordered_multimap&&);
+  unordered_multimap& operator=(initializer_list<value_type>);
+
+  allocator_type get_allocator() const;
+
+  bool empty() const noexcept;
+  size_type size() const noexcept;
+  size_type max_size() const noexcept;
+
+  iterator begin() noexcept;
+  const_iterator begin() const noexcept;
+  iterator end() noexcept;
+  const_iterator end() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+
+  template<typename... Args> iterator emplace(Args&&...);
+  template<typename... Args> iterator emplace_hint(const_iterator, Args&&...);
+  iterator insert(const value_type&);
+  template<typename P>
+  enable_if_t<is_convertible<P, value_type>::value, iterator>
+      insert(P&&);
+  iterator insert(const_iterator, const value_type&);
+  template<typename P>
+  enable_if_t<is_convertible<P, value_type>::value, iterator>
+      insert(const_iterator, P&&);
+  template<typename InputIter> void insert(InputIter, InputIter);
+  void insert(initializer_list<value_type>);
+
+  iterator erase(const_iterator) noexcept;
+  size_type erase(const key_type&) noexcept;
+  iterator erase(const_iterator, const_iterator) noexcept;
+  void clear() noexcept;
+
+  void swap(unordered_multimap&);
+
+  hasher hash_function() const;
+  key_equal key_eq() const;
+
+  iterator find(const key_type&);
+  const_iterator find(const key_type&) const;
+  size_type count(const key_type&) const;
+  iterator lower_bound(const key_type&);  // Extension
+  const_iterator lower_bound(const key_type&) const;  // Extension
+  iterator upper_bound(const key_type&);  // Extension
+  const_iterator upper_bound(const key_type&) const;  // Extension
+  pair<iterator, iterator> equal_range(const key_type&);
+  pair<const_iterator, const_iterator> equal_range(const key_type&) const;
+
+  mapped_type& operator[](const key_type&);
+  mapped_type& operator[](key_type&&);
+  mapped_type& at(const key_type&);
+  const mapped_type& at(const key_type&) const;
+
+  size_type bucket_count() const noexcept;
+  size_type max_bucket_count() const noexcept;
+  size_type bucket_size(size_type) const noexcept;
+  size_type bucket(const key_type&) const;
+  local_iterator begin(size_type) noexcept;
+  const_local_iterator begin(size_type) const noexcept;
+  local_iterator end(size_type) noexcept;
+  const_local_iterator end(size_type) const noexcept;
+  const_local_iterator cbegin(size_type) const noexcept;
+  const_local_iterator cend(size_type) const noexcept;
+
+  float load_factor() const noexcept;
+  float max_load_factor() const noexcept;
+  void max_load_factor(float);
+  void rehash(size_type);
+  void reserve(size_type);
+
+ private:
+  data_type data_;
+};
+
+template<typename Key, typename T, typename Hash, typename Pred, typename A>
+void swap(unordered_multimap<Key, T, Hash, Pred, A>&,
+          unordered_multimap<Key, T, Hash, Pred, A>&);
+
+
 extern template class unordered_map<char, char>;
 extern template class unordered_map<signed char, signed char>;
 extern template class unordered_map<unsigned char, unsigned char>;
@@ -298,6 +467,65 @@ extern template bool operator==(const unordered_map<unsigned long long,
                                                     unsigned long long>&,
                                 const unordered_map<unsigned long long,
                                                     unsigned long long>&);
+
+
+extern template class unordered_multimap<char, char>;
+extern template class unordered_multimap<signed char, signed char>;
+extern template class unordered_multimap<unsigned char, unsigned char>;
+extern template class unordered_multimap<short, short>;
+extern template class unordered_multimap<unsigned short, unsigned short>;
+extern template class unordered_multimap<int, int>;
+extern template class unordered_multimap<unsigned int, unsigned int>;
+extern template class unordered_multimap<long, long>;
+extern template class unordered_multimap<unsigned long, unsigned long>;
+extern template class unordered_multimap<long long, long long>;
+extern template class unordered_multimap<unsigned long long,
+                                         unsigned long long>;
+
+extern template bool operator==(const unordered_multimap<char,
+                                                         char>&,
+                                const unordered_multimap<char,
+                                                         char>&);
+extern template bool operator==(const unordered_multimap<signed char,
+                                                         signed char>&,
+                                const unordered_multimap<signed char,
+                                                         signed char>&);
+extern template bool operator==(const unordered_multimap<unsigned char,
+                                                         unsigned char>&,
+                                const unordered_multimap<unsigned char,
+                                                         unsigned char>&);
+extern template bool operator==(const unordered_multimap<short,
+                                                         short>&,
+                                const unordered_multimap<short,
+                                                         short>&);
+extern template bool operator==(const unordered_multimap<unsigned short,
+                                                         unsigned short>&,
+                                const unordered_multimap<unsigned short,
+                                                         unsigned short>&);
+extern template bool operator==(const unordered_multimap<int,
+                                                         int>&,
+                                const unordered_multimap<int,
+                                                         int>&);
+extern template bool operator==(const unordered_multimap<unsigned int,
+                                                         unsigned int>&,
+                                const unordered_multimap<unsigned int,
+                                                         unsigned int>&);
+extern template bool operator==(const unordered_multimap<long,
+                                                         long>&,
+                                const unordered_multimap<long,
+                                                         long>&);
+extern template bool operator==(const unordered_multimap<unsigned long,
+                                                         unsigned long>&,
+                                const unordered_multimap<unsigned long,
+                                                         unsigned long>&);
+extern template bool operator==(const unordered_multimap<long long,
+                                                         long long>&,
+                                const unordered_multimap<long long,
+                                                         long long>&);
+extern template bool operator==(const unordered_multimap<unsigned long long,
+                                                         unsigned long long>&,
+                                const unordered_multimap<unsigned long long,
+                                                         unsigned long long>&);
 
 
 _namespace_end(std)
