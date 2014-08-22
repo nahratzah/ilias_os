@@ -209,6 +209,96 @@ extern template class map<unsigned long, unsigned long>;
 extern template class map<long long, long long>;
 extern template class map<unsigned long long, unsigned long long>;
 
+extern template bool operator==(const map<char,
+                                          char>&,
+                                const map<char,
+                                          char>&);
+extern template bool operator==(const map<signed char,
+                                          signed char>&,
+                                const map<signed char,
+                                          signed char>&);
+extern template bool operator==(const map<unsigned char,
+                                          unsigned char>&,
+                                const map<unsigned char,
+                                          unsigned char>&);
+extern template bool operator==(const map<short,
+                                          short>&,
+                                const map<short,
+                                          short>&);
+extern template bool operator==(const map<unsigned short,
+                                          unsigned short>&,
+                                const map<unsigned short,
+                                          unsigned short>&);
+extern template bool operator==(const map<int,
+                                          int>&,
+                                const map<int,
+                                          int>&);
+extern template bool operator==(const map<unsigned int,
+                                          unsigned int>&,
+                                const map<unsigned int,
+                                          unsigned int>&);
+extern template bool operator==(const map<long,
+                                          long>&,
+                                const map<long,
+                                          long>&);
+extern template bool operator==(const map<unsigned long,
+                                          unsigned long>&,
+                                const map<unsigned long,
+                                          unsigned long>&);
+extern template bool operator==(const map<long long,
+                                          long long>&,
+                                const map<long long,
+                                          long long>&);
+extern template bool operator==(const map<unsigned long long,
+                                          unsigned long long>&,
+                                const map<unsigned long long,
+                                          unsigned long long>&);
+
+extern template bool operator<(const map<char,
+                                         char>&,
+                               const map<char,
+                                         char>&);
+extern template bool operator<(const map<signed char,
+                                         signed char>&,
+                               const map<signed char,
+                                         signed char>&);
+extern template bool operator<(const map<unsigned char,
+                                         unsigned char>&,
+                               const map<unsigned char,
+                                         unsigned char>&);
+extern template bool operator<(const map<short,
+                                         short>&,
+                               const map<short,
+                                         short>&);
+extern template bool operator<(const map<unsigned short,
+                                         unsigned short>&,
+                               const map<unsigned short,
+                                         unsigned short>&);
+extern template bool operator<(const map<int,
+                                         int>&,
+                               const map<int,
+                                         int>&);
+extern template bool operator<(const map<unsigned int,
+                                         unsigned int>&,
+                               const map<unsigned int,
+                                         unsigned int>&);
+extern template bool operator<(const map<long,
+                                         long>&,
+                               const map<long,
+                                         long>&);
+extern template bool operator<(const map<unsigned long,
+                                         unsigned long>&,
+                               const map<unsigned long,
+                                         unsigned long>&);
+extern template bool operator<(const map<long long,
+                                         long long>&,
+                               const map<long long,
+                                         long long>&);
+extern template bool operator<(const map<unsigned long long,
+                                         unsigned long long>&,
+                               const map<unsigned long long,
+                                         unsigned long long>&);
+
 
 _namespace_end(std)
 
