@@ -184,6 +184,156 @@ void swap(set<Key, Compare, Allocator>&,
           set<Key, Compare, Allocator>&) noexcept;
 
 
+template<typename Key, typename Compare = less<Key>,
+         typename Allocator = allocator<Key>>
+class multiset
+: private impl::alloc_base<typename allocator_traits<Allocator>::
+      template rebind_alloc<impl::set_elem<Key, void>>>
+{
+ private:
+  using elem = impl::set_elem<Key, void>;
+  using data_type =
+      _namespace(ilias)::linked_set<elem, void,
+                                    impl::set_cmp_wrapper<Compare, Key, elem>>;
+  using alloc_base = impl::alloc_base<
+      typename allocator_traits<Allocator>::template rebind_alloc<elem>>;
+
+ public:
+  using key_type = Key;
+  using value_type = Key;
+  using key_compare = Compare;
+  using value_compare = Compare;
+  using allocator_type = Allocator;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = typename allocator_traits<allocator_type>::pointer;
+  using const_pointer =
+      typename allocator_traits<allocator_type>::const_pointer;
+  using size_type = typename allocator_traits<allocator_type>::size_type;
+  using difference_type =
+      typename allocator_traits<allocator_type>::difference_type;
+  using iterator =
+      impl::set_elem_iter<value_type,
+                          typename data_type::iterator>;
+  using const_iterator =
+      impl::set_elem_iter<const value_type,
+                          typename data_type::const_iterator>;
+  using reverse_iterator = _namespace(std)::reverse_iterator<iterator>;
+  using const_reverse_iterator =
+      _namespace(std)::reverse_iterator<const_iterator>;
+
+  explicit multiset(const Compare& = Compare(),
+                    const Allocator& = Allocator());
+  template<typename InputIterator>
+  multiset(InputIterator, InputIterator,
+      const Compare& = Compare(), const Allocator& = Allocator());
+  multiset(const multiset&);
+  multiset(multiset&&);
+  multiset(const multiset&, const Allocator&);
+  multiset(multiset&&, const Allocator&);
+  multiset(initializer_list<value_type>,
+      const Compare& = Compare(), const Allocator& = Allocator());
+  template<typename InputIterator>
+  multiset(InputIterator, InputIterator, const Allocator&);
+  multiset(initializer_list<value_type>, const Allocator&);
+  ~multiset() noexcept;
+  multiset& operator=(const multiset&);
+  multiset& operator=(multiset&&);
+  multiset& operator=(initializer_list<value_type>);
+  allocator_type get_allocator() const noexcept;
+
+  iterator begin() noexcept;
+  const_iterator begin() const noexcept;
+  iterator end() noexcept;
+  const_iterator end() const noexcept;
+
+  reverse_iterator rbegin() noexcept;
+  const_reverse_iterator rbegin() const noexcept;
+  reverse_iterator rend() noexcept;
+  const_reverse_iterator rend() const noexcept;
+
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+  const_reverse_iterator crbegin() const noexcept;
+  const_reverse_iterator crend() const noexcept;
+
+  bool empty() const noexcept;
+  size_type size() const noexcept;
+  size_type max_size() const noexcept;
+
+  template<typename... Args> iterator emplace(Args&&...);
+  template<typename... Args> iterator emplace_hint(const_iterator, Args&&...);
+  iterator insert(const value_type&);
+  iterator insert(value_type&&);
+  iterator insert(const_iterator, const value_type&);
+  iterator insert(const_iterator, value_type&&);
+  template<typename InputIterator>
+  void insert(InputIterator, InputIterator);
+  void insert(initializer_list<value_type>);
+
+  iterator erase(const_iterator) noexcept;
+  size_type erase(const key_type&) noexcept;
+  iterator erase(const_iterator, const_iterator) noexcept;
+  void swap(multiset&) noexcept;
+  void clear() noexcept;
+
+  key_compare key_comp() const;
+  value_compare value_comp() const;
+
+  iterator find(const key_type&);
+  const_iterator find(const key_type&) const;
+  template<typename K> iterator find(const K&);
+  template<typename K> const_iterator find(const K&) const;
+
+  size_type count(const key_type&) const;
+  template<typename K> size_type count(const K&) const;
+
+  iterator lower_bound(const key_type&);
+  const_iterator lower_bound(const key_type&) const;
+  template<typename K> iterator lower_bound(const K&);
+  template<typename K> const_iterator lower_bound(const K&) const;
+
+  iterator upper_bound(const key_type&);
+  const_iterator upper_bound(const key_type&) const;
+  template<typename K> iterator upper_bound(const K&);
+  template<typename K> const_iterator upper_bound(const K&) const;
+
+  pair<iterator, iterator> equal_range(const key_type&);
+  pair<const_iterator, const_iterator> equal_range(const key_type&) const;
+  template<typename K>
+  pair<iterator, iterator> equal_range(const K&);
+  template<typename K>
+  pair<const_iterator, const_iterator> equal_range(const K&) const;
+
+ private:
+  data_type data_;
+  size_type size_ = 0;
+};
+
+template<typename Key, typename Compare, typename Allocator>
+bool operator==(const multiset<Key, Compare, Allocator>&,
+                const multiset<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator<(const multiset<Key, Compare, Allocator>&,
+               const multiset<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator!=(const multiset<Key, Compare, Allocator>&,
+                const multiset<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator>(const multiset<Key, Compare, Allocator>&,
+               const multiset<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator<=(const multiset<Key, Compare, Allocator>&,
+                const multiset<Key, Compare, Allocator>&);
+template<typename Key, typename Compare, typename Allocator>
+bool operator>=(const multiset<Key, Compare, Allocator>&,
+                const multiset<Key, Compare, Allocator>&);
+
+template<typename Key, typename Compare, typename Allocator>
+void swap(multiset<Key, Compare, Allocator>&,
+          multiset<Key, Compare, Allocator>&) noexcept;
+
+
 extern template class set<char>;
 extern template class set<signed char>;
 extern template class set<unsigned char>;
@@ -195,6 +345,111 @@ extern template class set<long>;
 extern template class set<unsigned long>;
 extern template class set<long long>;
 extern template class set<unsigned long long>;
+
+extern template bool operator==(const set<char>&,
+                                const set<char>&);
+extern template bool operator==(const set<signed char>&,
+                                const set<signed char>&);
+extern template bool operator==(const set<unsigned char>&,
+                                const set<unsigned char>&);
+extern template bool operator==(const set<short>&,
+                                const set<short>&);
+extern template bool operator==(const set<unsigned short>&,
+                                const set<unsigned short>&);
+extern template bool operator==(const set<int>&,
+                                const set<int>&);
+extern template bool operator==(const set<unsigned int>&,
+                                const set<unsigned int>&);
+extern template bool operator==(const set<long>&,
+                                const set<long>&);
+extern template bool operator==(const set<unsigned long>&,
+                                const set<unsigned long>&);
+extern template bool operator==(const set<long long>&,
+                                const set<long long>&);
+extern template bool operator==(const set<unsigned long long>&,
+                                const set<unsigned long long>&);
+
+extern template bool operator<(const set<char>&,
+                               const set<char>&);
+extern template bool operator<(const set<signed char>&,
+                               const set<signed char>&);
+extern template bool operator<(const set<unsigned char>&,
+                               const set<unsigned char>&);
+extern template bool operator<(const set<short>&,
+                               const set<short>&);
+extern template bool operator<(const set<unsigned short>&,
+                               const set<unsigned short>&);
+extern template bool operator<(const set<int>&,
+                               const set<int>&);
+extern template bool operator<(const set<unsigned int>&,
+                               const set<unsigned int>&);
+extern template bool operator<(const set<long>&,
+                               const set<long>&);
+extern template bool operator<(const set<unsigned long>&,
+                               const set<unsigned long>&);
+extern template bool operator<(const set<long long>&,
+                               const set<long long>&);
+extern template bool operator<(const set<unsigned long long>&,
+                               const set<unsigned long long>&);
+
+
+extern template class multiset<char>;
+extern template class multiset<signed char>;
+extern template class multiset<unsigned char>;
+extern template class multiset<short>;
+extern template class multiset<unsigned short>;
+extern template class multiset<int>;
+extern template class multiset<unsigned int>;
+extern template class multiset<long>;
+extern template class multiset<unsigned long>;
+extern template class multiset<long long>;
+extern template class multiset<unsigned long long>;
+
+extern template bool operator==(const multiset<char>&,
+                                const multiset<char>&);
+extern template bool operator==(const multiset<signed char>&,
+                                const multiset<signed char>&);
+extern template bool operator==(const multiset<unsigned char>&,
+                                const multiset<unsigned char>&);
+extern template bool operator==(const multiset<short>&,
+                                const multiset<short>&);
+extern template bool operator==(const multiset<unsigned short>&,
+                                const multiset<unsigned short>&);
+extern template bool operator==(const multiset<int>&,
+                                const multiset<int>&);
+extern template bool operator==(const multiset<unsigned int>&,
+                                const multiset<unsigned int>&);
+extern template bool operator==(const multiset<long>&,
+                                const multiset<long>&);
+extern template bool operator==(const multiset<unsigned long>&,
+                                const multiset<unsigned long>&);
+extern template bool operator==(const multiset<long long>&,
+                                const multiset<long long>&);
+extern template bool operator==(const multiset<unsigned long long>&,
+                                const multiset<unsigned long long>&);
+
+extern template bool operator<(const multiset<char>&,
+                               const multiset<char>&);
+extern template bool operator<(const multiset<signed char>&,
+                               const multiset<signed char>&);
+extern template bool operator<(const multiset<unsigned char>&,
+                               const multiset<unsigned char>&);
+extern template bool operator<(const multiset<short>&,
+                               const multiset<short>&);
+extern template bool operator<(const multiset<unsigned short>&,
+                               const multiset<unsigned short>&);
+extern template bool operator<(const multiset<int>&,
+                               const multiset<int>&);
+extern template bool operator<(const multiset<unsigned int>&,
+                               const multiset<unsigned int>&);
+extern template bool operator<(const multiset<long>&,
+                               const multiset<long>&);
+extern template bool operator<(const multiset<unsigned long>&,
+                               const multiset<unsigned long>&);
+extern template bool operator<(const multiset<long long>&,
+                               const multiset<long long>&);
+extern template bool operator<(const multiset<unsigned long long>&,
+                               const multiset<unsigned long long>&);
 
 
 _namespace_end(std)
