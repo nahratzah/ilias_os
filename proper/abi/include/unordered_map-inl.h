@@ -909,38 +909,6 @@ auto unordered_multimap<Key, T, Hash, Pred, A>::equal_range(const key_type& k)
 }
 
 template<typename Key, typename T, typename Hash, typename Pred, typename A>
-auto unordered_multimap<Key, T, Hash, Pred, A>::operator[](
-    const key_type& k) -> mapped_type& {
-  iterator i = find(k);
-  if (i == end()) i = emplace(k, mapped_type());
-  return i->second;
-}
-
-template<typename Key, typename T, typename Hash, typename Pred, typename A>
-auto unordered_multimap<Key, T, Hash, Pred, A>::operator[](key_type&& k) ->
-    mapped_type& {
-  iterator i = find(k);
-  if (i == end()) i = emplace(move(k), mapped_type());
-  return i->second;
-}
-
-template<typename Key, typename T, typename Hash, typename Pred, typename A>
-auto unordered_multimap<Key, T, Hash, Pred, A>::at(const key_type& k) ->
-    mapped_type& {
-  iterator i = find(k);
-  if (i == end()) throw out_of_range("unordered_multimap::at");
-  return i->second;
-}
-
-template<typename Key, typename T, typename Hash, typename Pred, typename A>
-auto unordered_multimap<Key, T, Hash, Pred, A>::at(const key_type& k) const ->
-    const mapped_type& {
-  const_iterator i = find(k);
-  if (i == end()) throw out_of_range("unordered_multimap::at");
-  return i->second;
-}
-
-template<typename Key, typename T, typename Hash, typename Pred, typename A>
 auto unordered_multimap<Key, T, Hash, Pred, A>::bucket_count()
     const noexcept -> size_type {
   return data_.bucket_count();

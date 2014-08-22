@@ -636,35 +636,6 @@ auto multimap<Key, T, Cmp, A>::max_size() const noexcept -> size_type {
 }
 
 template<typename Key, typename T, typename Cmp, typename A>
-auto multimap<Key, T, Cmp, A>::operator[](const key_type& k) -> mapped_type& {
-  iterator i = find(k);
-  if (i == end()) i = emplace(k, mapped_type());
-  return i->second;
-}
-
-template<typename Key, typename T, typename Cmp, typename A>
-auto multimap<Key, T, Cmp, A>::operator[](key_type&& k) -> mapped_type& {
-  iterator i = find(k);
-  if (i == end()) i = emplace(move(k), mapped_type());
-  return i->second;
-}
-
-template<typename Key, typename T, typename Cmp, typename A>
-auto multimap<Key, T, Cmp, A>::at(const key_type& k) -> mapped_type& {
-  iterator i = find(k);
-  if (i == end()) throw out_of_range("map::at");
-  return i->second;
-}
-
-template<typename Key, typename T, typename Cmp, typename A>
-auto multimap<Key, T, Cmp, A>::at(const key_type& k) const ->
-    const mapped_type& {
-  const_iterator i = find(k);
-  if (i == end()) throw out_of_range("map::at");
-  return i->second;
-}
-
-template<typename Key, typename T, typename Cmp, typename A>
 template<typename... Args>
 auto multimap<Key, T, Cmp, A>::emplace(Args&&... args) -> iterator {
   void* hint = (empty() ?

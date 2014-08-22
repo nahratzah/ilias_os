@@ -380,11 +380,6 @@ class unordered_multimap
   pair<iterator, iterator> equal_range(const key_type&);
   pair<const_iterator, const_iterator> equal_range(const key_type&) const;
 
-  mapped_type& operator[](const key_type&);
-  mapped_type& operator[](key_type&&);
-  mapped_type& at(const key_type&);
-  const mapped_type& at(const key_type&) const;
-
   size_type bucket_count() const noexcept;
   size_type max_bucket_count() const noexcept;
   size_type bucket_size(size_type) const noexcept;
