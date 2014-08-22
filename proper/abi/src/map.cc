@@ -106,4 +106,107 @@ template bool operator<(const map<unsigned long long,
                                   unsigned long long>&);
 
 
+template class multimap<char, char>;
+template class multimap<signed char, signed char>;
+template class multimap<unsigned char, unsigned char>;
+template class multimap<short, short>;
+template class multimap<unsigned short, unsigned short>;
+template class multimap<int, int>;
+template class multimap<unsigned int, unsigned int>;
+template class multimap<long, long>;
+template class multimap<unsigned long, unsigned long>;
+template class multimap<long long, long long>;
+template class multimap<unsigned long long, unsigned long long>;
+
+template bool operator==(const multimap<char,
+                                        char>&,
+                         const multimap<char,
+                                        char>&);
+template bool operator==(const multimap<signed char,
+                                        signed char>&,
+                         const multimap<signed char,
+                                        signed char>&);
+template bool operator==(const multimap<unsigned char,
+                                        unsigned char>&,
+                         const multimap<unsigned char,
+                                        unsigned char>&);
+template bool operator==(const multimap<short,
+                                        short>&,
+                         const multimap<short,
+                                        short>&);
+template bool operator==(const multimap<unsigned short,
+                                        unsigned short>&,
+                         const multimap<unsigned short,
+                                        unsigned short>&);
+template bool operator==(const multimap<int,
+                                        int>&,
+                         const multimap<int,
+                                        int>&);
+template bool operator==(const multimap<unsigned int,
+                                        unsigned int>&,
+                         const multimap<unsigned int,
+                                        unsigned int>&);
+template bool operator==(const multimap<long,
+                                        long>&,
+                         const multimap<long,
+                                        long>&);
+template bool operator==(const multimap<unsigned long,
+                                        unsigned long>&,
+                         const multimap<unsigned long,
+                                        unsigned long>&);
+template bool operator==(const multimap<long long,
+                                        long long>&,
+                         const multimap<long long,
+                                        long long>&);
+template bool operator==(const multimap<unsigned long long,
+                                        unsigned long long>&,
+                         const multimap<unsigned long long,
+                                        unsigned long long>&);
+
+template bool operator<(const multimap<char,
+                                       char>&,
+                        const multimap<char,
+                                       char>&);
+template bool operator<(const multimap<signed char,
+                                       signed char>&,
+                        const multimap<signed char,
+                                       signed char>&);
+template bool operator<(const multimap<unsigned char,
+                                       unsigned char>&,
+                        const multimap<unsigned char,
+                                       unsigned char>&);
+template bool operator<(const multimap<short,
+                                       short>&,
+                        const multimap<short,
+                                       short>&);
+template bool operator<(const multimap<unsigned short,
+                                       unsigned short>&,
+                        const multimap<unsigned short,
+                                       unsigned short>&);
+template bool operator<(const multimap<int,
+                                       int>&,
+                        const multimap<int,
+                                       int>&);
+template bool operator<(const multimap<unsigned int,
+                                       unsigned int>&,
+                        const multimap<unsigned int,
+                                       unsigned int>&);
+template bool operator<(const multimap<long,
+                                       long>&,
+                        const multimap<long,
+                                       long>&);
+template bool operator<(const multimap<unsigned long,
+                                       unsigned long>&,
+                        const multimap<unsigned long,
+                                       unsigned long>&);
+template bool operator<(const multimap<long long,
+                                       long long>&,
+                        const multimap<long long,
+                                       long long>&);
+template bool operator<(const multimap<unsigned long long,
+                                       unsigned long long>&,
+                        const multimap<unsigned long long,
+                                       unsigned long long>&);
+
+
 _namespace_end(std)
