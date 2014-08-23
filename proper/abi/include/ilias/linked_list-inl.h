@@ -216,7 +216,7 @@ auto linked_list<T, Tag>::link_front(pointer p) noexcept -> void {
 
 template<typename T, class Tag>
 auto linked_list<T, Tag>::link_back(pointer p) noexcept -> void {
-  this->basic_linked_list::link_front(down_cast_(p));
+  this->basic_linked_list::link_back(down_cast_(p));
 }
 
 template<typename T, class Tag>
