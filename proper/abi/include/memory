@@ -879,6 +879,13 @@ struct temporary_buffer_allocator<void> {
   using pointer = void*;
 };
 
+template<typename T, typename U>
+bool operator==(const temporary_buffer_allocator<T>&,
+                const temporary_buffer_allocator<U>&) noexcept;
+template<typename T, typename U>
+bool operator!=(const temporary_buffer_allocator<T>&,
+                const temporary_buffer_allocator<U>&) noexcept;
+
 
 _namespace_end(std)
 
