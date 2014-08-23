@@ -3,6 +3,8 @@
 
 #include <ilias/linked_forward_list.h>
 #include <cassert>
+#include <algorithm>
+#include <functional>
 #include <utility>
 
 _namespace_begin(ilias)
@@ -50,6 +52,75 @@ inline auto basic_linked_forward_list::unlink_front() noexcept -> element* {
 inline auto basic_linked_forward_list::unlink(iterator i) noexcept ->
     element* {
   return unlink(i.elem_);
+}
+
+template<typename Compare>
+auto basic_linked_forward_list::merge(ptr_iterator b1, ptr_iterator e1,
+                                      ptr_iterator b2, ptr_iterator e2,
+                                      Compare compare) ->
+    _namespace(std)::tuple<ptr_iterator, ptr_iterator> {
+  using _namespace(std)::ref;
+  using _namespace(std)::bind;
+  using _namespace(std)::placeholders::_1;
+  using _namespace(std)::find_if;
+  using _namespace(std)::find_if_not;
+  using _namespace(std)::make_tuple;
+
+  if (b2 == e2) return make_tuple(b1, e1);
+  const ptr_iterator saved_b1 = b1;
+
+  /* Find b1, such that b2 < b1. */
+  b1 = find_if(b1, e1,
+               bind(ref(compare), ref(*b2), _1));
+
+  /*
+   * Loop invariant:
+   * -  b2 < b1
+   * -  b2 != e2  (i.e. not empty)
+   * -  b1 != e1  (i.e. not empty)
+   */
+  while (b1 != e1) {
+    /* Find b2_e, such that [b2..b2_e) < b1 && !(b2_e < b1). */
+    ptr_iterator b2_e = find_if_not(next(b2), e2,
+                                    bind(ref(compare), _1, ref(*b1)));
+
+    /* If b2_e == e2, e2 will be invalidated during the splice operation.
+     * b2_e will be invalidated unconditionally. */
+    const bool splice_everything = (b2_e == e2);
+
+    /* Splice [b2..b2_e) into list, before b1. */
+    tie(b1, b2) = splice(b1, b2, b2_e);
+    if (splice_everything)
+      return make_tuple(saved_b1, e1);  // Last merge completed.
+
+    /*
+     * Note: no need to update b2, since it points at its predecessor;
+     * b2 now points at b2_e.
+     */
+
+    /* Find b1, such that b2 < b1. */
+    b1 = find_if(next(b1), e1,
+                 bind(ref(compare), ref(*b2), _1));
+  }
+
+  /*
+   * b1 == e1  -- because loop guard
+   * b2 != e2  -- because if b2 == e2, the code above forces an early return
+   */
+  tie(b1, b2) = splice(b1, b2, e2);
+  return make_tuple(saved_b1, b1);
+}
+
+template<typename Compare>
+auto basic_linked_forward_list::merge(basic_linked_forward_list& other,
+                                      Compare compare) -> void {
+  using _namespace(std)::ref;
+
+  assert(this != &other);
+
+  merge(ptr_iterator(*this), ptr_iterator(*this, end()),
+        ptr_iterator(other), ptr_iterator(other, end()),
+        ref(compare));
 }
 
 inline auto basic_linked_forward_list::begin() const noexcept -> iterator {
@@ -269,6 +340,25 @@ auto linked_forward_list<T, Tag>::splice_after(const_iterator i,
 }
 
 template<typename T, class Tag>
+template<typename Compare>
+auto linked_forward_list<T, Tag>::merge(linked_forward_list& other,
+                                        Compare compare) -> void {
+  using _namespace(std)::ref;
+  using _namespace(std)::bind;
+  using _namespace(std)::placeholders::_1;
+  using _namespace(std)::placeholders::_2;
+
+  this->merge(other, bind(ref(compare),
+                          bind(&up_cast_cref_, _1), bind(&up_cast_cref_, _2)));
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::merge(linked_forward_list& other) ->
+    void {
+  this->merge(other, _namespace(std)::less<value_type>());
+}
+
+template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::begin() noexcept -> iterator {
   return iterator(this->basic_linked_forward_list::begin());
 }
@@ -330,6 +420,13 @@ auto linked_forward_list<T, Tag>::up_cast_(element* e) noexcept -> pointer {
   if (!e) return nullptr;
   return static_cast<pointer>(
       static_cast<linked_forward_list_element<Tag>*>(e));
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::up_cast_cref_(const element& e) noexcept ->
+    const_reference {
+  return static_cast<const_reference>(
+      static_cast<const linked_forward_list_element<Tag>&>(e));
 }
 
 

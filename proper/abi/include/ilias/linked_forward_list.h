@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <iterator>
+#include <tuple>
 
 _namespace_begin(ilias)
 
@@ -56,7 +57,16 @@ class basic_linked_forward_list {
   void splice_after(iterator, basic_linked_forward_list&) noexcept;
   void splice_after(iterator, basic_linked_forward_list&,
                     iterator, iterator) noexcept;
-  static void splice(ptr_iterator, ptr_iterator, ptr_iterator) noexcept;
+  static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
+      splice(ptr_iterator, ptr_iterator, ptr_iterator) noexcept;
+
+  template<typename Compare>
+  _namespace(std)::tuple<ptr_iterator, ptr_iterator>
+      merge(ptr_iterator, ptr_iterator,
+            ptr_iterator, ptr_iterator,
+            Compare);
+  template<typename Compare>
+  void merge(basic_linked_forward_list&, Compare);
 
   iterator begin() const noexcept;
   iterator end() const noexcept;
@@ -195,6 +205,10 @@ class linked_forward_list
                     linked_forward_list&&, const_iterator, const_iterator)
       noexcept;
 
+  template<typename Compare>
+  void merge(linked_forward_list&, Compare);
+  void merge(linked_forward_list&);
+
   iterator begin() noexcept;
   iterator end() noexcept;
   const_iterator begin() const noexcept;
@@ -210,6 +224,7 @@ class linked_forward_list
   static element* down_cast_(pointer) noexcept;
   static element* down_cast_(const_pointer) noexcept;
   static pointer up_cast_(element*) noexcept;
+  static const_reference up_cast_cref_(const element&) noexcept;
 };
 
 template<typename T, class Tag>

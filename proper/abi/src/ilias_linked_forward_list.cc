@@ -95,8 +95,9 @@ auto basic_linked_forward_list::splice_after(
 
 auto basic_linked_forward_list::splice(ptr_iterator i,
                                        ptr_iterator o_b, ptr_iterator o_e)
-    noexcept -> void {
+    noexcept -> _namespace(std)::tuple<ptr_iterator, ptr_iterator> {
   using _namespace(std)::exchange;
+  using _namespace(std)::make_tuple;
 
   if (o_b != o_e) {
     /* Find succ_ pointing at o_b.elem_. */
@@ -110,6 +111,10 @@ auto basic_linked_forward_list::splice(ptr_iterator i,
 
       o_e_ptr = exchange(i.get_ptr(), exchange(o_b_ptr, o_e.get_ptr()));
     }
+
+    return make_tuple(o_e, o_b);
+  } else {
+    return make_tuple(i, o_b);
   }
 }
 
