@@ -2,6 +2,7 @@
 #define _ILIAS_LINKED_LIST_INL_H_
 
 #include <cassert>
+#include <algorithm>
 #include <functional>
 #include <utility>
 
