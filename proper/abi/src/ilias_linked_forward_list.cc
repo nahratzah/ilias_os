@@ -93,6 +93,26 @@ auto basic_linked_forward_list::splice_after(
   }
 }
 
+auto basic_linked_forward_list::splice(ptr_iterator i,
+                                       ptr_iterator o_b, ptr_iterator o_e)
+    noexcept -> void {
+  using _namespace(std)::exchange;
+
+  if (o_b != o_e) {
+    /* Find succ_ pointing at o_b.elem_. */
+    element*& o_b_ptr = o_b.get_ptr();
+
+    if (o_e.get_ptr() == nullptr && i.get_ptr() == nullptr) {
+      i.get_ptr() = exchange(o_b_ptr, nullptr);
+    } else {
+      /* Find succ_ pointing at o_e.elem_. */
+      element*& o_e_ptr = o_e.get_ptr();
+
+      o_e_ptr = exchange(i.get_ptr(), exchange(o_b_ptr, o_e.get_ptr()));
+    }
+  }
+}
+
 auto basic_linked_forward_list::find_succ_for_(element* e) noexcept ->
     element*& {
   element** ptr = &head_;

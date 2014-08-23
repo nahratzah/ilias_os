@@ -19,9 +19,14 @@ class basic_linked_forward_list {
  public:
   class iterator;
 
+ protected:
+  class ptr_iterator;
+
+ public:
   class element {
     friend basic_linked_forward_list;
     friend basic_linked_forward_list::iterator;
+    friend basic_linked_forward_list::ptr_iterator;
 
    protected:
     constexpr element() noexcept = default;
@@ -51,6 +56,7 @@ class basic_linked_forward_list {
   void splice_after(iterator, basic_linked_forward_list&) noexcept;
   void splice_after(iterator, basic_linked_forward_list&,
                     iterator, iterator) noexcept;
+  static void splice(ptr_iterator, ptr_iterator, ptr_iterator) noexcept;
 
   iterator begin() const noexcept;
   iterator end() const noexcept;
@@ -94,8 +100,49 @@ class basic_linked_forward_list::iterator
   element& operator*() const noexcept;
   element* operator->() const noexcept;
 
+  bool operator==(const ptr_iterator&) const noexcept;
+  bool operator!=(const ptr_iterator&) const noexcept;
+
  private:
   element* elem_ = nullptr;
+};
+
+class basic_linked_forward_list::ptr_iterator
+: public _namespace(std)::iterator<_namespace(std)::forward_iterator_tag,
+                                   element>
+{
+  friend basic_linked_forward_list;
+
+ public:
+  ptr_iterator() = default;
+  ptr_iterator(const ptr_iterator&) = default;
+  ptr_iterator& operator=(const ptr_iterator&) = default;
+
+ private:
+  explicit ptr_iterator(element*&) noexcept;
+
+ public:
+  ptr_iterator(basic_linked_forward_list&) noexcept;
+  ptr_iterator(basic_linked_forward_list&,
+               basic_linked_forward_list::iterator) noexcept;
+
+  operator basic_linked_forward_list::iterator() const noexcept;
+
+  ptr_iterator& operator++() noexcept;
+  ptr_iterator operator++(int) noexcept;
+
+  element& operator*() const noexcept;
+  element* operator->() const noexcept;
+
+  element*& get_ptr() const noexcept;
+
+  bool operator==(const ptr_iterator&) const noexcept;
+  bool operator!=(const ptr_iterator&) const noexcept;
+  bool operator==(const basic_linked_forward_list::iterator&) const noexcept;
+  bool operator!=(const basic_linked_forward_list::iterator&) const noexcept;
+
+ private:
+  element** ptr_ = nullptr;
 };
 
 

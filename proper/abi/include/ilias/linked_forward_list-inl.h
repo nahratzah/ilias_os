@@ -76,7 +76,6 @@ inline bool operator==(const basic_linked_forward_list::iterator& a,
                        const basic_linked_forward_list::iterator& b) noexcept {
   return a.elem_ == b.elem_;
 }
-
 inline bool operator!=(const basic_linked_forward_list::iterator& a,
                        const basic_linked_forward_list::iterator& b) noexcept {
   return !(a == b);
@@ -113,6 +112,89 @@ inline auto basic_linked_forward_list::iterator::operator*() const noexcept ->
 inline auto basic_linked_forward_list::iterator::operator->() const noexcept ->
     element* {
   return elem_;
+}
+
+inline auto basic_linked_forward_list::iterator::operator==(
+    const ptr_iterator& i) const noexcept -> bool {
+  return i == *this;
+}
+
+inline auto basic_linked_forward_list::iterator::operator!=(
+    const ptr_iterator& i) const noexcept -> bool {
+  return i != *this;
+}
+
+
+inline basic_linked_forward_list::ptr_iterator::ptr_iterator(
+    element*& e) noexcept
+: ptr_(&e)
+{}
+
+inline basic_linked_forward_list::ptr_iterator::ptr_iterator(
+    basic_linked_forward_list& list) noexcept
+: ptr_iterator(list.head_)
+{}
+
+inline basic_linked_forward_list::ptr_iterator::ptr_iterator(
+    basic_linked_forward_list& list,
+    basic_linked_forward_list::iterator i) noexcept
+: ptr_iterator(list.find_succ_for_(i.elem_))
+{}
+
+inline basic_linked_forward_list::ptr_iterator::
+    operator basic_linked_forward_list::iterator()
+    const noexcept {
+  if (!ptr_) return basic_linked_forward_list::iterator();
+  return basic_linked_forward_list::iterator(*ptr_);
+}
+
+inline auto basic_linked_forward_list::ptr_iterator::operator++() noexcept ->
+    ptr_iterator& {
+  ptr_ = &(*ptr_)->succ_;
+  return *this;
+}
+
+inline auto basic_linked_forward_list::ptr_iterator::operator++(int)
+    noexcept -> ptr_iterator {
+  ptr_iterator tmp = *this;
+  ++*this;
+  return tmp;
+}
+
+inline auto basic_linked_forward_list::ptr_iterator::operator*()
+    const noexcept -> element& {
+  return **ptr_;
+}
+
+inline auto basic_linked_forward_list::ptr_iterator::operator->()
+    const noexcept -> element* {
+  return *ptr_;
+}
+
+inline auto basic_linked_forward_list::ptr_iterator::get_ptr()
+    const noexcept -> element*& {
+  assert(ptr_);
+  return *ptr_;
+}
+
+inline auto basic_linked_forward_list::ptr_iterator::operator==(
+    const ptr_iterator& i) const noexcept -> bool {
+  return ptr_ == i.ptr_;
+}
+
+inline auto basic_linked_forward_list::ptr_iterator::operator!=(
+    const ptr_iterator& i) const noexcept -> bool {
+  return !(*this == i);
+}
+
+inline auto basic_linked_forward_list::ptr_iterator::operator==(
+    const basic_linked_forward_list::iterator& i) const noexcept -> bool {
+  return basic_linked_forward_list::iterator(*this) == i;
+}
+
+inline auto basic_linked_forward_list::ptr_iterator::operator!=(
+    const basic_linked_forward_list::iterator& i) const noexcept -> bool {
+  return !(*this == i);
 }
 
 
