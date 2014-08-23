@@ -123,6 +123,44 @@ auto basic_linked_forward_list::merge(basic_linked_forward_list& other,
         ref(compare));
 }
 
+template<typename Compare>
+auto basic_linked_forward_list::sort(ptr_iterator b, ptr_iterator e,
+                                     Compare compare, size_t dist) ->
+    _namespace(std)::tuple<ptr_iterator, ptr_iterator> {
+  if (dist < 2) {
+    assert(_namespace(std)::distance(b, e) == dist);
+    return make_tuple(b, e);
+  }
+
+  size_t half_dist = dist / 2;
+  ptr_iterator halfway_point = next(b, half_dist);
+
+  tie(b, halfway_point) = sort(b, halfway_point, ref(compare),
+                               half_dist);
+  tie(halfway_point, e) = sort(halfway_point, e, ref(compare),
+                               dist - half_dist);
+  return merge(b, halfway_point, halfway_point, e, ref(compare));
+}
+
+template<typename Compare>
+auto basic_linked_forward_list::sort(ptr_iterator b, ptr_iterator e,
+                                     Compare compare) ->
+    _namespace(std)::tuple<ptr_iterator, ptr_iterator> {
+  return sort(b, e, ref(compare), _namespace(std)::distance(b, e));
+}
+
+template<typename Compare>
+auto basic_linked_forward_list::sort(Compare compare, size_t dist) -> void {
+  return sort(ptr_iterator(*this), ptr_iterator(*this, end()),
+              ref(compare), dist);
+}
+
+template<typename Compare>
+auto basic_linked_forward_list::sort(Compare compare) -> void {
+  return sort(ptr_iterator(*this), ptr_iterator(*this, end()),
+              ref(compare));
+}
+
 inline auto basic_linked_forward_list::begin() const noexcept -> iterator {
   return iterator{ head_ };
 }
@@ -356,6 +394,23 @@ template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::merge(linked_forward_list& other) ->
     void {
   this->merge(other, _namespace(std)::less<value_type>());
+}
+
+template<typename T, class Tag>
+template<typename Compare>
+auto linked_forward_list<T, Tag>::sort(Compare compare) -> void {
+  using _namespace(std)::ref;
+  using _namespace(std)::bind;
+  using _namespace(std)::placeholders::_1;
+  using _namespace(std)::placeholders::_2;
+
+  this->basic_linked_forward_list::sort(
+      bind(ref(compare), bind(&up_cast_cref_, _1), bind(&up_cast_cref_, _2)));
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::sort() -> void {
+  this->sort(_namespace(std)::less<value_type>());
 }
 
 template<typename T, class Tag>

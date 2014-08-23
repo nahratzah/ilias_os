@@ -61,12 +61,20 @@ class basic_linked_forward_list {
       splice(ptr_iterator, ptr_iterator, ptr_iterator) noexcept;
 
   template<typename Compare>
-  _namespace(std)::tuple<ptr_iterator, ptr_iterator>
+  static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
       merge(ptr_iterator, ptr_iterator,
             ptr_iterator, ptr_iterator,
             Compare);
   template<typename Compare>
   void merge(basic_linked_forward_list&, Compare);
+  template<typename Compare>
+  static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
+      sort(ptr_iterator, ptr_iterator, Compare, size_t);
+  template<typename Compare>
+  static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
+      sort(ptr_iterator, ptr_iterator, Compare);
+  template<typename Compare> void sort(Compare, size_t);
+  template<typename Compare> void sort(Compare);
 
   iterator begin() const noexcept;
   iterator end() const noexcept;
@@ -205,9 +213,10 @@ class linked_forward_list
                     linked_forward_list&&, const_iterator, const_iterator)
       noexcept;
 
-  template<typename Compare>
-  void merge(linked_forward_list&, Compare);
+  template<typename Compare> void merge(linked_forward_list&, Compare);
   void merge(linked_forward_list&);
+  template<typename Compare> void sort(Compare);
+  void sort();
 
   iterator begin() noexcept;
   iterator end() noexcept;
