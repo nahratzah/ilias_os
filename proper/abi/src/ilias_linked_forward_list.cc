@@ -12,7 +12,7 @@ auto basic_linked_forward_list::unlink(element* e) noexcept -> element* {
 
   iterator pred;
   for (pred = before_begin(); pred->succ_ != e; ++pred);
-  pred->succ_ = exchange(e->succ_, nullptr);
+  unlink_after(pred);
   return e;
 }
 
@@ -33,25 +33,18 @@ auto basic_linked_forward_list::splice_after(
 }
 
 auto basic_linked_forward_list::splice_after(
-    iterator i,
-    basic_linked_forward_list& o, iterator o_b, iterator o_e)
+    iterator i, iterator o_b, iterator o_e)
     noexcept -> void {
   using _namespace(std)::exchange;
 
-  if (o_b != o_e) {
-    /* Find succ_ pointing at o_b.elem_. */
-    element*& o_b_ptr = o.find_succ_for_(o_b.elem_);
+  assert(o_b != o_e);
 
-    if (o_e.elem_ == nullptr && i->succ_ == nullptr) {
-      i->succ_ = exchange(o_b_ptr, nullptr);
-    } else {
-      /* Find succ_ pointing at o_e.elem_. */
-      element*& o_e_ptr = o.find_succ_for_(o_e.elem_);
+  ptr_iterator i_ptr = ptr_iterator(i, from_before_iter);
+  ptr_iterator o_b_ptr = ptr_iterator(o_b, from_before_iter);
+  ptr_iterator o_e_ptr = o_b_ptr;
+  while (o_e_ptr != o_e) ++o_e_ptr;
 
-      o_b_ptr = o_e.elem_;  // Unlink [o_b..o_e)
-      o_e_ptr = exchange(i->succ_, o_b.elem_);  // Link [o_b..o_e) after i.
-    }
-  }
+  splice(i_ptr, o_b_ptr, o_e_ptr);
 }
 
 auto basic_linked_forward_list::splice(ptr_iterator i,

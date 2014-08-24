@@ -49,12 +49,14 @@ class basic_linked_forward_list {
   void link_front(element*) noexcept;
   iterator link_after(iterator, element*) noexcept;
   element* unlink_front() noexcept;
+  element* unlink_after(iterator) noexcept;
+  element* unlink_after(element*) noexcept;
   element* unlink(iterator) noexcept;
   element* unlink(element*) noexcept;
 
   void splice_after(iterator, basic_linked_forward_list&) noexcept;
-  void splice_after(iterator, basic_linked_forward_list&,
-                    iterator, iterator) noexcept;
+  static void splice_after(iterator,
+                           iterator, iterator) noexcept;
   static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
       splice(ptr_iterator, ptr_iterator, ptr_iterator) noexcept;
 
@@ -205,6 +207,8 @@ class linked_forward_list
   void link_front(pointer) noexcept;
   iterator link_after(const_iterator, pointer) noexcept;
   pointer unlink_front() noexcept;
+  pointer unlink_after(const_iterator) noexcept;
+  pointer unlink_after(const_pointer) noexcept;
   pointer unlink(const_iterator) noexcept;
   pointer unlink(const_pointer) noexcept;
 
@@ -214,8 +218,7 @@ class linked_forward_list
   using basic_linked_forward_list::empty;
 
   void splice_after(const_iterator, linked_forward_list&&) noexcept;
-  void splice_after(const_iterator,
-                    linked_forward_list&&, const_iterator, const_iterator)
+  static void splice_after(const_iterator, const_iterator, const_iterator)
       noexcept;
 
   template<typename Compare> void merge(linked_forward_list&, Compare);

@@ -49,6 +49,21 @@ inline auto basic_linked_forward_list::unlink_front() noexcept -> element* {
   return e;
 }
 
+inline auto basic_linked_forward_list::unlink_after(iterator i) noexcept ->
+    element* {
+  return unlink_after(i.elem_);
+}
+
+inline auto basic_linked_forward_list::unlink_after(element* pred) noexcept ->
+    element* {
+  using _namespace(std)::exchange;
+
+  element* e = pred->succ_;
+  assert(e != nullptr);
+  pred->succ_ = exchange(e->succ_, nullptr);
+  return e;
+}
+
 inline auto basic_linked_forward_list::unlink(iterator i) noexcept ->
     element* {
   return unlink(i.elem_);
@@ -128,7 +143,7 @@ auto basic_linked_forward_list::sort(ptr_iterator b, ptr_iterator e,
                                      Compare compare, size_t dist) ->
     _namespace(std)::tuple<ptr_iterator, ptr_iterator> {
   if (dist < 2) {
-    assert(_namespace(std)::distance(b, e) == dist);
+    assert(_namespace(std)::distance(b, e) - dist == 0);
     return make_tuple(b, e);
   }
 
@@ -157,8 +172,7 @@ auto basic_linked_forward_list::sort(Compare compare, size_t dist) -> void {
 
 template<typename Compare>
 auto basic_linked_forward_list::sort(Compare compare) -> void {
-  return sort(ptr_iterator(*this), ptr_iterator(*this, end()),
-              ref(compare));
+  sort(ptr_iterator(*this), ptr_iterator(*this, end()), ref(compare));
 }
 
 inline auto basic_linked_forward_list::before_begin() const noexcept ->
@@ -335,6 +349,19 @@ auto linked_forward_list<T, Tag>::unlink_front() noexcept -> pointer {
 }
 
 template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::unlink_after(const_iterator i) noexcept ->
+    pointer {
+  return up_cast_(this->basic_linked_forward_list::unlink_after(i.impl_));
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::unlink_after(const_pointer p) noexcept ->
+    pointer {
+  return up_cast_(this->basic_linked_forward_list::unlink_after(
+                      down_cast_(p)));
+}
+
+template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::unlink(const_iterator i) noexcept ->
     pointer {
   return up_cast_(this->basic_linked_forward_list::unlink(i.impl_));
@@ -365,12 +392,10 @@ auto linked_forward_list<T, Tag>::splice_after(const_iterator i,
 
 template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::splice_after(const_iterator i,
-                                               linked_forward_list&& o,
                                                const_iterator o_b,
                                                const_iterator o_e)
     noexcept -> void {
-  this->basic_linked_forward_list::splice_after(i.impl_,
-                                                o, o_b.impl_, o_e.impl_);
+  basic_linked_forward_list::splice_after(i.impl_, o_b.impl_, o_e.impl_);
 }
 
 template<typename T, class Tag>
@@ -382,8 +407,10 @@ auto linked_forward_list<T, Tag>::merge(linked_forward_list& other,
   using _namespace(std)::placeholders::_1;
   using _namespace(std)::placeholders::_2;
 
-  this->merge(other, bind(ref(compare),
-                          bind(&up_cast_cref_, _1), bind(&up_cast_cref_, _2)));
+  this->basic_linked_forward_list::merge(other,
+                                         bind(ref(compare),
+                                              bind(&up_cast_cref_, _1),
+                                              bind(&up_cast_cref_, _2)));
 }
 
 template<typename T, class Tag>
