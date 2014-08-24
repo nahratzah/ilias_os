@@ -155,7 +155,6 @@ template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink(const_iterator p_arg)
     noexcept -> pointer {
   using _namespace(std)::next;
-  using _namespace(std)::prev;
   using _namespace(std)::get;
 
   if (_predict_false(bucket_count() == 0)) {
@@ -184,11 +183,6 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink(const_iterator p_arg)
       if (i == buckets_.begin()) break;  // GUARD
     }
   }
-  if (bucket_end == p) {
-    const iterator p_pred = prev(p);
-    for (auto i = next(bucket); i != buckets_.end() && *i == p; ++i)
-      *i = p_pred;
-  }
 
   /* Remove p from list. */
   --size_;
@@ -199,7 +193,6 @@ template<typename T, class Tag, typename Hash, typename Pred, typename A>
 auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink(const_pointer p)
     noexcept -> pointer {
   using _namespace(std)::next;
-  using _namespace(std)::prev;
   using _namespace(std)::get;
 
   if (_predict_false(bucket_count() == 0)) {
@@ -226,10 +219,6 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink(const_pointer p)
       *i = p_succ;
       if (i == buckets_.begin()) break;  // GUARD
     }
-  } else if (&*bucket_end == p) {
-    const iterator p_pred = prev(bucket_end);
-    for (auto i = next(bucket); i != buckets_.end() && *i == p; ++i)
-      *i = p_pred;
   }
 
   /* Remove p from list. */
