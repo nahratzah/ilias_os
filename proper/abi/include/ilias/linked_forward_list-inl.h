@@ -21,16 +21,16 @@ inline auto basic_linked_forward_list::element::operator=(const element&)
 
 
 inline basic_linked_forward_list::basic_linked_forward_list(
-    basic_linked_forward_list&& rhs) noexcept
-: head_(_namespace(std)::exchange(rhs.head_, nullptr))
-{}
+    basic_linked_forward_list&& rhs) noexcept {
+  before_.succ_ = _namespace(std)::exchange(rhs.before_.succ_, nullptr);
+}
 
 inline auto basic_linked_forward_list::link_front(element* e) noexcept ->
     void {
   using _namespace(std)::exchange;
 
   assert(e->succ_ == nullptr);
-  e->succ_ = exchange(head_, e);
+  e->succ_ = exchange(before_.succ_, e);
 }
 
 inline auto basic_linked_forward_list::link_after(iterator i, element* e)
@@ -44,8 +44,8 @@ inline auto basic_linked_forward_list::link_after(iterator i, element* e)
 inline auto basic_linked_forward_list::unlink_front() noexcept -> element* {
   using _namespace(std)::exchange;
 
-  element* e = head_;
-  if (e) head_ = exchange(e->succ_, nullptr);
+  element* e = before_.succ_;
+  if (e) before_.succ_ = exchange(e->succ_, nullptr);
   return e;
 }
 
@@ -161,8 +161,13 @@ auto basic_linked_forward_list::sort(Compare compare) -> void {
               ref(compare));
 }
 
+inline auto basic_linked_forward_list::before_begin() const noexcept ->
+    iterator {
+  return iterator{ const_cast<element*>(&before_) };
+}
+
 inline auto basic_linked_forward_list::begin() const noexcept -> iterator {
-  return iterator{ head_ };
+  return iterator{ before_.succ_ };
 }
 
 inline auto basic_linked_forward_list::end() const noexcept -> iterator {
@@ -170,14 +175,14 @@ inline auto basic_linked_forward_list::end() const noexcept -> iterator {
 }
 
 inline auto basic_linked_forward_list::empty() const noexcept -> bool {
-  return head_ == nullptr;
+  return before_.succ_ == nullptr;
 }
 
 inline auto basic_linked_forward_list::swap(basic_linked_forward_list& o)
     noexcept -> void {
   using _namespace(std)::swap;
 
-  swap(head_, o.head_);
+  swap(before_.succ_, o.before_.succ_);
 }
 
 
@@ -241,13 +246,18 @@ inline basic_linked_forward_list::ptr_iterator::ptr_iterator(
 
 inline basic_linked_forward_list::ptr_iterator::ptr_iterator(
     basic_linked_forward_list& list) noexcept
-: ptr_iterator(list.head_)
+: ptr_iterator(list.before_.succ_)
 {}
 
 inline basic_linked_forward_list::ptr_iterator::ptr_iterator(
     basic_linked_forward_list& list,
     basic_linked_forward_list::iterator i) noexcept
 : ptr_iterator(list.find_succ_for_(i.elem_))
+{}
+
+inline basic_linked_forward_list::ptr_iterator::ptr_iterator(
+    basic_linked_forward_list::iterator i, from_before_iter_t)
+: ptr_iterator(i->succ_)
 {}
 
 inline basic_linked_forward_list::ptr_iterator::
@@ -347,20 +357,6 @@ auto linked_forward_list<T, Tag>::front() const noexcept -> const_reference {
 }
 
 template<typename T, class Tag>
-auto linked_forward_list<T, Tag>::splice_front(linked_forward_list&& o)
-    noexcept -> void {
-  this->basic_linked_forward_list::splice_front(o);
-}
-
-template<typename T, class Tag>
-auto linked_forward_list<T, Tag>::splice_front(linked_forward_list&& o,
-                                               const_iterator o_b,
-                                               const_iterator o_e)
-    noexcept -> void {
-  this->basic_linked_forward_list::splice_front(o, o_b.impl_, o_e.impl_);
-}
-
-template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::splice_after(const_iterator i,
                                                linked_forward_list&& o)
     noexcept -> void {
@@ -414,6 +410,11 @@ auto linked_forward_list<T, Tag>::sort() -> void {
 }
 
 template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::before_begin() noexcept -> iterator {
+  return iterator(this->basic_linked_forward_list::before_begin());
+}
+
+template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::begin() noexcept -> iterator {
   return iterator(this->basic_linked_forward_list::begin());
 }
@@ -424,6 +425,12 @@ auto linked_forward_list<T, Tag>::end() noexcept -> iterator {
 }
 
 template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::before_begin() const noexcept ->
+    const_iterator {
+  return const_iterator(this->basic_linked_forward_list::before_begin());
+}
+
+template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::begin() const noexcept -> const_iterator {
   return const_iterator(this->basic_linked_forward_list::begin());
 }
@@ -431,6 +438,12 @@ auto linked_forward_list<T, Tag>::begin() const noexcept -> const_iterator {
 template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::end() const noexcept -> const_iterator {
   return const_iterator(this->basic_linked_forward_list::end());
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::cbefore_begin() const noexcept ->
+    const_iterator {
+  return before_begin();
 }
 
 template<typename T, class Tag>

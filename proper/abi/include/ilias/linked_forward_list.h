@@ -21,6 +21,7 @@ class basic_linked_forward_list {
   class iterator;
 
  protected:
+  enum from_before_iter_t { from_before_iter };
   class ptr_iterator;
 
  public:
@@ -51,22 +52,24 @@ class basic_linked_forward_list {
   element* unlink(iterator) noexcept;
   element* unlink(element*) noexcept;
 
-  void splice_front(basic_linked_forward_list&) noexcept;
-  void splice_front(basic_linked_forward_list&,
-                    iterator, iterator) noexcept;
   void splice_after(iterator, basic_linked_forward_list&) noexcept;
   void splice_after(iterator, basic_linked_forward_list&,
                     iterator, iterator) noexcept;
   static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
       splice(ptr_iterator, ptr_iterator, ptr_iterator) noexcept;
 
+ private:
   template<typename Compare>
   static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
       merge(ptr_iterator, ptr_iterator,
             ptr_iterator, ptr_iterator,
             Compare);
+
+ protected:
   template<typename Compare>
   void merge(basic_linked_forward_list&, Compare);
+
+ private:
   template<typename Compare>
   static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
       sort(ptr_iterator, ptr_iterator, Compare, size_t);
@@ -74,8 +77,11 @@ class basic_linked_forward_list {
   static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
       sort(ptr_iterator, ptr_iterator, Compare);
   template<typename Compare> void sort(Compare, size_t);
+
+ protected:
   template<typename Compare> void sort(Compare);
 
+  iterator before_begin() const noexcept;
   iterator begin() const noexcept;
   iterator end() const noexcept;
 
@@ -86,7 +92,7 @@ class basic_linked_forward_list {
  private:
   element*& find_succ_for_(element*) noexcept;
 
-  element* head_ = nullptr;
+  element before_;
 };
 
 bool operator==(const basic_linked_forward_list::iterator&,
@@ -143,6 +149,7 @@ class basic_linked_forward_list::ptr_iterator
   ptr_iterator(basic_linked_forward_list&) noexcept;
   ptr_iterator(basic_linked_forward_list&,
                basic_linked_forward_list::iterator) noexcept;
+  ptr_iterator(basic_linked_forward_list::iterator, from_before_iter_t);
 
   operator basic_linked_forward_list::iterator() const noexcept;
 
@@ -205,9 +212,6 @@ class linked_forward_list
 
   using basic_linked_forward_list::empty;
 
-  void splice_front(linked_forward_list&&) noexcept;
-  void splice_front(linked_forward_list&&, const_iterator, const_iterator)
-      noexcept;
   void splice_after(const_iterator, linked_forward_list&&) noexcept;
   void splice_after(const_iterator,
                     linked_forward_list&&, const_iterator, const_iterator)
@@ -218,10 +222,13 @@ class linked_forward_list
   template<typename Compare> void sort(Compare);
   void sort();
 
+  iterator before_begin() noexcept;
   iterator begin() noexcept;
   iterator end() noexcept;
+  const_iterator before_begin() const noexcept;
   const_iterator begin() const noexcept;
   const_iterator end() const noexcept;
+  const_iterator cbefore_begin() const noexcept;
   const_iterator cbegin() const noexcept;
   const_iterator cend() const noexcept;
 
