@@ -88,6 +88,7 @@ class basic_linked_forward_list {
  public:
   bool empty() const noexcept;
   void swap(basic_linked_forward_list&) noexcept;
+  void reverse() noexcept;
 
  private:
   element*& find_succ_for_(element*) noexcept;
@@ -221,6 +222,7 @@ class linked_forward_list
   void merge(linked_forward_list&);
   template<typename Compare> void sort(Compare);
   void sort();
+  using basic_linked_forward_list::reverse;
 
   iterator before_begin() noexcept;
   iterator begin() noexcept;

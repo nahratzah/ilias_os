@@ -79,6 +79,19 @@ auto basic_linked_forward_list::splice(ptr_iterator i,
   }
 }
 
+auto basic_linked_forward_list::reverse() noexcept -> void {
+  using _namespace(std)::exchange;
+
+  element* old_head = exchange(before_.succ_, nullptr);
+  element* new_head = nullptr;
+
+  while (old_head) {
+    element*const tmp = exchange(old_head, old_head->succ_);
+    tmp->succ_ = exchange(new_head, tmp);
+  }
+  before_.succ_ = new_head;
+}
+
 auto basic_linked_forward_list::find_succ_for_(element* e) noexcept ->
     element*& {
   element** ptr = &before_.succ_;
