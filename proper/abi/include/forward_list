@@ -1,0 +1,282 @@
+#ifndef _FORWARD_LIST_
+#define _FORWARD_LIST_
+
+#include <cdecl.h>
+#include <initializer_list>
+#include <iterator>
+#include <memory>
+#include <stdimpl/alloc_base.h>
+#include <ilias/linked_forward_list.h>
+
+_namespace_begin(std)
+namespace impl {
+
+template<typename T, class Tag>
+struct forward_list_elem
+: public _namespace(ilias)::linked_forward_list_element<Tag>
+{
+  forward_list_elem() = default;
+  forward_list_elem(const forward_list_elem&) = default;
+  forward_list_elem& operator=(const forward_list_elem&) = default;
+  template<typename... Args> forward_list_elem(Args&&...);
+
+  T value;
+};
+
+} /* namespace std::impl */
+
+
+template<typename T, typename Alloc = allocator<T>>
+class forward_list
+: private impl::alloc_base<typename allocator_traits<Alloc>::
+      template rebind_alloc<impl::forward_list_elem<T, void>>>
+{
+ private:
+  using elem = impl::forward_list_elem<T, void>;
+  using data_type = _namespace(ilias)::linked_forward_list<elem, void>;
+  using alloc_base = impl::alloc_base<
+      typename allocator_traits<Alloc>::template rebind_alloc<elem>>;
+
+ public:
+  using value_type = T;
+  using allocator_type = Alloc;
+  using reference = value_type&;
+  using const_reference = const value_type&;
+  using pointer = typename allocator_traits<allocator_type>::pointer;
+  using const_pointer =
+      typename allocator_traits<allocator_type>::const_pointer;
+  class iterator;
+  class const_iterator;
+  using size_type = typename allocator_traits<allocator_type>::size_type;
+  using difference_type =
+      typename allocator_traits<allocator_type>::difference_type;
+
+  explicit forward_list(const allocator_type& = allocator_type());
+  explicit forward_list(size_type);
+  forward_list(size_type, const_reference,
+               const allocator_type& = allocator_type());
+  template<typename InputIter>
+  forward_list(InputIter, InputIter,
+               const allocator_type& = allocator_type());
+  forward_list(const forward_list&);
+  forward_list(forward_list&&);
+  forward_list(const forward_list&, const allocator_type&);
+  forward_list(forward_list&&, const allocator_type&);
+  forward_list(initializer_list<value_type>,
+               const allocator_type& = allocator_type());
+  ~forward_list() noexcept;
+
+  forward_list& operator=(const forward_list&);
+  forward_list& operator=(forward_list&&);
+  forward_list& operator=(initializer_list<value_type>);
+  template<typename InputIter> void assign(InputIter, InputIter);
+  void assign(size_type, const_reference);
+  void assign(initializer_list<value_type>);
+  allocator_type get_allocator() const;
+
+  iterator before_begin() noexcept;
+  const_iterator before_begin() const noexcept;
+  iterator begin() noexcept;
+  const_iterator begin() const noexcept;
+  iterator end() noexcept;
+  const_iterator end() const noexcept;
+  const_iterator cbefore_begin() const noexcept;
+  const_iterator cbegin() const noexcept;
+  const_iterator cend() const noexcept;
+
+  bool empty() const noexcept;
+  size_type max_size() const;
+
+  reference front() noexcept;
+  const_reference front() const noexcept;
+
+  template<typename... Args> void emplace_front(Args&&...);
+  void push_front(const_reference);
+  void push_front(value_type&&);
+  void pop_front() noexcept;
+
+  template<typename... Args> iterator emplace_after(const_iterator, Args&&...);
+  iterator insert_after(const_iterator, const_reference);
+  iterator insert_after(const_iterator, value_type&&);
+  iterator insert_after(const_iterator, size_type, const_reference);
+  template<typename InputIter> iterator insert_after(const_iterator,
+                                                     InputIter, InputIter);
+  iterator insert_after(const_iterator, initializer_list<value_type>);
+
+  iterator erase_after(const_iterator);
+  iterator erase_after(const_iterator, iterator);
+  void swap(forward_list&);
+
+  void resize(size_type);
+  void resize(size_type, const_reference);
+  void clear() noexcept;
+
+  void splice_after(const_iterator, forward_list&&) noexcept;
+  void splice_after(const_iterator, forward_list&&, const_iterator) noexcept;
+  void splice_after(const_iterator, forward_list&&,
+                    const_iterator, const_iterator);
+
+  void remove(const_reference);
+  template<typename Predicate> void remove_if(Predicate);
+
+  void unique();
+  template<typename BinaryPredicate> void unique(BinaryPredicate);
+
+  void merge(forward_list&&);
+  template<typename BinaryPredicate> void merge(forward_list&&,
+                                                BinaryPredicate);
+
+  void sort();
+  template<typename Compare> void sort(Compare);
+
+  void reverse() noexcept;
+
+ private:
+  data_type data_;
+};
+
+template<typename T, typename Alloc>
+class forward_list<T, Alloc>::iterator
+: public _namespace(std)::iterator<typename iterator_traits<
+                                       typename data_type::iterator
+                                     >::iterator_category,
+                                   T,
+                                   typename
+                                       forward_list<T, Alloc>::difference_type>
+{
+  friend forward_list<T, Alloc>;
+  friend forward_list<T, Alloc>::const_iterator;
+
+ private:
+  iterator(typename data_type::iterator) noexcept;
+
+ public:
+  T& operator*() const noexcept;
+  T* operator->() const noexcept;
+
+  iterator& operator++() noexcept;
+  iterator operator++(int) noexcept;
+
+  bool operator==(const iterator&) const noexcept;
+  bool operator!=(const iterator&) const noexcept;
+  bool operator==(const const_iterator&) const noexcept;
+  bool operator!=(const const_iterator&) const noexcept;
+
+ private:
+  typename data_type::iterator impl_;
+};
+
+template<typename T, typename Alloc>
+class forward_list<T, Alloc>::const_iterator
+: public _namespace(std)::iterator<typename iterator_traits<
+                                       typename data_type::iterator
+                                     >::iterator_category,
+                                   const T,
+                                   typename
+                                       forward_list<T, Alloc>::difference_type>
+{
+  friend forward_list<T, Alloc>;
+  friend forward_list<T, Alloc>::iterator;
+
+ private:
+  const_iterator(typename data_type::const_iterator) noexcept;
+
+ public:
+  const_iterator(const iterator&) noexcept;
+
+  const T& operator*() const noexcept;
+  const T* operator->() const noexcept;
+
+  const_iterator& operator++() noexcept;
+  const_iterator operator++(int) noexcept;
+
+  bool operator==(const iterator&) const noexcept;
+  bool operator!=(const iterator&) const noexcept;
+  bool operator==(const const_iterator&) const noexcept;
+  bool operator!=(const const_iterator&) const noexcept;
+
+ private:
+  typename data_type::const_iterator impl_;
+};
+
+
+template<typename T, typename A>
+bool operator==(const forward_list<T, A>&, const forward_list<T, A>&);
+template<typename T, typename A>
+bool operator!=(const forward_list<T, A>&, const forward_list<T, A>&);
+template<typename T, typename A>
+bool operator<(const forward_list<T, A>&, const forward_list<T, A>&);
+template<typename T, typename A>
+bool operator>(const forward_list<T, A>&, const forward_list<T, A>&);
+template<typename T, typename A>
+bool operator<=(const forward_list<T, A>&, const forward_list<T, A>&);
+template<typename T, typename A>
+bool operator>=(const forward_list<T, A>&, const forward_list<T, A>&);
+template<typename T, typename A>
+void swap(forward_list<T, A>&, forward_list<T, A>&);
+
+
+extern template class forward_list<char>;
+extern template class forward_list<signed char>;
+extern template class forward_list<unsigned char>;
+extern template class forward_list<short>;
+extern template class forward_list<unsigned short>;
+extern template class forward_list<int>;
+extern template class forward_list<unsigned int>;
+extern template class forward_list<long>;
+extern template class forward_list<unsigned long>;
+extern template class forward_list<long long>;
+extern template class forward_list<unsigned long long>;
+
+extern template bool operator==(const forward_list<char>&,
+                                const forward_list<char>&);
+extern template bool operator==(const forward_list<signed char>&,
+                                const forward_list<signed char>&);
+extern template bool operator==(const forward_list<unsigned char>&,
+                                const forward_list<unsigned char>&);
+extern template bool operator==(const forward_list<short>&,
+                                const forward_list<short>&);
+extern template bool operator==(const forward_list<unsigned short>&,
+                                const forward_list<unsigned short>&);
+extern template bool operator==(const forward_list<int>&,
+                                const forward_list<int>&);
+extern template bool operator==(const forward_list<unsigned int>&,
+                                const forward_list<unsigned int>&);
+extern template bool operator==(const forward_list<long>&,
+                                const forward_list<long>&);
+extern template bool operator==(const forward_list<unsigned long>&,
+                                const forward_list<unsigned long>&);
+extern template bool operator==(const forward_list<long long>&,
+                                const forward_list<long long>&);
+extern template bool operator==(const forward_list<unsigned long long>&,
+                                const forward_list<unsigned long long>&);
+
+extern template bool operator<(const forward_list<char>&,
+                               const forward_list<char>&);
+extern template bool operator<(const forward_list<signed char>&,
+                               const forward_list<signed char>&);
+extern template bool operator<(const forward_list<unsigned char>&,
+                               const forward_list<unsigned char>&);
+extern template bool operator<(const forward_list<short>&,
+                               const forward_list<short>&);
+extern template bool operator<(const forward_list<unsigned short>&,
+                               const forward_list<unsigned short>&);
+extern template bool operator<(const forward_list<int>&,
+                               const forward_list<int>&);
+extern template bool operator<(const forward_list<unsigned int>&,
+                               const forward_list<unsigned int>&);
+extern template bool operator<(const forward_list<long>&,
+                               const forward_list<long>&);
+extern template bool operator<(const forward_list<unsigned long>&,
+                               const forward_list<unsigned long>&);
+extern template bool operator<(const forward_list<long long>&,
+                               const forward_list<long long>&);
+extern template bool operator<(const forward_list<unsigned long long>&,
+                               const forward_list<unsigned long long>&);
+
+
+_namespace_end(std)
+
+#include <forward_list-inl.h>
+
+#endif /* _FORWARD_LIST_ */

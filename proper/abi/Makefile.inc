@@ -46,6 +46,7 @@ ABI_SRCS += abi/src/ostream.cc
 ABI_SRCS += abi/src/system_error.cc
 ABI_SRCS += abi/src/typeinfo.cc
 ABI_SRCS += abi/src/vector.cc
+ABI_SRCS += abi/src/forward_list.cc
 ABI_SRCS += abi/src/set.cc
 ABI_SRCS += abi/src/map.cc
 ABI_SRCS += abi/src/unordered_set.cc
@@ -57,6 +58,7 @@ ABI_SRCS += abi/src/stdimpl_shared_ptr_ownership.cc
 ABI_SRCS += abi/src/stdimpl_locale_numeric.cc
 
 ILIAS_STD_SRCS += abi/src/ilias_linked_list.cc
+ILIAS_STD_SRCS += abi/src/ilias_linked_forward_list.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_set.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_unordered_set.cc
 ILIAS_STD_SRCS += abi/src/ilias_stats.cc

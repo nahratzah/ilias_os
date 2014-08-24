@@ -29,11 +29,11 @@ struct list_elem
 template<typename T, typename Alloc = allocator<T>>
 class list
 : private impl::alloc_base<typename allocator_traits<Alloc>::
-      template rebind_alloc<impl::list_elem<T, Alloc>>>
+      template rebind_alloc<impl::list_elem<T, void>>>
 {
  private:
-  using elem = impl::list_elem<T, Alloc>;
-  using data_type = _namespace(ilias)::linked_list<elem, Alloc>;
+  using elem = impl::list_elem<T, void>;
+  using data_type = _namespace(ilias)::linked_list<elem, void>;
   using alloc_base = impl::alloc_base<
       typename allocator_traits<Alloc>::template rebind_alloc<elem>>;
 

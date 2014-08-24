@@ -1707,6 +1707,17 @@ auto temporary_buffer_allocator<T>::deallocate(pointer p, size_t)
   impl::temporary_buffer_deallocate(p);
 }
 
+template<typename T, typename U>
+auto operator==(const temporary_buffer_allocator<T>&,
+                const temporary_buffer_allocator<U>&) noexcept -> bool {
+  return true;
+}
+template<typename T, typename U>
+auto operator!=(const temporary_buffer_allocator<T>&,
+                const temporary_buffer_allocator<U>&) noexcept -> bool {
+  return false;
+}
+
 
 _namespace_end(std)
 

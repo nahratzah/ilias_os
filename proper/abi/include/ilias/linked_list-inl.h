@@ -2,6 +2,7 @@
 #define _ILIAS_LINKED_LIST_INL_H_
 
 #include <cassert>
+#include <algorithm>
 #include <functional>
 #include <utility>
 
@@ -290,29 +291,43 @@ auto linked_list<T, Tag>::merge(const_iterator b1, const_iterator e1,
                                 const_iterator b2, const_iterator e2,
                                 Compare compare) -> void {
   using _namespace(std)::ref;
+  using _namespace(std)::bind;
   using _namespace(std)::placeholders::_1;
+  using _namespace(std)::find_if;
+  using _namespace(std)::find_if_not;
 
-  /* Find the first element after other.begin(). */
+  if (b2 == e2) return;
+
+  /* Find b1, such that b1 < b2. */
   b1 = find_if(b1, e1,
                bind(ref(compare), ref(*b2), _1));
-  while (b1 != e1 && b2 != e2) {
-    /* Collect everything that should be before the found element. */
-    const_iterator b2_e = find_if_not(b2, e2,
+
+  /*
+   * Loop invariant:
+   * -  b2 < b1
+   * -  b2 != e2  (i.e. not empty)
+   * -  b1 != e1  (i.e. not empty)
+   */
+  while (b1 != e1) {
+    /* Find b2_e, such that [b2..b2_e) < b1 && !(b2_e < b1). */
+    const_iterator b2_e = find_if_not(next(b2), e2,
                                       bind(ref(compare), _1, ref(*b1)));
-    /* Splice that into the list. */
+    /* Splice [b2..b2_e) into list, before b1. */
     splice(b1, b2, b2_e);
+    if (b2 == b2_e) return;  // Last merge completed.
+
     b2 = b2_e;  // Update b2, everything before b2_e now lives before b1.
-    /*
-     * Find the first element after other.begin()
-     * Note that other.begin() points to a different element now,
-     * due to the splice operation.
-     */
+
+    /* Find b1, such that b2 < b1. */
     b1 = find_if(next(b1), e1,
                  bind(ref(compare), ref(*b2), _1));
   }
 
-  /* Splice the remainder of the other list at the end. */
-  if (b2 != e2) splice(b1, b2, e2);
+  /*
+   * b1 == e1  -- because loop guard
+   * b2 != e2  -- because if b2 == e2, the code above forces an early return
+   */
+  splice(b1, b2, e2);
 }
 
 template<typename T, class Tag>
@@ -320,6 +335,8 @@ template<typename Compare>
 auto linked_list<T, Tag>::sort(const_iterator b, const_iterator e,
                                Compare compare, size_t dist) -> void {
   using _namespace(std)::ref;
+  using _namespace(std)::distance;
+  using _namespace(std)::next;
 
   if (dist < 2) {
     assert(dist == size_t(distance(b, e)));
