@@ -46,6 +46,7 @@ ABI_SRCS += abi/src/ostream.cc
 ABI_SRCS += abi/src/system_error.cc
 ABI_SRCS += abi/src/typeinfo.cc
 ABI_SRCS += abi/src/vector.cc
+ABI_SRCS += abi/src/forward_list.cc
 ABI_SRCS += abi/src/set.cc
 ABI_SRCS += abi/src/map.cc
 ABI_SRCS += abi/src/unordered_set.cc
