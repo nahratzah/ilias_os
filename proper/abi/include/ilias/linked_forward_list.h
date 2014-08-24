@@ -275,6 +275,10 @@ class linked_forward_list<T, Tag>::iterator
   bool operator==(const const_iterator&) const noexcept;
   bool operator!=(const const_iterator&) const noexcept;
 
+  basic_linked_forward_list::iterator get_unsafe_basic_iter() const noexcept;
+  static iterator from_unsafe_basic_iter(
+      const basic_linked_forward_list::iterator&) noexcept;
+
  private:
   basic_linked_forward_list::iterator impl_;
 };
@@ -305,6 +309,10 @@ class linked_forward_list<T, Tag>::const_iterator
   bool operator!=(const iterator&) const noexcept;
   bool operator==(const const_iterator&) const noexcept;
   bool operator!=(const const_iterator&) const noexcept;
+
+  basic_linked_forward_list::iterator get_unsafe_basic_iter() const noexcept;
+  static const_iterator from_unsafe_basic_iter(
+      const basic_linked_forward_list::iterator&) noexcept;
 
  private:
   basic_linked_forward_list::iterator impl_;

@@ -580,6 +580,19 @@ auto linked_forward_list<T, Tag>::iterator::operator!=(
   return !(*this == other);
 }
 
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::iterator::get_unsafe_basic_iter()
+    const noexcept -> basic_linked_forward_list::iterator {
+  return impl_;
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::iterator::from_unsafe_basic_iter(
+    const basic_linked_forward_list::iterator& unsafe) noexcept ->
+    iterator {
+  return iterator(unsafe);
+}
+
 
 template<typename T, class Tag>
 linked_forward_list<T, Tag>::const_iterator::const_iterator(
@@ -642,6 +655,19 @@ template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::const_iterator::operator!=(
     const const_iterator& other) const noexcept -> bool {
   return !(*this == other);
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::const_iterator::get_unsafe_basic_iter()
+    const noexcept -> basic_linked_forward_list::iterator {
+  return impl_;
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::const_iterator::from_unsafe_basic_iter(
+    const basic_linked_forward_list::iterator& unsafe) noexcept ->
+    const_iterator {
+  return const_iterator(unsafe);
 }
 
 
