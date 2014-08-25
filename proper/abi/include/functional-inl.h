@@ -199,13 +199,21 @@ template<typename T> using _result_type =
                            _no_result_type>::type;
 
 
+template<typename> struct _is_ref_wrapper
+: false_type {};
+template<typename T> struct _is_ref_wrapper<reference_wrapper<T>>
+: true_type {};
+template<typename T> using is_ref_wrapper =
+    _is_ref_wrapper<remove_cv_t<remove_reference_t<T>>>;
+
 /*
  * Resolve argument:  case for non-bind-expression, non-placeholder.
  */
 template<typename T, typename Args, typename ArgIndices>
 auto resolve_argument(T& v, Args, ArgIndices) ->
     enable_if_t<!is_bind_expression<T>::value &&
-                !is_placeholder<T>::value,
+                !is_placeholder<T>::value &&
+                !is_ref_wrapper<T>::value,
                 T&> {
   return v;
 }
