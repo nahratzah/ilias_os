@@ -8,8 +8,9 @@
 #include <type_traits>
 #include <tuple>
 #include <vector>
-#include <ilias/linked_list.h>
+#include <ilias/linked_forward_list.h>
 #include <cstdint>
+#include <stdimpl/heap_array.h>
 
 _namespace_begin(ilias)
 namespace impl {
@@ -21,19 +22,131 @@ template<class T> struct linked_unordered_set_tag {};
  */
 uint64_t ceil_uls_(long double, uint64_t = UINT64_MAX) noexcept;
 
+
+/*
+ * Type agnostic algorithms for basic_linked_unordered_set.
+ */
+struct basic_lu_set_algorithms {
+ public:
+  using iterator = basic_linked_forward_list::iterator;
+  using pred_array_type = _namespace(std)::impl::heap_array<iterator>;
+
+  static iterator find_predecessor(const iterator*, const iterator*,
+                                   iterator, size_t, iterator) noexcept;
+  template<typename Pred>
+  static iterator find_predecessor_for_link(const iterator*, const iterator*,
+                                            size_t, Pred, iterator, iterator);
+
+  static void update_on_link(iterator*, iterator*, iterator, size_t) noexcept;
+  static void update_on_unlink(iterator*, iterator*, iterator, size_t)
+      noexcept;
+
+ private:
+  template<typename Hash>
+  static bool rehash_completely(iterator*, iterator*, Hash, iterator, iterator)
+      noexcept;
+  static bool rehash_shrink(iterator*, iterator*, iterator*,
+                                 iterator, iterator) noexcept;
+
+ public:
+  template<typename Hash>
+  static void rehash(iterator*, iterator*, iterator*, Hash, iterator, iterator)
+      noexcept;
+
+ private:
+  static void rehash_splice_operation_(iterator*, iterator*,
+                                       iterator, iterator,
+                                       size_t, iterator, iterator,
+                                       pred_array_type&, iterator) noexcept;
+
+ public:
+  static void on_move(iterator*, iterator*, iterator, iterator) noexcept;
+};
+
 } /* namespace ilias::impl */
 
 
+template<typename Allocator>
+class basic_linked_unordered_set {
+ protected:
+  using iterator = impl::basic_lu_set_algorithms::iterator;
+  using bucket_set = _namespace(std)::vector<
+      iterator,
+      typename _namespace(std)::allocator_traits<Allocator>::
+          template rebind_alloc<iterator>>;
+
+ public:
+  using bucket_size_type =
+      _namespace(std)::conditional_t<(sizeof(size_t) <
+                                      sizeof(typename bucket_set::size_type)),
+                                     size_t,
+                                     typename bucket_set::size_type>;
+  using allocator_type = Allocator;
+
+ protected:
+  basic_linked_unordered_set(
+      bucket_size_type, iterator, const allocator_type& = allocator_type());
+  explicit basic_linked_unordered_set(
+      const allocator_type& = allocator_type());
+
+  basic_linked_unordered_set(const basic_linked_unordered_set&) = delete;
+  basic_linked_unordered_set(basic_linked_unordered_set&&);
+  basic_linked_unordered_set& operator=(
+      const basic_linked_unordered_set&) = delete;
+  basic_linked_unordered_set& operator=(
+      basic_linked_unordered_set&&) = delete;
+  basic_linked_unordered_set(basic_linked_unordered_set&&, iterator, iterator)
+      noexcept;
+  void swap(basic_linked_unordered_set&, iterator, iterator) noexcept;
+
+  iterator begin_(bucket_size_type, iterator) const noexcept;
+  iterator end_(bucket_size_type, iterator) const noexcept;
+
+  iterator find_predecessor(iterator, bucket_size_type, iterator)
+      const noexcept;
+  template<typename Pred>
+  iterator find_predecessor_for_link(bucket_size_type, Pred,
+                                     iterator, iterator) const;
+
+  void update_on_link(iterator, bucket_size_type) noexcept;
+  void update_on_unlink(iterator, bucket_size_type) noexcept;
+  void update_on_unlink_all(iterator) noexcept;
+
+  template<typename Hash>
+  void rehash(bucket_size_type, Hash, iterator, iterator);
+  template<typename SizeT, typename Hash>
+  void rehash_grow(SizeT, float, Hash, iterator, iterator,
+                   bucket_size_type = 6, bucket_size_type = 5);
+  template<typename SizeT, typename Hash>
+  void rehash_shrink(SizeT, float, Hash, iterator, iterator,
+                     bucket_size_type = 1, bucket_size_type = 3) noexcept;
+
+  float load_factor_for_size(size_t) const noexcept;
+
+ public:
+  bucket_size_type bucket_count() const noexcept;
+  bucket_size_type max_bucket_count() const noexcept;
+  allocator_type get_allocator() const;
+
+ private:
+  bucket_set buckets_;
+};
+
+
 template<class Tag = void> using linked_unordered_set_element =
-    linked_list_element<impl::linked_unordered_set_tag<Tag>>;
+    linked_forward_list_element<impl::linked_unordered_set_tag<Tag>>;
 
 template<typename T, class Tag = void,
          typename Hash = _namespace(std)::hash<T>,
          typename Pred = _namespace(std)::equal_to<T>,
          typename Allocator = _namespace(std)::allocator<void>>
-class linked_unordered_set {
+class linked_unordered_set
+: private linked_forward_list<T, impl::linked_unordered_set_tag<Tag>>,
+  private basic_linked_unordered_set<Allocator>
+{
  private:
-  using list_type = linked_list<T, impl::linked_unordered_set_tag<Tag>>;
+  using list_type = linked_forward_list<T,
+                                        impl::linked_unordered_set_tag<Tag>>;
 
  public:
   using value_type = typename list_type::value_type;
@@ -54,18 +167,8 @@ class linked_unordered_set {
   using hasher = Hash;
   using key_equal = Pred;
 
- private:
-  using bucket_set = _namespace(std)::vector<
-      iterator,
-      typename _namespace(std)::allocator_traits<allocator_type>::
-          template rebind_alloc<iterator>>;
-
- public:
   using bucket_size_type =
-      _namespace(std)::conditional_t<(sizeof(size_t) <
-                                      sizeof(typename bucket_set::size_type)),
-                                     size_t,
-                                     typename bucket_set::size_type>;
+      typename basic_linked_unordered_set<Allocator>::bucket_size_type;
 
   explicit linked_unordered_set(bucket_size_type = 0,
                                 const hasher& = hasher(),
@@ -84,9 +187,9 @@ class linked_unordered_set {
   void unlink_all() noexcept;
   template<typename Visitor> void unlink_all(Visitor) noexcept;
 
-  bucket_size_type bucket_count() const noexcept;
-  bucket_size_type max_bucket_count() const noexcept;
-  bool empty() const noexcept;
+  using basic_linked_unordered_set<Allocator>::bucket_count;
+  using basic_linked_unordered_set<Allocator>::max_bucket_count;
+  using list_type::empty;
   size_type size() const noexcept;
   size_type max_size() const noexcept;
 
@@ -94,19 +197,17 @@ class linked_unordered_set {
   float max_load_factor() const noexcept;
   void max_load_factor(float);
   void rehash(bucket_size_type);
-  void reserve(bucket_size_type);
+  void reserve(size_type);
 
   template<typename K> bucket_size_type bucket(const K&) const;
   hasher hash_function() const;
   key_equal key_eq() const;
-  allocator_type get_allocator() const;
+  using basic_linked_unordered_set<Allocator>::get_allocator;
 
-  iterator begin() noexcept;
-  const_iterator begin() const noexcept;
-  const_iterator cbegin() const noexcept;
-  iterator end() noexcept;
-  const_iterator end() const noexcept;
-  const_iterator cend() const noexcept;
+  using list_type::begin;
+  using list_type::end;
+  using list_type::cbegin;
+  using list_type::cend;
 
   iterator begin(bucket_size_type) noexcept;
   const_iterator begin(bucket_size_type) const noexcept;
@@ -129,11 +230,10 @@ class linked_unordered_set {
 
   void swap(linked_unordered_set&) noexcept;
 
-  static iterator nonconst_iterator(const_iterator) noexcept;
+  using list_type::nonconst_iterator;
 
  private:
-  list_type list_;
-  _namespace(std)::tuple<hasher, key_equal, bucket_set, float> params_;
+  _namespace(std)::tuple<hasher, key_equal, float> params_;
   size_type size_ = 0;
 };
 

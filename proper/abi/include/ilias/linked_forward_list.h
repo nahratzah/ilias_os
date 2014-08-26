@@ -20,11 +20,9 @@ class basic_linked_forward_list {
  public:
   class iterator;
 
- protected:
   enum from_before_iter_t { from_before_iter };
   class ptr_iterator;
 
- public:
   class element {
     friend basic_linked_forward_list;
     friend basic_linked_forward_list::iterator;
@@ -54,22 +52,22 @@ class basic_linked_forward_list {
   element* unlink(iterator) noexcept;
   element* unlink(element*) noexcept;
 
+ public:
   void splice_after(iterator, basic_linked_forward_list&) noexcept;
   static void splice_after(iterator,
                            iterator, iterator) noexcept;
   static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
       splice(ptr_iterator, ptr_iterator, ptr_iterator) noexcept;
-
- private:
   template<typename Compare>
   static _namespace(std)::tuple<ptr_iterator, ptr_iterator>
       merge(ptr_iterator, ptr_iterator,
             ptr_iterator, ptr_iterator,
             Compare);
 
- protected:
   template<typename Compare>
   void merge(basic_linked_forward_list&, Compare);
+
+  static iterator iterator_to(element*) noexcept;
 
  private:
   template<typename Compare>
@@ -80,14 +78,13 @@ class basic_linked_forward_list {
       sort(ptr_iterator, ptr_iterator, Compare);
   template<typename Compare> void sort(Compare, size_t);
 
- protected:
+ public:
   template<typename Compare> void sort(Compare);
 
   iterator before_begin() const noexcept;
   iterator begin() const noexcept;
   iterator end() const noexcept;
 
- public:
   bool empty() const noexcept;
   void swap(basic_linked_forward_list&) noexcept;
   void reverse() noexcept;
@@ -240,8 +237,10 @@ class linked_forward_list
   void swap(linked_forward_list&) noexcept;
 
   static iterator nonconst_iterator(const_iterator) noexcept;
+  static iterator iterator_to(reference) noexcept;
+  static const_iterator iterator_to(const_reference) noexcept;
 
- private:
+ protected:
   static element* down_cast_(pointer) noexcept;
   static element* down_cast_(const_pointer) noexcept;
   static pointer up_cast_(element*) noexcept;

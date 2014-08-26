@@ -138,6 +138,12 @@ auto basic_linked_forward_list::merge(basic_linked_forward_list& other,
         ref(compare));
 }
 
+inline auto basic_linked_forward_list::iterator_to(element* e) noexcept ->
+    iterator {
+  assert(e != nullptr);
+  return iterator(e);
+}
+
 template<typename Compare>
 auto basic_linked_forward_list::sort(ptr_iterator b, ptr_iterator e,
                                      Compare compare, size_t dist) ->
@@ -493,6 +499,20 @@ template<typename T, class Tag>
 auto linked_forward_list<T, Tag>::nonconst_iterator(const_iterator i)
     noexcept -> iterator {
   return iterator(i.impl_);
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::iterator_to(reference r) noexcept ->
+    iterator {
+  return iterator(basic_linked_forward_list::iterator_to(
+      down_cast_(&r)));
+}
+
+template<typename T, class Tag>
+auto linked_forward_list<T, Tag>::iterator_to(const_reference r) noexcept ->
+    const_iterator {
+  return const_iterator(basic_linked_forward_list::iterator_to(
+      down_cast_(&r)));
 }
 
 template<typename T, class Tag>
