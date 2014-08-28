@@ -77,7 +77,7 @@ vector<T, Alloc>::vector(vector&& o, const allocator_type& alloc)
     swap(avail_, o.avail_);
   } else {
     reserve(o.size());
-    copy(o.begin(), o.end(), back_inserter(*this));
+    move(o.begin(), o.end(), back_inserter(*this));
     o.clear();
   }
 }
@@ -130,9 +130,9 @@ template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator=(initializer_list<value_type> il) -> vector& {
   reserve(il.size());
   size_type delta = min(size_type(il.size()), size());
-  move(il.begin(), il.begin() + delta, begin());
+  copy(il.begin(), il.begin() + delta, begin());
   if (delta < il.size())
-    move(il.begin() + delta, il.end(), back_inserter(*this));
+    copy(il.begin() + delta, il.end(), back_inserter(*this));
   else if (delta < size())
     resize(delta);
   return *this;
@@ -572,8 +572,7 @@ bool operator<=(const vector<T, Alloc>& a, const vector<T, Alloc>& b)
 
 template<typename T, typename Alloc>
 void swap(vector<T, Alloc>& a, vector<T, Alloc>& b)
-    noexcept(noexcept(a.swap(b)))
-{
+    noexcept(noexcept(a.swap(b))) {
   a.swap(b);
 }
 
