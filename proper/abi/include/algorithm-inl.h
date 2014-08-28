@@ -545,7 +545,7 @@ auto algorithm_move_backward(const T* b, const T* e, T* out) ->
     enable_if_t<is_trivially_copyable<T>::value, T*> {
   const auto delta = e - b;
   memmove(out - delta, b, delta * sizeof(T));
-  return out + delta;
+  return out - delta;
 }
 
 template<typename T>
@@ -553,7 +553,7 @@ auto algorithm_move_backward(T* b, T* e, T* out) ->
     enable_if_t<is_trivially_copyable<T>::value, T*> {
   const auto delta = e - b;
   memmove(out - delta, b, delta * sizeof(T));
-  return out + delta;
+  return out - delta;
 }
 
 template<typename InputIterator, typename OutputIterator>
