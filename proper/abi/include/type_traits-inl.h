@@ -4,6 +4,11 @@
 #include <type_traits>
 
 _namespace_begin(std)
+namespace impl {
+
+template<typename T> add_rvalue_reference_t<T> declval_() noexcept;
+
+} /* namespace std::impl */
 
 
 template<typename T> struct is_void
@@ -114,7 +119,10 @@ template<typename T> struct _is_trivially_copyable
 template<typename T> struct is_trivially_copyable
 : _is_trivially_copyable<remove_cv_t<T>> {};
 
-template<typename T> struct is_standard_layout;  // XXX
+template<typename T> struct _is_standard_layout
+: integral_constant<bool, __is_standard_layout(T)> {};
+template<typename T> struct is_standard_layout
+: _is_standard_layout<remove_cv_t<T>> {};
 
 template<typename T> struct _is_pod
 : integral_constant<bool, __is_pod(T)> {};
@@ -181,10 +189,11 @@ template<typename T> struct is_copy_assignable
 template<typename T> struct is_move_assignable
 : is_assignable<T, remove_cv_t<remove_reference_t<T>>&&> {};
 
-template<typename T> struct _is_destructible_support { static T& v(); };
-template<typename T, typename = int> struct _is_destructible : false_type {};
+template<typename T, typename = int> struct _is_destructible
+: false_type {};
 template<typename T> struct _is_destructible<T,
-    decltype(_is_destructible_support<T>::v().~T(), int(0))> : true_type {};
+    decltype(impl::declval_<add_lvalue_reference_t<T>>().~T(), int(0))>
+: true_type {};
 template<typename T> struct is_destructible
 : _is_destructible<remove_cv_t<T>>::type {};
 
@@ -242,7 +251,12 @@ template<typename T> struct is_nothrow_move_constructible
 : _is_nothrow_move_constructible<remove_cv_t<T>> {};
 
 
-template<typename T, typename... Args> struct is_nothrow_assignable;  // XXX
+template<typename T, typename U, bool = is_assignable<T, U>::value>
+struct _is_nothrow_assignable
+: integral_constant<bool,
+                    __is_nothrow_assignable(T, U)> {};
+template<typename T, typename U> struct is_nothrow_assignable
+: _is_nothrow_assignable<remove_cv_t<T>, U> {};
 
 template<typename T> struct _is_nothrow_copy_assignable
 : integral_constant<bool,
@@ -257,8 +271,20 @@ template<typename T> struct _is_nothrow_move_assignable
 template<typename T> struct is_nothrow_move_assignable
 : _is_nothrow_move_assignable<remove_cv_t<T>> {};
 
-template<typename T> struct is_nothrow_destructible;  // XXX
-template<typename T> struct has_virtual_destructor;  // XXX
+template<typename T, bool = is_destructible<T>::value>
+struct _is_nothrow_destructible
+: integral_constant<bool,
+                    noexcept(
+                        impl::declval_<add_lvalue_reference_t<T>>().~T())> {};
+template<typename T> struct _is_nothrow_destructible<T, false>
+: false_type {};
+template<typename T> struct is_nothrow_destructible
+: _is_nothrow_destructible<remove_cv_t<T>> {};
+
+template<typename T> struct _has_virtual_destructor
+: integral_constant<bool, __has_virtual_destructor(T)> {};
+template<typename T> struct has_virtual_destructor
+: _has_virtual_destructor<remove_cv_t<T>> {};
 
 
 template<typename T> struct _alignment_of
