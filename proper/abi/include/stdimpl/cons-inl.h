@@ -31,6 +31,40 @@ constexpr cons<Nitems, cons_elem<I, Type, B>...>::cons(
 {}
 
 template<size_t Nitems, size_t... I, typename... Type, bool... B>
+template<typename Alloc>
+constexpr cons<Nitems, cons_elem<I, Type, B>...>::cons(
+    allocator_arg_t, const Alloc& a)
+: cons_elem<I, Type, B>(allocator_arg_t(), a)...
+{}
+
+template<size_t Nitems, size_t... I, typename... Type, bool... B>
+template<typename Alloc, typename... U>
+constexpr cons<Nitems, cons_elem<I, Type, B>...>::cons(
+    enable_if_t<sizeof...(U) == Nitems, allocator_arg_t>,
+    const Alloc& a, U&&... v)
+: cons_elem<I, Type, B>(allocator_arg_t(), a,
+                        impl::get_value<I>(forward<U>(v)...))...
+{}
+
+template<size_t Nitems, size_t... I, typename... Type, bool... B>
+template<typename Alloc, typename... U>
+constexpr cons<Nitems, cons_elem<I, Type, B>...>::cons(
+    allocator_arg_t,
+    const Alloc& a, const cons<Nitems, U...>& v)
+: cons_elem<I, Type, B>(allocator_arg_t(), a,
+                        v.template get_value<I>(v))...
+{}
+
+template<size_t Nitems, size_t... I, typename... Type, bool... B>
+template<typename Alloc, typename... U>
+constexpr cons<Nitems, cons_elem<I, Type, B>...>::cons(
+    allocator_arg_t,
+    const Alloc& a, cons<Nitems, U...>&& v)
+: cons_elem<I, Type, B>(allocator_arg_t(), a,
+                        v.template get_value<I>(move(v)))...
+{}
+
+template<size_t Nitems, size_t... I, typename... Type, bool... B>
 template<typename... U>
 auto cons<Nitems, cons_elem<I, Type, B>...>::operator=(
     const cons<Nitems, U...>& v)

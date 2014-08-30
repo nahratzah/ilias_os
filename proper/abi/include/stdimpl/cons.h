@@ -4,6 +4,7 @@
 #include <cdecl.h>
 #include <type_traits>
 #include <utility>
+#include <memory-fwd.h>
 
 _namespace_begin(std)
 namespace impl {
@@ -11,6 +12,19 @@ namespace impl {
 
 struct ignore_t {};
 
+
+struct cons_construct_no_alloc {};
+struct cons_construct_use_alloc {};
+struct cons_construct_use_allocarg {};
+
+template<typename T, typename Alloc, typename... U>
+using cons_construct_select_ =
+    conditional_t<uses_allocator<T, Alloc>::value,
+                  conditional_t<is_constructible<T, allocator_arg_t,
+                                                 Alloc, U...>::value,
+                                cons_construct_use_allocarg,
+                                cons_construct_use_alloc>,
+                  cons_construct_no_alloc>;
 
 template<typename T> struct cons_elem_id {};
 
@@ -34,6 +48,48 @@ template<size_t I, typename T, bool = is_empty<T>::value> class cons_elem {
   constexpr cons_elem(const T& v) : value_(v) {}
   template<typename U>
   constexpr cons_elem(U&& v) : value_(forward<U>(v)) {}
+
+ private:
+  template<typename Alloc, typename U>
+  constexpr cons_elem(cons_construct_no_alloc, const Alloc&, U&& v)
+  : value_(forward<U>(v))
+  {}
+
+  template<typename Alloc, typename U>
+  constexpr cons_elem(cons_construct_use_alloc, const Alloc& a, U&& v)
+  : value_(forward<U>(v), a)
+  {}
+
+  template<typename Alloc, typename U>
+  constexpr cons_elem(cons_construct_use_allocarg, const Alloc& a, U&& v)
+  : value_(allocator_arg_t(), a, forward<U>(v))
+  {}
+
+  template<typename Alloc>
+  constexpr cons_elem(cons_construct_no_alloc, const Alloc&)
+  : value_()
+  {}
+
+  template<typename Alloc>
+  constexpr cons_elem(cons_construct_use_alloc, const Alloc& a)
+  : value_(a)
+  {}
+
+  template<typename Alloc>
+  constexpr cons_elem(cons_construct_use_allocarg, const Alloc& a)
+  : value_(allocator_arg_t(), a)
+  {}
+
+ public:
+  template<typename Alloc, typename U>
+  constexpr cons_elem(allocator_arg_t, const Alloc& a, U&& v)
+  : cons_elem(cons_construct_select_<T, Alloc, U>(), a, v)
+  {}
+
+  template<typename Alloc>
+  constexpr cons_elem(allocator_arg_t, const Alloc& a)
+  : cons_elem(cons_construct_select_<T, Alloc>(), a)
+  {}
 
   cons_elem& operator=(const cons_elem&) = default;
   cons_elem& operator=(cons_elem&&) = default;
@@ -87,6 +143,48 @@ template<size_t I, typename T> class cons_elem<I, T, true>
   constexpr cons_elem(const T& v) : T(v) {}
   template<typename U>
   constexpr cons_elem(U&& v) : T(forward<U>(v)) {}
+
+ private:
+  template<typename Alloc, typename U>
+  constexpr cons_elem(cons_construct_no_alloc, const Alloc&, U&& v)
+  : T(forward<U>(v))
+  {}
+
+  template<typename Alloc, typename U>
+  constexpr cons_elem(cons_construct_use_alloc, const Alloc& a, U&& v)
+  : T(forward<U>(v), a)
+  {}
+
+  template<typename Alloc, typename U>
+  constexpr cons_elem(cons_construct_use_allocarg, const Alloc& a, U&& v)
+  : T(allocator_arg_t(), a, forward<U>(v))
+  {}
+
+  template<typename Alloc>
+  constexpr cons_elem(cons_construct_no_alloc, const Alloc&)
+  : T()
+  {}
+
+  template<typename Alloc>
+  constexpr cons_elem(cons_construct_use_alloc, const Alloc& a)
+  : T(a)
+  {}
+
+  template<typename Alloc>
+  constexpr cons_elem(cons_construct_use_allocarg, const Alloc& a)
+  : T(allocator_arg_t(), a)
+  {}
+
+ public:
+  template<typename Alloc, typename U>
+  constexpr cons_elem(allocator_arg_t, const Alloc& a, U&& v)
+  : cons_elem(cons_construct_select_<T, Alloc, U>(), a, v)
+  {}
+
+  template<typename Alloc>
+  constexpr cons_elem(allocator_arg_t, const Alloc& a)
+  : cons_elem(cons_construct_select_<T, Alloc>(), a)
+  {}
 
   cons_elem& operator=(const cons_elem&) = default;
   cons_elem& operator=(cons_elem&&) = default;
@@ -389,6 +487,16 @@ class cons<Nitems, cons_elem<I, Type, B>...>
       noexcept(cons_and(is_nothrow_constructible<cons_elem<I, Type>,
                         decltype(impl::get_value<I>(forward<U>(v)...))
                         >::value...));
+
+  template<typename Alloc> constexpr cons(allocator_arg_t, const Alloc&);
+  template<typename Alloc, typename... U> constexpr cons(
+      enable_if_t<sizeof...(U) == Nitems, allocator_arg_t>, const Alloc&,
+      U&&... v);
+  template<typename Alloc, typename... U> constexpr cons(
+      allocator_arg_t, const Alloc&, const cons<Nitems, U...>& v);
+  template<typename Alloc, typename... U> constexpr cons(
+      allocator_arg_t, const Alloc&, cons<Nitems, U...>&& v);
+
   template<typename... U> cons& operator=(const cons<Nitems, U...>& v)
       noexcept(noexcept(this->assign_(v, index_sequence<I...>())));
   template<typename... U> cons& operator=(cons<Nitems, U...>&& v)

@@ -49,6 +49,65 @@ constexpr tuple<Types...>::tuple(pair<U1, U2>&& v,
 {}
 
 template<typename... Types>
+template<typename Alloc>
+tuple<Types...>::tuple(allocator_arg_t, const Alloc& a)
+: cons(allocator_arg_t(), a)
+{}
+
+template<typename... Types>
+template<typename Alloc>
+tuple<Types...>::tuple(allocator_arg_t, const Alloc& a, const Types&... v)
+: cons(allocator_arg_t(), a, v...)
+{}
+
+template<typename... Types>
+template<typename Alloc, typename... UTypes>
+tuple<Types...>::tuple(allocator_arg_t, const Alloc& a, UTypes&&... v,
+    enable_if_t<implicit_convertible<UTypes...>::value, enable_>)
+: cons(allocator_arg_t(), a, forward<UTypes>(v)...)
+{}
+
+template<typename... Types>
+template<typename Alloc>
+tuple<Types...>::tuple(allocator_arg_t, const Alloc& a, const tuple& v)
+: cons(allocator_arg_t(), a, v)
+{}
+
+template<typename... Types>
+template<typename Alloc>
+tuple<Types...>::tuple(allocator_arg_t, const Alloc& a, tuple&& v)
+: cons(allocator_arg_t(), a, move(v))
+{}
+
+template<typename... Types>
+template<typename Alloc, typename... UTypes>
+tuple<Types...>::tuple(allocator_arg_t, const Alloc& a,
+                       const tuple<UTypes...>& v)
+: cons(allocator_arg_t(), a, v)
+{}
+
+template<typename... Types>
+template<typename Alloc, typename... UTypes>
+tuple<Types...>::tuple(allocator_arg_t, const Alloc& a,
+                       tuple<UTypes...>&& v)
+: cons(allocator_arg_t(), a, move(v))
+{}
+
+template<typename... Types>
+template<typename Alloc, typename U1, typename U2>
+tuple<Types...>::tuple(allocator_arg_t, const Alloc& a,
+                       const pair<U1, U2>& v)
+: tuple(allocator_arg_t(), a, v.first, v.second)
+{}
+
+template<typename... Types>
+template<typename Alloc, typename U1, typename U2>
+tuple<Types...>::tuple(allocator_arg_t, const Alloc& a,
+                       pair<U1, U2>&& v)
+: tuple(allocator_arg_t(), a, forward<U1>(v.first), forward<U2>(v.second))
+{}
+
+template<typename... Types>
 template<typename... UTypes>
 auto tuple<Types...>::operator=(const tuple<UTypes...>& u) -> tuple& {
   this->cons::operator=(u);
