@@ -189,7 +189,7 @@ class linked_forward_list_element
 
 template<typename T, class Tag>
 class linked_forward_list
-: private basic_linked_forward_list
+: protected basic_linked_forward_list
 {
  public:
   using value_type = T;

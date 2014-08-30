@@ -32,10 +32,12 @@ struct basic_lu_set_algorithms {
   using pred_array_type = _namespace(std)::impl::heap_array<iterator>;
 
   static iterator find_predecessor(const iterator*, const iterator*,
-                                   iterator, size_t, iterator) noexcept;
+                                   iterator, size_t,
+                                   const basic_linked_forward_list&) noexcept;
   template<typename Pred>
   static iterator find_predecessor_for_link(const iterator*, const iterator*,
-                                            size_t, Pred, iterator, iterator);
+                                            size_t, Pred,
+                                            const basic_linked_forward_list&);
 
   static void update_on_link(iterator*, iterator*, iterator, size_t) noexcept;
   static void update_on_unlink(iterator*, iterator*, iterator, size_t)
@@ -43,24 +45,26 @@ struct basic_lu_set_algorithms {
 
  private:
   template<typename Hash>
-  static bool rehash_completely(iterator*, iterator*, Hash, iterator, iterator)
-      noexcept;
+  static bool rehash_completely(iterator*, iterator*, Hash,
+                                basic_linked_forward_list&) noexcept;
   static bool rehash_shrink(iterator*, iterator*, iterator*,
-                                 iterator, iterator) noexcept;
+                            basic_linked_forward_list&) noexcept;
 
  public:
   template<typename Hash>
-  static void rehash(iterator*, iterator*, iterator*, Hash, iterator, iterator)
-      noexcept;
+  static void rehash(iterator*, iterator*, iterator*, Hash,
+                     basic_linked_forward_list&) noexcept;
 
  private:
   static void rehash_splice_operation_(iterator*, iterator*,
-                                       iterator, iterator,
+                                       basic_linked_forward_list&,
                                        size_t, iterator, iterator,
                                        pred_array_type&, iterator) noexcept;
 
  public:
-  static void on_move(iterator*, iterator*, iterator, iterator) noexcept;
+  static void on_move(iterator*, iterator*,
+                      basic_linked_forward_list&,
+                      basic_linked_forward_list&) noexcept;
 };
 
 } /* namespace ilias::impl */
@@ -85,7 +89,8 @@ class basic_linked_unordered_set {
 
  protected:
   basic_linked_unordered_set(
-      bucket_size_type, iterator, const allocator_type& = allocator_type());
+      bucket_size_type, basic_linked_forward_list&,
+      const allocator_type& = allocator_type());
   explicit basic_linked_unordered_set(
       const allocator_type& = allocator_type());
 
@@ -95,30 +100,36 @@ class basic_linked_unordered_set {
       const basic_linked_unordered_set&) = delete;
   basic_linked_unordered_set& operator=(
       basic_linked_unordered_set&&) = delete;
-  basic_linked_unordered_set(basic_linked_unordered_set&&, iterator, iterator)
+  basic_linked_unordered_set(basic_linked_unordered_set&&,
+                             basic_linked_forward_list&,
+                             basic_linked_forward_list&&)
       noexcept;
-  void swap(basic_linked_unordered_set&, iterator, iterator) noexcept;
+  void swap(basic_linked_unordered_set&,
+            basic_linked_forward_list&, basic_linked_forward_list&) noexcept;
 
-  iterator begin_(bucket_size_type, iterator) const noexcept;
-  iterator end_(bucket_size_type, iterator) const noexcept;
+  iterator begin_(bucket_size_type,
+                  const basic_linked_forward_list&) const noexcept;
+  iterator end_(bucket_size_type,
+                const basic_linked_forward_list&) const noexcept;
 
-  iterator find_predecessor(iterator, bucket_size_type, iterator)
+  iterator find_predecessor(iterator, bucket_size_type,
+                            const basic_linked_forward_list&)
       const noexcept;
   template<typename Pred>
   iterator find_predecessor_for_link(bucket_size_type, Pred,
-                                     iterator, iterator) const;
+                                     const basic_linked_forward_list&) const;
 
   void update_on_link(iterator, bucket_size_type) noexcept;
   void update_on_unlink(iterator, bucket_size_type) noexcept;
-  void update_on_unlink_all(iterator) noexcept;
+  void update_on_unlink_all(const basic_linked_forward_list&) noexcept;
 
   template<typename Hash>
-  void rehash(bucket_size_type, Hash, iterator, iterator);
+  void rehash(bucket_size_type, Hash, basic_linked_forward_list&);
   template<typename SizeT, typename Hash>
-  void rehash_grow(SizeT, float, Hash, iterator, iterator,
+  void rehash_grow(SizeT, float, Hash, basic_linked_forward_list&,
                    bucket_size_type = 6, bucket_size_type = 5);
   template<typename SizeT, typename Hash>
-  void rehash_shrink(SizeT, float, Hash, iterator, iterator,
+  void rehash_shrink(SizeT, float, Hash, basic_linked_forward_list&,
                      bucket_size_type = 1, bucket_size_type = 3) noexcept;
 
   float load_factor_for_size(size_t) const noexcept;
@@ -147,6 +158,17 @@ class linked_unordered_set
  private:
   using list_type = linked_forward_list<T,
                                         impl::linked_unordered_set_tag<Tag>>;
+
+  static basic_linked_forward_list& basic_list_cast(list_type& l) noexcept {
+    return static_cast<basic_linked_forward_list&>(l);
+  }
+  static const basic_linked_forward_list& basic_list_cast(const list_type& l)
+      noexcept {
+    return static_cast<const basic_linked_forward_list&>(l);
+  }
+  static basic_linked_forward_list&& basic_list_cast(list_type&& l) noexcept {
+    return static_cast<basic_linked_forward_list&&>(basic_list_cast(l));
+  }
 
  public:
   using value_type = typename list_type::value_type;

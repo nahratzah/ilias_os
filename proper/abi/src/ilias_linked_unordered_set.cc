@@ -17,12 +17,12 @@ uint64_t ceil_uls_(long double f, uint64_t max) noexcept {
 
 auto basic_lu_set_algorithms::find_predecessor(
     const iterator* begin, const iterator* end,
-    iterator v, size_t b, iterator before_begin)
+    iterator v, size_t b, const basic_linked_forward_list& list)
     noexcept -> iterator {
   assert(b == 0 || b < size_t(end - begin));
 
   /* Find position at which to start our search for predecessor. */
-  iterator search = before_begin;
+  iterator search = list.before_begin();
   if (begin != end) {
     for (const iterator* i = begin + b;; --i) {
       if (*i != v) {
@@ -88,9 +88,8 @@ auto basic_lu_set_algorithms::update_on_unlink(iterator* begin, iterator* end,
 auto basic_lu_set_algorithms::rehash_shrink(iterator* begin,
                                             iterator* end,
                                             iterator* old_end,
-                                            iterator before_begin,
-                                            iterator lst_end) noexcept ->
-    bool {
+                                            basic_linked_forward_list& list)
+    noexcept -> bool {
   using _namespace(std)::next;
 
   /* Check if the code will work for this case. */
@@ -103,7 +102,7 @@ auto basic_lu_set_algorithms::rehash_shrink(iterator* begin,
    * is done in list order, sp_pred will always be the predecessor of the
    * splice range. */
   const iterator sp_pred = find_predecessor(begin, old_end,
-                                            *end, end - begin, before_begin);
+                                            *end, end - begin, list);
 
   for (auto in = end, out = begin;
        in != old_end;
@@ -111,14 +110,13 @@ auto basic_lu_set_algorithms::rehash_shrink(iterator* begin,
     /* Calculate splice range. */
     iterator* in_succ = next(in);
     iterator sp_first = *in;
-    iterator sp_end = (in_succ == old_end ? lst_end : *in_succ);
+    iterator sp_end = (in_succ == old_end ? list.end() : *in_succ);
     assert(next(sp_pred) == sp_first);
     if (sp_first == sp_end) continue;  // Empty bucket.
 
     /* Calculate splice position. */
     iterator succ = out[1];
-    iterator pos = find_predecessor(begin, end, succ, out - begin,
-                                    before_begin);
+    iterator pos = find_predecessor(begin, end, succ, out - begin, list);
 
     /* Splice elements. */
     basic_linked_forward_list::splice_after(pos, sp_pred, sp_end);
@@ -138,10 +136,9 @@ auto basic_lu_set_algorithms::rehash_shrink(iterator* begin,
 
 auto basic_lu_set_algorithms::rehash_splice_operation_(
     iterator* begin, iterator* end,
-    iterator /*before_begin*/, iterator lst_end,
+    basic_linked_forward_list& list,
     size_t b, iterator sp_pred, iterator sp_last,
-    pred_array_type& pred_array, iterator bb_hint)
-    noexcept -> void {
+    pred_array_type& pred_array, iterator bb_hint) noexcept -> void {
   using flist = basic_linked_forward_list;
   using ptr_iterator = basic_linked_forward_list::ptr_iterator;
 
@@ -157,8 +154,8 @@ auto basic_lu_set_algorithms::rehash_splice_operation_(
     pos = pred_array[b];
     succ = next(pos);
   } else {
-    succ = (begin + b + 1U == end ? lst_end : begin[b + 1U]);
-    pos = find_predecessor(begin, end, succ, b, bb_hint);
+    succ = (begin + b + 1U == end ? list.end() : begin[b + 1U]);
+    for (pos = bb_hint; next(pos) != succ; ++pos);
   }
 
   /* Splice data into the correct position. */
@@ -186,12 +183,16 @@ auto basic_lu_set_algorithms::rehash_splice_operation_(
 }
 
 auto basic_lu_set_algorithms::on_move(iterator* begin, iterator* end,
-                                      iterator rhs_end, iterator self_end)
+                                      basic_linked_forward_list& list,
+                                      basic_linked_forward_list& rhs_list)
     noexcept -> void {
   using _namespace(std)::prev;
 
-  while (end != begin && *prev(end) == rhs_end)
+  iterator rhs_end = rhs_list.end();
+  iterator self_end = list.end();
+  while (end != begin && *prev(end) == rhs_end) {
     *--end = self_end;
+  }
 }
 
 
