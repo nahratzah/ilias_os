@@ -1,0 +1,170 @@
+#ifndef _STACK_
+#define _STACK_
+
+#include <cdecl.h>
+#include <initializer_list>
+#include <deque>
+#include <memory-fwd.h>
+#include <type_traits>
+
+_namespace_begin(std)
+
+
+template<typename T, typename Container = deque<T>> class stack;
+
+template<typename T, typename C>
+bool operator==(const stack<T, C>&, const stack<T, C>&);
+template<typename T, typename C>
+bool operator!=(const stack<T, C>&, const stack<T, C>&);
+template<typename T, typename C>
+bool operator<(const stack<T, C>&, const stack<T, C>&);
+template<typename T, typename C>
+bool operator>(const stack<T, C>&, const stack<T, C>&);
+template<typename T, typename C>
+bool operator<=(const stack<T, C>&, const stack<T, C>&);
+template<typename T, typename C>
+bool operator>=(const stack<T, C>&, const stack<T, C>&);
+
+template<typename T, typename Container>
+class stack {
+  template<typename TT, typename CC>
+  friend bool operator==(const stack<TT, CC>&, const stack<TT, CC>&);
+  template<typename TT, typename CC>
+  friend bool operator!=(const stack<TT, CC>&, const stack<TT, CC>&);
+  template<typename TT, typename CC>
+  friend bool operator<(const stack<TT, CC>&, const stack<TT, CC>&);
+  template<typename TT, typename CC>
+  friend bool operator>(const stack<TT, CC>&, const stack<TT, CC>&);
+  template<typename TT, typename CC>
+  friend bool operator<=(const stack<TT, CC>&, const stack<TT, CC>&);
+  template<typename TT, typename CC>
+  friend bool operator>=(const stack<TT, CC>&, const stack<TT, CC>&);
+
+ public:
+  using container_type = Container;
+  using value_type = typename container_type::value_type;
+  using reference = typename container_type::reference;
+  using const_reference = typename container_type::const_reference;
+  using size_type = typename container_type::size_type;
+
+  explicit stack(const container_type&);
+  explicit stack(container_type&& = container_type());
+  explicit stack(stack&&);
+
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      explicit stack(const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      stack(const container_type&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      stack(container_type&&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      stack(const stack&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      stack(stack&&, const Alloc&);
+
+  stack& operator=(stack&&);
+
+  bool empty() const;
+  size_type size() const;
+  reference top();
+  const_reference top() const;
+
+  void push(const value_type&);
+  void push(value_type&&);
+  template<typename... Args> void emplace(Args&&... args);
+  void pop();
+
+  void swap(stack&);
+
+ protected:
+  container_type c;
+};
+
+template<typename T, typename C>
+void swap(stack<T, C>&, stack<T, C>&);
+
+
+template<typename T, typename C, typename Alloc>
+struct uses_allocator<stack<T, C>, Alloc>
+: uses_allocator<C, Alloc>::type {};
+
+
+extern template class stack<bool>;
+extern template class stack<char>;
+extern template class stack<signed char>;
+extern template class stack<unsigned char>;
+extern template class stack<short>;
+extern template class stack<unsigned short>;
+extern template class stack<int>;
+extern template class stack<unsigned int>;
+extern template class stack<long>;
+extern template class stack<unsigned long>;
+extern template class stack<long long>;
+extern template class stack<unsigned long long>;
+
+extern template bool operator==(const stack<bool>&,
+                                const stack<bool>&);
+extern template bool operator==(const stack<char>&,
+                                const stack<char>&);
+extern template bool operator==(const stack<signed char>&,
+                                const stack<signed char>&);
+extern template bool operator==(const stack<unsigned char>&,
+                                const stack<unsigned char>&);
+extern template bool operator==(const stack<short>&,
+                                const stack<short>&);
+extern template bool operator==(const stack<unsigned short>&,
+                                const stack<unsigned short>&);
+extern template bool operator==(const stack<int>&,
+                                const stack<int>&);
+extern template bool operator==(const stack<unsigned int>&,
+                                const stack<unsigned int>&);
+extern template bool operator==(const stack<long>&,
+                                const stack<long>&);
+extern template bool operator==(const stack<unsigned long>&,
+                                const stack<unsigned long>&);
+extern template bool operator==(const stack<long long>&,
+                                const stack<long long>&);
+extern template bool operator==(const stack<unsigned long long>&,
+                                const stack<unsigned long long>&);
+
+extern template bool operator<(const stack<bool>&,
+                               const stack<bool>&);
+extern template bool operator<(const stack<char>&,
+                               const stack<char>&);
+extern template bool operator<(const stack<signed char>&,
+                               const stack<signed char>&);
+extern template bool operator<(const stack<unsigned char>&,
+                               const stack<unsigned char>&);
+extern template bool operator<(const stack<short>&,
+                               const stack<short>&);
+extern template bool operator<(const stack<unsigned short>&,
+                               const stack<unsigned short>&);
+extern template bool operator<(const stack<int>&,
+                               const stack<int>&);
+extern template bool operator<(const stack<unsigned int>&,
+                               const stack<unsigned int>&);
+extern template bool operator<(const stack<long>&,
+                               const stack<long>&);
+extern template bool operator<(const stack<unsigned long>&,
+                               const stack<unsigned long>&);
+extern template bool operator<(const stack<long long>&,
+                               const stack<long long>&);
+extern template bool operator<(const stack<unsigned long long>&,
+                               const stack<unsigned long long>&);
+
+
+_namespace_end(std)
+
+#include <stack-inl.h>
+
+#endif /* _STACK_ */

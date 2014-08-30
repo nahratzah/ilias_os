@@ -1,0 +1,260 @@
+#ifndef _QUEUE_
+#define _QUEUE_
+
+#include <cdecl.h>
+#include <initializer_list>
+#include <deque>
+#include <vector>
+#include <memory-fwd.h>
+#include <type_traits>
+
+_namespace_begin(std)
+
+
+template<typename T, typename Container = deque<T>> class queue;
+
+template<typename T, typename C>
+bool operator==(const queue<T, C>&, const queue<T, C>&);
+template<typename T, typename C>
+bool operator!=(const queue<T, C>&, const queue<T, C>&);
+template<typename T, typename C>
+bool operator<(const queue<T, C>&, const queue<T, C>&);
+template<typename T, typename C>
+bool operator>(const queue<T, C>&, const queue<T, C>&);
+template<typename T, typename C>
+bool operator<=(const queue<T, C>&, const queue<T, C>&);
+template<typename T, typename C>
+bool operator>=(const queue<T, C>&, const queue<T, C>&);
+
+template<typename T, typename Container>
+class queue {
+  template<typename OT, typename OC> friend bool operator==(
+      const queue<OT, OC>&, const queue<OT, OC>&);
+  template<typename OT, typename OC> friend bool operator!=(
+      const queue<OT, OC>&, const queue<OT, OC>&);
+  template<typename OT, typename OC> friend bool operator<(
+      const queue<OT, OC>&, const queue<OT, OC>&);
+  template<typename OT, typename OC> friend bool operator>(
+      const queue<OT, OC>&, const queue<OT, OC>&);
+  template<typename OT, typename OC> friend bool operator<=(
+      const queue<OT, OC>&, const queue<OT, OC>&);
+  template<typename OT, typename OC> friend bool operator>=(
+      const queue<OT, OC>&, const queue<OT, OC>&);
+
+ public:
+  using container_type = Container;
+  using value_type = typename container_type::value_type;
+  using reference = typename container_type::reference;
+  using const_reference = typename container_type::const_reference;
+  using size_type = typename container_type::size_type;
+
+ public:
+  explicit queue(const container_type&);
+  explicit queue(container_type&& = container_type());
+  queue(queue&&);
+
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      explicit queue(const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      queue(const container_type&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      queue(container_type&&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      queue(const queue&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      queue(queue&&, const Alloc&);
+
+  queue& operator=(queue&&);
+
+  bool empty() const;
+  size_type size() const;
+  reference front();
+  const_reference front() const;
+  reference back();
+  const_reference back() const;
+
+  void push(const value_type&);
+  void push(value_type&&);
+  template<typename... Args> void emplace(Args&&...);
+  void pop();
+  void swap(queue&);
+
+ protected:
+  container_type c;
+};
+
+template<typename T, typename C>
+void swap(queue<T, C>&, queue<T, C>&);
+
+
+template<typename T, typename Container = vector<T>,
+         typename Compare = less<typename Container::value_type>>
+class priority_queue {
+ public:
+  using container_type = Container;
+  using value_type = typename container_type::value_type;
+  using reference = typename container_type::reference;
+  using const_reference = typename container_type::const_reference;
+  using size_type = typename container_type::size_type;
+
+  priority_queue(const Compare&, const container_type&);
+  explicit priority_queue(const Compare& = Compare(),
+                          container_type&& = container_type());
+  template<typename InputIter> priority_queue(
+      InputIter, InputIter,
+      const Compare&,
+      const container_type&);
+  template<typename InputIter> priority_queue(
+      InputIter, InputIter,
+      const Compare& = Compare(),
+      container_type&& = container_type());
+  priority_queue(priority_queue&&);
+
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      priority_queue(const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      priority_queue(const Compare&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      priority_queue(const Compare&, const container_type&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      priority_queue(const Compare&, container_type&&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      priority_queue(const priority_queue&, const Alloc&);
+  template<typename Alloc,
+           typename = enable_if_t<uses_allocator<container_type, Alloc>::value,
+                                  void>>
+      priority_queue(priority_queue&&, const Alloc&);
+
+  priority_queue& operator=(priority_queue&&);
+
+  bool empty() const;
+  size_type size() const;
+  const_reference top() const;
+
+  void push(const value_type&);
+  void push(value_type&&);
+  template<typename... Args> void emplace(Args&&...);
+  void pop();
+
+  void swap(priority_queue&);
+
+ protected:
+  container_type c;
+  Compare comp;
+};
+
+template<typename T, typename C, typename Cmp>
+void swap(priority_queue<T, C, Cmp>&, priority_queue<T, C, Cmp>&);
+
+
+template<typename T, typename C, typename Alloc>
+struct uses_allocator<queue<T, C>, Alloc>
+: uses_allocator<C, Alloc>::type {};
+
+template<typename T, typename C, typename Cmp, typename Alloc>
+struct uses_allocator<priority_queue<T, C, Cmp>, Alloc>
+: uses_allocator<C, Alloc>::type {};
+
+
+extern template class queue<bool>;
+extern template class queue<char>;
+extern template class queue<signed char>;
+extern template class queue<unsigned char>;
+extern template class queue<short>;
+extern template class queue<unsigned short>;
+extern template class queue<int>;
+extern template class queue<unsigned int>;
+extern template class queue<long>;
+extern template class queue<unsigned long>;
+extern template class queue<long long>;
+extern template class queue<unsigned long long>;
+
+extern template bool operator==(const queue<bool>&,
+                                const queue<bool>&);
+extern template bool operator==(const queue<char>&,
+                                const queue<char>&);
+extern template bool operator==(const queue<signed char>&,
+                                const queue<signed char>&);
+extern template bool operator==(const queue<unsigned char>&,
+                                const queue<unsigned char>&);
+extern template bool operator==(const queue<short>&,
+                                const queue<short>&);
+extern template bool operator==(const queue<unsigned short>&,
+                                const queue<unsigned short>&);
+extern template bool operator==(const queue<int>&,
+                                const queue<int>&);
+extern template bool operator==(const queue<unsigned int>&,
+                                const queue<unsigned int>&);
+extern template bool operator==(const queue<long>&,
+                                const queue<long>&);
+extern template bool operator==(const queue<unsigned long>&,
+                                const queue<unsigned long>&);
+extern template bool operator==(const queue<long long>&,
+                                const queue<long long>&);
+extern template bool operator==(const queue<unsigned long long>&,
+                                const queue<unsigned long long>&);
+
+extern template bool operator<(const queue<bool>&,
+                               const queue<bool>&);
+extern template bool operator<(const queue<char>&,
+                               const queue<char>&);
+extern template bool operator<(const queue<signed char>&,
+                               const queue<signed char>&);
+extern template bool operator<(const queue<unsigned char>&,
+                               const queue<unsigned char>&);
+extern template bool operator<(const queue<short>&,
+                               const queue<short>&);
+extern template bool operator<(const queue<unsigned short>&,
+                               const queue<unsigned short>&);
+extern template bool operator<(const queue<int>&,
+                               const queue<int>&);
+extern template bool operator<(const queue<unsigned int>&,
+                               const queue<unsigned int>&);
+extern template bool operator<(const queue<long>&,
+                               const queue<long>&);
+extern template bool operator<(const queue<unsigned long>&,
+                               const queue<unsigned long>&);
+extern template bool operator<(const queue<long long>&,
+                               const queue<long long>&);
+extern template bool operator<(const queue<unsigned long long>&,
+                               const queue<unsigned long long>&);
+
+
+extern template class priority_queue<char>;
+extern template class priority_queue<signed char>;
+extern template class priority_queue<unsigned char>;
+extern template class priority_queue<short>;
+extern template class priority_queue<unsigned short>;
+extern template class priority_queue<int>;
+extern template class priority_queue<unsigned int>;
+extern template class priority_queue<long>;
+extern template class priority_queue<unsigned long>;
+extern template class priority_queue<long long>;
+extern template class priority_queue<unsigned long long>;
+
+
+_namespace_end(std)
+
+#include <queue-inl.h>
+
+#endif /* _QUEUE_ */
