@@ -51,6 +51,7 @@ ABI_SRCS += abi/src/set.cc
 ABI_SRCS += abi/src/map.cc
 ABI_SRCS += abi/src/unordered_set.cc
 ABI_SRCS += abi/src/unordered_map.cc
+ABI_SRCS += abi/src/deque.cc
 ABI_SRCS += abi/src/stdimpl_allocator_cloneable.cc
 ABI_SRCS += abi/src/stdimpl_simple_bitset.cc
 ABI_SRCS += abi/src/stdimpl_stats.cc
