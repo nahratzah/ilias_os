@@ -164,10 +164,7 @@ bool operator!=(const array<T, N>& x, const array<T, N>& y) {
 
 template<typename T, size_t N>
 bool operator<(const array<T, N>& x, const array<T, N>& y) {
-  auto mismatch = find_mismatch(x.begin(), x.end(), y.begin());
-  return (mismatch.first == x.end() ?
-          false :
-          *mismatch.first < *mismatch.second);
+  return lexicographical_compare(x.begin(), x.end(), y.begin(), y.end());
 }
 
 template<typename T, size_t N>
