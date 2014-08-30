@@ -1794,8 +1794,8 @@ void fix_heap(RandomAccessIterator b, RandomAccessIterator i,
     RandomAccessIterator c2 = next(b, c2_idx);
 
     RandomAccessIterator biggest_child = c1;
-    if (c2 != e && !predicate(c2, c1)) biggest_child = c2;
-    if (!predicate(i, biggest_child)) break;  // GUARD: i at correct position
+    if (c2 != e && !predicate(*c2, *c1)) biggest_child = c2;
+    if (!predicate(*i, *biggest_child)) break;  // GUARD: i at correct position
 
     iter_swap(i, biggest_child);
     i = biggest_child;
