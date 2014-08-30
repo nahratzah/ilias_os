@@ -17,33 +17,21 @@ auto basic_lu_set_algorithms::find_predecessor_for_link(
     const iterator* begin, const iterator* end,
     size_t b, Pred pred,
     const basic_linked_forward_list& list) -> iterator {
-  assert(b == 0 || b < size_t(end - begin));
+  assert(b <= size_t(end - begin));
 
-  /* Set up [i..i_end) iterators for this hash bucket. */
-  iterator i, i_end;
-  if (begin != end) {
-    i = begin[b];
-    if (begin + b + 1U == end)
-      i_end = list.end();
-    else
-      i_end = begin[b + 1U];
-  } else {
-    i = list.begin();
-    i_end = list.end();
-  }
-
-  /* Handle empty bucket case. */
-  if (i == i_end)
-    return find_predecessor(begin, end, i, b, list);
+  /* Set up [i..i_end) iterators for this hash bucket.
+   * rv is the predecessor of i. */
+  iterator rv = (b == 0 ? list.before_begin() : begin[b - 1U]);
+  iterator i = next(rv);
+  iterator i_end = (b == size_t(end - begin) ? list.end() : next(begin[b]));
 
   /* Perform search in this hash bucket. */
-  iterator rv;  // Predecessor of i.
   while (i != i_end && !pred(*i))
     rv = i++;  // Skip elements until we find an element for which pred holds.
   if (i != i_end) rv = i++;  // Skip element for which we know pred holds.
   while (i != i_end && pred(*i))
     rv = i++;  // Skip elements for which pred holds.
-  return rv;  // Predecessor of i, i.e. the last element for which pred(*rv).
+  return rv;  // Predecessor of i.
 }
 
 /*
@@ -58,42 +46,45 @@ auto basic_lu_set_algorithms::rehash_completely(
     iterator* begin, iterator* end, Hash hasher,
     basic_linked_forward_list& list) noexcept -> bool {
   if (begin == end) return true;
-  const size_t mod = end - begin;
+  const size_t last_bucket = end - begin;
+  const size_t mod = last_bucket + 1U;
 
-  /* Reset hash pointers. */
-  _namespace(std)::fill(begin, end, list.end());
+  /* Reset hash pointers;
+   * this effectively hashes all elements to the last bucket. */
+  _namespace(std)::fill(begin, end, list.before_begin());
 
-  /* Find the last element in the list.
-   * Hash will splice after this element.
-   *
-   * bb_hint will be invalidated only during the final splice operation. */
-  iterator bb_hint = list.before_begin();
-  while (next(bb_hint) != list.end()) ++bb_hint;
+  /* Splice all elements to their correct buckets,
+   * skipping any that are to be in the last bucket
+   * (which are already in the correct position). */
+  iterator front_pred = list.before_begin();
+  iterator front;
+  bool update_front_pred = true;
+  while ((front = next(front_pred)) != list.end()) {
+    /* Skip any element that is supposed to be in the last bucket. */
+    size_t front_hash;
+    while ((front_hash = hasher(*front) % mod) == last_bucket) {
+      update_front_pred = false;  // No longer the head of the last bucket.
+      ++front_pred;
+      ++front;
+      if (front == list.end()) return true;  // Done.
+    }
 
-  /*
-   * Try to cache predecessor positions for each bucket.
-   * If this fails, the predecessor will be looked up each iteration.
-   */
-  auto pred_array = pred_array_type(end - begin);
-  if (_predict_true(pred_array))
-    fill_n(_namespace(std)::back_inserter(pred_array), end - begin, bb_hint);
+    /* Find all elements that share the same bucket. */
+    iterator front_end;
+    iterator front_last = front;
+    for (front_end = next(front);
+         front_end != list.end() && hasher(*front_end) % mod == front_hash;
+         front_last = front_end++);
 
-  /* Splice elements into their buckets. */
-  while (*begin != list.begin()) {
-    /* Hash first element. */
-    iterator i = list.begin();
-    size_t b = hasher(*i) % mod;
+    /* Perform splice operation. */
+    rehash_splice_operation_(begin, end, list, front_hash,
+                             front_pred, front_last);
 
-    /* Find last element that can participate in the splice. */
-    iterator i_end = next(i);
-    iterator i_end_pred = i;
-    while (i_end != *begin && hasher(*i_end) % mod == b)
-      i_end_pred = i_end++;
-
-    /* Move range into position. */
-    rehash_splice_operation_(begin, end, list,
-                             b, list.before_begin(), i_end_pred,
-                             pred_array, bb_hint);
+    /* update_front_pred indicates that the range is at the start
+     * of the last bucket.
+     * Since the predecessor of that bucket may now have changed, update it. */
+    if (update_front_pred)
+      front_pred = begin[last_bucket - 1U];
   }
 
   return true;
@@ -121,7 +112,7 @@ template<typename A>
 basic_linked_unordered_set<A>::basic_linked_unordered_set(
     bucket_size_type n, basic_linked_forward_list& list,
     const allocator_type& a)
-: buckets_(_namespace(std)::max(n, bucket_size_type(0)), list.end(), a)
+: buckets_(_namespace(std)::max(n, bucket_size_type(1)) - 1U, list.end(), a)
 {}
 
 template<typename A>
@@ -158,18 +149,16 @@ template<typename A>
 auto basic_linked_unordered_set<A>::begin_(
     bucket_size_type b, const basic_linked_forward_list& list)
     const noexcept -> iterator {
-  assert(b == 0 || b < buckets_.size());
-  return (buckets_.empty() ? list.begin() : buckets_[b]);
+  assert(b < bucket_count());
+  return (b == 0 ? list.begin() : next(buckets_[b - 1U]));
 }
 
 template<typename A>
 auto basic_linked_unordered_set<A>::end_(
     bucket_size_type b, const basic_linked_forward_list& list)
     const noexcept -> iterator {
-  assert(b == 0 || b < buckets_.size());
-  return (buckets_.empty() || b == buckets_.size() - 1U ?
-          list.end() :
-          buckets_[b + 1U]);
+  assert(b < bucket_count());
+  return (b == buckets_.size() ? list.end() : next(buckets_[b]));
 }
 
 /*
@@ -210,12 +199,12 @@ auto basic_linked_unordered_set<A>::find_predecessor_for_link(
  * b: the bucket that both inhabit.
  */
 template<typename A>
-void basic_linked_unordered_set<A>::update_on_link(iterator i,
+void basic_linked_unordered_set<A>::update_on_link(iterator i_pred,
                                                    bucket_size_type b)
     noexcept {
   impl::basic_lu_set_algorithms::update_on_link(buckets_.begin(),
                                                 buckets_.end(),
-                                                i, b);
+                                                i_pred, b);
 }
 
 /*
@@ -224,18 +213,18 @@ void basic_linked_unordered_set<A>::update_on_link(iterator i,
  * b: the bucket that both inhabit.
  */
 template<typename A>
-void basic_linked_unordered_set<A>::update_on_unlink(iterator i,
+void basic_linked_unordered_set<A>::update_on_unlink(iterator i_pred,
                                                      bucket_size_type b)
     noexcept {
   impl::basic_lu_set_algorithms::update_on_unlink(buckets_.begin(),
                                                   buckets_.end(),
-                                                  i, b);
+                                                  i_pred, b);
 }
 
 template<typename A>
 void basic_linked_unordered_set<A>::update_on_unlink_all(
     const basic_linked_forward_list& list) noexcept {
-  _namespace(std)::fill(buckets_.begin(), buckets_.end(), list.end());
+  _namespace(std)::fill(buckets_.begin(), buckets_.end(), list.before_begin());
 }
 
 template<typename A>
@@ -250,18 +239,18 @@ void basic_linked_unordered_set<A>::rehash(
   }
 
   auto op = [&]() noexcept {
-              const auto old_sz = buckets_.size();
+              const auto old_sz = bucket_count();
               if (n > old_sz)
-                buckets_.resize(n, list.end());
+                buckets_.resize(n - 1U, list.end());
               alg::rehash(this->buckets_.begin(),
-                          next(this->buckets_.begin(), n),
-                          next(this->buckets_.begin(), old_sz),
+                          next(this->buckets_.begin(), n - 1U),
+                          next(this->buckets_.begin(), old_sz - 1U),
                           ref(hasher), list);
               if (n < old_sz)
-                buckets_.resize(n);
+                buckets_.resize(n - 1U);
             };
 
-  buckets_.reserve(n);  // Ensure resize won't throw.
+  buckets_.reserve(n - 1U);  // Ensure resize won't throw.
   op();  // Noexcept operation to resize buckets and rehash the list.
 }
 
@@ -388,7 +377,7 @@ float basic_linked_unordered_set<A>::load_factor_for_size(size_t n)
 template<typename A>
 auto basic_linked_unordered_set<A>::bucket_count() const noexcept ->
     bucket_size_type {
-  return _namespace(std)::max(buckets_.size(), bucket_size_type(1));
+  return buckets_.size() + 1U;
 }
 
 template<typename A>
@@ -511,7 +500,7 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::link(pointer p,
 
   /* Update hash buckets. */
   this->basic_linked_unordered_set<A>::update_on_link(
-      rv.get_unsafe_basic_iter(), b);
+      pred.get_unsafe_basic_iter(), b);
 
   return make_pair(rv, true);
 }
@@ -528,13 +517,13 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::unlink(const_iterator p)
   auto& hasher_ = get<0>(params_);
   const auto b = bucket(*p);
 
-  /* Update buckets. */
-  this->update_on_unlink(p.get_unsafe_basic_iter(), b);
-
   /* Locate predecessor of p. */
   iterator pred = iterator::from_unsafe_basic_iter(
       this->find_predecessor(p.get_unsafe_basic_iter(), b,
                              basic_list_cast(*this)));
+
+  /* Update buckets. */
+  this->update_on_unlink(pred.get_unsafe_basic_iter(), b);
 
   /* Unlink from list. */
   const pointer rv = this->list_type::unlink_after(pred);
@@ -614,10 +603,6 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::max_load_factor(float lf) ->
 
   assert(lf > 0.0f);
   auto& load_factor_ = get<2>(params_);
-  const auto n = ceil_uls_(static_cast<long double>(size()) / lf,
-                           numeric_limits<bucket_size_type>::max());
-
-  if (!empty() && bucket_count() < n) rehash(n);
   load_factor_ = lf;
 }
 
@@ -652,8 +637,6 @@ auto linked_unordered_set<T, Tag, Hash, Pred, A>::reserve(
   using _namespace(std)::cref;
 
   auto& hasher_ = get<0>(params_);
-  if (n <= size()) return;
-
   this->basic_linked_unordered_set<A>::rehash_grow(
       n, max_load_factor(),
       bind(cref(hasher_), bind(&list_type::up_cast_cref_, _1)),

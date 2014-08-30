@@ -10,7 +10,6 @@
 #include <vector>
 #include <ilias/linked_forward_list.h>
 #include <cstdint>
-#include <stdimpl/heap_array.h>
 
 _namespace_begin(ilias)
 namespace impl {
@@ -29,7 +28,6 @@ uint64_t ceil_uls_(long double, uint64_t = UINT64_MAX) noexcept;
 struct basic_lu_set_algorithms {
  public:
   using iterator = basic_linked_forward_list::iterator;
-  using pred_array_type = _namespace(std)::impl::heap_array<iterator>;
 
   static iterator find_predecessor(const iterator*, const iterator*,
                                    iterator, size_t,
@@ -58,8 +56,7 @@ struct basic_lu_set_algorithms {
  private:
   static void rehash_splice_operation_(iterator*, iterator*,
                                        basic_linked_forward_list&,
-                                       size_t, iterator, iterator,
-                                       pred_array_type&, iterator) noexcept;
+                                       size_t, iterator, iterator) noexcept;
 
  public:
   static void on_move(iterator*, iterator*,
@@ -140,6 +137,10 @@ class basic_linked_unordered_set {
   allocator_type get_allocator() const;
 
  private:
+  /*
+   * Each element buckets_[i] is the before iterator of bucket (i+1).
+   * buckets_.size() == bucket_count() - 1U.
+   */
   bucket_set buckets_;
 };
 
