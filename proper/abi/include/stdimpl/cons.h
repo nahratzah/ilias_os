@@ -271,17 +271,22 @@ struct _max_align;
 
 template<typename Ltodo1, typename... Ltodo, typename... Lresult, size_t Align>
 struct _max_align<type_list<Ltodo1, Ltodo...>, type_list<Lresult...>, Align> {
+  static constexpr bool Empty = is_empty<Ltodo1>::value;
   static constexpr size_t Align1 = alignment_of<Ltodo1>::value;
-  static constexpr bool Less = Align1 > Align;
+  static constexpr bool Less = (Empty &&
+                                (Align != 0 || sizeof...(Lresult) == 0)) ||
+                               Align1 > Align;
 
   using selection =
       conditional_t<Less,
                     type_list<Ltodo1>,
-                    conditional_t<Align1 == Align,
+                    conditional_t<Empty || Align1 == Align,
                                   type_list_concat_t<type_list<Lresult...>,
                                                      type_list<Ltodo1>>,
                                   type_list<Lresult...>>>;
-  static constexpr size_t AlignContinuation = (Less ? Align1 : Align);
+  static constexpr size_t AlignContinuation = (Empty ?
+                                               0 :
+                                               (Less ? Align1 : Align));
 
   using impl = _max_align<type_list<Ltodo...>, selection, AlignContinuation>;
 
