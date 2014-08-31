@@ -5,6 +5,7 @@
 #include <stdimpl/shared_ptr_ownership.h>
 #include <memory>
 #include <typeinfo>
+#include <abi/misc_int.h>
 
 _namespace_begin(std)
 namespace impl {
@@ -51,13 +52,25 @@ auto allocator<T>::address(const_reference x) const noexcept -> const_pointer {
 template<typename T>
 auto allocator<T>::allocate(size_type n,
                             allocator<void>::const_pointer) -> pointer {
-  if (n >= max_size()) __throw_bad_alloc();
-  return static_cast<pointer>(::operator new(n * sizeof(value_type)));
+  using abi::umul_overflow;
+
+  size_t bytes;
+  if (n >= max_size() ||
+      umul_overflow(size_t(n), sizeof(value_type), &bytes))
+    __throw_bad_alloc();
+  return static_cast<pointer>(::operator new(bytes));
 }
 
 template<typename T>
 auto allocator<T>::deallocate(pointer p, size_type n) -> void {
-  ::operator delete(p, n * sizeof(value_type));
+  using abi::umul_overflow;
+
+  size_t bytes;
+  bool calc_fail = (n >= max_size() ||
+                    umul_overflow(size_t(n), sizeof(value_type), &bytes));
+  assert(!calc_fail);
+  if (!calc_fail)
+    ::operator delete(p, bytes);
 }
 
 template<typename T>
@@ -146,14 +159,18 @@ void temporary_buffer_deallocate(const void*);
 
 template<typename T>
 pair<T*, ptrdiff_t> get_temporary_buffer(ptrdiff_t n) noexcept {
+  using abi::umul_overflow;
+
   if (_predict_false(n <= 0)) n = 1;
-  if (_predict_false(SIZE_MAX / sizeof(T) < size_t(n)))
+
+  size_t bytes;
+  if (_predict_false(umul_overflow(size_t(n), sizeof(T), &bytes)))
     return make_pair(nullptr, 0);
 
   void* addr;
   size_t count;
   tie(addr, count) =
-      impl::temporary_buffer_allocate(sizeof(T) * n, alignof(T));
+      impl::temporary_buffer_allocate(bytes, alignof(T));
   return make_pair(static_cast<T*>(addr), count);
 }
 
@@ -165,6 +182,54 @@ void return_temporary_buffer(T* p) {
 
 namespace impl {
 
+template<typename Iter>
+class _uninitialized_dest {
+ public:
+  using value_type = typename iterator_traits<Iter>::value_type;
+
+  _uninitialized_dest(Iter out) : begin_(out), end_(out) {}
+  ~_uninitialized_dest() noexcept;
+
+  template<typename... Args> void assign(Args&&...);
+  Iter commit() noexcept;
+  Iter get() const noexcept;
+
+ private:
+  Iter begin_, end_;
+  bool commited_ = false;
+};
+
+template<typename Iter>
+_uninitialized_dest<Iter>::~_uninitialized_dest() noexcept {
+  if (!commited_) {
+    while (begin_ != end_) {
+      begin_->~value_type();
+      ++begin_;
+    }
+  }
+}
+
+template<typename Iter>
+template<typename... Args>
+auto _uninitialized_dest<Iter>::assign(Args&&... args) -> void {
+  assert(!commited_);
+  new (addressof(*end_)) value_type(forward<Args>(args)...);
+  ++end_;
+}
+
+template<typename Iter>
+auto _uninitialized_dest<Iter>::commit() noexcept -> Iter {
+  assert(!commited_);
+  commited_ = true;
+  return get();
+}
+
+template<typename Iter>
+auto _uninitialized_dest<Iter>::get() const noexcept -> Iter {
+  return end_;
+}
+
+
 template<typename T>
 auto _uninitialized_copy(const T* b, const T* e, T* out) noexcept ->
     enable_if_t<is_trivially_copy_constructible<T>::value, T*> {
@@ -174,8 +239,16 @@ auto _uninitialized_copy(const T* b, const T* e, T* out) noexcept ->
 template<typename T, typename Size>
 auto _uninitialized_copy_n(const T* b, Size n, T* out) noexcept ->
     enable_if_t<is_trivially_copy_constructible<T>::value, T*> {
+  using abi::umul_overflow;
+
   if (n <= 0) return out;
-  memcpy(out, b, n * sizeof(T));
+
+  size_t bytes;
+  bool calc_fail = n > numeric_limits<size_t>::max() ||
+                   umul_overflow(size_t(n), sizeof(T), &bytes);
+  assert(!calc_fail);
+
+  memcpy(out, b, bytes);
   return out + n;
 }
 
@@ -185,11 +258,13 @@ OutputIterator _uninitialized_copy(InputIterator b, InputIterator e,
     noexcept(is_nothrow_constructible<
         typename iterator_traits<OutputIterator>::value_type,
         typename iterator_traits<InputIterator>::value_type>::value) {
-  using value_type = typename iterator_traits<OutputIterator>::value_type;
+  auto dst = _uninitialized_dest<OutputIterator>(out);
 
-  while (b != e)
-    new (static_cast<void*>(addressof(*out++))) value_type(*b++);
-  return out;
+  while (b != e) {
+    dst.assign(*b);
+    ++b;
+  }
+  return dst.commit();
 }
 
 template<typename InputIterator, typename Size, typename OutputIterator>
@@ -198,13 +273,13 @@ OutputIterator _uninitialized_copy_n(InputIterator b, Size n,
     noexcept(is_nothrow_constructible<
         typename iterator_traits<OutputIterator>::value_type,
         typename iterator_traits<InputIterator>::value_type>::value) {
-  using value_type = typename iterator_traits<OutputIterator>::value_type;
+  auto dst = _uninitialized_dest<OutputIterator>(out);
 
   while (n > 0) {
-    new (static_cast<void*>(addressof(*out++))) value_type(*b++);
+    dst.assign(*b++);
     --n;
   }
-  return out;
+  return dst.commit();
 }
 
 } /* namespace std::impl */
@@ -223,20 +298,22 @@ OutputIterator uninitialized_copy_n(InputIterator b, Size n,
 
 template<typename ForwardIterator, typename T>
 void uninitialized_fill(ForwardIterator b, ForwardIterator e, const T& v) {
-  using value_type = typename iterator_traits<ForwardIterator>::value_type;
+  auto dst = impl::_uninitialized_dest<ForwardIterator>(b);
 
-  while (b != e)
-    new (static_cast<void*>(addressof(*b++))) value_type(v);
+  while (dst.get() != e)
+    dst.assign(v);
+  dst.commit();
 }
 
 template<typename ForwardIterator, typename Size, typename T>
 void uninitialized_fill_n(ForwardIterator b, Size n, const T& v) {
-  using value_type = typename iterator_traits<ForwardIterator>::value_type;
+  auto dst = impl::_uninitialized_dest<ForwardIterator>(b);
 
   while (n > 0) {
-    new (static_cast<void*>(addressof(*b++))) value_type(v);
+    dst.assign(v);
     --n;
   }
+  dst.commit();
 }
 
 
