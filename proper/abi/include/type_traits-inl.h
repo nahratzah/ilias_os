@@ -91,13 +91,34 @@ template<typename T> struct is_function : _is_function<remove_cv_t<T>> {};
 template<typename T> struct is_reference : false_type {};
 template<typename T> struct is_reference<T&> : true_type {};
 template<typename T> struct is_reference<T&&> : true_type {};
+
 template<typename T> struct is_arithmetic
 : integral_constant<bool,
                     (is_integral<T>::value || is_floating_point<T>::value)> {};
-template<typename T> struct is_fundamental;  // XXX
-template<typename T> struct is_object;  // XXX
-template<typename T> struct is_scalar;  // XXX
-template<typename T> struct is_compound;  // XXX
+
+template<typename T> struct is_fundamental
+: integral_constant<bool,
+                    is_void<T>::value ||
+                    is_arithmetic<T>::value ||
+                    is_same<remove_cv_t<T>, decltype(nullptr)>::value> {};
+
+template<typename T> struct is_object
+: integral_constant<bool,
+                    is_scalar<T>::value ||
+                    is_array<T>::value ||
+                    is_union<T>::value ||
+                    is_class<T>::value> {};
+
+template<typename T> struct is_scalar
+: integral_constant<bool,
+                    is_enum<T>::value ||
+                    is_pointer<T>::value ||
+                    is_member_pointer<T>::value ||
+                    is_arithmetic<T>::value ||
+                    is_same<remove_cv_t<T>, decltype(nullptr)>::value> {};
+
+template<typename T> struct is_compound
+: integral_constant<bool, !is_fundamental<T>::value> {};
 
 template<typename T> struct _is_member_pointer : false_type {};
 template<typename T, typename U> struct _is_member_pointer<T U::*>
@@ -112,7 +133,10 @@ template<typename T> struct is_const<const T> : true_type {};
 template<typename T> struct is_volatile : false_type {};
 template<typename T> struct is_volatile<volatile T> : true_type {};
 
-template<typename T> struct is_trivial;  // XXX
+template<typename T> struct is_trivial
+: integral_constant<bool,
+                    is_trivially_default_constructible<T>::value &&
+                    is_trivially_copyable<T>::value> {};
 
 template<typename T> struct _is_trivially_copyable
 : integral_constant<bool, __has_trivial_copy(T)> {};
@@ -137,7 +161,10 @@ template<typename T> struct _is_empty
 : integral_constant<bool, __is_empty(T)> {};
 template<typename T> struct is_empty : _is_empty<remove_cv_t<T>> {};
 
-template<typename T> struct is_polymorphic;  // XXX
+template<typename T> struct _is_polymorphic
+: integral_constant<bool, __is_polymorphic(T)> {};
+template<typename T> struct is_polymorphic
+: _is_polymorphic<remove_cv_t<T>> {};
 
 template<typename T> struct _is_abstract
 : integral_constant<bool, __is_abstract(T)> {};
