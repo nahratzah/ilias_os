@@ -241,7 +241,7 @@ int at_quick_exit(void (*fn)()) noexcept {
 
 void* __attribute__((weak)) malloc(size_t sz) noexcept {
   try {
-    return c_malloc_heap().malloc(sz);
+    return c_malloc_heap().malloc(max(sz, size_t(1)));
   } catch (...) {
     impl::errno_catch_handler();
     return nullptr;
