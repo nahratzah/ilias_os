@@ -254,10 +254,10 @@ void* __attribute__((weak)) calloc(size_t nmemb, size_t sz) noexcept {
   try {
     size_t bytes;
     if (_predict_false(umul_overflow(nmemb, sz, &bytes) || sz == 0))
-      throw bad_alloc();
+      __throw_bad_alloc();
 
     void* p = malloc(bytes);
-    if (_predict_false(p == nullptr)) throw bad_alloc();
+    if (_predict_false(p == nullptr)) __throw_bad_alloc();
     bzero(p, bytes);
     return p;
   } catch (...) {
@@ -287,7 +287,7 @@ void* __attribute__((weak)) realloc(void* p, size_t sz) noexcept {
     /* Move memory. */
     if (sz < oldsz) oldsz = sz;
     void* q = heap.malloc(sz);
-    if (_predict_false(q == nullptr)) throw bad_alloc();
+    if (_predict_false(q == nullptr)) __throw_bad_alloc();
     memcpy(q, p, min(oldsz, sz));
     free(p);
     return q;
@@ -303,7 +303,7 @@ void* __attribute__((weak)) reallocarray(void* p, size_t nmemb, size_t sz)
 
   try {
     size_t bytes;
-    if (_predict_false(umul_overflow(nmemb, sz, &bytes))) throw bad_alloc();
+    if (_predict_false(umul_overflow(nmemb, sz, &bytes))) __throw_bad_alloc();
     return realloc(p, bytes);
   } catch (...) {
     impl::errno_catch_handler();
