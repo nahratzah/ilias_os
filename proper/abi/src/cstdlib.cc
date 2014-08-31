@@ -11,6 +11,8 @@
 #include <iterator>
 #include <mutex>
 #include <new>
+#include <stdimpl/exc_errno.h>
+#include <abi/misc_int.h>
 
 _namespace_begin(std)
 
@@ -238,22 +240,30 @@ int at_quick_exit(void (*fn)()) noexcept {
 
 
 void* __attribute__((weak)) malloc(size_t sz) noexcept {
-  return c_malloc_heap().malloc(sz);
+  try {
+    return c_malloc_heap().malloc(sz);
+  } catch (...) {
+    impl::errno_catch_handler();
+    return nullptr;
+  }
 }
 
 void* __attribute__((weak)) calloc(size_t nmemb, size_t sz) noexcept {
-  if (_predict_false(sz == 0 || SIZE_MAX / sz < nmemb)) {
-    errno = _ABI_ENOMEM;
-    return nullptr;  // Prevent overflow.
-  }
+  using abi::umul_overflow;
 
-  size_t bytes = nmemb * sz;
-  void* p = malloc(bytes);
-  if (_predict_true(p))
+  try {
+    size_t bytes;
+    if (_predict_false(umul_overflow(nmemb, sz, &bytes) || sz == 0))
+      throw bad_alloc();
+
+    void* p = malloc(bytes);
+    if (_predict_false(p == nullptr)) throw bad_alloc();
     bzero(p, bytes);
-  else
-    errno = _ABI_ENOMEM;
-  return p;
+    return p;
+  } catch (...) {
+    impl::errno_catch_handler();
+    return nullptr;
+  }
 }
 
 void __attribute__((weak)) free(void* p) noexcept {
@@ -261,28 +271,44 @@ void __attribute__((weak)) free(void* p) noexcept {
 }
 
 void* __attribute__((weak)) realloc(void* p, size_t sz) noexcept {
-  size_t oldsz;
-  bool succes;
-  auto& heap = c_malloc_heap();
-  tie(succes, oldsz) = heap.resize(p, sz);
-  if (succes) return p;
+  if (_predict_false(sz == 0)) {
+    free(p);
+    return nullptr;
+  }
+  if (_predict_false(p == nullptr)) return malloc(sz);
 
-  /* Move memory. */
-  if (sz < oldsz) oldsz = sz;
-  void* q = heap.malloc(sz);
-  if (_predict_false(!q)) return nullptr;
-  memcpy(q, p, oldsz);
-  heap.free(p);
-  return q;
+  try {
+    size_t oldsz;
+    bool succes;
+    auto& heap = c_malloc_heap();
+    tie(succes, oldsz) = heap.resize(p, sz);
+    if (succes) return p;
+
+    /* Move memory. */
+    if (sz < oldsz) oldsz = sz;
+    void* q = heap.malloc(sz);
+    if (_predict_false(q == nullptr)) throw bad_alloc();
+    memcpy(q, p, min(oldsz, sz));
+    free(p);
+    return q;
+  } catch (...) {
+    impl::errno_catch_handler();
+    return nullptr;
+  }
 }
 
 void* __attribute__((weak)) reallocarray(void* p, size_t nmemb, size_t sz)
     noexcept {
-  if (_predict_false(sz == 0 || SIZE_MAX / sz < nmemb)) {
-    errno = _ABI_ENOMEM;
+  using abi::umul_overflow;
+
+  try {
+    size_t bytes;
+    if (_predict_false(umul_overflow(nmemb, sz, &bytes))) throw bad_alloc();
+    return realloc(p, bytes);
+  } catch (...) {
+    impl::errno_catch_handler();
     return nullptr;
   }
-  return realloc(p, nmemb * sz);
 }
 
 
