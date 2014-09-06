@@ -935,7 +935,7 @@ template<typename T, class Tag, typename Cmp, typename... Augments>
 auto linked_set<T, Tag, Cmp, Augments...>::down_cast_(const_pointer p)
     noexcept -> element* {
   if (!p) return nullptr;
-  return static_cast<element*>(const_cast<linked_set_element<T, Tag>>(
+  return static_cast<element*>(const_cast<linked_set_element<T, Tag>*>(
       static_cast<const linked_set_element<T, Tag>*>(p)));
 }
 
