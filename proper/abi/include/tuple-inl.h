@@ -357,6 +357,100 @@ constexpr auto get(const tuple<Types...>& t) noexcept
 }
 
 
+namespace impl {
+
+
+template<size_t Count, size_t I = 0, bool Last = (I == Count)>
+struct tuple_eq_compare {
+  using next_type = tuple_eq_compare<Count, I + 1U>;
+
+  template<typename... TTypes, typename... UTypes>
+  constexpr bool operator()(const tuple<TTypes...>& t,
+                            const tuple<UTypes...>& u) const noexcept {
+    next_type next;
+    return get<I>(t) == get<I>(u) && next(t, u);
+  }
+};
+
+template<size_t Count, size_t I>
+struct tuple_eq_compare<Count, I, true> {
+  template<typename... TTypes, typename... UTypes>
+  constexpr bool operator()(const tuple<TTypes...>&, const tuple<UTypes...>&)
+      const noexcept {
+    return true;
+  }
+};
+
+
+template<size_t Count, size_t I = 0, bool Last = (I == Count)>
+struct tuple_less_compare {
+  using next_type = tuple_less_compare<Count, I + 1U>;
+
+  template<typename... TTypes, typename... UTypes>
+  constexpr bool operator()(const tuple<TTypes...>& t,
+                            const tuple<UTypes...>& u) const noexcept {
+    next_type next;
+    return get<I>(t) < get<I>(u) || (!(get<I>(u) < get<I>(t)) && next(t, u));
+  }
+};
+
+template<size_t Count, size_t I>
+struct tuple_less_compare<Count, I, true> {
+  template<typename... TTypes, typename... UTypes>
+  constexpr bool operator()(const tuple<TTypes...>&, const tuple<UTypes...>&)
+      const noexcept {
+    return false;
+  }
+};
+
+
+} /* namespace std::impl */
+
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator==(const tuple<TTypes...>& t,
+                          const tuple<UTypes...>& u) {
+  static_assert(sizeof...(TTypes) == sizeof...(UTypes),
+                "Cannot compare tuples of different size.");
+
+  impl::tuple_eq_compare<sizeof...(TTypes)> cmp;
+  return cmp(t, u);
+}
+
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator!=(const tuple<TTypes...>& t,
+                          const tuple<UTypes...>& u) {
+  return !(t == u);
+}
+
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator<(const tuple<TTypes...>& t,
+                         const tuple<UTypes...>& u) {
+  static_assert(sizeof...(TTypes) == sizeof...(UTypes),
+                "Cannot compare tuples of different size.");
+
+  impl::tuple_less_compare<sizeof...(TTypes)> cmp;
+  return cmp(t, u);
+}
+
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator>(const tuple<TTypes...>& t,
+                         const tuple<UTypes...>& u) {
+  return u < t;
+}
+
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator<=(const tuple<TTypes...>& t,
+                          const tuple<UTypes...>& u) {
+  return !(u < t);
+}
+
+template<typename... TTypes, typename... UTypes>
+constexpr bool operator>=(const tuple<TTypes...>& t,
+                          const tuple<UTypes...>& u) {
+  return !(t < u);
+}
+
+
 template<typename... Types>
 void swap(tuple<Types...>& lhs, tuple<Types...>& rhs)
     noexcept(noexcept(lhs.swap(rhs))) {
