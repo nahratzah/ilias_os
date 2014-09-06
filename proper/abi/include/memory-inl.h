@@ -6,6 +6,7 @@
 #include <memory>
 #include <typeinfo>
 #include <abi/misc_int.h>
+#include <cstring>
 
 _namespace_begin(std)
 namespace impl {
@@ -188,6 +189,10 @@ class _uninitialized_dest {
   using value_type = typename iterator_traits<Iter>::value_type;
 
   _uninitialized_dest(Iter out) : begin_(out), end_(out) {}
+  _uninitialized_dest(_uninitialized_dest&&);
+  _uninitialized_dest(const _uninitialized_dest&) = delete;
+  _uninitialized_dest& operator=(const _uninitialized_dest&) = delete;
+  _uninitialized_dest& operator=(_uninitialized_dest&&) = delete;
   ~_uninitialized_dest() noexcept;
 
   template<typename... Args> void assign(Args&&...);
@@ -198,6 +203,13 @@ class _uninitialized_dest {
   Iter begin_, end_;
   bool commited_ = false;
 };
+
+template<typename Iter>
+_uninitialized_dest<Iter>::_uninitialized_dest(_uninitialized_dest&& o)
+: begin_(move(o.begin_)),
+  end_(move(o.end_)),
+  commited_(exchange(o.commited_, true))
+{}
 
 template<typename Iter>
 _uninitialized_dest<Iter>::~_uninitialized_dest() noexcept {
@@ -230,12 +242,6 @@ auto _uninitialized_dest<Iter>::get() const noexcept -> Iter {
 }
 
 
-template<typename T>
-auto _uninitialized_copy(const T* b, const T* e, T* out) noexcept ->
-    enable_if_t<is_trivially_copy_constructible<T>::value, T*> {
-  return _uninitialized_copy_n(b, e - b, out);
-}
-
 template<typename T, typename Size>
 auto _uninitialized_copy_n(const T* b, Size n, T* out) noexcept ->
     enable_if_t<is_trivially_copy_constructible<T>::value, T*> {
@@ -244,12 +250,27 @@ auto _uninitialized_copy_n(const T* b, Size n, T* out) noexcept ->
   if (n <= 0) return out;
 
   size_t bytes;
-  bool calc_fail = n > numeric_limits<size_t>::max() ||
+  bool calc_fail = size_t(n) > numeric_limits<size_t>::max() ||
                    umul_overflow(size_t(n), sizeof(T), &bytes);
   assert(!calc_fail);
 
-  memcpy(out, b, bytes);
+  if (_predict_true(!calc_fail)) memcpy(out, b, bytes);
   return out + n;
+}
+
+template<typename T>
+auto _uninitialized_copy(const T* b, const T* e, T* out) noexcept ->
+    enable_if_t<is_trivially_copy_constructible<T>::value, T*> {
+  return _uninitialized_copy_n(b, e - b, out);
+}
+
+template<typename T, typename Out>
+auto _uninitialized_copy(const move_iterator<T*>& b,
+                         const move_iterator<T*>& e, Out* out) noexcept ->
+    enable_if_t<(is_trivially_copy_constructible<Out>::value &&
+                 is_same<remove_cv_t<T>, remove_cv_t<Out>>::value),
+                T*> {
+  return _uninitialized_copy(b.base(), e.base(), out);
 }
 
 template<typename InputIterator, typename OutputIterator>
