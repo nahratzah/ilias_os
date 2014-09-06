@@ -23,14 +23,14 @@ inline auto recursive_mutex::native_handle() -> native_handle_type {
 
 template<typename Mutex>
 lock_guard<Mutex>::lock_guard(mutex_type& m)
-: m_(&m)
+: m_(m)
 {
   m_.lock();
 }
 
 template<typename Mutex>
 lock_guard<Mutex>::lock_guard(mutex_type& m, adopt_lock_t)
-: m_(&m)
+: m_(m)
 {}
 
 template<typename Mutex>
