@@ -6,9 +6,19 @@
 #include <ilias/pmap/page.h>
 #include <ilias/linked_set.h>
 #include <ilias/linked_list.h>
+#include <vector>
+#include <utility>
+#include <algorithm>
+#include <mutex>
+#include <ilias/stats-fwd.h>
 
 namespace ilias {
 namespace vm {
+namespace stats {
+
+extern stats_counter vmmap_contention;
+
+} /* namespace ilias::vm::stats */
 
 
 using namespace std;
@@ -88,10 +98,10 @@ class vmmap_entry {
 
  protected:
   vmmap_entry() = default;
-  vmmap_entry(const vmmap_entry&) = default;
-  vmmap_entry(vmmap_entry&&) = default;
-  vmmap_entry& operator=(const vmmap_entry&) = default;
-  vmmap_entry& operator=(vmmap_entry&&) = default;
+  vmmap_entry(const vmmap_entry&) noexcept = default;
+  vmmap_entry(vmmap_entry&&) noexcept = default;
+  vmmap_entry& operator=(const vmmap_entry&) noexcept = default;
+  vmmap_entry& operator=(vmmap_entry&&) noexcept = default;
 
  public:
   virtual ~vmmap_entry() noexcept;
@@ -188,6 +198,10 @@ class vmmap_shard {
   vmmap_shard(vpage_no<Arch>, vpage_no<Arch>);
   ~vmmap_shard() noexcept;
 
+  vmmap_shard& operator=(const vmmap_shard&);
+  vmmap_shard& operator=(vmmap_shard&&) noexcept;
+  template<arch A> friend void swap(vmmap_shard<A>&, vmmap_shard<A>&) noexcept;
+
   range get_range() const noexcept;
 
   void manage(range);
@@ -198,9 +212,14 @@ class vmmap_shard {
 
   void map(range, vm_permission, unique_ptr<vmmap_entry>&&);
 
+  page_count<Arch> free_size() const noexcept { return npg_free_; }
+
+  void merge(vmmap_shard&&) noexcept;
+  template<typename Iter> void fanout(Iter, Iter) noexcept;
+
  private:
   void map_link_(unique_ptr<entry>&&);
-  typename entries_type::iterator link_(unique_ptr<entry>&&);
+  typename entries_type::iterator link_(unique_ptr<entry>&&) noexcept;
   unique_ptr<entry> unlink_(entry*) noexcept;
   unique_ptr<entry> unlink_(typename entries_type::const_iterator) noexcept;
   template<typename Fn, typename... Args> void free_update_(entry&, Fn,
@@ -215,14 +234,47 @@ class vmmap_shard {
   entries_type entries_;
   free_type free_;
   free_list free_list_;
+  page_count<Arch> npg_free_ = page_count<Arch>(0);
+};
+
+
+template<arch Arch>
+class vmmap {
+ private:
+  using shard_list = vector<vmmap_shard<Arch>>;
+
+ public:
+  vmmap();
+  vmmap(vpage_no<Arch>, vpage_no<Arch>);
+  vmmap(const vmmap&);
+  vmmap(vmmap&&);
+  ~vmmap() noexcept = default;
+
+  void reshard(size_t, size_t);
+
+ private:
+  static bool shard_free_less_(const vmmap_shard<Arch>&,
+                               const vmmap_shard<Arch>&) noexcept;
+
+  typename shard_list::iterator heap_begin() noexcept;
+  typename shard_list::const_iterator heap_begin() const noexcept;
+  typename shard_list::iterator heap_end() noexcept;
+  typename shard_list::const_iterator heap_end() const noexcept;
+  bool heap_empty() const noexcept;
+
+  void swap_slot_(size_t) noexcept;  // With lock held.
+
+  mutex avail_guard_;
+  shard_list avail_;
+  typename shard_list::size_type in_use_ = 0;
 };
 
 
 #if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
-extern template class vmmap_shard<arch::i386>;
+extern template class vmmap<arch::i386>;
 #endif
 #if defined(__amd64__) || defined(__x86_64__)
-extern template class vmmap_shard<arch::amd64>;
+extern template class vmmap<arch::amd64>;
 #endif
 
 

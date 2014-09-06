@@ -2,6 +2,7 @@
 #define _ILIAS_VM_VMMAP_INL_H_
 
 #include <ilias/vm/vmmap.h>
+#include <ilias/vm/stats.h>
 
 namespace ilias {
 namespace vm {
@@ -209,7 +210,8 @@ vmmap_shard<Arch>::vmmap_shard(const vmmap_shard<Arch>& rhs)
 
 template<arch Arch>
 vmmap_shard<Arch>::vmmap_shard(vmmap_shard<Arch>&& rhs) noexcept
-: entries_(move(rhs.entries_))
+: entries_(move(rhs.entries_)),
+  npg_free_(exchange(rhs.npg_free_, page_count<Arch>(0)))
 {}
 
 template<arch Arch>
@@ -236,6 +238,31 @@ vmmap_shard<Arch>::vmmap_shard(vpage_no<Arch> b, vpage_no<Arch> e)
 template<arch Arch>
 vmmap_shard<Arch>::~vmmap_shard() noexcept {
   entries_.unlink_all(&entry_deletor_);
+}
+
+template<arch Arch>
+auto vmmap_shard<Arch>::operator=(vmmap_shard&& o) noexcept -> vmmap_shard& {
+  auto tmp = vmmap_shard(move(o));
+  swap(*this, tmp);
+  return *this;
+}
+
+template<arch Arch>
+auto vmmap_shard<Arch>::operator=(const vmmap_shard& o) -> vmmap_shard& {
+  auto tmp = vmmap_shard(o);
+  swap(*this, tmp);
+  return *this;
+}
+
+template<arch A>
+auto swap(vmmap_shard<A>& x, vmmap_shard<A>& y) noexcept -> void {
+  using std::swap;
+  using ilias::swap;
+
+  swap(x.entries_, y.entries_);
+  swap(x.free_, y.free_);
+  swap(x.free_list_, y.free_list_);
+  swap(x.npg_free_, y.npg_free_);
 }
 
 template<arch Arch>
@@ -311,6 +338,95 @@ auto vmmap_shard<Arch>::map(range pos, vm_permission perm,
 }
 
 template<arch Arch>
+auto vmmap_shard<Arch>::merge(vmmap_shard&& rhs) noexcept -> void {
+  /* Clear all collections in rhs, except for entries_. */
+  while (!rhs.free_list_.empty()) rhs.free_list_.unlink_front();
+  rhs.free_.unlink_all();
+  rhs.npg_free_ = page_count<Arch>(0);
+
+  /* Relink all entries from rhs into this. */
+  rhs.entries_.unlink_all([this](entry* e) {
+#ifndef NDEBUG
+                            /* Verify there is no overlap. */
+                            auto r = entries_.equal_range(
+                                isect_(e->get_addr_used(), e->get_addr_end()));
+                            assert(get<0>(r) == get<1>(r));
+#endif
+
+                            /* Link. */
+                            auto inserted =
+                                this->link_(unique_ptr<entry>(e));
+
+                            /* Merge free space before. */
+                            if (inserted->unused() &&
+                                inserted != entries_.begin()) {
+                              auto pred = prev(inserted);
+                              this->free_update_(*pred,
+                                                 [this, &pred, &inserted]() {
+                                                   auto i =
+                                                       this->unlink_(inserted);
+                                                   pred->update_end(
+                                                       i->get_addr_end());
+                                                   inserted = pred;
+                                                 });
+                            }
+
+                            /* Merge free space after. */
+                            if (inserted != entries_.end()) {
+                              auto succ = next(inserted);
+                              if (succ != entries_.end() && succ->unused()) {
+                                this->free_update_(*inserted,
+                                                   [this, &succ, &inserted]() {
+                                                     auto i =
+                                                         this->unlink_(succ);
+                                                     inserted->update_end(
+                                                         i->get_addr_end());
+                                                   });
+                              }
+                            }
+                          });
+}
+
+template<arch Arch>
+template<typename Iter>
+auto vmmap_shard<Arch>::fanout(Iter b, Iter e) noexcept -> void {
+  const page_count<Arch> npg_per_shard =
+      max(free_size() / size_t(distance(b, e)),
+          page_count<Arch>(1));
+  const page_count<Arch> max_npg_per_shard =
+      2 * npg_per_shard;
+
+  typename entries_type::iterator i = entries_.begin();
+  for (Iter out = b; i != entries_.end() && next(out) != e; ++out) {
+    page_count<Arch> c = page_count<Arch>(0);
+    while (i != entries_.end() && c < npg_per_shard) {
+      auto i_free = get<1>(i->get_range_free());
+      /* Split range if it would cause us to cross max_npg_per_shard limit. */
+      if (c + i_free > max_npg_per_shard) {
+        auto split = i->get_addr_free() + (npg_per_shard - c);
+        auto p = make_unique<entry>(range(split, page_count<Arch>(0)),
+                                    i->get_addr_end(), vm_perm_none, nullptr);
+        this->free_update_(*i, [&i, split]() { i->update_end(split); });
+        link_(move(p));
+
+        /* Update i_free value. */
+        i_free = get<1>(i->get_range_free());
+      }
+
+      /* Save iterator successor (since i will be invalidated below). */
+      typename entries_type::iterator i_next = next(i);
+
+      /* Move entry to destination. */
+      if (&*out != this) out->link_(unlink_(i));
+      c += i_free;
+
+      /* Update for next step in while  loop. */
+      i = i_next;
+    }
+  }
+}
+
+template<arch Arch>
 auto vmmap_shard<Arch>::map_link_(unique_ptr<entry>&& ptr) -> void {
   assert(ptr != nullptr);
   assert(!ptr->unused());
@@ -356,7 +472,7 @@ auto vmmap_shard<Arch>::map_link_(unique_ptr<entry>&& ptr) -> void {
 }
 
 template<arch Arch>
-auto vmmap_shard<Arch>::link_(unique_ptr<entry>&& ptr) ->
+auto vmmap_shard<Arch>::link_(unique_ptr<entry>&& ptr) noexcept ->
     typename entries_type::iterator {
   typename entries_type::iterator rv;
   bool link_succes;
@@ -370,12 +486,15 @@ auto vmmap_shard<Arch>::link_(unique_ptr<entry>&& ptr) ->
 
   free_list_.link(free_list::iterator_to(*next(free_pos)), ptr.get());
 
+  npg_free_ += get<1>(ptr->get_range_free());
+
   ptr.release();
   return rv;
 }
 
 template<arch Arch>
 auto vmmap_shard<Arch>::unlink_(entry* e) noexcept -> unique_ptr<entry> {
+  npg_free_ -= get<1>(e->get().get_range_free());
   free_list_.unlink(e);
   free_.unlink(e);
   return unique_ptr<entry>(entries_.unlink(e));
@@ -384,6 +503,7 @@ auto vmmap_shard<Arch>::unlink_(entry* e) noexcept -> unique_ptr<entry> {
 template<arch Arch>
 auto vmmap_shard<Arch>::unlink_(typename entries_type::const_iterator i)
     noexcept -> unique_ptr<entry> {
+  npg_free_ -= get<1>(i->get_range_free());
   free_list_.unlink(&*i);
   free_.unlink(&*i);
   return unique_ptr<entry>(entries_.unlink(i));
@@ -393,6 +513,7 @@ template<arch Arch>
 template<typename Fn, typename... Args>
 auto vmmap_shard<Arch>::free_update_(entry& e, Fn fn, Args&&... args)
     noexcept -> void {
+  npg_free_ -= get<1>(e.get_range_free());
   free_list_.unlink(&e);
   free_.unlink(&e);
 
@@ -404,6 +525,7 @@ auto vmmap_shard<Arch>::free_update_(entry& e, Fn fn, Args&&... args)
   assert(link_succes);
 
   free_list_.link(free_list::iterator_to(*next(free_pos)), &e);
+  npg_free_ += get<1>(e.get_range_free());
 }
 
 /*
@@ -482,6 +604,115 @@ auto vmmap_shard<Arch>::split_(range pos) ->
   }
 
   return r;
+}
+
+
+template<arch Arch>
+vmmap<Arch>::vmmap()
+: avail_(1)
+{}
+
+template<arch Arch>
+vmmap<Arch>::vmmap(vpage_no<Arch> b, vpage_no<Arch> e)
+: avail_(1, vmmap_shard<Arch>(b, e))
+{}
+
+template<arch Arch>
+vmmap<Arch>::vmmap(const vmmap& o)
+: avail_(o.avail_)
+{}
+
+template<arch Arch>
+vmmap<Arch>::vmmap(vmmap&& o)
+: avail_(move(o.avail_))
+{}
+
+template<arch Arch>
+auto vmmap<Arch>::reshard(size_t n_shards, size_t in_use) -> void {
+  auto l = stats::tracked_lock(avail_guard_, stats::vmmap_contention);
+
+  if (n_shards == 0) n_shards = 1;
+  in_use_ = 0;  // Reset use counter.
+
+  if (avail_.empty()) {
+    avail_.resize(n_shards);
+    return;
+  }
+  avail_.reserve(n_shards);
+
+  /* Merge all shards together. */
+  for_each(next(avail_.begin()), avail_.end(),
+           [this](vmmap_shard<Arch>& shard) {
+             this->avail_.front().merge(move(shard));
+           });
+
+  /* Allocate shards (all shards except the first are empty). */
+  avail_.resize(n_shards);
+
+  if (n_shards > 1U) {
+    /* Distribute pages across shards. */
+    avail_.front().fanout(avail_.begin(), avail_.end());
+
+    /* Heap sort, so the range with the most free pages is at the front. */
+    make_heap(avail_.begin(), avail_.end(), &shard_free_less_);
+  }
+
+  /* Assign in-use shards. */
+  while (in_use_ < min(in_use, n_shards)) {
+    pop_heap(avail_.begin(), avail_.end() - in_use_, &shard_free_less_);
+    ++in_use_;
+  }
+
+  /* Try to reduce memory usage (not a big deal if this fails). */
+  try {
+    avail_.shrink_to_fit();
+  } catch (...) {
+    /* IGNORE */
+  }
+}
+
+template<arch Arch>
+auto vmmap<Arch>::shard_free_less_(const vmmap_shard<Arch>& x,
+                                   const vmmap_shard<Arch>& y)
+    noexcept -> bool {
+  return x.free_size() < y.free_size();
+}
+
+template<arch Arch>
+auto vmmap<Arch>::heap_begin() noexcept -> typename shard_list::iterator {
+  return avail_.begin();
+}
+
+template<arch Arch>
+auto vmmap<Arch>::heap_begin() const noexcept ->
+    typename shard_list::const_iterator {
+  return avail_.begin();
+}
+
+template<arch Arch>
+auto vmmap<Arch>::heap_end() noexcept -> typename shard_list::iterator {
+  return avail_.end() - in_use_;
+}
+
+template<arch Arch>
+auto vmmap<Arch>::heap_end() const noexcept ->
+    typename shard_list::const_iterator {
+  return avail_.end() - in_use_;
+}
+
+template<arch Arch>
+auto vmmap<Arch>::heap_empty() const noexcept -> bool {
+  assert(in_use_ <= avail_.size());
+  return avail_.size() == in_use_;
+}
+
+template<arch Arch>
+auto vmmap<Arch>::swap_slot_(size_t slot_idx) noexcept -> void {
+  auto l = stats::tracked_lock(avail_guard_, stats::vmmap_contention);
+
+  pop_heap(heap_begin(), heap_end(), &shard_free_less_);
+  iter_swap(prev(heap_end()), prev(avail_.end(), slot_idx + 1U));
+  push_heap(heap_begin(), heap_end(), &shard_free_less_);
 }
 
 
