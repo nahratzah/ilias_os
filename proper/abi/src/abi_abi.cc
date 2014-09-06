@@ -12,7 +12,7 @@ _namespace(ilias)::global_stats_group abi_group{
 };
 
 _namespace(ilias)::global_stats_group abi_ext_group{
-  &abi_group, "abi", {}, {}
+  &abi_group, "ext", {}, {}
 };
 #endif /* __has_include(<ilias/stats.h>) */
 
