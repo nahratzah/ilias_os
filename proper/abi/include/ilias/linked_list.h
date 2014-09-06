@@ -61,6 +61,8 @@ class basic_linked_list {
   iterator begin() const noexcept;
   iterator end() const noexcept;
 
+  static iterator iterator_to(element*) noexcept;
+
  public:
   bool empty() const noexcept;
   void swap(basic_linked_list&) noexcept;
@@ -180,6 +182,10 @@ class linked_list
 
   void swap(linked_list&) noexcept;
 
+  static iterator iterator_to(pointer) noexcept;
+  static const_iterator iterator_to(const_pointer) noexcept;
+  static iterator iterator_to(reference) noexcept;
+  static const_iterator iterator_to(const_reference) noexcept;
   static iterator nonconst_iterator(const_iterator) noexcept;
 
  private:

@@ -150,6 +150,10 @@ inline auto basic_linked_list::end() const noexcept -> iterator {
   return iterator{ const_cast<element*>(&root_) };
 }
 
+inline auto basic_linked_list::iterator_to(element* e) noexcept -> iterator {
+  return iterator{ e };
+}
+
 inline auto basic_linked_list::empty() const noexcept -> bool {
   return root_.succ_ == &root_;
 }
@@ -421,6 +425,30 @@ auto linked_list<T, Tag>::crend() const noexcept -> const_reverse_iterator {
 template<typename T, class Tag>
 auto linked_list<T, Tag>::swap(linked_list& o) noexcept -> void {
   this->basic_linked_list::swap(o);
+}
+
+template<typename T, class Tag>
+auto linked_list<T, Tag>::iterator_to(pointer p) noexcept ->
+    iterator {
+  return iterator(basic_linked_list::iterator_to(down_cast_(p)));
+}
+
+template<typename T, class Tag>
+auto linked_list<T, Tag>::iterator_to(const_pointer p) noexcept ->
+    const_iterator {
+  return const_iterator(basic_linked_list::iterator_to(down_cast_(p)));
+}
+
+template<typename T, class Tag>
+auto linked_list<T, Tag>::iterator_to(reference r) noexcept ->
+    iterator {
+  return iterator_to(&r);
+}
+
+template<typename T, class Tag>
+auto linked_list<T, Tag>::iterator_to(const_reference r) noexcept ->
+    const_iterator {
+  return iterator_to(&r);
 }
 
 template<typename T, class Tag>
