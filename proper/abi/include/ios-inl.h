@@ -264,7 +264,7 @@ auto basic_ios<Char, Traits>::copyfmt(const basic_ios& rhs) -> basic_ios& {
   fill(rhs.fill());
   this->parray_ = move(parray);
   this->iarray_ = move(iarray);
-  this->loc_ = move(rhs.loc_);
+  this->loc_ = rhs.loc_;
 
   /* Notify events that the stream state has been copied. */
   this->invoke_event_cb(copyfmt_event);
