@@ -138,6 +138,12 @@ void call_once(once_flag& flag, Callable&& func, Args&&... args)
     noexcept(noexcept(func(forward<Args>(args)...)));
 
 
+extern template class lock_guard<mutex>;
+extern template class lock_guard<recursive_mutex>;
+extern template class unique_lock<mutex>;
+extern template class unique_lock<recursive_mutex>;
+
+
 _namespace_end(std)
 
 #include <mutex-inl.h>

@@ -89,6 +89,7 @@ unique_lock<Mutex>::unique_lock(unique_lock&& o) noexcept
 template<typename Mutex>
 auto unique_lock<Mutex>::operator=(unique_lock&& o) noexcept -> unique_lock& {
   unique_lock(move(o)).swap(*this);
+  return *this;
 }
 
 template<typename Mutex>

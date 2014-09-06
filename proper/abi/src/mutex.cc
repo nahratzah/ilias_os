@@ -98,4 +98,10 @@ auto recursive_mutex::unlock() noexcept -> void {
 }
 
 
+template class lock_guard<mutex>;
+template class lock_guard<recursive_mutex>;
+template class unique_lock<mutex>;
+template class unique_lock<recursive_mutex>;
+
+
 _namespace_end(std)
