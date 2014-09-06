@@ -27,12 +27,12 @@ stats_group::~stats_group() noexcept {
 }
 
 auto stats_group::register_child(basic_stats& child) const noexcept -> void {
-  // XXX lock
+  _namespace(std)::lock_guard<_namespace(std)::mutex> l{ m_ };
   children_.link_back(&child);
 }
 
 auto stats_group::deregister_child(basic_stats& child) const noexcept -> void {
-  // XXX lock
+  _namespace(std)::lock_guard<_namespace(std)::mutex> l{ m_ };
   children_.unlink(&child);
 }
 

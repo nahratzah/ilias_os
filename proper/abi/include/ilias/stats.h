@@ -63,7 +63,7 @@ class stats_group
 
  private:
   mutable linked_list<basic_stats> children_;
-  // XXX: mutex
+  mutable _namespace(std)::mutex m_;
 };
 
 /*
