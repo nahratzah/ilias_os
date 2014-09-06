@@ -4,6 +4,106 @@
 #include <vector>
 
 _namespace_begin(std)
+namespace impl {
+
+
+template<typename Alloc>
+class vector_temporary_heap {
+ public:
+  using allocator_type = Alloc;
+  using size_type = typename allocator_traits<Alloc>::size_type;
+  using pointer = typename allocator_traits<Alloc>::pointer;
+  using iterator = typename pointer_traits<pointer>::element_type*;
+
+  vector_temporary_heap() = default;
+  vector_temporary_heap(const vector_temporary_heap&) = delete;
+  vector_temporary_heap(vector_temporary_heap&&) noexcept;
+  vector_temporary_heap& operator=(const vector_temporary_heap&) = delete;
+  vector_temporary_heap& operator=(vector_temporary_heap&&) noexcept;
+
+  vector_temporary_heap(allocator_type&, size_type);
+  ~vector_temporary_heap() noexcept;
+
+  size_type size() const noexcept;
+  iterator begin() const noexcept;
+  iterator end() const noexcept;
+
+  void swap(pointer&, size_type&) noexcept;
+  void swap(vector_temporary_heap&) noexcept;
+
+ private:
+  allocator_type* alloc_ = nullptr;
+  pointer heap_ = nullptr;
+  size_type avail_ = 0;
+};
+
+template<typename Alloc>
+vector_temporary_heap<Alloc>::vector_temporary_heap(vector_temporary_heap&& o)
+    noexcept
+: alloc_(o.alloc_),
+  heap_(exchange(o.heap_, nullptr)),
+  avail_(exchange(o.avail_, 0))
+{}
+
+template<typename Alloc>
+auto vector_temporary_heap<Alloc>::operator=(vector_temporary_heap<Alloc>&& o)
+    noexcept -> vector_temporary_heap& {
+  vector_temporary_heap(move(o)).swap(*this);
+  return *this;
+}
+
+template<typename Alloc>
+vector_temporary_heap<Alloc>::vector_temporary_heap(allocator_type& a,
+                                                    size_type sz)
+: alloc_(&a),
+  heap_(sz == 0 ?
+        nullptr :
+        allocator_traits<allocator_type>::allocate(a, sz)),
+  avail_(sz)
+{}
+
+template<typename Alloc>
+vector_temporary_heap<Alloc>::~vector_temporary_heap() noexcept {
+  if (avail_ != 0)
+    allocator_traits<allocator_type>::deallocate(*alloc_, heap_, avail_);
+}
+
+template<typename Alloc>
+auto vector_temporary_heap<Alloc>::size() const noexcept -> size_type {
+  return avail_;
+}
+
+template<typename Alloc>
+auto vector_temporary_heap<Alloc>::begin() const noexcept -> iterator {
+  return addressof(*heap_);
+}
+
+template<typename Alloc>
+auto vector_temporary_heap<Alloc>::end() const noexcept -> iterator {
+  return begin() + size();
+}
+
+template<typename Alloc>
+auto vector_temporary_heap<Alloc>::swap(pointer& p, size_type& s) noexcept ->
+    void {
+  using _namespace(std)::swap;
+
+  swap(heap_, p);
+  swap(avail_, s);
+}
+
+template<typename Alloc>
+auto vector_temporary_heap<Alloc>::swap(vector_temporary_heap& o) noexcept ->
+    void {
+  using _namespace(std)::swap;
+
+  swap(heap_, o.heap_);
+  swap(alloc_, o.alloc_);
+  swap(avail_, o.avail_);
+}
+
+
+} /* namespace std::impl */
 
 
 template<typename T, typename Alloc>
@@ -33,8 +133,12 @@ vector<T, Alloc>::vector(InputIter b, InputIter e, const allocator_type& alloc)
 {
   const auto dist = impl::equal_support__distance(
       b, e, typename iterator_traits<InputIter>::iterator_category());
-  if (dist.first) reserve(dist.second);
-  copy(b, e, back_inserter(*this));
+  if (dist.first) {
+    reserve(dist.second);
+    size_ = (uninitialized_copy(b, e, begin()) - begin());
+  } else {
+    copy(b, e, back_inserter(*this));
+  }
 }
 
 template<typename T, typename Alloc>
@@ -42,7 +146,8 @@ vector<T, Alloc>::vector(const vector& o)
 : vector(o.get_allocator())
 {
   reserve(o.size());
-  copy(o.begin(), o.end(), back_inserter(*this));
+  uninitialized_copy(o.begin(), o.end(), begin());
+  size_ = o.size();
 }
 
 template<typename T, typename Alloc>
@@ -62,7 +167,8 @@ vector<T, Alloc>::vector(const vector& o, const allocator_type& alloc)
 : vector(alloc)
 {
   reserve(o.size());
-  copy(o.begin(), o.end(), back_inserter(*this));
+  uninitialized_copy(o.begin(), o.end(), begin());
+  size_ = o.size();
 }
 
 template<typename T, typename Alloc>
@@ -77,7 +183,9 @@ vector<T, Alloc>::vector(vector&& o, const allocator_type& alloc)
     swap(avail_, o.avail_);
   } else {
     reserve(o.size());
-    move(o.begin(), o.end(), back_inserter(*this));
+    uninitialized_copy(move_iterator(o.begin()), move_iterator(o.end()),
+                       begin());
+    size_ = o.size();
     o.clear();
   }
 }
@@ -88,7 +196,8 @@ vector<T, Alloc>::vector(initializer_list<value_type> il,
 : vector(alloc)
 {
   reserve(il.size());
-  copy(il.begin(), il.end(), back_inserter(*this));
+  uninitialized_copy(il.begin(), il.end(), begin());
+  size_ = il.size();
 }
 
 template<typename T, typename Alloc>
@@ -99,42 +208,39 @@ vector<T, Alloc>::~vector() {
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator=(const vector& o) -> vector& {
+  if (_predict_false(&o == this)) return *this;
+
+  clear();
   reserve(o.size());
-  size_type delta = min(o.size(), size());
-  copy(o.begin(), o.begin() + delta, begin());
-  if (delta < o.size())
-    copy(o.begin() + delta, o.end(), back_inserter(*this));
-  else if (delta < size())
-    resize(delta);
+  uninitialized_copy(o.begin(), o.end(), begin());
+  size_ = o.size();
   return *this;
 }
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator=(vector&& o) -> vector& {
+  assert(this != &o);
+
   if (this->get_allocator_() == o.get_allocator_()) {
     swap(o);
     o.clear();
   } else {
+    clear();
     reserve(o.size());
-    size_type delta = min(o.size(), size());
-    move(o.begin(), o.begin() + delta, begin());
-    if (delta < o.size())
-      move(o.begin() + delta, o.end(), back_inserter(*this));
-    else if (delta < size())
-      resize(delta);
+    uninitialized_copy(move_iterator(o.begin()), move_iterator(o.end()),
+        begin());
+    size_ = o.size();
+    o.clear();
   }
   return *this;
 }
 
 template<typename T, typename Alloc>
 auto vector<T, Alloc>::operator=(initializer_list<value_type> il) -> vector& {
+  clear();
   reserve(il.size());
-  size_type delta = min(size_type(il.size()), size());
-  copy(il.begin(), il.begin() + delta, begin());
-  if (delta < il.size())
-    copy(il.begin() + delta, il.end(), back_inserter(*this));
-  else if (delta < size())
-    resize(delta);
+  uninitialized_copy(il.begin(), il.end(), begin());
+  size_ = il.size();
   return *this;
 }
 
@@ -220,15 +326,14 @@ auto vector<T, Alloc>::resize(size_type desired) -> void {
     }
   } else if (size_ < desired) {
     reserve(desired);
-    if (is_trivially_constructible<value_type>::value) {
+    if (is_trivially_default_constructible<value_type>::value) {
       bzero(end(), (desired - size_) * sizeof(value_type));
       size_ = desired;
     } else {
-      while (size_ < desired) {
-        allocator_traits<allocator_type>::construct(this->get_allocator_(),
-                                                    &data()[size_]);
-        ++size_;
-      }
+      auto dst = impl::_uninitialized_dest<iterator>(end());
+      while (dst.get() != begin() + desired) dst.assign();
+      dst.commit();
+      size_ = desired;
     }
   }
 }
@@ -245,11 +350,8 @@ auto vector<T, Alloc>::resize(size_type desired, const_reference v) -> void {
     }
   } else if (size_ < desired) {
     reserve(desired);
-    while (size_ < desired) {
-      allocator_traits<allocator_type>::construct(this->get_allocator_(),
-                                                  &data()[size_], v);
-      ++size_;
-    }
+    uninitialized_fill(end(), begin() + desired, v);
+    size_ = desired;
   }
 }
 
@@ -280,21 +382,31 @@ auto vector<T, Alloc>::reserve(size_type rsv) -> void {
       return;
     }
 
-    vector temp(this->get_allocator_());
+    /* Allocate a new heap. */
+    impl::vector_temporary_heap<Alloc> new_heap;
     try {
-      temp.heap_ = this->allocate_(new_sz);
-      temp.avail_ = new_sz;
+      new_heap = impl::vector_temporary_heap<Alloc>(this->get_allocator_(),
+                                                    new_sz);
     } catch (const bad_alloc&) {
       if (new_sz == rsv) throw;
       new_sz = rsv;
-      temp.heap_ = this->allocate_(new_sz);
-      temp.avail_ = new_sz;
+      new_heap = impl::vector_temporary_heap<Alloc>(this->get_allocator_(),
+                                                    new_sz);
     }
-    if (is_nothrow_move_constructible<value_type>::value)
-      move(begin(), end(), back_inserter(temp));
-    else
-      copy(begin(), end(), back_inserter(temp));
-    swap(temp);
+    /* Copy all elements over. */
+    uninitialized_copy(move_if_noexcept_iterator(begin()),
+                       move_if_noexcept_iterator(end()),
+                       new_heap.begin());
+
+    /* Swap heaps. */
+    new_heap.swap(heap_, avail_);
+
+    /* Destroy old heap elements. */
+    for_each(new_heap.begin(), new_heap.begin() + size(),
+             [this](reference v) noexcept {
+               allocator_traits<allocator_type>::destroy(
+                   this->get_allocator_(), &v);
+             });
   }
 }
 
@@ -307,14 +419,23 @@ auto vector<T, Alloc>::shrink_to_fit() -> void {
       return;
     }
 
-    vector temp(this->get_allocator_());
-    temp.heap_ = this->allocate_(size());
-    temp.avail_ = size();
-    if (is_nothrow_move_constructible<value_type>::value)
-      move(begin(), end(), back_inserter(temp));
-    else
-      copy(begin(), end(), back_inserter(temp));
-    swap(temp);
+    /* Allocate a new heap. */
+    impl::vector_temporary_heap<Alloc> new_heap =
+        impl::vector_temporary_heap<Alloc>(this->get_allocator_(), size_);
+    /* Copy all elements over. */
+    uninitialized_copy(move_if_noexcept_iterator(begin()),
+                       move_if_noexcept_iterator(end()),
+                       new_heap.begin());
+
+    /* Swap heaps. */
+    new_heap.swap(heap_, avail_);
+
+    /* Destroy old heap elements. */
+    for_each(new_heap.begin(), new_heap.begin() + size(),
+             [this](reference v) noexcept {
+               allocator_traits<allocator_type>::destroy(
+                   this->get_allocator_(), &v);
+             });
   }
 }
 
