@@ -8,32 +8,32 @@ namespace ilias {
 namespace vm {
 
 
-constexpr auto vm_permission::operator==(const vm_permission& y)
+inline constexpr auto vm_permission::operator==(const vm_permission& y)
     const noexcept -> bool {
   return perm_ == y.perm_;
 }
 
-constexpr auto vm_permission::operator!=(const vm_permission& y)
+inline constexpr auto vm_permission::operator!=(const vm_permission& y)
     const noexcept -> bool {
   return perm_ != y.perm_;
 }
 
-auto vm_permission::operator&=(const vm_permission& y) noexcept ->
+inline auto vm_permission::operator&=(const vm_permission& y) noexcept ->
     vm_permission& {
   return *this = (*this & y);
 }
 
-auto vm_permission::operator|=(const vm_permission& y) noexcept ->
+inline auto vm_permission::operator|=(const vm_permission& y) noexcept ->
     vm_permission& {
   return *this = (*this | y);
 }
 
-auto vm_permission::operator^=(const vm_permission& y) noexcept ->
+inline auto vm_permission::operator^=(const vm_permission& y) noexcept ->
     vm_permission& {
   return *this = (*this ^ y);
 }
 
-constexpr vm_permission::operator bool() const noexcept {
+inline constexpr vm_permission::operator bool() const noexcept {
   return perm_ != perm_type::none;
 }
 
@@ -335,6 +335,14 @@ auto vmmap_shard<Arch>::map(range pos, vm_permission perm,
 
   map_link_(make_unique<entry>(pos, get<0>(pos) + get<1>(pos),
                                perm, move(data)));
+}
+
+template<arch Arch>
+auto vmmap_shard<Arch>::largest_free_size() const noexcept ->
+    page_count<Arch> {
+  return (free_list_.empty() ?
+          page_count<Arch>(0) :
+          get<1>(free_list_.back().get_range_free()));
 }
 
 template<arch Arch>
@@ -675,7 +683,7 @@ template<arch Arch>
 auto vmmap<Arch>::shard_free_less_(const vmmap_shard<Arch>& x,
                                    const vmmap_shard<Arch>& y)
     noexcept -> bool {
-  return x.free_size() < y.free_size();
+  return x.largest_free_size() < y.largest_free_size();
 }
 
 template<arch Arch>

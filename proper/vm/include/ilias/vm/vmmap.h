@@ -213,6 +213,7 @@ class vmmap_shard {
   void map(range, vm_permission, unique_ptr<vmmap_entry>&&);
 
   page_count<Arch> free_size() const noexcept { return npg_free_; }
+  page_count<Arch> largest_free_size() const noexcept;
 
   void merge(vmmap_shard&&) noexcept;
   template<typename Iter> void fanout(Iter, Iter) noexcept;
