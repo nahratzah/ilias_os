@@ -143,6 +143,10 @@ class basic_linked_set::iterator
   explicit iterator(const basic_linked_set*, element*) noexcept;
 
  public:
+  iterator() = default;
+  iterator(const iterator&) = default;
+  iterator& operator=(const iterator&) = default;
+
   iterator& operator++() noexcept;
   iterator operator++(int) noexcept;
   iterator& operator--() noexcept;
@@ -314,6 +318,9 @@ class linked_set_iterator_
   template<typename, class> friend class const_linked_set_iterator_;
 
  public:
+  linked_set_iterator_() = default;
+  linked_set_iterator_(const linked_set_iterator_&) = default;
+  linked_set_iterator_& operator=(const linked_set_iterator_&) = default;
   explicit linked_set_iterator_(const basic_linked_set::iterator&) noexcept;
 
   T& operator*() const noexcept;
@@ -342,6 +349,10 @@ class const_linked_set_iterator_
   template<typename, class> friend class linked_set_iterator_;
 
  public:
+  const_linked_set_iterator_() = default;
+  const_linked_set_iterator_(const const_linked_set_iterator_&) = default;
+  const_linked_set_iterator_& operator=(const const_linked_set_iterator_&) =
+      default;
   explicit const_linked_set_iterator_(const basic_linked_set::iterator&)
       noexcept;
   const_linked_set_iterator_(const linked_set_iterator_<T, Tag>&) noexcept;
