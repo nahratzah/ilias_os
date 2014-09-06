@@ -20,7 +20,9 @@ struct map_hash_wrapper {
 
   template<typename X>
   static const X& unwrap_(const X& x) noexcept { return x; }
-  static const Key& unwrap_(const pair<Key, T>& x) noexcept { return x.first; }
+  static const Key& unwrap_(const pair<const Key, T>& x) noexcept {
+    return x.first;
+  }
   static const Key& unwrap_(const Wrapped& x) noexcept {
     return x.value.first;
   }
@@ -49,7 +51,9 @@ struct map_equal_wrapper {
 
   template<typename X>
   static const X& unwrap_(const X& x) noexcept { return x; }
-  static const Key& unwrap_(const pair<Key, T>& x) noexcept { return x.first; }
+  static const Key& unwrap_(const pair<const Key, T>& x) noexcept {
+    return x.first;
+  }
   static const Key& unwrap_(const Wrapped& x) noexcept {
     return x.value.first;
   }
@@ -77,7 +81,7 @@ template<typename Key,
          typename T,
          typename Hash = hash<Key>,
          typename Pred = equal_to<Key>,
-         typename Allocator = allocator<pair<Key, T>>>
+         typename Allocator = allocator<pair<const Key, T>>>
 class unordered_map;
 
 template<typename Key, typename T, typename Hash, typename Pred, typename A>
@@ -92,14 +96,15 @@ template<typename Key, typename T, typename Hash, typename Pred,
          typename Allocator>
 class unordered_map
 : private impl::alloc_base<typename allocator_traits<Allocator>::
-      template rebind_alloc<impl::unordered_set_elem<pair<Key, T>, void>>>
+      template rebind_alloc<impl::unordered_set_elem<pair<const Key, T>,
+                                                     void>>>
 {
   template<typename K, typename U, typename H, typename P, typename A>
   friend bool operator==(const unordered_map<K, U, H, P, A>&,
                          const unordered_map<K, U, H, P, A>&);
 
  private:
-  using elem = impl::unordered_set_elem<pair<Key, T>, void>;
+  using elem = impl::unordered_set_elem<pair<const Key, T>, void>;
   using data_type =
       _namespace(ilias)::linked_unordered_set<elem, void,
                                               impl::map_hash_wrapper<Hash,
@@ -115,7 +120,7 @@ class unordered_map
  public:
   using key_type = Key;
   using mapped_type = T;
-  using value_type = pair<Key, T>;
+  using value_type = pair<const Key, T>;
   using hasher = Hash;
   using key_equal = Pred;
   using allocator_type = Allocator;
@@ -246,7 +251,7 @@ template<typename Key,
          typename T,
          typename Hash = hash<Key>,
          typename Pred = equal_to<Key>,
-         typename Allocator = allocator<pair<Key, T>>>
+         typename Allocator = allocator<pair<const Key, T>>>
 class unordered_multimap;
 
 template<typename Key, typename T, typename Hash, typename Pred, typename A>
@@ -261,14 +266,15 @@ template<typename Key, typename T, typename Hash, typename Pred,
          typename Allocator>
 class unordered_multimap
 : private impl::alloc_base<typename allocator_traits<Allocator>::
-      template rebind_alloc<impl::unordered_set_elem<pair<Key, T>, void>>>
+      template rebind_alloc<impl::unordered_set_elem<pair<const Key, T>,
+                                                     void>>>
 {
   template<typename K, typename U, typename H, typename P, typename A>
   friend bool operator==(const unordered_multimap<K, U, H, P, A>&,
                          const unordered_multimap<K, U, H, P, A>&);
 
  private:
-  using elem = impl::unordered_set_elem<pair<Key, T>, void>;
+  using elem = impl::unordered_set_elem<pair<const Key, T>, void>;
   using data_type =
       _namespace(ilias)::linked_unordered_set<elem, void,
                                               impl::map_hash_wrapper<Hash,
@@ -284,7 +290,7 @@ class unordered_multimap
  public:
   using key_type = Key;
   using mapped_type = T;
-  using value_type = pair<Key, T>;
+  using value_type = pair<const Key, T>;
   using hasher = Hash;
   using key_equal = Pred;
   using allocator_type = Allocator;

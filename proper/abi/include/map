@@ -17,7 +17,9 @@ struct map_cmp_wrapper {
 
   template<typename X>
   static const X& unwrap_(const X& x) noexcept { return x; }
-  static const Key& unwrap_(const pair<Key, T>& x) noexcept { return x.first; }
+  static const Key& unwrap_(const pair<const Key, T>& x) noexcept {
+    return x.first;
+  }
   static const Key& unwrap_(const Wrapped& x) noexcept {
     return x.value.first;
   }
@@ -37,13 +39,13 @@ struct map_cmp_wrapper {
 
 
 template<typename Key, typename T, typename Compare = less<Key>,
-         typename Allocator = allocator<pair<Key, T>>>
+         typename Allocator = allocator<pair<const Key, T>>>
 class map
 : private impl::alloc_base<typename allocator_traits<Allocator>::
-      template rebind_alloc<impl::set_elem<pair<Key, T>, void>>>
+      template rebind_alloc<impl::set_elem<pair<const Key, T>, void>>>
 {
  private:
-  using elem = impl::set_elem<pair<Key, T>, void>;
+  using elem = impl::set_elem<pair<const Key, T>, void>;
   using data_type =
       _namespace(ilias)::linked_set<elem, void,
                                     impl::map_cmp_wrapper<Compare,
@@ -54,7 +56,7 @@ class map
  public:
   using key_type = Key;
   using mapped_type = T;
-  using value_type = pair<Key, T>;
+  using value_type = pair<const Key, T>;
   using key_compare = Compare;
   using allocator_type = Allocator;
   using reference = value_type&;
@@ -198,13 +200,13 @@ void swap(const map<Key, T, Compare, Allocator>&,
 
 
 template<typename Key, typename T, typename Compare = less<Key>,
-         typename Allocator = allocator<pair<Key, T>>>
+         typename Allocator = allocator<pair<const Key, T>>>
 class multimap
 : private impl::alloc_base<typename allocator_traits<Allocator>::
-      template rebind_alloc<impl::set_elem<pair<Key, T>, void>>>
+      template rebind_alloc<impl::set_elem<pair<const Key, T>, void>>>
 {
  private:
-  using elem = impl::set_elem<pair<Key, T>, void>;
+  using elem = impl::set_elem<pair<const Key, T>, void>;
   using data_type =
       _namespace(ilias)::linked_set<elem, void,
                                     impl::map_cmp_wrapper<Compare,
@@ -215,7 +217,7 @@ class multimap
  public:
   using key_type = Key;
   using mapped_type = T;
-  using value_type = pair<Key, T>;
+  using value_type = pair<const Key, T>;
   using key_compare = Compare;
   using allocator_type = Allocator;
   using reference = value_type&;

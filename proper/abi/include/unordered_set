@@ -117,13 +117,13 @@ class unordered_set
   using size_type = typename data_type::size_type;
   using difference_type = typename data_type::difference_type;
   using iterator =
-      impl::set_elem_iter<value_type,
+      impl::set_elem_iter<const value_type,
                           typename data_type::iterator>;
   using const_iterator =
       impl::set_elem_iter<const value_type,
                           typename data_type::const_iterator>;
   using local_iterator =
-      impl::set_elem_iter<value_type,
+      impl::set_elem_iter<const value_type,
                           typename data_type::local_iterator>;
   using const_local_iterator =
       impl::set_elem_iter<const value_type,
@@ -274,13 +274,13 @@ class unordered_multiset
   using size_type = typename data_type::size_type;
   using difference_type = typename data_type::difference_type;
   using iterator =
-      impl::set_elem_iter<value_type,
+      impl::set_elem_iter<const value_type,
                           typename data_type::iterator>;
   using const_iterator =
       impl::set_elem_iter<const value_type,
                           typename data_type::const_iterator>;
   using local_iterator =
-      impl::set_elem_iter<value_type,
+      impl::set_elem_iter<const value_type,
                           typename data_type::local_iterator>;
   using const_local_iterator =
       impl::set_elem_iter<const value_type,
