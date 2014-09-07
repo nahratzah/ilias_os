@@ -359,6 +359,9 @@ template<typename T, class Tag>
 template<typename Compare>
 auto linked_list<T, Tag>::sort(const_iterator b, const_iterator e,
                                Compare compare) -> void {
+  using _namespace(std)::ref;
+  using _namespace(std)::distance;
+
   sort(b, e, ref(compare), distance(b, e));
 }
 

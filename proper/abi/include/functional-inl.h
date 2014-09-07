@@ -672,7 +672,7 @@ function<R(ArgTypes...)>::operator bool() const noexcept {
 template<typename R, typename... ArgTypes>
 auto function<R(ArgTypes...)>::operator()(ArgTypes... args) const -> R {
   if (is_special())
-    return impl::invoke(fn_, data_.special, forward<ArgTypes>(args)...);
+    return impl::invoke(fn_, data_.special.p, forward<ArgTypes>(args)...);
   else
     return impl::invoke(*data_.functor, forward<ArgTypes>(args)...);
 }
