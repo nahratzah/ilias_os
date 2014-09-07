@@ -46,7 +46,7 @@ auto cow_vme::fault_write(page_count<native_arch> off) ->
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_write(off);
 
-  stats::cow.add();
+  stats::cow.add();  // Record copy-on-write operation.
   assert_msg(false, "XXX copy nested page into anon");  // XXX implement
   for (;;);
 }
