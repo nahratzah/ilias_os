@@ -1,37 +1,67 @@
+#ifndef _ILIAS_VM_ANON_H_
+#define _ILIAS_VM_ANON_H_
+
+#include <ilias/vm/vmmap.h>
+#include <memory>
+#include <vector>
+
 namespace ilias {
 namespace vm {
 
+using namespace std;
 
-class anon {
+
+class anon_vme final
+: public vmmap_entry
+{
+ private:
+  class entry {
+   public:
+    entry() = default;
+    entry(const entry&) = delete;
+    entry(entry&&) = delete;
+    entry& operator=(const entry&) = delete;
+    entry& operator=(entry&&) = delete;
+
+    mutable atomic<uintptr_t> refcnt_{ 1U };
+
+   private:
+    // XXX: page pointer
+  };
+
+  struct entry_deleter_ {
+    void operator()(const entry* e) const noexcept;
+  };
+
+  using entry_ptr = unique_ptr<entry, entry_deleter_>;
+  using data_type = vector<entry_ptr>;
+
  public:
-  anon() noexcept = default;
-  anon(const anon&) noexcept;
-  anon(anon&&) noexcept;
-  anon& operator=(const anon&) noexcept;
-  anon& operator=(anon&&) noexcept;
+  anon_vme() = delete;
+  anon_vme(const anon_vme&);
+  anon_vme(anon_vme&&) noexcept;
+  anon_vme(page_count<native_arch> npg);
+  template<typename Iter> anon_vme(Iter, Iter);
+  ~anon_vme() noexcept override;
 
-  bool has_page() const noexcept;
-  bool is_swapped() const noexcept;
+  bool empty() const noexcept;
+
+  page_no<native_arch> fault_read(page_count<native_arch>) override;
+  page_no<native_arch> fault_write(page_count<native_arch>) override;
+
+  vmmap_entry_ptr clone() const override;
+  pair<vmmap_entry_ptr, vmmap_entry_ptr> split(
+      page_count<native_arch>) const override;
 
  private:
-  // XXX page pointer
-  // XXX reference to swap storage
-};
+  static entry_ptr copy_entry_(const entry_ptr&) noexcept;
 
-class anonymous_memory {
- public:
-  anonymous_memory(page_count<Arch> c)
-  : anon_(c.get())
-  {}
-
-  template<arch Arch>
-  anon& operator[](page_count<Arch> idx) { return anon_.at(idx.get()); }
-  template<arch Arch>
-  const anon& operator[](page_count<Arch> idx) const { return anon_.at(idx.get()); }
-
- private:
-  std::vector<anon> anon_;
+  data_type data_;
 };
 
 
 }} /* namespace ilias::vm */
+
+#include <ilias/vm/anon-inl.h>
+
+#endif /* _ILIAS_VM_ANON_H_ */
