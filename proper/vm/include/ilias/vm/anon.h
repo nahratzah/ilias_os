@@ -11,7 +11,7 @@ namespace vm {
 using namespace std;
 
 
-class anon_vme final
+class anon_vme
 : public vmmap_entry
 {
  private:
@@ -46,6 +46,31 @@ class anon_vme final
 
   bool empty() const noexcept;
 
+  bool present(page_count<native_arch>) const noexcept;
+  page_no<native_arch> fault_read(page_count<native_arch>) override;
+  page_no<native_arch> fault_write(page_count<native_arch>) override;
+
+  vmmap_entry_ptr clone() const override;
+  pair<vmmap_entry_ptr, vmmap_entry_ptr> split(
+      page_count<native_arch>) const override;
+  pair<anon_vme, anon_vme> split_no_alloc(page_count<native_arch>) const;
+
+ private:
+  static entry_ptr copy_entry_(const entry_ptr&) noexcept;
+
+  data_type data_;
+};
+
+class cow_vme
+: public anon_vme
+{
+ public:
+  cow_vme(anon_vme&&, vmmap_entry_ptr&&) noexcept;
+  cow_vme(page_count<native_arch>, vmmap_entry_ptr&&);
+  cow_vme(const cow_vme&);
+  cow_vme(cow_vme&&) noexcept;
+  ~cow_vme() noexcept override;
+
   page_no<native_arch> fault_read(page_count<native_arch>) override;
   page_no<native_arch> fault_write(page_count<native_arch>) override;
 
@@ -54,9 +79,7 @@ class anon_vme final
       page_count<native_arch>) const override;
 
  private:
-  static entry_ptr copy_entry_(const entry_ptr&) noexcept;
-
-  data_type data_;
+  vmmap_entry_ptr nested_;
 };
 
 

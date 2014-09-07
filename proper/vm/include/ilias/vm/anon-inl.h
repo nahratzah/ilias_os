@@ -25,6 +25,15 @@ inline auto anon_vme::empty() const noexcept -> bool {
   return data_.empty();
 }
 
+inline auto anon_vme::present(page_count<native_arch> off) const noexcept ->
+    bool {
+  assert(off.get() >= 0 &&
+         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
+          data_.size()));
+
+  return (data_[off.get()] != nullptr);
+}
+
 
 }} /* namespace ilias::vm */
 
