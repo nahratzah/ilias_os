@@ -29,6 +29,8 @@ class page_cache {
   void manage(page_ptr, bool) noexcept;
   void unmanage(page_ptr) noexcept;
 
+  page_list try_release_urgent(page_count<native_arch>) noexcept;
+
  private:
   bool manage_internal_(page_ptr, bool) noexcept;
   bool unmanage_internal_(page_ptr) noexcept;

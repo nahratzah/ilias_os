@@ -127,10 +127,10 @@ auto page_cache::rebalance_job() noexcept -> bool {
     lock_guard<mutex> hl{ hot_guard_ };
 
     page* looped = nullptr;
-    for (list_type::reverse_iterator i_next, i = hot_.rbegin();
-         i != hot_.rend() && &*i != looped;
-         i = i_next) {
-      i_next = next(i);
+    for (list_type::iterator i_next = hot_.end();
+         i_next != hot_.begin() && &*prev(i_next) != looped;
+         --i_next) {
+      const list_type::iterator i = prev(i);
 
       i->update_accessed_dirty();
       cache_page_lock l{ *i, try_to_lock };
@@ -161,7 +161,11 @@ auto page_cache::rebalance_job() noexcept -> bool {
     assert(!cold_.empty());
     lock_guard<mutex> cl{ cold_guard_ };
 
-    for (list_type::iterator i = cold_.begin(); i != cold_.end(); ++i) {
+    for (list_type::iterator i_next, i = cold_.begin();
+         i != cold_.end();
+         i = i_next) {
+      i_next = next(i);
+
       i->update_accessed_dirty();
       cache_page_lock l{ *i, try_to_lock };
       if (l) {
@@ -187,10 +191,10 @@ auto page_cache::rebalance_job() noexcept -> bool {
    */
   {
     lock_guard<mutex> sl{ speculative_guard_ };
-    for (list_type::reverse_iterator i_next, i = speculative_.rbegin();
-         i != speculative_.rend();
-         i = i_next) {
-      i_next = next(i);
+    for (list_type::iterator i_next = speculative_.end();
+         i_next != speculative_.begin();
+         --i_next) {
+      const list_type::iterator i = prev(i_next);
 
       page& pg = *i;
       pg.update_accessed_dirty();
@@ -220,6 +224,171 @@ auto page_cache::unmanage(page_ptr pg) noexcept -> void {
   if (unmanage_internal_(pg) && rebalance_job()) {
     // XXX activate rebalance job
   }
+}
+
+auto page_cache::try_release_urgent(page_count<native_arch> npg) noexcept ->
+    page_list {
+  page_list result;
+
+  /*
+   * Claim speculatively loaded pages.
+   * Pages that are actually accessed, are promoted.
+   */
+  if (result.size() < npg) {
+    lock_guard<mutex> sl{ speculative_guard_ };
+    for (list_type::iterator i_next = speculative_.end();
+         i_next != speculative_.begin() && result.size() < npg;
+         --i_next) {
+      const list_type::iterator i = prev(i_next);
+
+      i->update_accessed_dirty();
+      cache_page_lock l{ *i, try_to_lock };
+      if (l.flags() & page::fl_cannot_free_mask) continue;
+
+      if (!l) {
+        l.lock();
+        if (l.flags() & page::fl_cannot_free_mask) continue;
+      }
+
+      if (l.flags() & page::fl_accessed) {
+        /* Promote page. */
+        lock_guard<mutex> cl{ cold_guard_ };
+        i->assign_masked_flags(page::fl_cache_cold,
+                               page::fl_cache_mask | page::fl_accessed);
+        cold_.link_front(speculative_.unlink(i));
+        speculative_hit_.add();  // Update stats.
+        continue;
+      }
+
+      /* Try to release the page. */
+      if (i->try_release_urgent()) {
+        page* pg = speculative_.unlink(i);
+        pg->clear_flag(page::fl_cache_present);
+
+        /* Update stats. */
+        if (pg->get_flags() & page::fl_accessed)
+          speculative_hit_.add();
+        else
+          speculative_miss_.add();
+
+        hot_cold_diff_.fetch_add(1, memory_order_relaxed);
+        result.push_pages_no_merge(pg, page_count<native_arch>(1));
+      }
+    }
+  }
+
+  /*
+   * Claim cold pages.
+   * Pages that are accessed, are promoted.
+   */
+  if (result.size() < npg) {
+    lock_guard<mutex> cl{ cold_guard_ };
+    for (list_type::iterator i_next = cold_.end();
+         i_next != cold_.begin() && result.size() < npg;
+         --i_next) {
+      const list_type::iterator i = prev(i_next);
+
+      i->update_accessed_dirty();
+      cache_page_lock l{ *i, try_to_lock };
+      if (l.flags() & page::fl_cannot_free_mask) continue;
+
+      if (!l) {
+        l.lock();
+        if (l.flags() & page::fl_cannot_free_mask) continue;
+      }
+
+      if (l.flags() & page::fl_accessed) {
+        /* Promote page. */
+        lock_guard<mutex> hl{ hot_guard_ };
+        i->assign_masked_flags(page::fl_cache_hot,
+                               page::fl_cache_mask | page::fl_accessed);
+        hot_.link_front(cold_.unlink(i));
+
+        hot_cold_diff_.fetch_add(2, memory_order_relaxed);
+        continue;
+      }
+
+      /* Try to release the page. */
+      if (i->try_release_urgent()) {
+        page* pg = cold_.unlink(i);
+        pg->clear_flag(page::fl_cache_present);
+        hot_cold_diff_.fetch_add(1, memory_order_relaxed);
+        result.push_pages_no_merge(pg, page_count<native_arch>(1));
+      }
+    }
+  }
+
+  /*
+   * Claim hot pages.
+   * Pages that are accessed, are promoted.
+   */
+  if (result.size() < npg) {
+    page* looped = nullptr;
+    lock_guard<mutex> hl{ hot_guard_ };
+    for (list_type::iterator i_next = hot_.end();
+         i_next != hot_.begin() && &*prev(i_next) != looped &&
+         result.size() < npg;
+         --i_next) {
+      const list_type::iterator i = prev(i_next);
+
+      i->update_accessed_dirty();
+      cache_page_lock l{ *i, try_to_lock };
+      if (l.flags() & page::fl_cannot_free_mask) continue;
+
+      if (!l) {
+        l.lock();
+        if (l.flags() & page::fl_cannot_free_mask) continue;
+      }
+
+      if (l.flags() & page::fl_accessed) {
+        /* Promote page. */
+        i->clear_flag(page::fl_accessed);
+        if (looped == nullptr) looped = &*i;
+        hot_.link_front(hot_.unlink(i));
+        continue;
+      }
+
+      /* Try to release the page. */
+      if (i->try_release_urgent()) {
+        page* pg = hot_.unlink(i);
+        pg->clear_flag(page::fl_cache_present);
+        hot_cold_diff_.fetch_sub(1, memory_order_relaxed);
+        result.push_pages_no_merge(pg, page_count<native_arch>(1));
+      }
+    }
+  }
+
+  /*
+   * Claim hot pages.
+   * We don't care about promotion at this point.
+   */
+  if (result.size() < npg) {
+    lock_guard<mutex> hl{ hot_guard_ };
+    for (list_type::iterator i_next = hot_.end();
+         i_next != hot_.begin() && result.size() < npg;
+         --i_next) {
+      const list_type::iterator i = prev(i_next);
+
+      cache_page_lock l{ *i, try_to_lock };
+      if (l.flags() & page::fl_cannot_free_mask) continue;
+
+      if (!l) {
+        l.lock();
+        if (l.flags() & page::fl_cannot_free_mask) continue;
+      }
+
+      if (i->try_release_urgent()) {
+        page* pg = hot_.unlink(i);
+        pg->clear_flag(page::fl_cache_present);
+        hot_cold_diff_.fetch_sub(1, memory_order_relaxed);
+        result.push_pages_no_merge(pg, page_count<native_arch>(1));
+      }
+    }
+  }
+
+  // XXX fire rebalance function
+
+  return result;
 }
 
 auto page_cache::manage_internal_(page_ptr pg, bool speculative) noexcept ->

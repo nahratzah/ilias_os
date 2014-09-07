@@ -38,6 +38,7 @@ class page
   using flags_type = uint32_t;
 
   static constexpr flags_type fl_cache_mask        = 0x03;
+  static constexpr flags_type fl_cannot_free_mask  = 0xc0;
 
   static constexpr flags_type fl_cache_speculative = 0x01;
   static constexpr flags_type fl_cache_cold        = 0x02;
@@ -46,7 +47,10 @@ class page
   static constexpr flags_type fl_cache_present     = 0x08;
 
   static constexpr flags_type fl_accessed          = 0x10;
-  static constexpr flags_type fl_dirty             = 0x11;
+  static constexpr flags_type fl_dirty             = 0x20;
+
+  static constexpr flags_type fl_busy              = 0x40;
+  static constexpr flags_type fl_wired             = 0x80;
 
   page() = delete;
   page(const page&) = delete;
