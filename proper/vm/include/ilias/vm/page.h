@@ -68,6 +68,7 @@ class page
 
   void update_accessed_dirty() {}  // XXX implement
   bool try_release_urgent() noexcept;
+  void undirty() {}  // XXX implement
 
  private:
   page_no<native_arch> pgno_;  // Address of this page.

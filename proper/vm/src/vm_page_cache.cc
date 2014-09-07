@@ -391,6 +391,95 @@ auto page_cache::try_release_urgent(page_count<native_arch> npg) noexcept ->
   return result;
 }
 
+auto page_cache::undirty(page_count<native_arch> npg) noexcept -> void {
+  if (npg > page_count<native_arch>(0)) {
+    lock_guard<mutex> sl{ speculative_guard_ };
+    for (list_type::iterator i_next = speculative_.end();
+         i_next != speculative_.begin() && npg > page_count<native_arch>(0);
+         --i_next) {
+      const list_type::iterator i = prev(i_next);
+
+      i->update_accessed_dirty();
+      cache_page_lock l{ *i, try_to_lock };
+      if (!l) continue;
+
+      if (l.flags() & page::fl_accessed) {
+        lock_guard<mutex> cl{ cold_guard_ };
+        i->assign_masked_flags(page::fl_cache_cold,
+                               page::fl_cache_mask | page::fl_accessed);
+        cold_.link_front(speculative_.unlink(i));
+        speculative_hit_.add();  // Update stats.
+        continue;
+      }
+
+      if (!l.flags() & page::fl_dirty) {
+        --npg;
+        continue;
+      }
+
+      i->undirty();
+    }
+  }
+
+  if (npg > page_count<native_arch>(0)) {
+    lock_guard<mutex> cl{ cold_guard_ };
+    for (list_type::iterator i_next = cold_.end();
+         i_next != cold_.begin() && npg > page_count<native_arch>(0);
+         --i_next) {
+      const list_type::iterator i = prev(i_next);
+
+      i->update_accessed_dirty();
+      cache_page_lock l{ *i, try_to_lock };
+      if (!l) continue;
+
+      if (l.flags() & page::fl_accessed) {
+        lock_guard<mutex> hl{ hot_guard_ };
+        i->assign_masked_flags(page::fl_cache_hot,
+                               page::fl_cache_mask | page::fl_accessed);
+        hot_.link_front(cold_.unlink(i));
+        hot_cold_diff_.fetch_add(2U, memory_order_relaxed);
+        continue;
+      }
+
+      if (!l.flags() & page::fl_dirty) {
+        --npg;
+        continue;
+      }
+
+      i->undirty();
+    }
+  }
+
+  if (npg > page_count<native_arch>(0)) {
+    lock_guard<mutex> hl{ hot_guard_ };
+    page* looped = nullptr;
+    for (list_type::iterator i_next = cold_.end();
+         i_next != cold_.begin() && &*prev(i_next) != looped &&
+         npg > page_count<native_arch>(0);
+         --i_next) {
+      const list_type::iterator i = prev(i_next);
+
+      i->update_accessed_dirty();
+      cache_page_lock l{ *i, try_to_lock };
+      if (!l) continue;
+
+      if (l.flags() & page::fl_accessed) {
+        i->clear_flag(page::fl_accessed);
+        if (looped == nullptr) looped = &*i;
+        hot_.link_front(hot_.unlink(i));
+        continue;
+      }
+
+      if (!l.flags() & page::fl_dirty) {
+        --npg;
+        continue;
+      }
+
+      i->undirty();
+    }
+  }
+}
+
 auto page_cache::manage_internal_(page_ptr pg, bool speculative) noexcept ->
     bool {
   cache_page_lock l{ *pg };

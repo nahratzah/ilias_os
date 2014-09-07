@@ -30,6 +30,7 @@ class page_cache {
   void unmanage(page_ptr) noexcept;
 
   page_list try_release_urgent(page_count<native_arch>) noexcept;
+  void undirty(page_count<native_arch>) noexcept;  // XXX this is inefficient, consider another interface
 
  private:
   bool manage_internal_(page_ptr, bool) noexcept;
