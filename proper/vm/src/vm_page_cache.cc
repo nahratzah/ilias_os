@@ -67,12 +67,15 @@ class cache_page_lock {
 
 page_cache::page_cache(stats_group& group) noexcept
 : manage_(group, "manage"),
-  unmanage_(group, "unmanage")
+  unmanage_(group, "unmanage"),
+  rebalance_(group, "rebalance"),
+  speculative_hit_(group, "speculative_hit"),
+  speculative_miss_(group, "speculative_miss")
 {}
 
 page_cache::~page_cache() noexcept {}
 
-auto page_cache::notify_page_access(page_ptr pg) -> void {
+auto page_cache::notify_page_access(page_ptr pg) noexcept -> void {
   assert(pg != nullptr);
 
   cache_page_lock l{ *pg, try_to_lock };
@@ -92,7 +95,12 @@ auto page_cache::notify_page_access(page_ptr pg) -> void {
     dst_queue = page::fl_cache_cold;
     break;
   case page::fl_cache_cold:
-    hot_cold_diff_.fetch_add(2, memory_order_relaxed);
+    {
+      auto diff = hot_cold_diff_.fetch_add(2, memory_order_relaxed) + 2;
+      if (diff < -1 || diff > 1) {
+        /* XXX notify rebalance job */
+      }
+    }
     cold_.unlink(&*pg);
     hot_.link_front(&*pg);
     dst_queue = page::fl_cache_hot;
@@ -108,8 +116,13 @@ auto page_cache::notify_page_access(page_ptr pg) -> void {
 }
 
 auto page_cache::rebalance_job() noexcept -> bool {
+  rebalance_.add();  // Update stats.
+
   auto diff = hot_cold_diff_.load(memory_order_relaxed);
   if (diff > 1) {
+    /*
+     * hot - cold > 1, demote a page from hot to cold zone.
+     */
     assert(!hot_.empty());
     lock_guard<mutex> hl{ hot_guard_ };
 
@@ -142,19 +155,25 @@ auto page_cache::rebalance_job() noexcept -> bool {
       }
     }
   } else if (diff < -1) {
+    /*
+     * hot - cold < -1, promote a page from cold to hot zone.
+     */
     assert(!cold_.empty());
     lock_guard<mutex> cl{ cold_guard_ };
 
     for (list_type::iterator i = cold_.begin(); i != cold_.end(); ++i) {
       i->update_accessed_dirty();
       cache_page_lock l{ *i, try_to_lock };
-      if (l && (l.flags() & page::fl_accessed)) {
+      if (l) {
         lock_guard<mutex> hl{ hot_guard_ };
 
         page& pg = *i;
         cold_.unlink(&pg);
         pg.clear_flag(page::fl_accessed);
-        hot_.link_front(&pg);
+        if (l.flags() & page::fl_accessed)
+          hot_.link_front(&pg);
+        else
+          hot_.link_back(&pg);
         diff = hot_cold_diff_.fetch_add(2, memory_order_relaxed) + 2;
         break;
       }
@@ -163,14 +182,51 @@ auto page_cache::rebalance_job() noexcept -> bool {
     return false;
   }
 
-  return true;
+  /*
+   * Scan a page in the speculative range.
+   */
+  {
+    lock_guard<mutex> sl{ speculative_guard_ };
+    for (list_type::reverse_iterator i_next, i = speculative_.rbegin();
+         i != speculative_.rend();
+         i = i_next) {
+      i_next = next(i);
+
+      page& pg = *i;
+      pg.update_accessed_dirty();
+
+      cache_page_lock l{ pg, try_to_lock };
+      if (l && (l.flags() & page::fl_accessed)) {
+        lock_guard<mutex> cl{ cold_guard_ };
+        speculative_.unlink(&pg);
+        cold_.link_front(&pg);
+
+        speculative_hit_.add();  // Update stats.
+        break;
+      }
+    }
+  }
+
+  return diff < -1 || diff > 1;
 }
 
 auto page_cache::manage(page_ptr pg, bool speculative) noexcept -> void {
+  if (manage_internal_(pg, speculative) && rebalance_job()) {
+    // XXX activate rebalance job
+  }
+}
+
+auto page_cache::unmanage(page_ptr pg) noexcept -> void {
+  if (unmanage_internal_(pg) && rebalance_job()) {
+    // XXX activate rebalance job
+  }
+}
+
+auto page_cache::manage_internal_(page_ptr pg, bool speculative) noexcept ->
+    bool {
   cache_page_lock l{ *pg };
   assert(!(l.flags() & page::fl_cache_present));
 
-  lock_guard<mutex> cl{ cold_guard_ };
   /*
    * Mark page as being in the cache, clear its access bit.
    */
@@ -182,21 +238,25 @@ auto page_cache::manage(page_ptr pg, bool speculative) noexcept -> void {
                           (page::fl_cache_mask | page::fl_cache_present |
                            page::fl_accessed));
 
-  if (speculative)
+  if (speculative) {
+    lock_guard<mutex> cl{ speculative_guard_ };
     speculative_.link_front(&*pg);
-  else
+  } else {
+    lock_guard<mutex> cl{ cold_guard_ };
     cold_.link_front(&*pg);
-  hot_cold_diff_.fetch_sub(1, memory_order_relaxed);
+  }
+  auto diff = hot_cold_diff_.fetch_sub(1, memory_order_relaxed) - 1;
 
   manage_.add();  // Update stats.
 
-  // XXX fire rebalance job
+  return diff < -1;
 }
 
-auto page_cache::unmanage(page_ptr pg) noexcept -> void {
+auto page_cache::unmanage_internal_(page_ptr pg) noexcept -> bool {
   cache_page_lock l{ *pg };
   assert(l.flags() & page::fl_cache_present);
 
+  bool fire;
   switch (l.flags() & page::fl_cache_mask) {
   default:
     assert_msg(false, "Page cache flags are wrong");
@@ -205,29 +265,28 @@ auto page_cache::unmanage(page_ptr pg) noexcept -> void {
     {
       lock_guard<mutex> cl{ speculative_guard_ };
       speculative_.unlink(&*pg);
-      hot_cold_diff_.fetch_add(1, memory_order_relaxed);
+      fire = (hot_cold_diff_.fetch_add(1, memory_order_relaxed) + 1 > 1);
     }
   case page::fl_cache_cold:
     {
       lock_guard<mutex> cl{ cold_guard_ };
       cold_.unlink(&*pg);
-      hot_cold_diff_.fetch_add(1, memory_order_relaxed);
+      fire = (hot_cold_diff_.fetch_add(1, memory_order_relaxed) + 1 > 1);
     }
     break;
   case page::fl_cache_hot:
     {
       lock_guard<mutex> hl{ hot_guard_ };
       hot_.unlink(&*pg);
-      hot_cold_diff_.fetch_sub(1, memory_order_relaxed);
+      fire = (hot_cold_diff_.fetch_sub(1, memory_order_relaxed) - 1 < -1);
     }
     break;
   }
-
   pg->clear_flag(page::fl_cache_present | page::fl_cache_mask);
 
   unmanage_.add();  // Update stats.
 
-  // XXX fire rebalance job
+  return fire;
 }
 
 

@@ -23,21 +23,27 @@ class page_cache {
   page_cache& operator=(page_cache&&) = delete;
   ~page_cache() noexcept;
 
-  void notify_page_access(page_ptr);
+  void notify_page_access(page_ptr) noexcept;
   bool rebalance_job() noexcept;
 
   void manage(page_ptr, bool) noexcept;
   void unmanage(page_ptr) noexcept;
 
  private:
+  bool manage_internal_(page_ptr, bool) noexcept;
+  bool unmanage_internal_(page_ptr) noexcept;
+
   list_type hot_, cold_, speculative_;
   atomic<intptr_t> hot_cold_diff_{ 0 };  // #hot_ - (#cold_ + #speculative_).
   mutex speculative_guard_;
   mutex cold_guard_;
   mutex hot_guard_;
 
-  stats_counter manage_;
-  stats_counter unmanage_;
+  stats_counter manage_,
+                unmanage_,
+                rebalance_,
+                speculative_hit_,
+                speculative_miss_;
 };
 
 
