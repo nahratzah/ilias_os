@@ -16,6 +16,7 @@ namespace ilias {
 namespace vm {
 namespace stats {
 
+extern global_stats_group vmmap_group;
 extern stats_counter vmmap_contention;
 
 } /* namespace ilias::vm::stats */

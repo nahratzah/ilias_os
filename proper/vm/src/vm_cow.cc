@@ -1,7 +1,13 @@
 #include <ilias/vm/cow.h>
+#include <ilias/stats.h>
 
 namespace ilias {
 namespace vm {
+namespace stats {
+
+stats_counter cow{ vmmap_group, "copy_on_write" };
+
+} /* namespace ilias::vm::stats */
 
 
 cow_vme::cow_vme(anon_vme&& anon, vmmap_entry_ptr&& nested) noexcept
@@ -39,6 +45,8 @@ auto cow_vme::fault_write(page_count<native_arch> off) ->
     page_no<native_arch> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_write(off);
+
+  stats::cow.add();
   assert_msg(false, "XXX copy nested page into anon");  // XXX implement
   for (;;);
 }
