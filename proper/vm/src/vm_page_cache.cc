@@ -263,6 +263,17 @@ auto page_cache::unmanage_internal_(page_ptr pg) noexcept -> bool {
     __builtin_unreachable();
   case page::fl_cache_speculative:
     {
+      /* Update speculative hit/miss statistic before page goes away. */
+      if (pg->get_flags() & page::fl_accessed) {
+        speculative_hit_.add();
+      } else {
+        pg->update_accessed_dirty();
+        if (pg->get_flags() & page::fl_accessed)
+          speculative_hit_.add();
+        else
+          speculative_miss_.add();
+      }
+
       lock_guard<mutex> cl{ speculative_guard_ };
       speculative_.unlink(&*pg);
       fire = (hot_cold_diff_.fetch_add(1, memory_order_relaxed) + 1 > 1);
