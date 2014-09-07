@@ -7,48 +7,53 @@
 
 namespace ilias {
 namespace vm {
-
-using ilias::pmap::phys_addr;
-using ilias::pmap::page_no;
-
 namespace tags {
 
 struct free_list {};
 
 } /* namespace ilias::vm::tags */
 
-template<arch Arch>
-class page
-: public linked_list_element<tags::free_list> {
- public:
-  static constexpr size_t PAGE_SIZE = page_size(Arch);
-  static constexpr size_t PAGE_MASK = page_mask(Arch);
-  static constexpr size_t PAGE_SHIFT = page_shift(Arch);
 
-  page() noexcept = default;
+using namespace std;
+using namespace ilias::pmap;
+
+
+class page {
+ public:
+  static constexpr size_t PAGE_SIZE = page_size(native_arch);
+  static constexpr size_t PAGE_MASK = page_mask(native_arch);
+  static constexpr size_t PAGE_SHIFT = page_shift(native_arch);
+
+  page() = delete;
   page(const page&) = delete;
   page& operator=(const page&) = delete;
-  page(page_no<Arch>) noexcept;
+  page(page_no<native_arch>) noexcept;
 
-  page_no<Arch> address() const noexcept { return pgno_; }
+  page_no<native_arch> address() const noexcept { return pgno_; }
 
  private:
-  page_no<Arch> pgno_;  // Address of this page.
-  page_count<Arch> nfree_;  // Number of free pages starting at this page
-                            // (only has meaning if the page is actually free).
+  page_no<native_arch> pgno_;  // Address of this page.
+  page_count<native_arch> nfree_;  // Number of free pages starting at this
+                                   // page (only has meaning if the page is
+                                   // actually free).
 };
+
+using page_ptr = page*;
+
 
 }} /* namespace ilias::vm */
 
 namespace std {
 
-template<ilias::arch A>
-struct hash<ilias::vm::page<A> {
+template<>
+struct hash<ilias::vm::page> {
   using result_type = size_t;
-  using argument_type = ilias::vm::page<A>;
-  size_t operator()(const ilias::vm::page<A>&) const noexcept;
+  using argument_type = ilias::vm::page;
+  size_t operator()(const ilias::vm::page&) const noexcept;
 };
 
 } /* namespace std */
+
+#include <ilias/vm/page-inl.h>
 
 #endif /* _ILIAS_VM_PAGE_H_ */

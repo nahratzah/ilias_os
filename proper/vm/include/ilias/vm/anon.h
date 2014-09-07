@@ -25,8 +25,10 @@ class anon_vme
 
     mutable atomic<uintptr_t> refcnt_{ 1U };
 
+    page_ptr fault();
+
    private:
-    // XXX: page pointer
+    page_ptr page_ = nullptr;
   };
 
   struct entry_deleter_ {
@@ -47,8 +49,8 @@ class anon_vme
   bool empty() const noexcept;
 
   bool present(page_count<native_arch>) const noexcept;
-  page_no<native_arch> fault_read(page_count<native_arch>) override;
-  page_no<native_arch> fault_write(page_count<native_arch>) override;
+  page_ptr fault_read(page_count<native_arch>) override;
+  page_ptr fault_write(page_count<native_arch>) override;
 
   vmmap_entry_ptr clone() const override;
   pair<vmmap_entry_ptr, vmmap_entry_ptr> split(

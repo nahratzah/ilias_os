@@ -7,8 +7,7 @@
 namespace ilias {
 namespace vm {
 
-template<arch A>
-page<A>::page(page_no<A> pgno) noexcept
+inline page::page(page_no<native_arch> pgno) noexcept
 : pgno_(pgno)
 {}
 
@@ -16,10 +15,9 @@ page<A>::page(page_no<A> pgno) noexcept
 
 namespace std {
 
-template<ilias::arch A>
-auto hash<ilias::vm::page<A>>::operator()(const ilias::vm::page<A>& pg)
+inline auto hash<ilias::vm::page>::operator()(const ilias::vm::page& pg)
     const noexcept -> size_t {
-  return hash<ilias::pmap::page_no<A>>()(pg.address());
+  return hash<ilias::pmap::page_no<ilias::native_arch>>()(pg.address());
 }
 
 } /* namespace std */

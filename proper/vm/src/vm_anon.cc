@@ -4,6 +4,14 @@ namespace ilias {
 namespace vm {
 
 
+auto anon_vme::entry::fault() -> page_ptr {
+  if (page_ != nullptr) return page_;
+
+  assert(false);  // XXX implement anon allocation of zeroed page
+  for (;;);
+}
+
+
 anon_vme::anon_vme(const anon_vme& o) {
   data_.reserve(o.data_.size());
   transform(o.data_.begin(), o.data_.end(), back_inserter(data_),
@@ -22,16 +30,22 @@ anon_vme::anon_vme(page_count<native_arch> npg) {
 
 anon_vme::~anon_vme() noexcept {}
 
-auto anon_vme::fault_read(page_count<native_arch>) ->
-    page_no<native_arch> {
-  assert_msg(false, "XXX implement");  // XXX implement
-  return page_no<native_arch>(0);
+auto anon_vme::fault_read(page_count<native_arch> off) ->
+    page_ptr {
+  assert(off.get() >= 0 &&
+         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
+          data_.size()));
+  assert(data_[off.get()] != nullptr);
+  return data_[off.get()]->fault();
 }
 
-auto anon_vme::fault_write(page_count<native_arch>) ->
-    page_no<native_arch> {
-  assert_msg(false, "XXX implement");  // XXX implement
-  return page_no<native_arch>(0);
+auto anon_vme::fault_write(page_count<native_arch> off) ->
+    page_ptr {
+  assert(off.get() >= 0 &&
+         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
+          data_.size()));
+  assert(data_[off.get()] != nullptr);
+  return data_[off.get()]->fault();
 }
 
 auto anon_vme::clone() const -> vmmap_entry_ptr {

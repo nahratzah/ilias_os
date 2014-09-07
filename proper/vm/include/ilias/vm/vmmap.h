@@ -4,6 +4,7 @@
 #include <ilias/arch.h>
 #include <ilias/pmap/pmap.h>
 #include <ilias/pmap/page.h>
+#include <ilias/vm/page.h>
 #include <ilias/linked_set.h>
 #include <ilias/linked_list.h>
 #include <vector>
@@ -98,9 +99,6 @@ class vmmap_entry_ptr;
 class vmmap_entry {
   friend vmmap_entry_ptr;
 
- public:
-  using range = tuple<page_no<native_arch>, page_count<native_arch>>;
-
  protected:
   vmmap_entry() noexcept = default;
   vmmap_entry(const vmmap_entry&) noexcept : vmmap_entry() {}
@@ -111,8 +109,8 @@ class vmmap_entry {
  public:
   virtual ~vmmap_entry() noexcept;
 
-  virtual page_no<native_arch> fault_read(page_count<native_arch>) = 0;
-  virtual page_no<native_arch> fault_write(page_count<native_arch>) = 0;
+  virtual page_ptr fault_read(page_count<native_arch>) = 0;
+  virtual page_ptr fault_write(page_count<native_arch>) = 0;
 
   virtual vmmap_entry_ptr clone() const = 0;
   virtual pair<vmmap_entry_ptr, vmmap_entry_ptr> split(page_count<native_arch>)
