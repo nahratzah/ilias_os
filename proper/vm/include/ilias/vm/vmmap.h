@@ -92,16 +92,20 @@ constexpr vm_permission vm_perm_rx = vm_perm_r | vm_perm_x;
 constexpr vm_permission vm_perm_rwx = vm_perm_r | vm_perm_w | vm_perm_x;
 
 
+class vmmap_entry_ptr;
+
 class vmmap_entry {
+  friend vmmap_entry_ptr;
+
  public:
   using range = tuple<page_no<native_arch>, page_count<native_arch>>;
 
  protected:
-  vmmap_entry() = default;
-  vmmap_entry(const vmmap_entry&) noexcept = default;
-  vmmap_entry(vmmap_entry&&) noexcept = default;
-  vmmap_entry& operator=(const vmmap_entry&) noexcept = default;
-  vmmap_entry& operator=(vmmap_entry&&) noexcept = default;
+  vmmap_entry() noexcept = default;
+  vmmap_entry(const vmmap_entry&) noexcept : vmmap_entry() {}
+  vmmap_entry(vmmap_entry&&) noexcept : vmmap_entry() {}
+  vmmap_entry& operator=(const vmmap_entry&) noexcept { return *this; }
+  vmmap_entry& operator=(vmmap_entry&&) noexcept { return *this; }
 
  public:
   virtual ~vmmap_entry() noexcept;
@@ -109,10 +113,51 @@ class vmmap_entry {
   virtual page_no<native_arch> fault_read(page_count<native_arch>) = 0;
   virtual page_no<native_arch> fault_write(page_count<native_arch>) = 0;
 
-  virtual unique_ptr<vmmap_entry> clone() const = 0;
-  virtual pair<unique_ptr<vmmap_entry>, unique_ptr<vmmap_entry>>
-      split(page_count<native_arch>) const = 0;
+  virtual vmmap_entry_ptr clone() const = 0;
+  virtual pair<vmmap_entry_ptr, vmmap_entry_ptr> split(page_count<native_arch>)
+      const = 0;
+
+ private:
+  mutable atomic<uintptr_t> refcnt_{ 0U };
 };
+
+class vmmap_entry_ptr {
+ public:
+  vmmap_entry_ptr() noexcept = default;
+  vmmap_entry_ptr(const vmmap_entry_ptr&) noexcept;
+  vmmap_entry_ptr(vmmap_entry_ptr&&) noexcept;
+  vmmap_entry_ptr(nullptr_t) noexcept;
+  vmmap_entry_ptr(vmmap_entry*) noexcept;
+  ~vmmap_entry_ptr() noexcept;
+
+  vmmap_entry_ptr& operator=(const vmmap_entry_ptr&) noexcept;
+  vmmap_entry_ptr& operator=(vmmap_entry_ptr&&) noexcept;
+
+  bool operator==(const vmmap_entry_ptr&) const noexcept;
+  bool operator!=(const vmmap_entry_ptr&) const noexcept;
+
+  vmmap_entry* get() const noexcept;
+  vmmap_entry& operator*() const noexcept;
+  vmmap_entry* operator->() const noexcept;
+  explicit operator bool() const noexcept;
+
+ private:
+  vmmap_entry* ptr_ = nullptr;
+};
+
+bool operator==(const vmmap_entry_ptr&, nullptr_t) noexcept;
+bool operator!=(const vmmap_entry_ptr&, nullptr_t) noexcept;
+bool operator==(nullptr_t, const vmmap_entry_ptr&) noexcept;
+bool operator!=(nullptr_t, const vmmap_entry_ptr&) noexcept;
+
+bool operator==(const vmmap_entry_ptr&, const vmmap_entry*) noexcept;
+bool operator!=(const vmmap_entry_ptr&, const vmmap_entry*) noexcept;
+bool operator==(const vmmap_entry*, const vmmap_entry_ptr&) noexcept;
+bool operator!=(const vmmap_entry*, const vmmap_entry_ptr&) noexcept;
+
+template<typename Impl, typename... Args> vmmap_entry_ptr make_vmmap_entry(
+    Args&&... args);
+
 
 template<arch Arch>
 class vmmap_shard {
@@ -135,7 +180,7 @@ class vmmap_shard {
     entry(entry&&) noexcept;
     entry& operator=(const entry&);
     entry& operator=(entry&&) noexcept;
-    entry(range, vpage_no<Arch>, vm_permission, unique_ptr<vmmap_entry>&&)
+    entry(range, vpage_no<Arch>, vm_permission, vmmap_entry_ptr&&)
         noexcept;
 
     range get_range_used() const noexcept;
@@ -154,7 +199,7 @@ class vmmap_shard {
 
    private:
     tuple<vpage_no<Arch>, page_count<Arch>, page_count<Arch>,
-          vm_permission, unique_ptr<vmmap_entry>> data_;
+          vm_permission, vmmap_entry_ptr> data_;
   };
 
   static void entry_deletor_(entry* e) noexcept { delete e; }
@@ -210,7 +255,7 @@ class vmmap_shard {
 
   static range intersect(range, range);
 
-  void map(range, vm_permission, unique_ptr<vmmap_entry>&&);
+  void map(range, vm_permission, vmmap_entry_ptr&&);
 
   page_count<Arch> free_size() const noexcept { return npg_free_; }
   page_count<Arch> largest_free_size() const noexcept;

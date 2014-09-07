@@ -11,7 +11,9 @@ stats_counter vmmap_contention{ vmmap_group, "contention" };
 } /* namespace ilias::vm::stats */
 
 
-vmmap_entry::~vmmap_entry() noexcept {}
+vmmap_entry::~vmmap_entry() noexcept {
+  assert(refcnt_.load() == 0U);
+}
 
 
 #if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)

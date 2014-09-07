@@ -38,6 +38,111 @@ inline constexpr vm_permission::operator bool() const noexcept {
 }
 
 
+inline vmmap_entry_ptr::vmmap_entry_ptr(const vmmap_entry_ptr& p) noexcept
+: ptr_(p.ptr_)
+{
+  if (ptr_) ptr_->refcnt_.fetch_add(1U, memory_order_acquire);
+}
+
+inline vmmap_entry_ptr::vmmap_entry_ptr(vmmap_entry_ptr&& p) noexcept
+: ptr_(exchange(p.ptr_, nullptr))
+{}
+
+inline vmmap_entry_ptr::vmmap_entry_ptr(nullptr_t) noexcept {}
+
+inline vmmap_entry_ptr::vmmap_entry_ptr(vmmap_entry* p) noexcept
+: ptr_(p)
+{
+  if (ptr_) ptr_->refcnt_.fetch_add(1U, memory_order_acquire);
+}
+
+inline vmmap_entry_ptr::~vmmap_entry_ptr() noexcept {
+  if (ptr_ && ptr_->refcnt_.fetch_sub(1U, memory_order_release) == 1U)
+    delete ptr_;
+}
+
+inline auto vmmap_entry_ptr::operator=(const vmmap_entry_ptr& p) noexcept ->
+    vmmap_entry_ptr& {
+  using std::swap;
+
+  auto tmp = vmmap_entry_ptr(p);
+  swap(ptr_, tmp.ptr_);
+  return *this;
+}
+
+inline auto vmmap_entry_ptr::operator=(vmmap_entry_ptr&& p) noexcept ->
+    vmmap_entry_ptr& {
+  using std::swap;
+
+  auto tmp = vmmap_entry_ptr(move(p));
+  swap(ptr_, tmp.ptr_);
+  return *this;
+}
+
+inline auto vmmap_entry_ptr::operator==(const vmmap_entry_ptr& p)
+    const noexcept -> bool {
+  return ptr_ == p.ptr_;
+}
+
+inline auto vmmap_entry_ptr::operator!=(const vmmap_entry_ptr& p)
+    const noexcept -> bool {
+  return ptr_ != p.ptr_;
+}
+
+inline auto vmmap_entry_ptr::get() const noexcept -> vmmap_entry* {
+  return ptr_;
+}
+
+inline auto vmmap_entry_ptr::operator*() const noexcept -> vmmap_entry& {
+  assert(get());
+  return *get();
+}
+
+inline auto vmmap_entry_ptr::operator->() const noexcept -> vmmap_entry* {
+  assert(get());
+  return get();
+}
+
+inline vmmap_entry_ptr::operator bool() const noexcept {
+  return (ptr_ != nullptr);
+}
+
+inline bool operator==(const vmmap_entry_ptr& x, nullptr_t) noexcept {
+  return (x.get() == nullptr);
+}
+inline bool operator!=(const vmmap_entry_ptr& x, nullptr_t) noexcept {
+  return (x.get() != nullptr);
+}
+inline bool operator==(nullptr_t, const vmmap_entry_ptr& y) noexcept {
+  return (nullptr == y.get());
+}
+inline bool operator!=(nullptr_t, const vmmap_entry_ptr& y) noexcept {
+  return (nullptr != y.get());
+}
+
+inline bool operator==(const vmmap_entry_ptr& x, const vmmap_entry* y)
+    noexcept {
+  return (x.get() == y);
+}
+inline bool operator!=(const vmmap_entry_ptr& x, const vmmap_entry* y)
+    noexcept {
+  return (x.get() != y);
+}
+inline bool operator==(const vmmap_entry* x, const vmmap_entry_ptr& y)
+    noexcept {
+  return (x == y.get());
+}
+inline bool operator!=(const vmmap_entry* x, const vmmap_entry_ptr& y)
+    noexcept {
+  return (x != y.get());
+}
+
+template<typename Impl, typename... Args>
+vmmap_entry_ptr make_vmmap_entry(Args&&... args) {
+  return vmmap_entry_ptr(new Impl(forward<Args>(args)...));
+}
+
+
 template<arch Arch>
 vmmap_shard<Arch>::entry::entry(const entry& e)
 : data_(get<0>(e.data_), get<1>(e.data_), get<2>(e.data_), get<3>(e.data_),
@@ -53,7 +158,7 @@ vmmap_shard<Arch>::entry::entry(entry&& e) noexcept
 template<arch Arch>
 vmmap_shard<Arch>::entry::entry(range r, vpage_no<Arch> free_end,
                                 vm_permission perm,
-                                unique_ptr<vmmap_entry>&& data) noexcept
+                                vmmap_entry_ptr&& data) noexcept
 : data_(get<0>(r), get<1>(r), free_end - (get<0>(r) + get<1>(r)), perm,
         move(data))
 {
@@ -139,7 +244,7 @@ auto vmmap_shard<Arch>::entry::split(vpage_no<Arch> at) const ->
         page_count<native_arch>(npg_arch.get());
     assert(npg_native.get() == npg_arch.get());  // Catch overflow.
 
-    std::unique_ptr<vmmap_entry> d0, d1;
+    vmmap_entry_ptr d0, d1;
     tie(d0, d1) = data().split(npg_native);
     e0 = make_unique<entry>(range(get_addr_used(), at - get_addr_used()), at,
                             get_permission(), move(d0));
@@ -326,7 +431,7 @@ auto vmmap_shard<Arch>::intersect(range x, range y) -> range {
 
 template<arch Arch>
 auto vmmap_shard<Arch>::map(range pos, vm_permission perm,
-                      unique_ptr<vmmap_entry>&& data) -> void {
+                      vmmap_entry_ptr&& data) -> void {
   /* Validate request. */
   if (data == nullptr)
     throw invalid_argument("vmmap_shard::map");
