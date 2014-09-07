@@ -264,7 +264,7 @@ auto page_cache::unmanage_internal_(page_ptr pg) noexcept -> bool {
   case page::fl_cache_speculative:
     {
       /* Update speculative hit/miss statistic before page goes away. */
-      if (pg->get_flags() & page::fl_accessed) {
+      if (l.flags() & page::fl_accessed) {
         speculative_hit_.add();
       } else {
         pg->update_accessed_dirty();
