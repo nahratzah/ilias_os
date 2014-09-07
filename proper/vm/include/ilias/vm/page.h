@@ -4,12 +4,15 @@
 #include <cstddef>
 #include <ilias/pmap/page.h>
 #include <ilias/linked_list.h>
+#include <atomic>
+#include <functional>
 
 namespace ilias {
 namespace vm {
 namespace tags {
 
 struct page_cache {};
+struct page_list {};
 
 } /* namespace ilias::vm::tags */
 
@@ -18,14 +21,20 @@ using namespace std;
 using namespace ilias::pmap;
 
 
-class page
-: public linked_list_element<tags::page_cache>
-{
- public:
-  static constexpr size_t PAGE_SIZE = page_size(native_arch);
-  static constexpr size_t PAGE_MASK = page_mask(native_arch);
-  static constexpr size_t PAGE_SHIFT = page_shift(native_arch);
+class page;
+class page_list;
 
+using page_ptr = page*;  // XXX smart pointer?
+
+
+class page
+: public linked_list_element<tags::page_list>,
+  public linked_list_element<tags::page_cache>
+{
+  friend page_list;
+
+ public:
+  using release_functor = function<bool(page_ptr, bool)>;  // XXX return promise, bool argument = delayed-ok
   using flags_type = uint32_t;
 
   static constexpr flags_type fl_cache_mask        = 0x03;
@@ -54,17 +63,55 @@ class page
   flags_type assign_masked_flags(flags_type, flags_type) noexcept;
 
   void update_accessed_dirty() {}  // XXX implement
+  bool try_release_urgent() noexcept;
 
  private:
   page_no<native_arch> pgno_;  // Address of this page.
   page_count<native_arch> nfree_;  // Number of free pages starting at this
                                    // page (only has meaning if the page is
-                                   // actually free).
+                                   // actually free or if the page is on a
+                                   // page_list).
 
   atomic<flags_type> flags_;
+  release_functor release_;
 };
 
-using page_ptr = page*;
+
+class page_list {
+ private:
+  using data_type = linked_list<page, tags::page_list>;
+
+ public:
+  using size_type = size_t;
+
+  page_list() noexcept = default;
+  page_list(const page_list&) = delete;
+  page_list(page_list&&) noexcept;
+  ~page_list() noexcept;
+
+  page_list& operator=(const page_list&) = delete;
+  page_list& operator=(page_list&&) noexcept;
+
+  bool empty() const noexcept;
+  page_count<native_arch> size() const noexcept;
+  size_type n_blocks() const noexcept;
+
+  void push(page_ptr) noexcept;
+  void push_pages(page_ptr, page_count<native_arch>) noexcept;
+  void push_pages_no_merge(page_ptr, page_count<native_arch>) noexcept;
+
+  page_ptr pop() noexcept;
+  pair<page_ptr, page_count<native_arch>> pop_pages() noexcept;
+
+  void clear() noexcept;
+
+  void sort_blocksize_ascending() noexcept;
+  void sort_address_ascending(bool = true) noexcept;
+
+ private:
+  data_type data_;
+  page_count<native_arch> size_ = page_count<native_arch>(0);
+};
 
 
 }} /* namespace ilias::vm */

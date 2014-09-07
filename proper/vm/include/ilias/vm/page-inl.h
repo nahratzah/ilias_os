@@ -40,6 +40,19 @@ inline auto page::assign_masked_flags(flags_type f, flags_type msk) noexcept ->
 }
 
 
+inline auto page_list::empty() const noexcept -> bool {
+  return data_.empty();
+}
+
+inline auto page_list::size() const noexcept -> page_count<native_arch> {
+  return size_;
+}
+
+inline auto page_list::push(page_ptr pg) noexcept -> void {
+  push_pages(pg, page_count<native_arch>(1));
+}
+
+
 }} /* namespace ilias::vm */
 
 namespace std {
