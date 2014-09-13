@@ -867,9 +867,9 @@ shared_ptr_ownership* allocate_shared_ptr_ownership(
   };
 
   allocator_type alloc = alloc_arg;
-  auto storage_ptr = unique_ptr<impl*, uninitialized_deleter>(
-      allocator_traits<allocator_type>::allocate(1), alloc);
-  allocator_traits<allocator_type>::construct(storage_ptr.get(),
+  auto storage_ptr = unique_ptr<impl, uninitialized_deleter>(
+      allocator_traits<allocator_type>::allocate(alloc, 1), alloc);
+  allocator_traits<allocator_type>::construct(alloc, storage_ptr.get(),
                                               move(ptr), alloc);
   return storage_ptr.release();
 }
@@ -1023,6 +1023,13 @@ auto shared_ptr<T>::operator=(const shared_ptr<Y>& ptr) noexcept ->
 
 template<typename T>
 auto shared_ptr<T>::operator=(shared_ptr&& ptr) noexcept -> shared_ptr& {
+  shared_ptr(move(ptr)).swap(*this);
+  return *this;
+}
+
+template<typename T>
+template<typename Y>
+auto shared_ptr<T>::operator=(shared_ptr<Y>&& ptr) noexcept -> shared_ptr& {
   shared_ptr(move(ptr)).swap(*this);
   return *this;
 }
