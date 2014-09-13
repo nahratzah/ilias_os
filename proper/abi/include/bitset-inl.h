@@ -387,8 +387,8 @@ auto bitset<N>::operator==(const bitset<N>& o) const noexcept -> bool {
   else
     msk = ~int_type(0);
 
-  int_type* i;
-  int_type* j;
+  const int_type* i;
+  const int_type* j;
   for (i = begin(data_), j = begin(o.data_); i != end(data_) - 1U; ++i, ++j)
     if (*i != *j) return false;
   return (*i & msk) == (*j & msk);
@@ -416,7 +416,7 @@ auto bitset<N>::all() const noexcept -> bool {
   else
     msk = ~int_type(0);
 
-  int_type* i;
+  const int_type* i;
   for (i = begin(data_); i != end(data_) - 1U; ++i)
     if (~(*i) != 0U) return false;
   return (~(*i) & msk) == 0U;
@@ -437,7 +437,7 @@ auto bitset<N>::none() const noexcept -> bool {
   else
     msk = ~int_type(0);
 
-  int_type* i;
+  const int_type* i;
   for (i = begin(data_); i != end(data_) - 1U; ++i)
     if ((*i) != 0U) return false;
   return (*i & msk) == 0U;
