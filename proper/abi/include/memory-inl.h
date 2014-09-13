@@ -991,11 +991,10 @@ shared_ptr<T>::shared_ptr(unique_ptr<Y, D>&& ptr, A alloc) {
 
 template<typename T>
 shared_ptr<T>::~shared_ptr() noexcept {
+  assert(ptr_ == nullptr || ownership_ != nullptr);
   if (ownership_) {
     ownership_->shared_ptr_release();
     impl::shared_ptr_ownership::release(ownership_);
-  } else if (ptr_) {
-    delete ptr_;
   }
 
   ownership_ = nullptr;
@@ -1490,7 +1489,7 @@ auto enable_shared_from_this<T>::shared_from_this() -> shared_ptr<T> {
   }
 
   shared_ptr<T> rv;
-  rv.ptr_ = this;
+  rv.ptr_ = static_cast<T*>(this);
   rv.ownership_ = ownership_;
   return rv;
 }
@@ -1507,7 +1506,7 @@ auto enable_shared_from_this<T>::shared_from_this() const ->
   }
 
   shared_ptr<const T> rv;
-  rv.ptr_ = this;
+  rv.ptr_ = static_cast<const T*>(this);
   rv.ownership_ = ownership_;
   return rv;
 }
