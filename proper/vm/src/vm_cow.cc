@@ -35,13 +35,13 @@ cow_vme::cow_vme(cow_vme&& o) noexcept
 
 cow_vme::~cow_vme() noexcept {}
 
-auto cow_vme::fault_read(page_count<native_arch> off) -> page_ptr {
+auto cow_vme::fault_read(page_count<native_arch> off) -> future<page_ptr> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_read(off);
   return nested_->fault_read(off);
 }
 
-auto cow_vme::fault_write(page_count<native_arch> off) -> page_ptr {
+auto cow_vme::fault_write(page_count<native_arch> off) -> future<page_ptr> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_write(off);
 
@@ -49,8 +49,8 @@ auto cow_vme::fault_write(page_count<native_arch> off) -> page_ptr {
 
 #if 0  // Pseudo code.  I want to have some promises here, so I can use async code.
   /* Fault underlying storage for read access. */
-  page_ptr original = nested_->fault_read(off);
-  page_ptr dst = page_copy(original);
+  future<page_ptr> original = nested_->fault_read(off);
+  future<page_ptr> dst = page_copy(original);
   return this->anon_vme::assign(off, dst);
 #endif
 

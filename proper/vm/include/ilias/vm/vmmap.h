@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <mutex>
 #include <ilias/stats-fwd.h>
+#include <ilias/promise.h>
 
 namespace ilias {
 namespace vm {
@@ -109,8 +110,8 @@ class vmmap_entry {
  public:
   virtual ~vmmap_entry() noexcept;
 
-  virtual page_ptr fault_read(page_count<native_arch>) = 0;
-  virtual page_ptr fault_write(page_count<native_arch>) = 0;
+  virtual future<page_ptr> fault_read(page_count<native_arch>) = 0;
+  virtual future<page_ptr> fault_write(page_count<native_arch>) = 0;
 
   virtual vmmap_entry_ptr clone() const = 0;
   virtual pair<vmmap_entry_ptr, vmmap_entry_ptr> split(page_count<native_arch>)

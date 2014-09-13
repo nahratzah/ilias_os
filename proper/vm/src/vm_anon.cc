@@ -4,8 +4,12 @@ namespace ilias {
 namespace vm {
 
 
-auto anon_vme::entry::fault() -> page_ptr {
-  if (page_ != nullptr) return page_;
+auto anon_vme::entry::fault() -> future<page_ptr> {
+  promise<page_ptr> rv;
+  if (page_ != nullptr) {
+    rv.set(page_);
+    return rv;
+  }
 
   assert(false);  // XXX implement anon allocation of zeroed page
   for (;;);
@@ -31,7 +35,7 @@ anon_vme::anon_vme(page_count<native_arch> npg) {
 anon_vme::~anon_vme() noexcept {}
 
 auto anon_vme::fault_read(page_count<native_arch> off) ->
-    page_ptr {
+    future<page_ptr> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
@@ -40,7 +44,7 @@ auto anon_vme::fault_read(page_count<native_arch> off) ->
 }
 
 auto anon_vme::fault_write(page_count<native_arch> off) ->
-    page_ptr {
+    future<page_ptr> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
