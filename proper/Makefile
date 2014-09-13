@@ -11,6 +11,8 @@ include loader_exported/Makefile.inc
 include arch/Makefile.inc
 include pmap/Makefile.inc
 include vm/Makefile.inc
+
+include contrib/Makefile.ilias_async
 #include "freestanding/Makefile.inc"
 #include "c_util/Makefile.inc"
 #include contrib/freestanding/libcxx/Makefile.inc

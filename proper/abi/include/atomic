@@ -281,6 +281,17 @@ _DECLARE_ATOMIC(uint128_t);
 #undef _DECLARE_ATOMIC
 #undef _DECLARE_ATOMIC2
 
+
+#ifdef __cplusplus
+template<typename T>
+bool atomic_is_lock_free(const atomic<T>* atom) noexcept;
+template<typename T>
+bool atomic_is_lock_free(const volatile atomic<T>* atom) noexcept;
+#else
+# define atomic_is_lock_free(atom)					\
+         __atomic_is_lock_free(sizeof(*(atom)), (atom))
+#endif
+
 _cdecl_begin
 
 void atomic_thread_fence(memory_order) noexcept;

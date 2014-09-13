@@ -368,6 +368,17 @@ _ATOMIC_INTEGRAL(uint128_t)
 #undef _ATOMIC_INTEGRAL
 
 
+template<typename T>
+bool atomic_is_lock_free(const atomic<T>* atom) noexcept {
+  return atom->is_lock_free();
+}
+
+template<typename T>
+bool atomic_is_lock_free(const volatile atomic<T>* atom) noexcept {
+  return atom->is_lock_free();
+}
+
+
 _ATOMIC_INLINE void atomic_thread_fence(memory_order mo) noexcept {
   __c11_atomic_thread_fence(mo);
 }
