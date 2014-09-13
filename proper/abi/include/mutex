@@ -1,5 +1,5 @@
-#ifndef _THREAD_
-#define _THREAD_
+#ifndef _MUTEX_
+#define _MUTEX_
 
 #include <cdecl.h>
 #include <atomic>
@@ -148,4 +148,4 @@ _namespace_end(std)
 
 #include <mutex-inl.h>
 
-#endif /* _THREAD_ */
+#endif /* _MUTEX_ */
