@@ -63,14 +63,14 @@ auto page_list::n_blocks() const noexcept -> size_type {
 
 auto page_list::push_pages(page_ptr pg, page_count<native_arch> n)
     noexcept -> void {
-  assert(pg->nfree_ == page_count<native_arch>(0));
+  assert(pg->npgl_ == page_count<native_arch>(0));
 
   if (n == page_count<native_arch>(0)) return;
 
 #ifndef NDEBUG
   /* Assert that there is no overlap with already added ranges. */
   for (const auto& i : data_) {
-    assert(pg->address() >= i.address() + i.nfree_ ||
+    assert(pg->address() >= i.address() + i.npgl_ ||
            pg->address() + n <= i.address());
   }
 #endif
@@ -82,7 +82,7 @@ auto page_list::push_pages(page_ptr pg, page_count<native_arch> n)
       if (&*pg + n.get() == &*pg) {
         page* succ_ptr = &*succ;
         const page_count<native_arch> n_rm =
-            exchange(succ_ptr->nfree_, page_count<native_arch>(0));
+            exchange(succ_ptr->npgl_, page_count<native_arch>(0));
         size_ -= n_rm;
         n += n_rm;
       }
@@ -93,9 +93,9 @@ auto page_list::push_pages(page_ptr pg, page_count<native_arch> n)
   /* Merge forward. */
   data_type::iterator pred;
   for (pred = data_.begin(); pred != data_.end(); ++pred) {
-    if (pred->address() + pred->nfree_ == pg->address() &&
-        &*pred + pred->nfree_.get() == &*pg) {
-      pred->nfree_ += n;
+    if (pred->address() + pred->npgl_ == pg->address() &&
+        &*pred + pred->npgl_.get() == &*pg) {
+      pred->npgl_ += n;
       size_ += n;
       return;
     }
@@ -107,7 +107,7 @@ auto page_list::push_pages(page_ptr pg, page_count<native_arch> n)
 
 auto page_list::push_pages_no_merge(page_ptr pg, page_count<native_arch> n)
     noexcept -> void {
-  pg->nfree_ = n;
+  pg->npgl_ = n;
   data_.link_back(&*pg);
   size_ += n;
 }
@@ -116,15 +116,15 @@ auto page_list::pop() noexcept -> page_ptr {
   if (data_.empty()) return nullptr;
 
   page* pg = data_.unlink_front();
-  if (pg->nfree_ > page_count<native_arch>(1)) {
+  if (pg->npgl_ > page_count<native_arch>(1)) {
     page* succ = pg + 1U;
-    succ->nfree_ = exchange(pg->nfree_, page_count<native_arch>(0)) -
+    succ->npgl_ = exchange(pg->npgl_, page_count<native_arch>(0)) -
                    page_count<native_arch>(1);
     data_.link_front(succ);
   }
 
   --size_;
-  pg->nfree_ = page_count<native_arch>(0);
+  pg->npgl_ = page_count<native_arch>(0);
   return pg;
 }
 
@@ -133,7 +133,7 @@ auto page_list::pop_pages() noexcept ->
   if (data_.empty()) return { nullptr, page_count<native_arch>(0) };
 
   page_ptr p = data_.unlink_front();
-  page_count<native_arch> n = exchange(p->nfree_, page_count<native_arch>(0));
+  page_count<native_arch> n = exchange(p->npgl_, page_count<native_arch>(0));
   size_ -= n;
   return { p, n };
 }
@@ -145,15 +145,23 @@ auto page_list::clear() noexcept -> void {
 auto page_list::sort_blocksize_ascending() noexcept -> void {
   data_.sort(data_.begin(), data_.end(),
              [](const page& x, const page& y) {
-               return x.nfree_ < y.nfree_;
+               return x.npgl_ < y.npgl_;
              });
 }
 
+namespace {
+
+struct _page_address_less {
+  bool operator()(const page& x, const page& y) const noexcept {
+    return x.address() < y.address();
+  }
+};
+
+}
+
 auto page_list::sort_address_ascending(bool merge) noexcept -> void {
-  data_.sort(data_.begin(), data_.end(),
-             [](const page& x, const page& y) {
-               return x.address() < y.address();
-             });
+  if (!is_sorted(data_.begin(), data_.end(), _page_address_less()))
+    data_.sort(data_.begin(), data_.end(), _page_address_less());
   if (empty() || !merge) return;
 
   /* Merge adjecent entries. */
@@ -161,14 +169,42 @@ auto page_list::sort_address_ascending(bool merge) noexcept -> void {
        next(i) != data_.end();
        i = succ) {
     succ = next(i);
-    if (i->address() + i->nfree_ == succ->address() &&
-        &*i + i->nfree_.get() == &*succ) {
-      i->nfree_ += exchange(succ->nfree_, page_count<native_arch>(0));
+    if (i->address() + i->npgl_ == succ->address() &&
+        &*i + i->npgl_.get() == &*succ) {
+      i->npgl_ += exchange(succ->npgl_, page_count<native_arch>(0));
       data_.unlink(succ);
 
       succ = i;  // Redo this test with the next element.
     }
   }
+}
+
+auto page_list::merge(page_list&& o, bool merge) noexcept -> void {
+  using std::placeholders::_1;
+
+  if (merge) {
+    sort_address_ascending(true);
+    o.sort_address_ascending(true);
+
+    auto d_i = data_.begin();
+    while ((d_i = find_if_not(d_i, data_.end(),
+                              bind(_page_address_less(),
+                                   _1, cref(o.data_.front())))) !=
+           data_.end()) {
+      page* i = o.data_.unlink_front();
+      if (i->address() + i->npgl_ == d_i->address() &&
+          &*i + i->npgl_.get() == &*d_i)
+        d_i->npgl_ += exchange(i->npgl_, page_count<native_arch>(0));
+      else
+        d_i = data_.link(d_i, i);
+      ++d_i;
+    }
+  }
+
+  while (!o.data_.empty())
+    data_.link_back(o.data_.unlink_front());
+  size_ += exchange(o.size_, page_count<native_arch>(0));
+  return;
 }
 
 

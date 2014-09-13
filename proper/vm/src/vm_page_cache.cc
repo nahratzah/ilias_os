@@ -391,6 +391,12 @@ auto page_cache::try_release_urgent(page_count<native_arch> npg) noexcept ->
   return result;
 }
 
+auto page_cache::try_release(page_count<native_arch> /*npg*/) noexcept ->
+    page_list {
+  assert_msg(false, "XXX implement");  // XXX implement
+  for (;;);
+}
+
 auto page_cache::undirty(page_count<native_arch> npg) noexcept -> void {
   if (npg > page_count<native_arch>(0)) {
     lock_guard<mutex> sl{ speculative_guard_ };
