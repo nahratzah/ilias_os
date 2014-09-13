@@ -12,6 +12,10 @@ _namespace_begin(std)
 class exception_ptr;
 exception_ptr current_exception() noexcept;
 
+void rethrow_exception(exception_ptr) __attribute__((__noreturn__));
+exception_ptr current_exception() noexcept;
+inline void swap(exception_ptr&, exception_ptr&) noexcept;
+
 class exception {
  public:
   virtual ~exception() noexcept;
@@ -41,7 +45,7 @@ class exception_ptr {
   inline bool operator==(const exception_ptr&) const noexcept;
   inline bool operator!=(const exception_ptr&) const noexcept;
 
-  friend void rethrow_exception(exception_ptr) __attribute__((__noreturn__));
+  friend void rethrow_exception(exception_ptr);
   friend exception_ptr current_exception() noexcept;
   friend inline void swap(exception_ptr&, exception_ptr&) noexcept;
 
