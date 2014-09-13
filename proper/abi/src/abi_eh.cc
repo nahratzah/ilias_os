@@ -1,5 +1,6 @@
 #include <abi/eh.h>
 #include <cdecl.h>
+#include <cstddef>
 #include <abi/memory.h>
 #include <abi/panic.h>
 #include <abi/semaphore.h>
@@ -370,6 +371,16 @@ _Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action actions,
 void _Unwind_Resume(_Unwind_Exception *exception_object) noexcept {
   panic("TODO: implement %s(%p)", __func__, exception_object);  // XXX implement
   __builtin_unreachable();
+}
+
+void __cxa_call_unexpected(_Unwind_Exception *exception_object) noexcept {
+  __cxa_exception* exc = reinterpret_cast<__cxa_exception*>(
+      reinterpret_cast<char*>(exception_object) -
+      offsetof(__cxa_exception, unwindHeader));
+
+  exc->unexpectedHandler();
+  panic("unexpected handler should not return");
+  for (;;);
 }
 
 void* __cxa_begin_catch(void* exc_addr) noexcept {

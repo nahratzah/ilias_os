@@ -125,6 +125,7 @@ _Unwind_Reason_Code _Unwind_ForcedUnwind(
  * Called by landing pad (i.e. from generated code).
  */
 void _Unwind_Resume(Struct _Unwind_Exception *exception_object) noexcept;
+void __cxa_call_unexpected(Struct _Unwind_Exception *exception_object) noexcept;
 
 
 /* Deletes exception_object. */
