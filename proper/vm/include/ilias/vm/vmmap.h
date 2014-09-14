@@ -14,6 +14,7 @@
 #include <ilias/stats-fwd.h>
 #include <ilias/promise.h>
 #include <ilias/workq.h>
+#include <ilias/refcnt.h>
 
 namespace ilias {
 namespace vm {
@@ -96,11 +97,12 @@ constexpr vm_permission vm_perm_rx = vm_perm_r | vm_perm_x;
 constexpr vm_permission vm_perm_rwx = vm_perm_r | vm_perm_w | vm_perm_x;
 
 
-class vmmap_entry_ptr;
+class vmmap_entry;
+using vmmap_entry_ptr = refpointer<vmmap_entry>;
 
-class vmmap_entry {
-  friend vmmap_entry_ptr;
-
+class vmmap_entry
+: public refcount_base<vmmap_entry>
+{
  protected:
   vmmap_entry(workq_ptr wq) noexcept : wq_(move(wq)) {}
   vmmap_entry(const vmmap_entry& o) noexcept : wq_(move(o.wq_)) {}
@@ -125,46 +127,11 @@ class vmmap_entry {
   workq_ptr get_workq() const noexcept { return wq_; }
 
  private:
-  mutable atomic<uintptr_t> refcnt_{ 0U };
   workq_ptr wq_;
 };
 
-class vmmap_entry_ptr {
- public:
-  vmmap_entry_ptr() noexcept = default;
-  vmmap_entry_ptr(const vmmap_entry_ptr&) noexcept;
-  vmmap_entry_ptr(vmmap_entry_ptr&&) noexcept;
-  vmmap_entry_ptr(nullptr_t) noexcept;
-  vmmap_entry_ptr(vmmap_entry*) noexcept;
-  ~vmmap_entry_ptr() noexcept;
-
-  vmmap_entry_ptr& operator=(const vmmap_entry_ptr&) noexcept;
-  vmmap_entry_ptr& operator=(vmmap_entry_ptr&&) noexcept;
-
-  bool operator==(const vmmap_entry_ptr&) const noexcept;
-  bool operator!=(const vmmap_entry_ptr&) const noexcept;
-
-  vmmap_entry* get() const noexcept;
-  vmmap_entry& operator*() const noexcept;
-  vmmap_entry* operator->() const noexcept;
-  explicit operator bool() const noexcept;
-
- private:
-  vmmap_entry* ptr_ = nullptr;
-};
-
-bool operator==(const vmmap_entry_ptr&, nullptr_t) noexcept;
-bool operator!=(const vmmap_entry_ptr&, nullptr_t) noexcept;
-bool operator==(nullptr_t, const vmmap_entry_ptr&) noexcept;
-bool operator!=(nullptr_t, const vmmap_entry_ptr&) noexcept;
-
-bool operator==(const vmmap_entry_ptr&, const vmmap_entry*) noexcept;
-bool operator!=(const vmmap_entry_ptr&, const vmmap_entry*) noexcept;
-bool operator==(const vmmap_entry*, const vmmap_entry_ptr&) noexcept;
-bool operator!=(const vmmap_entry*, const vmmap_entry_ptr&) noexcept;
-
-template<typename Impl, typename... Args> vmmap_entry_ptr make_vmmap_entry(
-    Args&&... args);
+template<typename Impl, typename... Args>
+vmmap_entry_ptr make_vmmap_entry(Args&&...);
 
 
 template<arch Arch>

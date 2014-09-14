@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <mutex>
+#include <ilias/refcnt.h>
 
 namespace ilias {
 namespace vm {
