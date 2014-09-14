@@ -295,8 +295,11 @@ class expression
   : data_(move(other.data_))
   {}
 
-  template<typename F_, typename... Args_>
-  expression(F_&& f, Args_&&... args)
+  template<typename F_, typename... Args_,
+           typename = enable_if_t<is_constructible<data_type,
+                                                   F_, Args_...>::value,
+                                  void>>
+  explicit expression(F_&& f, Args_&&... args)
       noexcept(is_nothrow_constructible<data_type, F_, Args_...>::value)
   : data_(forward<F_>(f), forward<Args_>(args)...)
   {}
@@ -354,8 +357,11 @@ class expression_r
   : impl_(move(other.impl_))
   {}
 
-  template<typename F_, typename... Args_>
-  expression_r(F_&& f, Args_&&... args)
+  template<typename F_, typename... Args_,
+           typename = enable_if_t<is_constructible<impl_type,
+                                                   F_, Args_...>::value,
+                                  void>>
+  explicit expression_r(F_&& f, Args_&&... args)
       noexcept(is_nothrow_constructible<impl_type, F_, Args_...>::value)
   : impl_(forward<F_>(f), forward<Args_>(args)...)
   {}
@@ -399,8 +405,11 @@ class expression_r<void, F, BoundArgs...>
   : impl_(move(other.impl_))
   {}
 
-  template<typename F_, typename... Args_>
-  expression_r(F_&& f, Args_&&... args)
+  template<typename F_, typename... Args_,
+           typename = enable_if_t<is_constructible<impl_type,
+                                                   F_, Args_...>::value,
+                                  void>>
+  explicit expression_r(F_&& f, Args_&&... args)
       noexcept(is_nothrow_constructible<impl_type, F_, Args_...>::value)
   : impl_(forward<F_>(f), forward<Args_>(args)...)
   {}
