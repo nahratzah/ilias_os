@@ -216,65 +216,6 @@ template<typename T, typename A>
 void swap(forward_list<T, A>&, forward_list<T, A>&);
 
 
-extern template class forward_list<char>;
-extern template class forward_list<signed char>;
-extern template class forward_list<unsigned char>;
-extern template class forward_list<short>;
-extern template class forward_list<unsigned short>;
-extern template class forward_list<int>;
-extern template class forward_list<unsigned int>;
-extern template class forward_list<long>;
-extern template class forward_list<unsigned long>;
-extern template class forward_list<long long>;
-extern template class forward_list<unsigned long long>;
-
-extern template bool operator==(const forward_list<char>&,
-                                const forward_list<char>&);
-extern template bool operator==(const forward_list<signed char>&,
-                                const forward_list<signed char>&);
-extern template bool operator==(const forward_list<unsigned char>&,
-                                const forward_list<unsigned char>&);
-extern template bool operator==(const forward_list<short>&,
-                                const forward_list<short>&);
-extern template bool operator==(const forward_list<unsigned short>&,
-                                const forward_list<unsigned short>&);
-extern template bool operator==(const forward_list<int>&,
-                                const forward_list<int>&);
-extern template bool operator==(const forward_list<unsigned int>&,
-                                const forward_list<unsigned int>&);
-extern template bool operator==(const forward_list<long>&,
-                                const forward_list<long>&);
-extern template bool operator==(const forward_list<unsigned long>&,
-                                const forward_list<unsigned long>&);
-extern template bool operator==(const forward_list<long long>&,
-                                const forward_list<long long>&);
-extern template bool operator==(const forward_list<unsigned long long>&,
-                                const forward_list<unsigned long long>&);
-
-extern template bool operator<(const forward_list<char>&,
-                               const forward_list<char>&);
-extern template bool operator<(const forward_list<signed char>&,
-                               const forward_list<signed char>&);
-extern template bool operator<(const forward_list<unsigned char>&,
-                               const forward_list<unsigned char>&);
-extern template bool operator<(const forward_list<short>&,
-                               const forward_list<short>&);
-extern template bool operator<(const forward_list<unsigned short>&,
-                               const forward_list<unsigned short>&);
-extern template bool operator<(const forward_list<int>&,
-                               const forward_list<int>&);
-extern template bool operator<(const forward_list<unsigned int>&,
-                               const forward_list<unsigned int>&);
-extern template bool operator<(const forward_list<long>&,
-                               const forward_list<long>&);
-extern template bool operator<(const forward_list<unsigned long>&,
-                               const forward_list<unsigned long>&);
-extern template bool operator<(const forward_list<long long>&,
-                               const forward_list<long long>&);
-extern template bool operator<(const forward_list<unsigned long long>&,
-                               const forward_list<unsigned long long>&);
-
-
 _namespace_end(std)
 
 #include <forward_list-inl.h>
