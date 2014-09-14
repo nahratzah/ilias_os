@@ -1306,7 +1306,7 @@ weak_ptr<T>::weak_ptr(const weak_ptr& w) noexcept {
   impl::shared_ptr_ownership* ownership = w.ownership_;
   if (ownership) {
     impl::shared_ptr_ownership::acquire(ownership);
-    ptr_ = ownership->weak_ptr_convert(w.ptr_);
+    ptr_ = ownership->weak_ptr_convert<T>(w.ptr_);
     ownership_ = ownership;
   }
 }
@@ -1317,7 +1317,7 @@ weak_ptr<T>::weak_ptr(const weak_ptr<Y>& w) noexcept {
   impl::shared_ptr_ownership* ownership = w.ownership_;
   if (ownership) {
     impl::shared_ptr_ownership::acquire(ownership);
-    ptr_ = ownership->weak_ptr_convert(w.ptr_);
+    ptr_ = ownership->weak_ptr_convert<T>(w.ptr_);
     ownership_ = ownership;
   }
 }
@@ -1333,7 +1333,7 @@ template<typename Y, typename>
 weak_ptr<T>::weak_ptr(weak_ptr<Y>&& other) noexcept
 : ownership_(exchange(other.ownership_, nullptr))
 {
-  ptr_ = ownership_->weak_ptr_convert(exchange(other.ptr_, nullptr));
+  ptr_ = ownership_->weak_ptr_convert<T>(exchange(other.ptr_, nullptr));
 }
 
 template<typename T>

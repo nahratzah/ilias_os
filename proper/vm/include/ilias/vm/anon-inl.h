@@ -9,29 +9,20 @@ namespace ilias {
 namespace vm {
 
 
-inline auto anon_vme::entry_deleter_::operator()(const entry* e)
-    const noexcept -> void {
-  if (e->refcnt_.fetch_sub(1U, memory_order_release) == 1U)
-    delete e;
+inline auto anon_vme::entry::present() const noexcept -> bool {
+  lock_guard<mutex> l{ guard_ };
+  return page_ != nullptr || in_progress_.is_initialized();
 }
 
 
 template<typename Iter>
-anon_vme::anon_vme(Iter b, Iter e) {
-  transform(b, e, back_inserter(data_), &copy_entry_);
-}
+anon_vme::anon_vme(workq_ptr wq, Iter b, Iter e)
+: vmmap_entry(move(wq)),
+  data_(b, e)
+{}
 
 inline auto anon_vme::empty() const noexcept -> bool {
   return data_.empty();
-}
-
-inline auto anon_vme::present(page_count<native_arch> off) const noexcept ->
-    bool {
-  assert(off.get() >= 0 &&
-         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
-          data_.size()));
-
-  return (data_[off.get()] != nullptr);
 }
 
 

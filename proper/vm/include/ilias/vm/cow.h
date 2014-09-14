@@ -13,13 +13,15 @@ class cow_vme
 {
  public:
   cow_vme(anon_vme&&, vmmap_entry_ptr&&) noexcept;
-  cow_vme(page_count<native_arch>, vmmap_entry_ptr&&);
+  cow_vme(workq_ptr, page_count<native_arch>, vmmap_entry_ptr&&);
   cow_vme(const cow_vme&);
   cow_vme(cow_vme&&) noexcept;
   ~cow_vme() noexcept override;
 
-  future<page_ptr> fault_read(page_count<native_arch>) override;
-  future<page_ptr> fault_write(page_count<native_arch>) override;
+  future<page_ptr> fault_read(shared_ptr<page_alloc>,
+                              page_count<native_arch>) override;
+  future<page_ptr> fault_write(shared_ptr<page_alloc>,
+                               page_count<native_arch>) override;
 
   vmmap_entry_ptr clone() const override;
   pair<vmmap_entry_ptr, vmmap_entry_ptr> split(

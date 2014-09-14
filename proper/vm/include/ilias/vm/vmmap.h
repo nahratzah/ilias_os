@@ -13,6 +13,7 @@
 #include <mutex>
 #include <ilias/stats-fwd.h>
 #include <ilias/promise.h>
+#include <ilias/workq.h>
 
 namespace ilias {
 namespace vm {
@@ -101,24 +102,31 @@ class vmmap_entry {
   friend vmmap_entry_ptr;
 
  protected:
-  vmmap_entry() noexcept = default;
-  vmmap_entry(const vmmap_entry&) noexcept : vmmap_entry() {}
-  vmmap_entry(vmmap_entry&&) noexcept : vmmap_entry() {}
+  vmmap_entry(workq_ptr wq) noexcept : wq_(move(wq)) {}
+  vmmap_entry(const vmmap_entry& o) noexcept : wq_(move(o.wq_)) {}
+  vmmap_entry(const vmmap_entry&, workq_ptr wq) noexcept : wq_(move(wq)) {}
+  vmmap_entry(vmmap_entry&& o) noexcept : wq_(move(o.wq_)) {}
+  vmmap_entry(vmmap_entry&&, workq_ptr wq) noexcept : wq_(move(wq)) {}
   vmmap_entry& operator=(const vmmap_entry&) noexcept { return *this; }
   vmmap_entry& operator=(vmmap_entry&&) noexcept { return *this; }
 
  public:
   virtual ~vmmap_entry() noexcept;
 
-  virtual future<page_ptr> fault_read(page_count<native_arch>) = 0;
-  virtual future<page_ptr> fault_write(page_count<native_arch>) = 0;
+  virtual future<page_ptr> fault_read(shared_ptr<page_alloc>,
+                                      page_count<native_arch>) = 0;
+  virtual future<page_ptr> fault_write(shared_ptr<page_alloc>,
+                                       page_count<native_arch>) = 0;
 
   virtual vmmap_entry_ptr clone() const = 0;
   virtual pair<vmmap_entry_ptr, vmmap_entry_ptr> split(page_count<native_arch>)
       const = 0;
 
+  workq_ptr get_workq() const noexcept { return wq_; }
+
  private:
   mutable atomic<uintptr_t> refcnt_{ 0U };
+  workq_ptr wq_;
 };
 
 class vmmap_entry_ptr {
@@ -197,6 +205,11 @@ class vmmap_shard {
     vmmap_entry& data() const noexcept;
     friend void swap(entry& x, entry& y) noexcept { swap(x.data_, y.data_); }
 
+    future<page_ptr> fault_read(shared_ptr<page_alloc>,
+                                vpage_no<Arch>);
+    future<page_ptr> fault_write(shared_ptr<page_alloc>,
+                                 vpage_no<Arch>);
+
    private:
     tuple<vpage_no<Arch>, page_count<Arch>, page_count<Arch>,
           vm_permission, vmmap_entry_ptr> data_;
@@ -229,7 +242,6 @@ class vmmap_shard {
         const noexcept;
   };
 
-  //pmap<Arch> pmap_;
   using entries_type = linked_set<entry, addr_tag, entry_before_>;
   using free_type = linked_set<entry, free_tag, free_before_>;
   using free_list = linked_list<entry, free_list_tag>;
@@ -263,6 +275,11 @@ class vmmap_shard {
   void merge(vmmap_shard&&) noexcept;
   template<typename Iter> void fanout(Iter, Iter) noexcept;
 
+  future<page_ptr> fault_read(shared_ptr<page_alloc>,
+                              vpage_no<Arch>);
+  future<page_ptr> fault_write(shared_ptr<page_alloc>,
+                               vpage_no<Arch>);
+
  private:
   void map_link_(unique_ptr<entry>&&);
   typename entries_type::iterator link_(unique_ptr<entry>&&) noexcept;
@@ -277,6 +294,13 @@ class vmmap_shard {
   pair<typename entries_type::iterator, typename entries_type::iterator>
       split_(range);
 
+  entry* find_entry_for_addr_(vpage_no<Arch>) noexcept;
+
+ public:
+  template<typename T>
+  static future<T> efault_future_(vpage_no<Arch>);
+
+ private:
   entries_type entries_;
   free_type free_;
   free_list free_list_;
@@ -290,15 +314,20 @@ class vmmap {
   using shard_list = vector<vmmap_shard<Arch>>;
 
  public:
-  vmmap();
-  vmmap(vpage_no<Arch>, vpage_no<Arch>);
+  explicit vmmap(shared_ptr<page_alloc>, workq_service&);
+  vmmap(shared_ptr<page_alloc>, workq_service&,
+        vpage_no<Arch>, vpage_no<Arch>);
   vmmap(const vmmap&);
   vmmap(vmmap&&);
   ~vmmap() noexcept = default;
 
   void reshard(size_t, size_t);
 
+  future<void> fault_read(vpage_no<Arch>);
+  future<void> fault_write(vpage_no<Arch>);
+
  private:
+  typename shard_list::iterator find_shard_locked_(vpage_no<Arch>) noexcept;
   static bool shard_free_less_(const vmmap_shard<Arch>&,
                                const vmmap_shard<Arch>&) noexcept;
 
@@ -310,9 +339,13 @@ class vmmap {
 
   void swap_slot_(size_t) noexcept;  // With lock held.
 
+  //pmap<Arch> pmap_;
   mutex avail_guard_;
   shard_list avail_;
   typename shard_list::size_type in_use_ = 0;
+
+  shared_ptr<page_alloc> pga_;
+  workq_ptr wq_;
 };
 
 
