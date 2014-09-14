@@ -3,6 +3,7 @@
 
 #include <ilias/vm/vmmap.h>
 #include <ilias/vm/stats.h>
+#include <ilias/combi_promise.h>
 
 namespace ilias {
 namespace vm {
@@ -260,6 +261,30 @@ auto vmmap_shard<Arch>::entry::data() const noexcept -> vmmap_entry& {
   const auto& ptr = get<4>(data_);
   assert(ptr != nullptr);
   return *ptr;
+}
+
+template<arch Arch>
+auto vmmap_shard<Arch>::entry::fault_read(shared_ptr<page_alloc> pga,
+                                          vpage_no<Arch> pgno) ->
+    future<page_ptr> {
+  assert(pgno >= get_addr_used() && pgno < get_addr_free());
+
+  auto arch_off = pgno - get_addr_used();
+  page_count<native_arch> off = page_count<native_arch>(arch_off.get());
+  assert(off.get() == arch_off.get());  // Verify cast.
+  return data().fault_read(move(pga), off);
+}
+
+template<arch Arch>
+auto vmmap_shard<Arch>::entry::fault_write(shared_ptr<page_alloc> pga,
+                                           vpage_no<Arch> pgno) ->
+    future<page_ptr> {
+  assert(pgno >= get_addr_used() && pgno < get_addr_free());
+
+  auto arch_off = pgno - get_addr_used();
+  page_count<native_arch> off = page_count<native_arch>(arch_off.get());
+  assert(off.get() == arch_off.get());  // Verify cast.
+  return data().fault_write(move(pga), off);
 }
 
 
@@ -540,6 +565,24 @@ auto vmmap_shard<Arch>::fanout(Iter b, Iter e) noexcept -> void {
 }
 
 template<arch Arch>
+auto vmmap_shard<Arch>::fault_read(shared_ptr<page_alloc> pga,
+                                   vpage_no<Arch> pgno) -> future<page_ptr> {
+  entry* e = find_entry_for_addr_(pgno);
+  if (_predict_false(e == nullptr))
+    return efault_future_<page_ptr>(pgno);
+  return e->fault_read(move(pga), pgno);
+}
+
+template<arch Arch>
+auto vmmap_shard<Arch>::fault_write(shared_ptr<page_alloc> pga,
+                                    vpage_no<Arch> pgno) -> future<page_ptr> {
+  entry* e = find_entry_for_addr_(pgno);
+  if (_predict_false(e == nullptr))
+    return efault_future_<page_ptr>(pgno);
+  return e->fault_write(move(pga), pgno);
+}
+
+template<arch Arch>
 auto vmmap_shard<Arch>::map_link_(unique_ptr<entry>&& ptr) -> void {
   assert(ptr != nullptr);
   assert(!ptr->unused());
@@ -719,15 +762,44 @@ auto vmmap_shard<Arch>::split_(range pos) ->
   return r;
 }
 
+template<arch Arch>
+auto vmmap_shard<Arch>::find_entry_for_addr_(vpage_no<Arch> pg) noexcept ->
+    entry* {
+  auto rv = entries_.find(isect_(pg, pg + page_count<Arch>(1)));
+  if (_predict_false(rv == entries_.end()))
+    return nullptr;
+
+  vpage_no<Arch> start;
+  page_count<Arch> len;
+  tie(start, len) = rv->get_range_used();
+  if (_predict_true(start <= pg && pg < start + len))
+    return &*rv;
+
+  return nullptr;
+}
 
 template<arch Arch>
-vmmap<Arch>::vmmap()
-: avail_(1)
+template<typename T>
+auto vmmap_shard<Arch>::efault_future_(vpage_no<Arch>) -> future<T> {
+  return new_promise<T>([](promise<T>) {
+                       throw system_error(make_error_code(errc::bad_address));
+                     });
+}
+
+
+template<arch Arch>
+vmmap<Arch>::vmmap(shared_ptr<page_alloc> pga, workq_service& wqs)
+: avail_(1),
+  pga_(pga),
+  wq_(wqs.new_workq())
 {}
 
 template<arch Arch>
-vmmap<Arch>::vmmap(vpage_no<Arch> b, vpage_no<Arch> e)
-: avail_(1, vmmap_shard<Arch>(b, e))
+vmmap<Arch>::vmmap(shared_ptr<page_alloc> pga, workq_service& wqs,
+                   vpage_no<Arch> b, vpage_no<Arch> e)
+: avail_(1, vmmap_shard<Arch>(b, e)),
+  pga_(pga),
+  wq_(wqs.new_workq())
 {}
 
 template<arch Arch>
@@ -782,6 +854,66 @@ auto vmmap<Arch>::reshard(size_t n_shards, size_t in_use) -> void {
   } catch (...) {
     /* IGNORE */
   }
+}
+
+template<arch Arch>
+auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> future<void> {
+  typename shard_list::iterator shard;
+
+  unique_lock<mutex> l{ avail_guard_ };
+  shard = find_shard_locked_(pgno);
+  if (_predict_false(shard == avail_.end()))
+    return vmmap_shard<Arch>::template efault_future_<void>(pgno);
+
+  // XXX lock shard, unlock avail_guard_.
+  future<page_ptr> pg = shard->fault_read(pga_, pgno);
+  l.unlock();  // XXX unlock shard
+
+  return combine<void>([pgno](promise<void> done, tuple<future<page_ptr>> f) {
+                         page_ptr pg = get<0>(f).move_or_copy();
+                         assert(pg != nullptr);
+                         assert_msg(false, "XXX: invoke pmap");
+
+                         done.set();
+                       },
+                       move(pg));
+}
+
+template<arch Arch>
+auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> future<void> {
+  typename shard_list::iterator shard;
+
+  unique_lock<mutex> l{ avail_guard_ };
+  shard = find_shard_locked_(pgno);
+  if (_predict_false(shard == avail_.end()))
+    return vmmap_shard<Arch>::template efault_future_<void>(pgno);
+
+  // XXX lock shard, unlock avail_guard_.
+  future<page_ptr> pg = shard->fault_write(pga_, pgno);
+  l.unlock();  // XXX unlock shard
+
+  return combine<void>([pgno](promise<void> done, tuple<future<page_ptr>> f) {
+                         page_ptr pg = get<0>(f).move_or_copy();
+                         assert(pg != nullptr);
+                         assert_msg(false, "XXX: invoke pmap");
+
+                         done.set();
+                       },
+                       move(pg));
+}
+
+template<arch Arch>
+auto vmmap<Arch>::find_shard_locked_(vpage_no<Arch> pgno) noexcept ->
+    typename shard_list::iterator {
+  typename shard_list::iterator i = avail_.begin();
+  for (auto end = avail_.end(); i != end; ++i) {
+    vpage_no<Arch> start;
+    page_count<Arch> len;
+    tie(start, len) = i->get_range();
+
+    if (start <= pgno && pgno < start + len) break;
+  }
+  return i;
 }
 
 template<arch Arch>

@@ -26,7 +26,7 @@ class anon_vme
     entry& operator=(const entry&) = delete;
     entry& operator=(entry&&) = delete;
 
-    future<page_ptr> fault(workq_ptr);
+    future<page_ptr> fault(shared_ptr<page_alloc>, workq_ptr);
     bool present() const noexcept;
     future<page_ptr> assign(workq_ptr, future<page_ptr>);
 
@@ -55,8 +55,10 @@ class anon_vme
   bool all_present() const noexcept;
   bool present(page_count<native_arch>) const noexcept;
 
-  future<page_ptr> fault_read(page_count<native_arch>) override;
-  future<page_ptr> fault_write(page_count<native_arch>) override;
+  future<page_ptr> fault_read(shared_ptr<page_alloc>,
+                              page_count<native_arch>) override;
+  future<page_ptr> fault_write(shared_ptr<page_alloc>,
+                               page_count<native_arch>) override;
   future<page_ptr> fault_assign(page_count<native_arch>, future<page_ptr>);
 
   vmmap_entry_ptr clone() const override;

@@ -1,11 +1,13 @@
 #include <ilias/vm/anon.h>
 #include <ilias/wq_promise.h>
+#include <ilias/vm/page_alloc.h>
 
 namespace ilias {
 namespace vm {
 
 
-auto anon_vme::entry::fault(workq_ptr wq) -> future<page_ptr> {
+auto anon_vme::entry::fault(shared_ptr<page_alloc> pga, workq_ptr wq) ->
+    future<page_ptr> {
   unique_lock<mutex> l{ guard_ };
 
   if (in_progress_.is_initialized()) return in_progress_;
@@ -16,7 +18,7 @@ auto anon_vme::entry::fault(workq_ptr wq) -> future<page_ptr> {
     return rv;
   }
 
-  future<page_ptr> f;  // XXX = system-wide-allocator.allocate(alloc_fail_not_ok);
+  future<page_ptr> f = pga->allocate(alloc_fail_not_ok);
   assert_msg(false, "XXX: implement call to system-wide-allocator.");
   return assign_locked_(move(wq), move(l), move(f));
 }
@@ -91,7 +93,8 @@ auto anon_vme::present(page_count<native_arch> off) const noexcept -> bool {
   return (elem != nullptr && elem->present());
 }
 
-auto anon_vme::fault_read(page_count<native_arch> off) ->
+auto anon_vme::fault_read(shared_ptr<page_alloc> pga,
+                          page_count<native_arch> off) ->
     future<page_ptr> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
@@ -99,10 +102,11 @@ auto anon_vme::fault_read(page_count<native_arch> off) ->
 
   auto& elem = data_[off.get()];
   if (elem == nullptr) elem = new entry();
-  return elem->fault(this->get_workq());
+  return elem->fault(move(pga), this->get_workq());
 }
 
-auto anon_vme::fault_write(page_count<native_arch> off) ->
+auto anon_vme::fault_write(shared_ptr<page_alloc> pga,
+                           page_count<native_arch> off) ->
     future<page_ptr> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
@@ -110,7 +114,7 @@ auto anon_vme::fault_write(page_count<native_arch> off) ->
 
   auto& elem = data_[off.get()];
   if (elem == nullptr) elem = new entry();
-  return elem->fault(this->get_workq());
+  return elem->fault(move(pga), this->get_workq());
 }
 
 auto anon_vme::fault_assign(page_count<native_arch> off,
