@@ -47,15 +47,27 @@ auto cow_vme::fault_write(page_count<native_arch> off) -> future<page_ptr> {
 
   stats::cow.add();  // Record copy-on-write operation.
 
-#if 0  // Pseudo code.  I want to have some promises here, so I can use async code.
-  /* Fault underlying storage for read access. */
-  future<page_ptr> original = nested_->fault_read(off);
-  future<page_ptr> dst = page_copy(original);
-  return this->anon_vme::assign(off, dst);
-#endif
-
   assert_msg(false, "XXX copy nested page into anon");  // XXX implement
   for (;;);
+
+  /* Allocate page for anon. */
+  future<page_ptr> pg;  // XXX = system-wide-allocator.allocate(1)
+  /* Fault underlying storage for read access. */
+  future<page_ptr> orig_pg = nested_->fault_read(off);
+
+  /* Copy original page to anon page. */
+  future<page_ptr> copy_pg;  // XXX =
+#if 0
+      combine([](promise<page_ptr> out,
+                 future<page_ptr> pg, future<page_ptr> orig_pg) {
+                page_copy(pg.get_mutable(), orig_pg.move_or_copy());
+                out.set(pg.move_or_copy());
+              },
+              pg, orig_pg);
+#endif
+
+  /* Assign the whole thing to the anon. */
+  return this->anon_vme::fault_assign(off, move(copy_pg));
 }
 
 auto cow_vme::clone() const -> vmmap_entry_ptr {

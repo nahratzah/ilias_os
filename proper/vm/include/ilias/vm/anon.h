@@ -4,6 +4,7 @@
 #include <ilias/vm/vmmap.h>
 #include <memory>
 #include <vector>
+#include <mutex>
 
 namespace ilias {
 namespace vm {
@@ -15,7 +16,9 @@ class anon_vme
 : public vmmap_entry
 {
  private:
-  class entry {
+  class entry
+  : public refcount_base<entry>
+  {
    public:
     entry() = default;
     entry(const entry&) = delete;
@@ -23,19 +26,20 @@ class anon_vme
     entry& operator=(const entry&) = delete;
     entry& operator=(entry&&) = delete;
 
-    mutable atomic<uintptr_t> refcnt_{ 1U };
-
     future<page_ptr> fault();
+    bool present() const noexcept;
+    future<page_ptr> assign(future<page_ptr>);
 
    private:
+    future<page_ptr> assign_locked_(unique_lock<mutex>&&, future<page_ptr>);
+    void allocation_callback_(future<page_ptr>) noexcept;
+
+    mutable mutex guard_;
     page_ptr page_ = nullptr;
+    promise<page_ptr> in_progress_;
   };
 
-  struct entry_deleter_ {
-    void operator()(const entry* e) const noexcept;
-  };
-
-  using entry_ptr = unique_ptr<entry, entry_deleter_>;
+  using entry_ptr = refpointer<entry>;
   using data_type = vector<entry_ptr>;
 
  public:
@@ -47,10 +51,12 @@ class anon_vme
   ~anon_vme() noexcept override;
 
   bool empty() const noexcept;
-
+  bool all_present() const noexcept;
   bool present(page_count<native_arch>) const noexcept;
+
   future<page_ptr> fault_read(page_count<native_arch>) override;
   future<page_ptr> fault_write(page_count<native_arch>) override;
+  future<page_ptr> fault_assign(page_count<native_arch>, future<page_ptr>);
 
   vmmap_entry_ptr clone() const override;
   pair<vmmap_entry_ptr, vmmap_entry_ptr> split(
@@ -58,8 +64,6 @@ class anon_vme
   pair<anon_vme, anon_vme> split_no_alloc(page_count<native_arch>) const;
 
  private:
-  static entry_ptr copy_entry_(const entry_ptr&) noexcept;
-
   data_type data_;
 };
 

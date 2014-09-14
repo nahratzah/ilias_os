@@ -5,42 +5,95 @@ namespace vm {
 
 
 auto anon_vme::entry::fault() -> future<page_ptr> {
-  promise<page_ptr> rv;
+  unique_lock<mutex> l{ guard_ };
+
+  if (in_progress_.is_initialized()) return in_progress_;
+
   if (page_ != nullptr) {
+    promise<page_ptr> rv = new_promise<page_ptr>();
     rv.set(page_);
     return rv;
   }
 
-  assert(false);  // XXX implement anon allocation of zeroed page
-  for (;;);
+  future<page_ptr> f;  // XXX = system-wide-allocator.allocate(alloc_fail_not_ok);
+  assert_msg(false, "XXX: implement call to system-wide-allocator.");
+  return assign_locked_(move(l), move(f));
+}
+
+auto anon_vme::entry::assign(future<page_ptr> f) -> future<page_ptr> {
+  return assign_locked_(unique_lock<mutex>{ guard_ }, move(f));
+}
+
+auto anon_vme::entry::assign_locked_(unique_lock<mutex>&& l,
+                                     future<page_ptr> f) -> future<page_ptr> {
+  using std::placeholders::_1;
+
+  future<page_ptr> rv;
+
+  assert(l.owns_lock());
+  assert(page_ == nullptr && !in_progress_.is_initialized());
+
+  rv = in_progress_ = new_promise<page_ptr>();
+  l.unlock();  // In case promise has already completed.
+  callback(f, bind(&entry::allocation_callback_, entry_ptr(this), _1));
+  return rv;
+}
+
+auto anon_vme::entry::allocation_callback_(future<page_ptr> f) noexcept ->
+    void {
+  promise<page_ptr> tmp;
+  page_ptr pg = f.move_or_copy();
+
+  {
+    lock_guard<mutex> l{ guard_ };
+    assert(page_ == nullptr && in_progress_.is_initialized());
+    page_ = pg;
+    swap(in_progress_, tmp);
+  }
+
+  if (_predict_true(pg != nullptr)) tmp.set(pg);
 }
 
 
-anon_vme::anon_vme(const anon_vme& o) {
-  data_.reserve(o.data_.size());
-  transform(o.data_.begin(), o.data_.end(), back_inserter(data_),
-            &copy_entry_);
-}
+anon_vme::anon_vme(const anon_vme& o)
+: data_(o.data_)
+{}
 
 anon_vme::anon_vme(anon_vme&& o) noexcept
 : data_(move(o.data_))
 {}
 
 anon_vme::anon_vme(page_count<native_arch> npg) {
-  data_.reserve(npg.get());
-  generate_n(back_inserter(data_), npg.get(),
-             []() { return entry_ptr(new entry()); });
+  data_.resize(npg.get());
 }
 
 anon_vme::~anon_vme() noexcept {}
+
+auto anon_vme::all_present() const noexcept -> bool {
+  return all_of(data_.begin(), data_.end(),
+                [](const entry_ptr& e) noexcept -> bool {
+                  return (e != nullptr && e->present());
+                });
+}
+
+auto anon_vme::present(page_count<native_arch> off) const noexcept -> bool {
+  assert(off.get() >= 0 &&
+         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
+          data_.size()));
+
+  const auto& elem = data_[off.get()];
+  return (elem != nullptr && elem->present());
+}
 
 auto anon_vme::fault_read(page_count<native_arch> off) ->
     future<page_ptr> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
-  assert(data_[off.get()] != nullptr);
-  return data_[off.get()]->fault();
+
+  auto& elem = data_[off.get()];
+  if (elem == nullptr) elem = new entry();
+  return elem->fault();
 }
 
 auto anon_vme::fault_write(page_count<native_arch> off) ->
@@ -48,8 +101,21 @@ auto anon_vme::fault_write(page_count<native_arch> off) ->
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
-  assert(data_[off.get()] != nullptr);
-  return data_[off.get()]->fault();
+
+  auto& elem = data_[off.get()];
+  if (elem == nullptr) elem = new entry();
+  return elem->fault();
+}
+
+auto anon_vme::fault_assign(page_count<native_arch> off,
+                            future<page_ptr> pg) -> future<page_ptr> {
+  assert(off.get() >= 0 &&
+         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
+          data_.size()));
+
+  auto& elem = data_[off.get()];
+  if (elem == nullptr) elem = new entry();
+  return elem->assign(move(pg));
 }
 
 auto anon_vme::clone() const -> vmmap_entry_ptr {
@@ -70,12 +136,6 @@ auto anon_vme::split_no_alloc(page_count<native_arch> off) const ->
          static_cast<make_unsigned_t<decltype(split)>>(split) < data_.size());
   return { anon_vme(data_.begin(), data_.begin() + split),
            anon_vme(data_.begin() + split, data_.end()) };
-}
-
-auto anon_vme::copy_entry_(const entry_ptr& p) noexcept -> entry_ptr {
-  entry_ptr rv = entry_ptr(p.get());
-  if (rv) rv->refcnt_.fetch_add(1U, memory_order_acquire);
-  return rv;
 }
 
 
