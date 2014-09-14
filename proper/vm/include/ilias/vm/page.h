@@ -4,8 +4,10 @@
 #include <cstddef>
 #include <ilias/pmap/page.h>
 #include <ilias/linked_list.h>
+#include <ilias/linked_set.h>
 #include <atomic>
 #include <functional>
+#include <ilias/vm/vm-fwd.h>
 
 namespace ilias {
 namespace vm {
@@ -13,6 +15,7 @@ namespace tags {
 
 struct page_cache {};
 struct page_list {};
+struct page_alloc {};
 
 } /* namespace ilias::vm::tags */
 
@@ -21,36 +24,37 @@ using namespace std;
 using namespace ilias::pmap;
 
 
-class page;
-class page_list;
-
 using page_ptr = page*;  // XXX smart pointer?
 
 
 class page
 : public linked_list_element<tags::page_list>,
-  public linked_list_element<tags::page_cache>
+  public linked_list_element<tags::page_cache>,
+  public linked_set_element<page, tags::page_alloc>
 {
   friend page_list;
+  friend page_alloc;
 
  public:
   using release_functor = function<bool(page_ptr, bool)>;  // XXX return promise, bool argument = delayed-ok
   using flags_type = uint32_t;
 
-  static constexpr flags_type fl_cache_mask        = 0x03;
-  static constexpr flags_type fl_cannot_free_mask  = 0xc0;
+  static constexpr flags_type fl_cache_mask        = 0x003;
+  static constexpr flags_type fl_cannot_free_mask  = 0x0c0;
 
-  static constexpr flags_type fl_cache_speculative = 0x01;
-  static constexpr flags_type fl_cache_cold        = 0x02;
-  static constexpr flags_type fl_cache_hot         = 0x03;
-  static constexpr flags_type fl_cache_modify      = 0x04;
-  static constexpr flags_type fl_cache_present     = 0x08;
+  static constexpr flags_type fl_cache_speculative = 0x001;
+  static constexpr flags_type fl_cache_cold        = 0x002;
+  static constexpr flags_type fl_cache_hot         = 0x003;
+  static constexpr flags_type fl_cache_modify      = 0x004;
+  static constexpr flags_type fl_cache_present     = 0x008;
 
-  static constexpr flags_type fl_accessed          = 0x10;
-  static constexpr flags_type fl_dirty             = 0x20;
+  static constexpr flags_type fl_accessed          = 0x010;
+  static constexpr flags_type fl_dirty             = 0x020;
 
-  static constexpr flags_type fl_busy              = 0x40;
-  static constexpr flags_type fl_wired             = 0x80;
+  static constexpr flags_type fl_busy              = 0x040;
+  static constexpr flags_type fl_wired             = 0x080;
+
+  static constexpr flags_type fl_free              = 0x100;
 
   page() = delete;
   page(const page&) = delete;
@@ -74,8 +78,10 @@ class page
   page_no<native_arch> pgno_;  // Address of this page.
   page_count<native_arch> nfree_;  // Number of free pages starting at this
                                    // page (only has meaning if the page is
-                                   // actually free or if the page is on a
-                                   // page_list).
+                                   // actually free).
+  page_count<native_arch> npgl_;  // Number of pages starting at this page
+                                  // (only has meaning if the page is on a
+                                  // page_list).
 
   atomic<flags_type> flags_;
   release_functor release_;
@@ -87,6 +93,8 @@ class page_list {
   using data_type = linked_list<page, tags::page_list>;
 
  public:
+  using iterator = data_type::iterator;
+  using const_iterator = data_type::const_iterator;
   using size_type = size_t;
 
   page_list() noexcept = default;
@@ -112,6 +120,14 @@ class page_list {
 
   void sort_blocksize_ascending() noexcept;
   void sort_address_ascending(bool = true) noexcept;
+  void merge(page_list&&, bool = true) noexcept;
+
+  iterator begin() noexcept { return data_.begin(); }
+  iterator end() noexcept { return data_.end(); }
+  const_iterator begin() const noexcept { return data_.begin(); }
+  const_iterator end() const noexcept { return data_.end(); }
+  const_iterator cbegin() const noexcept { return data_.cbegin(); }
+  const_iterator cend() const noexcept { return data_.cend(); }
 
  private:
   data_type data_;

@@ -6,6 +6,8 @@
 #include <atomic>
 #include <mutex>
 #include <ilias/linked_list.h>
+#include <ilias/promise.h>
+#include <memory>
 
 namespace ilias {
 namespace vm {
@@ -16,7 +18,7 @@ class page_cache {
   using list_type = linked_list<page, tags::page_cache>;  // XXX make atomic linked list
 
  public:
-  page_cache(stats_group&) noexcept;
+  explicit page_cache(stats_group&) noexcept;
   page_cache(const page_cache&) = delete;
   page_cache(page_cache&&) = delete;
   page_cache& operator=(const page_cache&) = delete;
@@ -30,6 +32,7 @@ class page_cache {
   void unmanage(page_ptr) noexcept;
 
   page_list try_release_urgent(page_count<native_arch>) noexcept;
+  future<page_list> try_release(page_count<native_arch>) noexcept;
   void undirty(page_count<native_arch>) noexcept;  // XXX this is inefficient, consider another interface
 
  private:
