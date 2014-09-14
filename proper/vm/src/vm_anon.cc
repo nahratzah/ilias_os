@@ -56,16 +56,19 @@ auto anon_vme::entry::allocation_callback_(future<page_ptr> f) noexcept ->
 
 
 anon_vme::anon_vme(const anon_vme& o)
-: data_(o.data_)
+: vmmap_entry(o),
+  data_(o.data_)
 {}
 
 anon_vme::anon_vme(anon_vme&& o) noexcept
-: data_(move(o.data_))
+: vmmap_entry(move(o)),
+  data_(move(o.data_))
 {}
 
-anon_vme::anon_vme(page_count<native_arch> npg) {
-  data_.resize(npg.get());
-}
+anon_vme::anon_vme(workq_ptr wq, page_count<native_arch> npg)
+: vmmap_entry(move(wq)),
+  data_(npg.get())
+{}
 
 anon_vme::~anon_vme() noexcept {}
 
@@ -134,8 +137,8 @@ auto anon_vme::split_no_alloc(page_count<native_arch> off) const ->
   auto split = off.get();
   assert(split > 0 &&
          static_cast<make_unsigned_t<decltype(split)>>(split) < data_.size());
-  return { anon_vme(data_.begin(), data_.begin() + split),
-           anon_vme(data_.begin() + split, data_.end()) };
+  return { anon_vme(get_workq(), data_.begin(), data_.begin() + split),
+           anon_vme(get_workq(), data_.begin() + split, data_.end()) };
 }
 
 

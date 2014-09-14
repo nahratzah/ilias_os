@@ -16,8 +16,9 @@ inline auto anon_vme::entry::present() const noexcept -> bool {
 
 
 template<typename Iter>
-anon_vme::anon_vme(Iter b, Iter e)
-: data_(b, e)
+anon_vme::anon_vme(workq_ptr wq, Iter b, Iter e)
+: vmmap_entry(move(wq)),
+  data_(b, e)
 {}
 
 inline auto anon_vme::empty() const noexcept -> bool {

@@ -46,8 +46,8 @@ class anon_vme
   anon_vme() = delete;
   anon_vme(const anon_vme&);
   anon_vme(anon_vme&&) noexcept;
-  anon_vme(page_count<native_arch> npg);
-  template<typename Iter> anon_vme(Iter, Iter);
+  anon_vme(workq_ptr wq, page_count<native_arch> npg);
+  template<typename Iter> anon_vme(workq_ptr, Iter, Iter);
   ~anon_vme() noexcept override;
 
   bool empty() const noexcept;

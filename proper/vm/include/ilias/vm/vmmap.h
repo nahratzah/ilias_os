@@ -13,6 +13,7 @@
 #include <mutex>
 #include <ilias/stats-fwd.h>
 #include <ilias/promise.h>
+#include <ilias/workq.h>
 
 namespace ilias {
 namespace vm {
@@ -101,9 +102,11 @@ class vmmap_entry {
   friend vmmap_entry_ptr;
 
  protected:
-  vmmap_entry() noexcept = default;
-  vmmap_entry(const vmmap_entry&) noexcept : vmmap_entry() {}
-  vmmap_entry(vmmap_entry&&) noexcept : vmmap_entry() {}
+  vmmap_entry(workq_ptr wq) noexcept : wq_(move(wq)) {}
+  vmmap_entry(const vmmap_entry& o) noexcept : wq_(move(o.wq_)) {}
+  vmmap_entry(const vmmap_entry&, workq_ptr wq) noexcept : wq_(move(wq)) {}
+  vmmap_entry(vmmap_entry&& o) noexcept : wq_(move(o.wq_)) {}
+  vmmap_entry(vmmap_entry&&, workq_ptr wq) noexcept : wq_(move(wq)) {}
   vmmap_entry& operator=(const vmmap_entry&) noexcept { return *this; }
   vmmap_entry& operator=(vmmap_entry&&) noexcept { return *this; }
 
@@ -117,8 +120,11 @@ class vmmap_entry {
   virtual pair<vmmap_entry_ptr, vmmap_entry_ptr> split(page_count<native_arch>)
       const = 0;
 
+  workq_ptr get_workq() const noexcept { return wq_; }
+
  private:
   mutable atomic<uintptr_t> refcnt_{ 0U };
+  workq_ptr wq_;
 };
 
 class vmmap_entry_ptr {

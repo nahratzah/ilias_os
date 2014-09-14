@@ -15,8 +15,9 @@ cow_vme::cow_vme(anon_vme&& anon, vmmap_entry_ptr&& nested) noexcept
   nested_(move(nested))
 {}
 
-cow_vme::cow_vme(page_count<native_arch> npg, vmmap_entry_ptr&& nested)
-: anon_vme(npg),
+cow_vme::cow_vme(workq_ptr wq, page_count<native_arch> npg,
+                 vmmap_entry_ptr&& nested)
+: anon_vme(move(wq), npg),
   nested_(move(nested))
 {
   if (nested_ == nullptr)
