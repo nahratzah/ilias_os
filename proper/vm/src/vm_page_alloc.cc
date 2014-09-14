@@ -18,17 +18,25 @@ constexpr auto fail_mask = page_alloc::alloc_style::fail_ok |
 using abi::panic;
 
 
-page_alloc::page_alloc(stats_group& parent_group, workq_service& wqs) noexcept
-: cache_group_(parent_group, "page_cache"),
-  cache_(this->cache_group_),
-  wq_(wqs.new_workq())
+page_alloc::page_alloc(workq_service& wqs) noexcept
+: wq_(wqs.new_workq())
 {}
 
-page_alloc::~page_alloc() noexcept {
+page_alloc::~page_alloc() noexcept {}
+
+
+default_page_alloc::default_page_alloc(stats_group& parent_group,
+                                       workq_service& wqs) noexcept
+: page_alloc(wqs),
+  cache_group_(parent_group, "page_cache"),
+  cache_(this->cache_group_)
+{}
+
+default_page_alloc::~default_page_alloc() noexcept {
   ranges_.unlink_all();
 }
 
-auto page_alloc::allocate(alloc_style style) -> future<page_ptr> {
+auto default_page_alloc::allocate(alloc_style style) -> future<page_ptr> {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -45,16 +53,18 @@ auto page_alloc::allocate(alloc_style style) -> future<page_ptr> {
     break;
   }
 
+  auto self_ptr =
+      static_pointer_cast<default_page_alloc>(this->shared_from_this());
   return new_promise<page_ptr>(
-      this->wq_,
-      bind([](promise<page_ptr> out, const shared_ptr<page_alloc>& p,
+      this->get_workq(),
+      bind([](promise<page_ptr> out, const shared_ptr<default_page_alloc>& p,
               alloc_style style) {
              out.set(p->allocate_prom_(style));
            },
-           _1, this->shared_from_this(), style));
+           _1, move(self_ptr), style));
 }
 
-auto page_alloc::allocate_prom_(alloc_style style) -> page_ptr {
+auto default_page_alloc::allocate_prom_(alloc_style style) -> page_ptr {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -93,7 +103,7 @@ auto page_alloc::allocate_prom_(alloc_style style) -> page_ptr {
   for (;;);
 }
 
-auto page_alloc::allocate_urgent(alloc_style style) -> page_ptr {
+auto default_page_alloc::allocate_urgent(alloc_style style) -> page_ptr {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -140,8 +150,8 @@ auto page_alloc::allocate_urgent(alloc_style style) -> page_ptr {
   for (;;);
 }
 
-auto page_alloc::allocate(page_count<native_arch> npg, alloc_style style) ->
-    future<page_list> {
+auto default_page_alloc::allocate(page_count<native_arch> npg,
+                                  alloc_style style) -> future<page_list> {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -165,16 +175,19 @@ auto page_alloc::allocate(page_count<native_arch> npg, alloc_style style) ->
   }
   assert(npg > page_count<native_arch>(0));
 
-  callback(rv, this->wq_,
-           bind([](promise<page_list> out, const shared_ptr<page_alloc>& p,
+  auto self_ptr =
+      static_pointer_cast<default_page_alloc>(this->shared_from_this());
+  callback(rv, this->get_workq(),
+           bind([](promise<page_list> out,
+                   const shared_ptr<default_page_alloc>& p,
                    page_count<native_arch> npg, alloc_style style) {
                   out.set(p->allocate_prom_(npg, style));
                 },
-                _1, this->shared_from_this(), npg, style));
+                _1, move(self_ptr), npg, style));
   return rv;
 }
 
-auto page_alloc::allocate_prom_(page_count<native_arch> npg,
+auto default_page_alloc::allocate_prom_(page_count<native_arch> npg,
                                 alloc_style style) -> page_list {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
@@ -240,7 +253,25 @@ auto page_alloc::allocate_prom_(page_count<native_arch> npg,
   for (;;);
 }
 
-auto page_alloc::deallocate(page_list pgl) noexcept -> void {
+auto default_page_alloc::allocate_urgent(page_count<native_arch>,
+                                         alloc_style) -> page_list {
+  assert_msg(false, "XXX: implement");  // XXX implement
+  for (;;);
+}
+
+auto default_page_alloc::allocate(page_count<native_arch>, spec) ->
+    future<page_list> {
+  assert_msg(false, "XXX: implement");  // XXX implement
+  for (;;);
+}
+
+auto default_page_alloc::allocate_urgent(page_count<native_arch>, spec) ->
+    page_list {
+  assert_msg(false, "XXX: implement");  // XXX implement
+  for (;;);
+}
+
+auto default_page_alloc::deallocate(page_list pgl) noexcept -> void {
   if (_predict_false(pgl.empty())) return;
   pgl.sort_address_ascending();
 
@@ -253,12 +284,12 @@ auto page_alloc::deallocate(page_list pgl) noexcept -> void {
   }
 }
 
-auto page_alloc::deallocate(page_ptr pg) noexcept -> void {
+auto default_page_alloc::deallocate(page_ptr pg) noexcept -> void {
   lock_guard<mutex> l{ mtx_ };
   add_to_freelist_(pg, page_count<native_arch>(1));
 }
 
-auto page_alloc::fetch_from_freelist_() noexcept -> page_ptr {
+auto default_page_alloc::fetch_from_freelist_() noexcept -> page_ptr {
   const auto i = ranges_.root();
   if (_predict_false(i == ranges_.end()))
     return nullptr;
@@ -288,8 +319,8 @@ auto page_alloc::fetch_from_freelist_() noexcept -> page_ptr {
   return rv;
 }
 
-auto page_alloc::fetch_from_freelist_(page_count<native_arch> n) noexcept ->
-    tuple<page_ptr, page_count<native_arch>> {
+auto default_page_alloc::fetch_from_freelist_(page_count<native_arch> n)
+    noexcept -> tuple<page_ptr, page_count<native_arch>> {
   const auto i = ranges_.root();
   if (_predict_false(i == ranges_.end()))
     return make_tuple(nullptr, page_count<native_arch>(0));
@@ -325,7 +356,8 @@ auto page_alloc::fetch_from_freelist_(page_count<native_arch> n) noexcept ->
   return make_tuple(move(rv_ptr), move(rv_npg));
 }
 
-auto page_alloc::add_to_freelist_(page_ptr pg, page_count<native_arch> n)
+auto default_page_alloc::add_to_freelist_(page_ptr pg,
+                                          page_count<native_arch> n)
     noexcept -> void {
   assert(pg->nfree_ != page_count<native_arch>(0));
 

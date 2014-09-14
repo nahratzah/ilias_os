@@ -74,11 +74,13 @@ class page
   bool try_release_urgent() noexcept;
   void undirty() {}  // XXX implement
 
- private:
-  page_no<native_arch> pgno_;  // Address of this page.
   page_count<native_arch> nfree_;  // Number of free pages starting at this
                                    // page (only has meaning if the page is
                                    // actually free).
+				   // Public, so allocators can mess with it.
+
+ private:
+  page_no<native_arch> pgno_;  // Address of this page.
   page_count<native_arch> npgl_;  // Number of pages starting at this page
                                   // (only has meaning if the page is on a
                                   // page_list).

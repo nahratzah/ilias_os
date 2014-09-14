@@ -9,6 +9,7 @@ class page;
 class page_list;
 class page_cache;
 class page_alloc;
+class default_page_alloc;
 
 
 }} /* namespace ilias::vm */
