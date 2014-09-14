@@ -26,12 +26,13 @@ class anon_vme
     entry& operator=(const entry&) = delete;
     entry& operator=(entry&&) = delete;
 
-    future<page_ptr> fault();
+    future<page_ptr> fault(workq_ptr);
     bool present() const noexcept;
-    future<page_ptr> assign(future<page_ptr>);
+    future<page_ptr> assign(workq_ptr, future<page_ptr>);
 
    private:
-    future<page_ptr> assign_locked_(unique_lock<mutex>&&, future<page_ptr>);
+    future<page_ptr> assign_locked_(workq_ptr, unique_lock<mutex>&&,
+                                    future<page_ptr>);
     void allocation_callback_(future<page_ptr>) noexcept;
 
     mutable mutex guard_;

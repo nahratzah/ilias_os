@@ -1,10 +1,11 @@
 #include <ilias/vm/anon.h>
+#include <ilias/wq_promise.h>
 
 namespace ilias {
 namespace vm {
 
 
-auto anon_vme::entry::fault() -> future<page_ptr> {
+auto anon_vme::entry::fault(workq_ptr wq) -> future<page_ptr> {
   unique_lock<mutex> l{ guard_ };
 
   if (in_progress_.is_initialized()) return in_progress_;
@@ -17,14 +18,15 @@ auto anon_vme::entry::fault() -> future<page_ptr> {
 
   future<page_ptr> f;  // XXX = system-wide-allocator.allocate(alloc_fail_not_ok);
   assert_msg(false, "XXX: implement call to system-wide-allocator.");
-  return assign_locked_(move(l), move(f));
+  return assign_locked_(move(wq), move(l), move(f));
 }
 
-auto anon_vme::entry::assign(future<page_ptr> f) -> future<page_ptr> {
-  return assign_locked_(unique_lock<mutex>{ guard_ }, move(f));
+auto anon_vme::entry::assign(workq_ptr wq, future<page_ptr> f) ->
+    future<page_ptr> {
+  return assign_locked_(move(wq), unique_lock<mutex>{ guard_ }, move(f));
 }
 
-auto anon_vme::entry::assign_locked_(unique_lock<mutex>&& l,
+auto anon_vme::entry::assign_locked_(workq_ptr wq, unique_lock<mutex>&& l,
                                      future<page_ptr> f) -> future<page_ptr> {
   using std::placeholders::_1;
 
@@ -35,7 +37,8 @@ auto anon_vme::entry::assign_locked_(unique_lock<mutex>&& l,
 
   rv = in_progress_ = new_promise<page_ptr>();
   l.unlock();  // In case promise has already completed.
-  callback(f, bind(&entry::allocation_callback_, entry_ptr(this), _1));
+  callback(f, move(wq),
+           bind(&entry::allocation_callback_, entry_ptr(this), _1));
   return rv;
 }
 
@@ -96,7 +99,7 @@ auto anon_vme::fault_read(page_count<native_arch> off) ->
 
   auto& elem = data_[off.get()];
   if (elem == nullptr) elem = new entry();
-  return elem->fault();
+  return elem->fault(this->get_workq());
 }
 
 auto anon_vme::fault_write(page_count<native_arch> off) ->
@@ -107,7 +110,7 @@ auto anon_vme::fault_write(page_count<native_arch> off) ->
 
   auto& elem = data_[off.get()];
   if (elem == nullptr) elem = new entry();
-  return elem->fault();
+  return elem->fault(this->get_workq());
 }
 
 auto anon_vme::fault_assign(page_count<native_arch> off,
@@ -118,7 +121,7 @@ auto anon_vme::fault_assign(page_count<native_arch> off,
 
   auto& elem = data_[off.get()];
   if (elem == nullptr) elem = new entry();
-  return elem->assign(move(pg));
+  return elem->assign(get_workq(), move(pg));
 }
 
 auto anon_vme::clone() const -> vmmap_entry_ptr {
