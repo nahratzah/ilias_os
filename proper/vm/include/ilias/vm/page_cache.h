@@ -6,6 +6,8 @@
 #include <atomic>
 #include <mutex>
 #include <ilias/linked_list.h>
+#include <ilias/promise.h>
+#include <memory>
 
 namespace ilias {
 namespace vm {
@@ -30,7 +32,7 @@ class page_cache {
   void unmanage(page_ptr) noexcept;
 
   page_list try_release_urgent(page_count<native_arch>) noexcept;
-  page_list try_release(page_count<native_arch>) noexcept;  // XXX return promise
+  future<page_list> try_release(page_count<native_arch>) noexcept;
   void undirty(page_count<native_arch>) noexcept;  // XXX this is inefficient, consider another interface
 
  private:

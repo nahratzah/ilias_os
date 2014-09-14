@@ -392,7 +392,7 @@ auto page_cache::try_release_urgent(page_count<native_arch> npg) noexcept ->
 }
 
 auto page_cache::try_release(page_count<native_arch> /*npg*/) noexcept ->
-    page_list {
+    future<page_list> {
   assert_msg(false, "XXX implement");  // XXX implement
   for (;;);
 }

@@ -2,6 +2,7 @@
 #include <cdecl.h>
 #include <new>
 #include <abi/panic.h>
+#include <ilias/wq_promise.h>
 
 namespace ilias {
 namespace vm {
@@ -17,16 +18,43 @@ constexpr auto fail_mask = page_alloc::alloc_style::fail_ok |
 using abi::panic;
 
 
-page_alloc::page_alloc(stats_group& parent_group) noexcept
+page_alloc::page_alloc(stats_group& parent_group, workq_service& wqs) noexcept
 : cache_group_(parent_group, "page_cache"),
-  cache_(this->cache_group_)
+  cache_(this->cache_group_),
+  wq_(wqs.new_workq())
 {}
 
 page_alloc::~page_alloc() noexcept {
   ranges_.unlink_all();
 }
 
-auto page_alloc::allocate(alloc_style style) -> page_ptr {
+auto page_alloc::allocate(alloc_style style) -> future<page_ptr> {
+  using alloc_style::fail_not_ok;
+  using alloc_style::fail_ok;
+  using alloc_style::fail_ok_nothrow;
+  using std::placeholders::_1;
+
+  /* Verify arguments. */
+  switch (style & fail_mask) {
+  default:
+    assert_msg(false, "alloc style failure mode not recognized");
+    break;
+  case fail_not_ok:
+  case fail_ok:
+  case fail_ok_nothrow:
+    break;
+  }
+
+  return new_promise<page_ptr>(
+      this->wq_,
+      bind([](promise<page_ptr> out, const shared_ptr<page_alloc>& p,
+              alloc_style style) {
+             out.set(p->allocate_prom_(style));
+           },
+           _1, this->shared_from_this(), style));
+}
+
+auto page_alloc::allocate_prom_(alloc_style style) -> page_ptr {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -42,6 +70,7 @@ auto page_alloc::allocate(alloc_style style) -> page_ptr {
     break;
   }
 
+  promise<page_ptr> rv_prom = new_promise<page_ptr>();
   lock_guard<mutex> l{ mtx_ };
 
   page_ptr rv = fetch_from_freelist_();
@@ -112,7 +141,41 @@ auto page_alloc::allocate_urgent(alloc_style style) -> page_ptr {
 }
 
 auto page_alloc::allocate(page_count<native_arch> npg, alloc_style style) ->
-    page_list {
+    future<page_list> {
+  using alloc_style::fail_not_ok;
+  using alloc_style::fail_ok;
+  using alloc_style::fail_ok_nothrow;
+  using std::placeholders::_1;
+
+  /* Verify arguments. */
+  switch (style & fail_mask) {
+  default:
+    assert_msg(false, "alloc style failure mode not recognized");
+    break;
+  case fail_not_ok:
+  case fail_ok:
+  case fail_ok_nothrow:
+    break;
+  }
+
+  promise<page_list> rv = new_promise<page_list>();
+  if (_predict_false(npg == page_count<native_arch>(0))) {
+    rv.set(page_list());
+    return rv;
+  }
+  assert(npg > page_count<native_arch>(0));
+
+  callback(rv, this->wq_,
+           bind([](promise<page_list> out, const shared_ptr<page_alloc>& p,
+                   page_count<native_arch> npg, alloc_style style) {
+                  out.set(p->allocate_prom_(npg, style));
+                },
+                _1, this->shared_from_this(), npg, style));
+  return rv;
+}
+
+auto page_alloc::allocate_prom_(page_count<native_arch> npg,
+                                alloc_style style) -> page_list {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -147,7 +210,7 @@ auto page_alloc::allocate(page_count<native_arch> npg, alloc_style style) ->
   /*
    * Try to reclaim from page cache.
    */
-  rv.merge(cache_.try_release(npg - rv.size()));
+  rv.merge(move(cache_.try_release(npg - rv.size()).get_mutable()));  // XXX: may throw, may fail, may block
 
   if (_predict_true(rv.size() == npg)) return rv;
 

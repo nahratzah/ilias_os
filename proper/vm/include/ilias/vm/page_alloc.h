@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <mutex>
 #include <ilias/linked_set.h>
+#include <ilias/promise.h>
+#include <ilias/workq.h>
 
 namespace ilias {
 namespace vm {
@@ -15,7 +17,9 @@ using namespace std;
 using namespace ilias::pmap;
 
 
-class page_alloc {
+class page_alloc
+: public enable_shared_from_this<page_alloc>
+{
  private:
   struct ranges_cmp {
     bool operator()(const page& x, const page& y) const noexcept {
@@ -34,16 +38,24 @@ class page_alloc {
 
   struct spec;
 
-  explicit page_alloc(stats_group&) noexcept;
+  explicit page_alloc(stats_group&, workq_service&) noexcept;
   page_alloc(const page_alloc&) = delete;
   page_alloc& operator=(const page_alloc&) = delete;
   ~page_alloc() noexcept;
 
-  page_ptr allocate(alloc_style);  // XXX return promise
+  future<page_ptr> allocate(alloc_style);
+ private:
+  page_ptr allocate_prom_(alloc_style);
+
+ public:
   page_ptr allocate_urgent(alloc_style);
-  page_list allocate(page_count<native_arch>, alloc_style);  // XXX return promise
+
+  future<page_list> allocate(page_count<native_arch>, alloc_style);
+ private:
+  page_list allocate_prom_(page_count<native_arch>, alloc_style);
+
   page_list allocate_urgent(page_count<native_arch>, alloc_style);
-  page_list allocate(page_count<native_arch>, spec);  // XXX return promise
+  future<page_list> allocate(page_count<native_arch>, spec);
   page_list allocate_urgent(page_count<native_arch>, spec);
 
   void deallocate(page_list) noexcept;
@@ -62,6 +74,7 @@ class page_alloc {
   page_cache cache_;
   page_count<native_arch> size_ = page_count<native_arch>(0);
   page_count<native_arch> free_ = page_count<native_arch>(0);
+  workq_ptr wq_;
 };
 
 constexpr page_alloc::alloc_style operator&(const page_alloc::alloc_style& x,
