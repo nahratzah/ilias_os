@@ -115,9 +115,9 @@ class vmmap_entry
  public:
   virtual ~vmmap_entry() noexcept;
 
-  virtual future<page_ptr> fault_read(shared_ptr<page_alloc>,
+  virtual future<page_refptr> fault_read(shared_ptr<page_alloc>,
                                       page_count<native_arch>) = 0;
-  virtual future<page_ptr> fault_write(shared_ptr<page_alloc>,
+  virtual future<page_refptr> fault_write(shared_ptr<page_alloc>,
                                        page_count<native_arch>) = 0;
 
   virtual vmmap_entry_ptr clone() const = 0;
@@ -172,9 +172,9 @@ class vmmap_shard {
     vmmap_entry& data() const noexcept;
     friend void swap(entry& x, entry& y) noexcept { swap(x.data_, y.data_); }
 
-    future<page_ptr> fault_read(shared_ptr<page_alloc>,
+    future<page_refptr> fault_read(shared_ptr<page_alloc>,
                                 vpage_no<Arch>);
-    future<page_ptr> fault_write(shared_ptr<page_alloc>,
+    future<page_refptr> fault_write(shared_ptr<page_alloc>,
                                  vpage_no<Arch>);
 
    private:
@@ -242,9 +242,9 @@ class vmmap_shard {
   void merge(vmmap_shard&&) noexcept;
   template<typename Iter> void fanout(Iter, Iter) noexcept;
 
-  future<page_ptr> fault_read(shared_ptr<page_alloc>,
+  future<page_refptr> fault_read(shared_ptr<page_alloc>,
                               vpage_no<Arch>);
-  future<page_ptr> fault_write(shared_ptr<page_alloc>,
+  future<page_refptr> fault_write(shared_ptr<page_alloc>,
                                vpage_no<Arch>);
 
  private:

@@ -167,7 +167,7 @@ auto vmmap_shard<Arch>::entry::data() const noexcept -> vmmap_entry& {
 template<arch Arch>
 auto vmmap_shard<Arch>::entry::fault_read(shared_ptr<page_alloc> pga,
                                           vpage_no<Arch> pgno) ->
-    future<page_ptr> {
+    future<page_refptr> {
   assert(pgno >= get_addr_used() && pgno < get_addr_free());
 
   auto arch_off = pgno - get_addr_used();
@@ -179,7 +179,7 @@ auto vmmap_shard<Arch>::entry::fault_read(shared_ptr<page_alloc> pga,
 template<arch Arch>
 auto vmmap_shard<Arch>::entry::fault_write(shared_ptr<page_alloc> pga,
                                            vpage_no<Arch> pgno) ->
-    future<page_ptr> {
+    future<page_refptr> {
   assert(pgno >= get_addr_used() && pgno < get_addr_free());
 
   auto arch_off = pgno - get_addr_used();
@@ -467,19 +467,19 @@ auto vmmap_shard<Arch>::fanout(Iter b, Iter e) noexcept -> void {
 
 template<arch Arch>
 auto vmmap_shard<Arch>::fault_read(shared_ptr<page_alloc> pga,
-                                   vpage_no<Arch> pgno) -> future<page_ptr> {
+                                   vpage_no<Arch> pgno) -> future<page_refptr> {
   entry* e = find_entry_for_addr_(pgno);
   if (_predict_false(e == nullptr))
-    return efault_future_<page_ptr>(pgno);
+    return efault_future_<page_refptr>(pgno);
   return e->fault_read(move(pga), pgno);
 }
 
 template<arch Arch>
 auto vmmap_shard<Arch>::fault_write(shared_ptr<page_alloc> pga,
-                                    vpage_no<Arch> pgno) -> future<page_ptr> {
+                                    vpage_no<Arch> pgno) -> future<page_refptr> {
   entry* e = find_entry_for_addr_(pgno);
   if (_predict_false(e == nullptr))
-    return efault_future_<page_ptr>(pgno);
+    return efault_future_<page_refptr>(pgno);
   return e->fault_write(move(pga), pgno);
 }
 
@@ -767,11 +767,11 @@ auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> future<void> {
     return vmmap_shard<Arch>::template efault_future_<void>(pgno);
 
   // XXX lock shard, unlock avail_guard_.
-  future<page_ptr> pg = shard->fault_read(pga_, pgno);
+  future<page_refptr> pg = shard->fault_read(pga_, pgno);
   l.unlock();  // XXX unlock shard
 
-  return combine<void>([pgno](promise<void> done, tuple<future<page_ptr>> f) {
-                         page_ptr pg = get<0>(f).move_or_copy();
+  return combine<void>([pgno](promise<void> done, tuple<future<page_refptr>> f) {
+                         page_refptr pg = get<0>(f).move_or_copy();
                          assert(pg != nullptr);
                          assert_msg(false, "XXX: invoke pmap");
 
@@ -790,11 +790,11 @@ auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> future<void> {
     return vmmap_shard<Arch>::template efault_future_<void>(pgno);
 
   // XXX lock shard, unlock avail_guard_.
-  future<page_ptr> pg = shard->fault_write(pga_, pgno);
+  future<page_refptr> pg = shard->fault_write(pga_, pgno);
   l.unlock();  // XXX unlock shard
 
-  return combine<void>([pgno](promise<void> done, tuple<future<page_ptr>> f) {
-                         page_ptr pg = get<0>(f).move_or_copy();
+  return combine<void>([pgno](promise<void> done, tuple<future<page_refptr>> f) {
+                         page_refptr pg = get<0>(f).move_or_copy();
                          assert(pg != nullptr);
                          assert_msg(false, "XXX: invoke pmap");
 
