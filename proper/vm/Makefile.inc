@@ -6,3 +6,4 @@ SRCS += vm/src/vm_stats.cc
 SRCS += vm/src/vm_page.cc
 SRCS += vm/src/vm_page_cache.cc
 SRCS += vm/src/vm_page_alloc.cc
+SRCS += vm/src/vm_page_owner.cc

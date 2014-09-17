@@ -6,6 +6,7 @@
 #include <vector>
 #include <mutex>
 #include <ilias/refcnt.h>
+#include <ilias/vm/page_owner.h>
 
 namespace ilias {
 namespace vm {
@@ -18,7 +19,8 @@ class anon_vme
 {
  private:
   class entry
-  : public refcount_base<entry>
+  : public refcount_base<entry>,
+    public page_owner
   {
    public:
     entry() = default;
@@ -26,6 +28,7 @@ class anon_vme
     entry(entry&&) = delete;
     entry& operator=(const entry&) = delete;
     entry& operator=(entry&&) = delete;
+    ~entry() noexcept;
 
     future<page_refptr> fault(shared_ptr<page_alloc>, workq_ptr);
     bool present() const noexcept;
@@ -35,6 +38,8 @@ class anon_vme
     future<page_refptr> assign_locked_(workq_ptr, unique_lock<mutex>&&,
                                     future<page_refptr>);
     void allocation_callback_(future<page_refptr>) noexcept;
+
+    page_refptr release_urgent(page_owner::offset_type, page&) override;
 
     mutable mutex guard_;
     page_refptr page_ = nullptr;

@@ -27,8 +27,6 @@ using namespace std;
 using namespace ilias::pmap;
 
 
-using page_refptr = refpointer<page>;
-
 class page
 : public linked_list_element<tags::page_list>,
   public ll_list_hook<tags::page_cache>,
@@ -83,6 +81,7 @@ class page
   page_refptr try_release_urgent() noexcept;
   void undirty() {}  // XXX implement
   void map_ro_and_update_accessed_dirty() {}  // XXX implement (return busy lock)
+  void unmap_all(/* busy lock */) {}  // XXX implement (return busy lock)
 
   void set_page_owner(page_owner&, page_owner::offset_type = 0) noexcept;
   void clear_page_owner() noexcept;

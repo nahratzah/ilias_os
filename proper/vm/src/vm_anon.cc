@@ -6,6 +6,10 @@ namespace ilias {
 namespace vm {
 
 
+anon_vme::entry::~entry() noexcept {
+  page_->clear_page_owner();
+}
+
 auto anon_vme::entry::fault(shared_ptr<page_alloc> pga, workq_ptr wq) ->
     future<page_refptr> {
   unique_lock<mutex> l{ guard_ };
@@ -55,8 +59,28 @@ auto anon_vme::entry::allocation_callback_(future<page_refptr> f) noexcept ->
     page_ = pg;
     swap(in_progress_, tmp);
   }
+  if (_predict_false(pg == nullptr)) return;
 
-  if (_predict_true(pg != nullptr)) tmp.set(pg);
+  pg->set_page_owner(*this);
+  tmp.set(move(pg));
+}
+
+auto anon_vme::entry::release_urgent(page_owner::offset_type, page& pg) ->
+    page_refptr {
+  assert(pg.get_flags() & page::fl_pgo_call);
+
+  page_refptr rv = nullptr;
+  lock_guard<mutex> l{ guard_ };
+
+  if (_predict_false(&pg != page_)) return rv;
+  if (pg.get_flags() & page::fl_dirty) return rv;
+  /* XXX auto busy_lock = */ pg.map_ro_and_update_accessed_dirty();
+  if (_predict_false(pg.get_flags() & page::fl_dirty)) return rv;
+
+  if (_predict_false(!refcnt_is_solo(pg))) return rv;
+  pg.unmap_all(/* move(busy_lock) */);
+  rv = move(page_);
+  return rv;
 }
 
 

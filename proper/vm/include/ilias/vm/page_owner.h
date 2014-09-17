@@ -21,7 +21,7 @@ class page_owner {
   virtual ~page_owner() noexcept;
 
  public:
-  virtual bool release_urgent(offset_type, page&);
+  virtual page_refptr release_urgent(offset_type, page&);
   virtual void release_async(offset_type, page&);
   virtual void undirty_async(offset_type, page&);
 };
