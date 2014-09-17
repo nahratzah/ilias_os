@@ -36,7 +36,7 @@ default_page_alloc::~default_page_alloc() noexcept {
   ranges_.unlink_all();
 }
 
-auto default_page_alloc::allocate(alloc_style style) -> future<page_refptr> {
+auto default_page_alloc::allocate(alloc_style style) -> future<page_ptr> {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -55,16 +55,16 @@ auto default_page_alloc::allocate(alloc_style style) -> future<page_refptr> {
 
   auto self_ptr =
       static_pointer_cast<default_page_alloc>(this->shared_from_this());
-  return new_promise<page_refptr>(
+  return new_promise<page_ptr>(
       this->get_workq(),
-      bind([](promise<page_refptr> out, const shared_ptr<default_page_alloc>& p,
+      bind([](promise<page_ptr> out, const shared_ptr<default_page_alloc>& p,
               alloc_style style) {
              out.set(p->allocate_prom_(style));
            },
            _1, move(self_ptr), style));
 }
 
-auto default_page_alloc::allocate_prom_(alloc_style style) -> page_refptr {
+auto default_page_alloc::allocate_prom_(alloc_style style) -> page_ptr {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -82,7 +82,7 @@ auto default_page_alloc::allocate_prom_(alloc_style style) -> page_refptr {
 
   lock_guard<mutex> l{ mtx_ };
 
-  page_refptr rv = fetch_from_freelist_();
+  page_ptr rv = fetch_from_freelist_();
   if (_predict_true(rv)) return rv;
 
   assert_msg(false, "XXX implement");  // XXX implement, return promise that may or may not be complete.
@@ -102,7 +102,7 @@ auto default_page_alloc::allocate_prom_(alloc_style style) -> page_refptr {
   for (;;);
 }
 
-auto default_page_alloc::allocate_urgent(alloc_style style) -> page_refptr {
+auto default_page_alloc::allocate_urgent(alloc_style style) -> page_ptr {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -121,7 +121,7 @@ auto default_page_alloc::allocate_urgent(alloc_style style) -> page_refptr {
   unique_lock<mutex> l{ mtx_ };
 
   /* Try normal allocation. */
-  page_refptr rv = fetch_from_freelist_();
+  page_ptr rv = fetch_from_freelist_();
   if (_predict_true(rv)) return rv;
 
   /* Try poking the cache to release a page. */
@@ -270,9 +270,9 @@ auto default_page_alloc::deallocate(page* pg) noexcept -> void {
   add_to_freelist_(pg, page_count<native_arch>(1));
 }
 
-auto default_page_alloc::fetch_from_freelist_() noexcept -> page_refptr {
+auto default_page_alloc::fetch_from_freelist_() noexcept -> page_ptr {
   const auto i = ranges_.root();
-  page_refptr rv;
+  page_ptr rv;
   if (_predict_false(i == ranges_.end()))
     return rv;
 

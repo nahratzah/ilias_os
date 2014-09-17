@@ -34,7 +34,7 @@ class page_alloc
   page_alloc& operator=(const page_alloc&) = delete;
   virtual ~page_alloc() noexcept;
 
-  virtual future<page_refptr> allocate(alloc_style) = 0;
+  virtual future<page_ptr> allocate(alloc_style) = 0;
   virtual future<page_list> allocate(page_count<native_arch>, alloc_style) = 0;
   virtual future<page_list> allocate(page_count<native_arch>, spec) = 0;
 
@@ -117,12 +117,12 @@ class default_page_alloc
   default_page_alloc(stats_group&, workq_service&) noexcept;
   ~default_page_alloc() noexcept override;
 
-  future<page_refptr> allocate(alloc_style) override;
+  future<page_ptr> allocate(alloc_style) override;
  private:
-  page_refptr allocate_prom_(alloc_style);
+  page_ptr allocate_prom_(alloc_style);
 
  public:
-  page_refptr allocate_urgent(alloc_style);
+  page_ptr allocate_urgent(alloc_style);
 
   future<page_list> allocate(page_count<native_arch>, alloc_style) override;
  private:
@@ -137,7 +137,7 @@ class default_page_alloc
   void deallocate(page*) noexcept override;
 
  private:
-  page_refptr fetch_from_freelist_() noexcept;
+  page_ptr fetch_from_freelist_() noexcept;
   page_range fetch_from_freelist_(page_count<native_arch>) noexcept;
   void add_to_freelist_(page*, page_count<native_arch>) noexcept;
 

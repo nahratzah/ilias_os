@@ -18,9 +18,9 @@ class cow_vme
   cow_vme(cow_vme&&) noexcept;
   ~cow_vme() noexcept override;
 
-  future<page_refptr> fault_read(shared_ptr<page_alloc>,
+  future<page_ptr> fault_read(shared_ptr<page_alloc>,
                               page_count<native_arch>) override;
-  future<page_refptr> fault_write(shared_ptr<page_alloc>,
+  future<page_ptr> fault_write(shared_ptr<page_alloc>,
                                page_count<native_arch>) override;
 
   vmmap_entry_ptr clone() const override;

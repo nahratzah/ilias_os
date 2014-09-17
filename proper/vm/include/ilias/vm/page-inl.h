@@ -101,7 +101,7 @@ inline page_range::page_range(page_range&& o) noexcept
   npg_(exchange(o.npg_, 0))
 {}
 
-inline page_range::page_range(page_refptr p) noexcept
+inline page_range::page_range(page_ptr p) noexcept
 : pg_(p.release()),
   npg_(pg_ == nullptr ? 0 : 1)
 {}

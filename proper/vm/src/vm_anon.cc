@@ -12,48 +12,48 @@ anon_vme::entry::~entry() noexcept {
 }
 
 auto anon_vme::entry::fault(shared_ptr<page_alloc> pga, workq_ptr wq) ->
-    future<page_refptr> {
+    future<page_ptr> {
   unique_lock<mutex> l{ guard_ };
 
   if (in_progress_.is_initialized()) return in_progress_;
 
   if (page_ != nullptr) {
-    promise<page_refptr> rv = new_promise<page_refptr>();
+    promise<page_ptr> rv = new_promise<page_ptr>();
     rv.set(page_);
     return rv;
   }
 
-  future<page_refptr> f = pga->allocate(alloc_fail_not_ok);
+  future<page_ptr> f = pga->allocate(alloc_fail_not_ok);
   assert_msg(false, "XXX: implement call to system-wide-allocator.");
   return assign_locked_(move(wq), move(l), move(f));
 }
 
-auto anon_vme::entry::assign(workq_ptr wq, future<page_refptr> f) ->
-    future<page_refptr> {
+auto anon_vme::entry::assign(workq_ptr wq, future<page_ptr> f) ->
+    future<page_ptr> {
   return assign_locked_(wq, unique_lock<mutex>{ guard_ },
                         page_unbusy_future(wq, move(f)));
 }
 
 auto anon_vme::entry::assign_locked_(workq_ptr wq, unique_lock<mutex>&& l,
-                                     future<page_refptr> f) -> future<page_refptr> {
+                                     future<page_ptr> f) -> future<page_ptr> {
   using std::placeholders::_1;
 
-  future<page_refptr> rv;
+  future<page_ptr> rv;
 
   assert(l.owns_lock());
   assert(page_ == nullptr && !in_progress_.is_initialized());
 
-  rv = in_progress_ = new_promise<page_refptr>();
+  rv = in_progress_ = new_promise<page_ptr>();
   l.unlock();  // In case promise has already completed.
   callback(f, move(wq),
            bind(&entry::allocation_callback_, entry_ptr(this), _1));
   return rv;
 }
 
-auto anon_vme::entry::allocation_callback_(future<page_refptr> f) noexcept ->
+auto anon_vme::entry::allocation_callback_(future<page_ptr> f) noexcept ->
     void {
-  promise<page_refptr> tmp;
-  page_refptr pg = f.move_or_copy();
+  promise<page_ptr> tmp;
+  page_ptr pg = f.move_or_copy();
 
   {
     lock_guard<mutex> l{ guard_ };
@@ -68,10 +68,10 @@ auto anon_vme::entry::allocation_callback_(future<page_refptr> f) noexcept ->
 }
 
 auto anon_vme::entry::release_urgent(page_owner::offset_type, page& pg) ->
-    page_refptr {
+    page_ptr {
   assert(pg.get_flags() & page::fl_pgo_call);
 
-  page_refptr rv = nullptr;
+  page_ptr rv = nullptr;
   lock_guard<mutex> l{ guard_ };
 
   if (_predict_false(&pg != page_)) return rv;
@@ -121,7 +121,7 @@ auto anon_vme::present(page_count<native_arch> off) const noexcept -> bool {
 
 auto anon_vme::fault_read(shared_ptr<page_alloc> pga,
                           page_count<native_arch> off) ->
-    future<page_refptr> {
+    future<page_ptr> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
@@ -133,7 +133,7 @@ auto anon_vme::fault_read(shared_ptr<page_alloc> pga,
 
 auto anon_vme::fault_write(shared_ptr<page_alloc> pga,
                            page_count<native_arch> off) ->
-    future<page_refptr> {
+    future<page_ptr> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
@@ -144,7 +144,7 @@ auto anon_vme::fault_write(shared_ptr<page_alloc> pga,
 }
 
 auto anon_vme::fault_assign(page_count<native_arch> off,
-                            future<page_refptr> pg) -> future<page_refptr> {
+                            future<page_ptr> pg) -> future<page_ptr> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));

@@ -42,8 +42,8 @@ class page_cache {
 
   bool empty() const noexcept;
 
-  void manage(const page_refptr&, bool) noexcept;
-  void unmanage(const page_refptr&) noexcept;
+  void manage(const page_ptr&, bool) noexcept;
+  void unmanage(const page_ptr&) noexcept;
 
   page_list try_release_urgent(page_count<native_arch>) noexcept;
   future<page_list> try_release(page_count<native_arch>) noexcept;

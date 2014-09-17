@@ -8,8 +8,8 @@
 namespace ilias {
 namespace vm {
 
-future<page_refptr> page_unbusy_future(workq_service&, future<page_refptr>);
-future<page_refptr> page_unbusy_future(workq_ptr, future<page_refptr>);
+future<page_ptr> page_unbusy_future(workq_service&, future<page_ptr>);
+future<page_ptr> page_unbusy_future(workq_ptr, future<page_ptr>);
 
 }} /* namespace ilias::vm */
 

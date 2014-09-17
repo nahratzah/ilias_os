@@ -30,20 +30,20 @@ class anon_vme
     entry& operator=(entry&&) = delete;
     ~entry() noexcept;
 
-    future<page_refptr> fault(shared_ptr<page_alloc>, workq_ptr);
+    future<page_ptr> fault(shared_ptr<page_alloc>, workq_ptr);
     bool present() const noexcept;
-    future<page_refptr> assign(workq_ptr, future<page_refptr>);
+    future<page_ptr> assign(workq_ptr, future<page_ptr>);
 
    private:
-    future<page_refptr> assign_locked_(workq_ptr, unique_lock<mutex>&&,
-                                    future<page_refptr>);
-    void allocation_callback_(future<page_refptr>) noexcept;
+    future<page_ptr> assign_locked_(workq_ptr, unique_lock<mutex>&&,
+                                    future<page_ptr>);
+    void allocation_callback_(future<page_ptr>) noexcept;
 
-    page_refptr release_urgent(page_owner::offset_type, page&) override;
+    page_ptr release_urgent(page_owner::offset_type, page&) override;
 
     mutable mutex guard_;
-    page_refptr page_ = nullptr;
-    promise<page_refptr> in_progress_;
+    page_ptr page_ = nullptr;
+    promise<page_ptr> in_progress_;
   };
 
   using entry_ptr = refpointer<entry>;
@@ -61,11 +61,11 @@ class anon_vme
   bool all_present() const noexcept;
   bool present(page_count<native_arch>) const noexcept;
 
-  future<page_refptr> fault_read(shared_ptr<page_alloc>,
+  future<page_ptr> fault_read(shared_ptr<page_alloc>,
                               page_count<native_arch>) override;
-  future<page_refptr> fault_write(shared_ptr<page_alloc>,
+  future<page_ptr> fault_write(shared_ptr<page_alloc>,
                                page_count<native_arch>) override;
-  future<page_refptr> fault_assign(page_count<native_arch>, future<page_refptr>);
+  future<page_ptr> fault_assign(page_count<native_arch>, future<page_ptr>);
 
   vmmap_entry_ptr clone() const override;
   pair<vmmap_entry_ptr, vmmap_entry_ptr> split(

@@ -14,7 +14,7 @@ class page_cache;
 class page_alloc;
 class default_page_alloc;
 
-using page_refptr = refpointer<page>;
+using page_ptr = refpointer<page>;
 
 
 }} /* namespace ilias::vm */

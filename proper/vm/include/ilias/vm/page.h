@@ -60,7 +60,7 @@ class page
   friend page_alloc;
 
  public:
-  using release_functor = function<page_refptr(page_refptr, bool)>;  // XXX return promise, bool argument = delayed-ok
+  using release_functor = function<page_ptr(page_ptr, bool)>;  // XXX return promise, bool argument = delayed-ok
   using flags_type = uint32_t;
 
   static constexpr flags_type fl_cache_speculative = 0x00000001;
@@ -101,7 +101,7 @@ class page
   flags_type assign_masked_flags(flags_type, flags_type) noexcept;
 
   void update_accessed_dirty() {}  // XXX implement
-  page_refptr try_release_urgent() noexcept;
+  page_ptr try_release_urgent() noexcept;
   void undirty() {}  // XXX implement
   page_busy_lock map_ro_and_update_accessed_dirty() { return page_busy_lock(*this); }  // XXX implement (return busy lock)
   page_busy_lock unmap_all(page_busy_lock) { return page_busy_lock(*this); }  // XXX implement (return busy lock)
@@ -142,7 +142,7 @@ class page_range {
   using value_type = page;
   using reference = value_type&;
   using const_reference = const value_type&;
-  using pointer = page_refptr;
+  using pointer = page_ptr;
   using const_pointer = refpointer<const value_type>;
   using iterator = value_type*;
   using const_iterator = const value_type*;
@@ -153,7 +153,7 @@ class page_range {
   page_range() noexcept = default;
   page_range(const page_range&) noexcept;
   page_range(page_range&&) noexcept;
-  explicit page_range(page_refptr) noexcept;
+  explicit page_range(page_ptr) noexcept;
   ~page_range() noexcept;
 
   page_range& operator=(page_range) noexcept;
@@ -216,13 +216,13 @@ class page_list {
   page_count<native_arch> size() const noexcept;
   size_type n_blocks() const noexcept;
 
-  void push_front(page_refptr) noexcept;
-  void push_back(page_refptr) noexcept;
+  void push_front(page_ptr) noexcept;
+  void push_back(page_ptr) noexcept;
   void push_pages_front(page_range) noexcept;
   void push_pages_back(page_range) noexcept;
 
-  page_refptr pop_front() noexcept;
-  page_refptr pop_back() noexcept;
+  page_ptr pop_front() noexcept;
+  page_ptr pop_back() noexcept;
   page_range pop_pages_front() noexcept;
   page_range pop_pages_back() noexcept;
 

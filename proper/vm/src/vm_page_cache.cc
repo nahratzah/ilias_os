@@ -211,7 +211,7 @@ auto page_cache::empty() const noexcept -> bool {
   return true;
 }
 
-auto page_cache::manage(const page_refptr& pg, bool speculative) noexcept ->
+auto page_cache::manage(const page_ptr& pg, bool speculative) noexcept ->
     void {
   cache_page_lock l{ *pg };
   assert(!(l.flags() & page::fl_cache_present));
@@ -220,7 +220,7 @@ auto page_cache::manage(const page_refptr& pg, bool speculative) noexcept ->
     manage_.add();
 }
 
-auto page_cache::unmanage(const page_refptr& pg) noexcept -> void {
+auto page_cache::unmanage(const page_ptr& pg) noexcept -> void {
   cache_page_lock l{ *pg };
   assert(!(l.flags() & page::fl_cache_present));
 
@@ -380,7 +380,7 @@ auto page_cache::try_release_urgent_zone_(unsigned int zone,
     }
     if (pgfl & page::fl_cannot_free_mask) continue;
 
-    page_refptr pg = i->try_release_urgent();
+    page_ptr pg = i->try_release_urgent();
     const bool unlinked_succes = unlink_zone_(zone, *pg);
     assert(unlinked_succes);  // XXX can this fail?
     pgl.push_back(move(pg));

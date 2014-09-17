@@ -38,14 +38,14 @@ cow_vme::cow_vme(cow_vme&& o) noexcept
 cow_vme::~cow_vme() noexcept {}
 
 auto cow_vme::fault_read(shared_ptr<page_alloc> pga,
-                         page_count<native_arch> off) -> future<page_refptr> {
+                         page_count<native_arch> off) -> future<page_ptr> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_read(move(pga), off);
   return nested_->fault_read(move(pga), off);
 }
 
 auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
-                          page_count<native_arch> off) -> future<page_refptr> {
+                          page_count<native_arch> off) -> future<page_ptr> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_write(move(pga), off);
 
@@ -55,15 +55,15 @@ auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
   for (;;);
 
   /* Allocate page for anon. */
-  future<page_refptr> pg = pga->allocate(alloc_fail_not_ok);
+  future<page_ptr> pg = pga->allocate(alloc_fail_not_ok);
   /* Fault underlying storage for read access. */
-  future<page_refptr> orig_pg = nested_->fault_read(move(pga), off);
+  future<page_ptr> orig_pg = nested_->fault_read(move(pga), off);
 
   /* Copy original page to anon page. */
-  future<page_refptr> copy_pg;  // XXX =
+  future<page_ptr> copy_pg;  // XXX =
 #if 0
-      combine([](promise<page_refptr> out,
-                 future<page_refptr> pg, future<page_refptr> orig_pg) {
+      combine([](promise<page_ptr> out,
+                 future<page_ptr> pg, future<page_ptr> orig_pg) {
                 page_copy(pg.get_mutable(), orig_pg.move_or_copy());
                 out.set(pg.move_or_copy());
               },

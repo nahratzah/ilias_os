@@ -14,7 +14,7 @@ class page_unbusy_job final
 : public workq_job
 {
  public:
-  page_unbusy_job(workq_ptr wq, future<page_refptr> src)
+  page_unbusy_job(workq_ptr wq, future<page_ptr> src)
   : workq_job(wq, TYPE_PERSIST | TYPE_PARALLEL),
     src_(src)
   {}
@@ -23,7 +23,7 @@ class page_unbusy_job final
   page_unbusy_job(const page_unbusy_job&) = delete;
   page_unbusy_job& operator=(const page_unbusy_job&) = delete;
 
-  static future<page_refptr> install(workq_ptr wq, future<page_refptr> src) {
+  static future<page_ptr> install(workq_ptr wq, future<page_ptr> src) {
     using std::placeholders::_1;
 
     shared_ptr<page_unbusy_job> self = new_workq_job<page_unbusy_job>(move(wq),
@@ -31,7 +31,7 @@ class page_unbusy_job final
 
     callback(src, bind(&src_callback, weak_ptr<page_unbusy_job>(self)),
              PROM_DEFER);
-    return new_promise<page_refptr>(bind(&dst_callback, move(self), _1));
+    return new_promise<page_ptr>(bind(&dst_callback, move(self), _1));
   }
 
  private:
@@ -48,7 +48,7 @@ class page_unbusy_job final
   }
 
   static void dst_callback(const shared_ptr<page_unbusy_job>& self,
-                           promise<page_refptr> out) noexcept {
+                           promise<page_ptr> out) noexcept {
     using std::placeholders::_1;
     assert(self->src_.is_initialized());
 
@@ -78,8 +78,8 @@ class page_unbusy_job final
   }
 
   shared_ptr<page_unbusy_job> self_;
-  future<page_refptr> src_;
-  promise<page_refptr> dst_;
+  future<page_ptr> src_;
+  promise<page_ptr> dst_;
   atomic<bool> started_{ false };
 };
 
@@ -87,13 +87,13 @@ class page_unbusy_job final
 } /* namespace ilias::vm::<unnamed> */
 
 
-auto page_unbusy_future(workq_service& wqs, future<page_refptr> f) ->
-    future<page_refptr> {
+auto page_unbusy_future(workq_service& wqs, future<page_ptr> f) ->
+    future<page_ptr> {
   return page_unbusy_future(wqs.new_workq(), move(f));
 }
 
-auto page_unbusy_future(workq_ptr wq, future<page_refptr> f) ->
-    future<page_refptr> {
+auto page_unbusy_future(workq_ptr wq, future<page_ptr> f) ->
+    future<page_ptr> {
   if (f.ready() && !(f.get()->get_flags() & page::fl_busy)) return f;
 
   return page_unbusy_job::install(move(wq), move(f));

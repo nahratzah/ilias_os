@@ -36,7 +36,7 @@ auto page::set_flag_iff_zero(flags_type f) noexcept -> flags_type {
   return expect;
 }
 
-auto page::try_release_urgent() noexcept -> page_refptr {
+auto page::try_release_urgent() noexcept -> page_ptr {
   class pgo_call_lock {
    public:
     pgo_call_lock() = delete;
@@ -73,7 +73,7 @@ auto page::try_release_urgent() noexcept -> page_refptr {
     if (!pgo) return nullptr;
 
     if (pgo->release_urgent(off, *this))
-      return page_refptr(this);
+      return page_ptr(this);
   } catch (...) {
     /* SKIP */
   }
@@ -140,7 +140,7 @@ auto page_list::n_blocks() const noexcept -> size_type {
   return distance(data_.begin(), data_.end());
 }
 
-auto page_list::push_front(page_refptr pg) noexcept -> void {
+auto page_list::push_front(page_ptr pg) noexcept -> void {
   assert(pg->npgl_ == page_count<native_arch>(0));
 
   pg->npgl_ = page_count<native_arch>(1);
@@ -148,7 +148,7 @@ auto page_list::push_front(page_refptr pg) noexcept -> void {
   ++size_;
 }
 
-auto page_list::push_back(page_refptr pg) noexcept -> void {
+auto page_list::push_back(page_ptr pg) noexcept -> void {
   assert(pg->npgl_ == page_count<native_arch>(0));
 
   pg->npgl_ = page_count<native_arch>(1);
@@ -186,7 +186,7 @@ auto page_list::push_pages_back(page_range r) noexcept -> void {
   size_ += page_count<native_arch>(npg);
 }
 
-auto page_list::pop_front() noexcept -> page_refptr {
+auto page_list::pop_front() noexcept -> page_ptr {
   if (data_.empty()) return nullptr;
 
   page* pg = data_.unlink_front();
@@ -200,10 +200,10 @@ auto page_list::pop_front() noexcept -> page_refptr {
 
   --size_;
   pg->npgl_ = page_count<native_arch>(0);
-  return page_refptr(pg, false);
+  return page_ptr(pg, false);
 }
 
-auto page_list::pop_back() noexcept -> page_refptr {
+auto page_list::pop_back() noexcept -> page_ptr {
   if (data_.empty()) return nullptr;
 
   page* pg = data_.unlink_back();
@@ -217,7 +217,7 @@ auto page_list::pop_back() noexcept -> page_refptr {
   }
 
   --size_;
-  return page_refptr(pg, false);
+  return page_ptr(pg, false);
 }
 
 auto page_list::pop_pages_front() noexcept -> page_range {
