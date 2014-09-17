@@ -74,11 +74,11 @@ auto anon_vme::entry::release_urgent(page_owner::offset_type, page& pg) ->
 
   if (_predict_false(&pg != page_)) return rv;
   if (pg.get_flags() & page::fl_dirty) return rv;
-  /* XXX auto busy_lock = */ pg.map_ro_and_update_accessed_dirty();
+  page_busy_lock busy_lock = pg.map_ro_and_update_accessed_dirty();
   if (_predict_false(pg.get_flags() & page::fl_dirty)) return rv;
 
   if (_predict_false(!refcnt_is_solo(pg))) return rv;
-  pg.unmap_all(/* move(busy_lock) */);
+  pg.unmap_all(move(busy_lock));
   rv = move(page_);
   return rv;
 }

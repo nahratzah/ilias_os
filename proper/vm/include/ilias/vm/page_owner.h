@@ -18,7 +18,7 @@ class page_owner {
   page_owner(page_owner&&) noexcept = default;
   page_owner& operator=(const page_owner&) noexcept = default;
   page_owner& operator=(page_owner&&) noexcept = default;
-  virtual ~page_owner() noexcept;
+  ~page_owner() noexcept = default;
 
  public:
   virtual page_refptr release_urgent(offset_type, page&);

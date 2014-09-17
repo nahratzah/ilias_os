@@ -161,7 +161,7 @@ auto page_cache::spec_need_rebalance_wqjob::run() noexcept -> void {
       continue;
     }
 
-    /* XXX: auto busy_lock = */ i->map_ro_and_update_accessed_dirty();
+    page_busy_lock busy_lock = i->map_ro_and_update_accessed_dirty();
     if (i->get_flags() & (page::fl_accessed | page::fl_dirty))
       continue;
 

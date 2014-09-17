@@ -18,7 +18,7 @@ class anon_vme
 : public vmmap_entry
 {
  private:
-  class entry
+  class entry final
   : public refcount_base<entry>,
     public page_owner
   {

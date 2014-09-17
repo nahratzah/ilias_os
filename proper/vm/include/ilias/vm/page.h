@@ -27,6 +27,29 @@ using namespace std;
 using namespace ilias::pmap;
 
 
+class page_busy_lock {
+ public:
+  page_busy_lock() noexcept = default;
+  explicit page_busy_lock(page&) noexcept;
+  page_busy_lock(page&, try_to_lock_t) noexcept;
+  page_busy_lock(page&, defer_lock_t) noexcept;
+  page_busy_lock(const page_busy_lock&) noexcept = delete;
+  page_busy_lock(page_busy_lock&&) noexcept;
+  ~page_busy_lock() noexcept;
+
+  void lock() noexcept;
+  bool try_lock() noexcept;
+  void unlock() noexcept;
+
+  explicit operator bool() const noexcept;
+  bool owns_lock() const noexcept;
+  page* get_page() const noexcept;
+
+ private:
+  page* pg_ = nullptr;
+  bool locked_ = false;
+};
+
 class page
 : public linked_list_element<tags::page_list>,
   public ll_list_hook<tags::page_cache>,
@@ -80,8 +103,8 @@ class page
   void update_accessed_dirty() {}  // XXX implement
   page_refptr try_release_urgent() noexcept;
   void undirty() {}  // XXX implement
-  void map_ro_and_update_accessed_dirty() {}  // XXX implement (return busy lock)
-  void unmap_all(/* busy lock */) {}  // XXX implement (return busy lock)
+  page_busy_lock map_ro_and_update_accessed_dirty() { return page_busy_lock(*this); }  // XXX implement (return busy lock)
+  page_busy_lock unmap_all(page_busy_lock) { return page_busy_lock(*this); }  // XXX implement (return busy lock)
 
   void set_page_owner(page_owner&, page_owner::offset_type = 0) noexcept;
   void clear_page_owner() noexcept;

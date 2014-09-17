@@ -5,8 +5,6 @@ namespace ilias {
 namespace vm {
 
 
-page_owner::~page_owner() noexcept {}
-
 auto page_owner::release_urgent(offset_type, page&) -> page_refptr {
   return nullptr;
 }

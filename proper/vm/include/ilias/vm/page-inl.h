@@ -9,6 +9,66 @@ namespace ilias {
 namespace vm {
 
 
+inline page_busy_lock::page_busy_lock(page& pg) noexcept
+: pg_(&pg)
+{
+  lock();
+}
+
+inline page_busy_lock::page_busy_lock(page& pg, try_to_lock_t) noexcept
+: pg_(&pg)
+{
+  try_lock();
+}
+
+inline page_busy_lock::page_busy_lock(page& pg, defer_lock_t) noexcept
+: pg_(&pg)
+{}
+
+inline page_busy_lock::page_busy_lock(page_busy_lock&& o) noexcept
+: pg_(exchange(o.pg_, nullptr)),
+  locked_(exchange(o.locked_, false))
+{}
+
+inline page_busy_lock::~page_busy_lock() noexcept {
+  if (locked_) unlock();
+}
+
+inline auto page_busy_lock::lock() noexcept -> void {
+  assert(!locked_);
+  assert(pg_ != nullptr);
+
+  pg_->set_flag_iff_zero(page::fl_busy);
+  locked_ = true;
+}
+
+inline auto page_busy_lock::try_lock() noexcept -> bool {
+  assert(!locked_);
+  assert(pg_ != nullptr);
+
+  return locked_ = pg_->try_set_flag_iff_zero(page::fl_busy).second;
+}
+
+inline auto page_busy_lock::unlock() noexcept -> void {
+  assert(pg_ != nullptr);
+  assert(locked_);
+
+  pg_->clear_flag(page::fl_busy);
+}
+
+inline page_busy_lock::operator bool() const noexcept {
+  return owns_lock();
+}
+
+inline auto page_busy_lock::owns_lock() const noexcept -> bool {
+  return locked_;
+}
+
+inline auto page_busy_lock::get_page() const noexcept -> page* {
+  return pg_;
+}
+
+
 inline auto page::get_flags() const noexcept -> flags_type {
   return flags_.load(memory_order_relaxed);
 }
