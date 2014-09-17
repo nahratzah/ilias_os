@@ -6,6 +6,7 @@ namespace vm {
 
 
 class page;
+class page_owner;
 class page_list;
 class page_cache;
 class page_alloc;

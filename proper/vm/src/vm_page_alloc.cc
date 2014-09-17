@@ -29,7 +29,7 @@ default_page_alloc::default_page_alloc(stats_group& parent_group,
                                        workq_service& wqs) noexcept
 : page_alloc(wqs),
   cache_group_(parent_group, "page_cache"),
-  cache_(this->cache_group_)
+  cache_(this->cache_group_, wqs)
 {}
 
 default_page_alloc::~default_page_alloc() noexcept {

@@ -9,6 +9,8 @@
 #include <functional>
 #include <ilias/vm/vm-fwd.h>
 #include <ilias/refcnt.h>
+#include <ilias/ll_list.h>
+#include <ilias/vm/page_owner.h>
 
 namespace ilias {
 namespace vm {
@@ -29,7 +31,7 @@ using page_refptr = refpointer<page>;
 
 class page
 : public linked_list_element<tags::page_list>,
-  public linked_list_element<tags::page_cache>,
+  public ll_list_hook<tags::page_cache>,
   public linked_set_element<page, tags::page_alloc>,
   public refcount_base<page>
 {
@@ -40,19 +42,21 @@ class page
   using release_functor = function<page_refptr(page_refptr, bool)>;  // XXX return promise, bool argument = delayed-ok
   using flags_type = uint32_t;
 
-  static constexpr flags_type fl_cache_speculative = 0x001;
-  static constexpr flags_type fl_cache_cold        = 0x002;
-  static constexpr flags_type fl_cache_hot         = 0x003;
-  static constexpr flags_type fl_cache_modify      = 0x004;
-  static constexpr flags_type fl_cache_present     = 0x008;
+  static constexpr flags_type fl_cache_speculative = 0x00000001;
+  static constexpr flags_type fl_cache_cold        = 0x00000002;
+  static constexpr flags_type fl_cache_hot         = 0x00000003;
+  static constexpr flags_type fl_cache_modify      = 0x00000004;
+  static constexpr flags_type fl_cache_present     = 0x00000008;
 
-  static constexpr flags_type fl_accessed          = 0x010;
-  static constexpr flags_type fl_dirty             = 0x020;
+  static constexpr flags_type fl_accessed          = 0x00000010;
+  static constexpr flags_type fl_dirty             = 0x00000020;
 
-  static constexpr flags_type fl_busy              = 0x040;
-  static constexpr flags_type fl_wired             = 0x080;
+  static constexpr flags_type fl_busy              = 0x00000040;
+  static constexpr flags_type fl_wired             = 0x00000080;
 
-  static constexpr flags_type fl_free              = 0x100;
+  static constexpr flags_type fl_free              = 0x00000100;
+
+  static constexpr flags_type fl_pgo_call          = 0x80000000;  // pgo_ call in progress.
 
 
   static constexpr flags_type fl_cache_mask        = fl_cache_speculative |
@@ -64,6 +68,7 @@ class page
   page(const page&) = delete;
   page& operator=(const page&) = delete;
   page(page_no<native_arch>) noexcept;
+  ~page() noexcept;
 
   page_no<native_arch> address() const noexcept { return pgno_; }
 
@@ -77,11 +82,21 @@ class page
   void update_accessed_dirty() {}  // XXX implement
   page_refptr try_release_urgent() noexcept;
   void undirty() {}  // XXX implement
+  void map_ro_and_update_accessed_dirty() {}  // XXX implement (return busy lock)
+
+  void set_page_owner(page_owner&, page_owner::offset_type = 0) noexcept;
+  void clear_page_owner() noexcept;
 
   page_count<native_arch> nfree_;  // Number of free pages starting at this
                                    // page (only has meaning if the page is
                                    // actually free).
                                    // Public, so allocators can mess with it.
+
+  /*
+   * Protects:
+   * - pgo_
+   */
+  mutable mutex guard_;
 
  private:
   page_no<native_arch> pgno_;  // Address of this page.
@@ -92,8 +107,9 @@ class page
   mutable atomic<size_t> refcnt_{ 0 };
 
   atomic<flags_type> flags_;
-  release_functor release_;
   shared_ptr<page_alloc> pga_owner_;
+
+  tuple<page_owner*, page_owner::offset_type> pgo_;
 };
 
 

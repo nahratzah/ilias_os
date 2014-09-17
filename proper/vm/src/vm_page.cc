@@ -6,6 +6,12 @@ namespace ilias {
 namespace vm {
 
 
+page::page(page_no<native_arch> pgno) noexcept
+: pgno_(pgno)
+{}
+
+page::~page() noexcept {}
+
 auto page::try_set_flag_iff_zero(flags_type f) noexcept ->
     pair<flags_type, bool> {
   flags_type expect = flags_.load(memory_order_relaxed);
@@ -31,12 +37,58 @@ auto page::set_flag_iff_zero(flags_type f) noexcept -> flags_type {
 }
 
 auto page::try_release_urgent() noexcept -> page_refptr {
+  class pgo_call_lock {
+   public:
+    pgo_call_lock() = delete;
+    pgo_call_lock(const pgo_call_lock&) = delete;
+    pgo_call_lock& operator=(const pgo_call_lock&) = delete;
+
+    pgo_call_lock(page& self)
+    : self_(self),
+      locked_(self_.try_set_flag_iff_zero(fl_pgo_call).second)
+    {}
+
+    ~pgo_call_lock() noexcept {
+      if (locked_) self_.clear_flag(fl_pgo_call);
+    }
+
+    explicit operator bool() const noexcept { return locked_; }
+
+   private:
+    page& self_;
+    bool locked_ = false;
+  };
+
+
   try {
-    if (!release_) return nullptr;
-    return release_(this, false);
+    pgo_call_lock pgo_l{ *this };
+    if (!pgo_l) return nullptr;
+
+    page_owner* pgo;
+    page_owner::offset_type off;
+    {
+      lock_guard<mutex> l{ guard_ };
+      tie(pgo, off) = pgo_;
+    }
+    if (!pgo) return nullptr;
+
+    if (pgo->release_urgent(off, *this))
+      return page_refptr(this);
   } catch (...) {
-    return nullptr;
+    /* SKIP */
   }
+  return nullptr;
+}
+
+auto page::set_page_owner(page_owner& pgo, page_owner::offset_type off)
+    noexcept -> void {
+  lock_guard<mutex> l{ guard_ };
+  pgo_ = make_tuple(&pgo, off);
+}
+
+auto page::clear_page_owner() noexcept -> void {
+  lock_guard<mutex> l{ guard_ };
+  pgo_ = make_tuple(nullptr, 0);
 }
 
 

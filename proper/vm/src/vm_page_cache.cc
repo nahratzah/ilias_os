@@ -65,503 +65,335 @@ class cache_page_lock {
 } /* namespace ilias::vm::<unnamed> */
 
 
-page_cache::page_cache(stats_group& group) noexcept
-: manage_(group, "manage"),
+class page_cache::hot_cold_rebalance_wqjob
+: public workq_job
+{
+ public:
+  hot_cold_rebalance_wqjob(workq_ptr, page_cache&);
+  ~hot_cold_rebalance_wqjob() noexcept override;
+
+  void run() noexcept override;
+
+ private:
+  page_cache& self_;
+};
+
+class page_cache::spec_need_rebalance_wqjob
+: public workq_job {
+ public:
+  spec_need_rebalance_wqjob(workq_ptr, page_cache&);
+  ~spec_need_rebalance_wqjob() noexcept;
+
+  void run() noexcept override;
+
+ private:
+  page_cache& self_;
+};
+
+
+page_cache::hot_cold_rebalance_wqjob::hot_cold_rebalance_wqjob(
+    workq_ptr wq, page_cache& self)
+: workq_job(wq),
+  self_(self)
+{}
+
+page_cache::hot_cold_rebalance_wqjob::~hot_cold_rebalance_wqjob() noexcept {}
+
+auto page_cache::hot_cold_rebalance_wqjob::run() noexcept -> void {
+  auto hc_diff = self_.hot_cold_diff_.load(memory_order_relaxed);
+  if (hc_diff >= -1 && hc_diff <= 1) return;
+  const unsigned int scan_zone = (hc_diff < 0 ? cold_zone : hot_zone);
+  const bool demote_break = (hc_diff > 0);
+  const bool promote_break = (hc_diff < 0);
+
+  page* stop = nullptr;
+  for (list_type::iterator i_next, i = self_.data_[scan_zone].begin();
+       i != self_.data_[scan_zone].end() && &*i != stop;
+       i = i_next) {
+    i_next = next(i);
+
+    cache_page_lock l{ *i, try_to_lock };
+    if (!l) continue;
+
+    i->update_accessed_dirty();
+    if (i->clear_flag(page::fl_accessed) & page::fl_accessed) {
+      page& i_ref = *i;
+      if (self_.promote_(scan_zone, *i)) {
+        if (stop == nullptr) stop = &i_ref;
+        if (promote_break) break;
+      }
+      continue;
+    }
+
+    if (self_.demote_(scan_zone, *i) && demote_break) break;
+  }
+}
+
+
+page_cache::spec_need_rebalance_wqjob::spec_need_rebalance_wqjob(
+    workq_ptr wq, page_cache& self)
+: workq_job(wq),
+  self_(self)
+{}
+
+page_cache::spec_need_rebalance_wqjob::~spec_need_rebalance_wqjob() noexcept {}
+
+auto page_cache::spec_need_rebalance_wqjob::run() noexcept -> void {
+  auto cn_diff = self_.spec_need_diff_.load(memory_order_relaxed);
+  if (cn_diff >= 0) return;
+
+  for (list_type::iterator i_next, i = self_.data_[cold_zone].begin();
+       i != self_.data_[cold_zone].end();
+       i = i_next) {
+    i_next = next(i);
+
+    cache_page_lock l{ *i, try_to_lock };
+    if (!l) continue;
+
+    i->update_accessed_dirty();
+    if (i->clear_flag(page::fl_accessed) & page::fl_accessed) {
+      self_.promote_(cold_zone, *i);
+      continue;
+    }
+
+    if (i->get_flags() & page::fl_dirty) {
+      i->undirty();
+      continue;
+    }
+
+    /* XXX: auto busy_lock = */ i->map_ro_and_update_accessed_dirty();
+    if (i->get_flags() & (page::fl_accessed | page::fl_dirty))
+      continue;
+
+    if (self_.demote_(cold_zone, *i))
+      break;
+  }
+}
+
+
+constexpr unsigned int page_cache::n_zones;
+constexpr unsigned int page_cache::spec_zone;
+constexpr unsigned int page_cache::cold_zone;
+constexpr unsigned int page_cache::hot_zone;
+constexpr array<page::flags_type, page_cache::n_zones> page_cache::pg_flags;
+
+
+page_cache::page_cache(stats_group& group, workq_ptr wq)
+: hot_cold_rebalance_job_(new_workq_job<hot_cold_rebalance_wqjob>(wq,
+                                                                  *this)),
+  spec_need_rebalance_job_(new_workq_job<spec_need_rebalance_wqjob>(wq,
+                                                                    *this)),
+  manage_(group, "manage"),
   unmanage_(group, "unmanage"),
-  rebalance_(group, "rebalance"),
+  hot_cold_rebalance_(group, "hot_cold_rebalance"),
+  spec_need_rebalance_(group, "spec_need_rebalance"),
   speculative_hit_(group, "speculative_hit"),
   speculative_miss_(group, "speculative_miss")
 {}
 
-page_cache::~page_cache() noexcept {}
+page_cache::page_cache(stats_group& group, workq_service& wqs)
+: page_cache(group, wqs.new_workq())
+{}
 
-auto page_cache::notify_page_access(page_ptr pg) noexcept -> void {
-  assert(pg != nullptr);
+page_cache::~page_cache() noexcept {
+  assert(empty());
 
-  cache_page_lock l{ *pg, try_to_lock };
-  if (!l.owns_lock() || !(l.flags() & page::fl_cache_present)) return;
+  workq_deactivate(hot_cold_rebalance_job_);
+  hot_cold_rebalance_job_ = nullptr;
 
-  pg->update_accessed_dirty();
-  pg->clear_flag(page::fl_accessed);
+  workq_deactivate(spec_need_rebalance_job_);
+  spec_need_rebalance_job_ = nullptr;
+}
 
-  const page::flags_type queue = (l.flags() & page::fl_cache_mask);
-  page::flags_type dst_queue;
-  switch (queue) {
-  default:
-    return;
+auto page_cache::empty() const noexcept -> bool {
+  for (const auto& q : data_)
+    if (!q.empty()) return false;
+  return true;
+}
+
+auto page_cache::manage(const page_refptr& pg, bool speculative) noexcept ->
+    void {
+  cache_page_lock l{ *pg };
+  assert(!(l.flags() & page::fl_cache_present));
+
+  if (link_zone_((speculative ? spec_zone : cold_zone), *pg))
+    manage_.add();
+}
+
+auto page_cache::unmanage(const page_refptr& pg) noexcept -> void {
+  cache_page_lock l{ *pg };
+  assert(!(l.flags() & page::fl_cache_present));
+
+  bool unlinked;
+  switch (pg->get_flags() & page::fl_cache_mask) {
   case page::fl_cache_speculative:
-    speculative_.unlink(&*pg);
-    cold_.link_front(&*pg);
-    dst_queue = page::fl_cache_cold;
+    unlinked = unlink_zone_(spec_zone, *pg);
     break;
   case page::fl_cache_cold:
-    {
-      auto diff = hot_cold_diff_.fetch_add(2, memory_order_relaxed) + 2;
-      if (diff < -1 || diff > 1) {
-        /* XXX notify rebalance job */
-      }
-    }
-    cold_.unlink(&*pg);
-    hot_.link_front(&*pg);
-    dst_queue = page::fl_cache_hot;
+    unlinked = unlink_zone_(cold_zone, *pg);
     break;
   case page::fl_cache_hot:
-    hot_.unlink(&*pg);
-    hot_.link_front(&*pg);
-    dst_queue = page::fl_cache_hot;
+    unlinked = unlink_zone_(hot_zone, *pg);
     break;
+  default:
+    assert_msg(false, "Page cache mask value not recognized");
+    __builtin_unreachable();
   }
 
-  pg->assign_masked_flags(dst_queue, page::fl_cache_mask);
-}
-
-auto page_cache::rebalance_job() noexcept -> bool {
-  rebalance_.add();  // Update stats.
-
-  auto diff = hot_cold_diff_.load(memory_order_relaxed);
-  if (diff > 1) {
-    /*
-     * hot - cold > 1, demote a page from hot to cold zone.
-     */
-    assert(!hot_.empty());
-    lock_guard<mutex> hl{ hot_guard_ };
-
-    page* looped = nullptr;
-    for (list_type::iterator i_next = hot_.end();
-         i_next != hot_.begin() && &*prev(i_next) != looped;
-         --i_next) {
-      const list_type::iterator i = prev(i);
-
-      i->update_accessed_dirty();
-      cache_page_lock l{ *i, try_to_lock };
-      if (l) {
-        page& pg = *i;
-        if (l.flags() & page::fl_accessed) {
-          hot_.unlink(&pg);
-          pg.clear_flag(page::fl_accessed);
-          hot_.link_front(&pg);
-
-          if (looped == nullptr) looped = &pg;
-        } else {
-          unique_lock<mutex> cl{ cold_guard_, try_to_lock };
-
-          if (cl) {
-            hot_.unlink(&pg);
-            diff = hot_cold_diff_.fetch_sub(2, memory_order_relaxed) - 2;
-            cold_.link_front(&pg);
-            break;
-          }
-        }
-      }
-    }
-  } else if (diff < -1) {
-    /*
-     * hot - cold < -1, promote a page from cold to hot zone.
-     */
-    assert(!cold_.empty());
-    lock_guard<mutex> cl{ cold_guard_ };
-
-    for (list_type::iterator i_next, i = cold_.begin();
-         i != cold_.end();
-         i = i_next) {
-      i_next = next(i);
-
-      i->update_accessed_dirty();
-      cache_page_lock l{ *i, try_to_lock };
-      if (l) {
-        lock_guard<mutex> hl{ hot_guard_ };
-
-        page& pg = *i;
-        cold_.unlink(&pg);
-        pg.clear_flag(page::fl_accessed);
-        if (l.flags() & page::fl_accessed)
-          hot_.link_front(&pg);
-        else
-          hot_.link_back(&pg);
-        diff = hot_cold_diff_.fetch_add(2, memory_order_relaxed) + 2;
-        break;
-      }
-    }
-  } else {
-    return false;
-  }
-
-  /*
-   * Scan a page in the speculative range.
-   */
-  {
-    lock_guard<mutex> sl{ speculative_guard_ };
-    for (list_type::iterator i_next = speculative_.end();
-         i_next != speculative_.begin();
-         --i_next) {
-      const list_type::iterator i = prev(i_next);
-
-      page& pg = *i;
-      pg.update_accessed_dirty();
-
-      cache_page_lock l{ pg, try_to_lock };
-      if (l && (l.flags() & page::fl_accessed)) {
-        lock_guard<mutex> cl{ cold_guard_ };
-        speculative_.unlink(&pg);
-        cold_.link_front(&pg);
-
-        speculative_hit_.add();  // Update stats.
-        break;
-      }
-    }
-  }
-
-  return diff < -1 || diff > 1;
-}
-
-auto page_cache::manage(page_ptr pg, bool speculative) noexcept -> void {
-  if (manage_internal_(pg, speculative) && rebalance_job()) {
-    // XXX activate rebalance job
-  }
-}
-
-auto page_cache::unmanage(page_ptr pg) noexcept -> void {
-  if (unmanage_internal_(pg) && rebalance_job()) {
-    // XXX activate rebalance job
-  }
+  if (unlinked)
+    unmanage_.add();
 }
 
 auto page_cache::try_release_urgent(page_count<native_arch> npg) noexcept ->
     page_list {
-  page_list result;
-
-  /*
-   * Claim speculatively loaded pages.
-   * Pages that are actually accessed, are promoted.
-   */
-  if (result.size() < npg) {
-    lock_guard<mutex> sl{ speculative_guard_ };
-    for (list_type::iterator i_next = speculative_.end();
-         i_next != speculative_.begin() && result.size() < npg;
-         --i_next) {
-      const list_type::iterator i = prev(i_next);
-
-      i->update_accessed_dirty();
-      cache_page_lock l{ *i, try_to_lock };
-      if (l.flags() & page::fl_cannot_free_mask) continue;
-
-      if (!l) {
-        l.lock();
-        if (l.flags() & page::fl_cannot_free_mask) continue;
-      }
-
-      if (l.flags() & page::fl_accessed) {
-        /* Promote page. */
-        lock_guard<mutex> cl{ cold_guard_ };
-        i->assign_masked_flags(page::fl_cache_cold,
-                               page::fl_cache_mask | page::fl_accessed);
-        cold_.link_front(speculative_.unlink(i));
-        speculative_hit_.add();  // Update stats.
-        continue;
-      }
-
-      /* Try to release the page. */
-      if (i->try_release_urgent()) {
-        page* pg = speculative_.unlink(i);
-        pg->clear_flag(page::fl_cache_present);
-
-        /* Update stats. */
-        if (pg->get_flags() & page::fl_accessed)
-          speculative_hit_.add();
-        else
-          speculative_miss_.add();
-
-        hot_cold_diff_.fetch_add(1, memory_order_relaxed);
-        result.push_pages_no_merge(pg, page_count<native_arch>(1));
-      }
-    }
-  }
-
-  /*
-   * Claim cold pages.
-   * Pages that are accessed, are promoted.
-   */
-  if (result.size() < npg) {
-    lock_guard<mutex> cl{ cold_guard_ };
-    for (list_type::iterator i_next = cold_.end();
-         i_next != cold_.begin() && result.size() < npg;
-         --i_next) {
-      const list_type::iterator i = prev(i_next);
-
-      i->update_accessed_dirty();
-      cache_page_lock l{ *i, try_to_lock };
-      if (l.flags() & page::fl_cannot_free_mask) continue;
-
-      if (!l) {
-        l.lock();
-        if (l.flags() & page::fl_cannot_free_mask) continue;
-      }
-
-      if (l.flags() & page::fl_accessed) {
-        /* Promote page. */
-        lock_guard<mutex> hl{ hot_guard_ };
-        i->assign_masked_flags(page::fl_cache_hot,
-                               page::fl_cache_mask | page::fl_accessed);
-        hot_.link_front(cold_.unlink(i));
-
-        hot_cold_diff_.fetch_add(2, memory_order_relaxed);
-        continue;
-      }
-
-      /* Try to release the page. */
-      if (i->try_release_urgent()) {
-        page* pg = cold_.unlink(i);
-        pg->clear_flag(page::fl_cache_present);
-        hot_cold_diff_.fetch_add(1, memory_order_relaxed);
-        result.push_pages_no_merge(pg, page_count<native_arch>(1));
-      }
-    }
-  }
-
-  /*
-   * Claim hot pages.
-   * Pages that are accessed, are promoted.
-   */
-  if (result.size() < npg) {
-    page* looped = nullptr;
-    lock_guard<mutex> hl{ hot_guard_ };
-    for (list_type::iterator i_next = hot_.end();
-         i_next != hot_.begin() && &*prev(i_next) != looped &&
-         result.size() < npg;
-         --i_next) {
-      const list_type::iterator i = prev(i_next);
-
-      i->update_accessed_dirty();
-      cache_page_lock l{ *i, try_to_lock };
-      if (l.flags() & page::fl_cannot_free_mask) continue;
-
-      if (!l) {
-        l.lock();
-        if (l.flags() & page::fl_cannot_free_mask) continue;
-      }
-
-      if (l.flags() & page::fl_accessed) {
-        /* Promote page. */
-        i->clear_flag(page::fl_accessed);
-        if (looped == nullptr) looped = &*i;
-        hot_.link_front(hot_.unlink(i));
-        continue;
-      }
-
-      /* Try to release the page. */
-      if (i->try_release_urgent()) {
-        page* pg = hot_.unlink(i);
-        pg->clear_flag(page::fl_cache_present);
-        hot_cold_diff_.fetch_sub(1, memory_order_relaxed);
-        result.push_pages_no_merge(pg, page_count<native_arch>(1));
-      }
-    }
-  }
-
-  /*
-   * Claim hot pages.
-   * We don't care about promotion at this point.
-   */
-  if (result.size() < npg) {
-    lock_guard<mutex> hl{ hot_guard_ };
-    for (list_type::iterator i_next = hot_.end();
-         i_next != hot_.begin() && result.size() < npg;
-         --i_next) {
-      const list_type::iterator i = prev(i_next);
-
-      cache_page_lock l{ *i, try_to_lock };
-      if (l.flags() & page::fl_cannot_free_mask) continue;
-
-      if (!l) {
-        l.lock();
-        if (l.flags() & page::fl_cannot_free_mask) continue;
-      }
-
-      if (i->try_release_urgent()) {
-        page* pg = hot_.unlink(i);
-        pg->clear_flag(page::fl_cache_present);
-        hot_cold_diff_.fetch_sub(1, memory_order_relaxed);
-        result.push_pages_no_merge(pg, page_count<native_arch>(1));
-      }
-    }
-  }
-
-  // XXX fire rebalance function
-
-  return result;
+  return try_release_urgent_zone_(spec_zone, npg, page_list());
 }
 
-auto page_cache::try_release(page_count<native_arch> /*npg*/) noexcept ->
+auto page_cache::try_release(page_count<native_arch> npg) noexcept ->
     future<page_list> {
-  assert_msg(false, "XXX implement");  // XXX implement
-  for (;;);
+  return try_release_zone_(spec_zone, npg);
 }
 
-auto page_cache::undirty(page_count<native_arch> npg) noexcept -> void {
-  if (npg > page_count<native_arch>(0)) {
-    lock_guard<mutex> sl{ speculative_guard_ };
-    for (list_type::iterator i_next = speculative_.end();
-         i_next != speculative_.begin() && npg > page_count<native_arch>(0);
-         --i_next) {
-      const list_type::iterator i = prev(i_next);
+auto page_cache::unlink_zone_(unsigned int zone, page& pg) noexcept -> bool {
+  assert((pg.get_flags() &
+          (page::fl_cache_present | page::fl_cache_modify)) ==
+         (page::fl_cache_present | page::fl_cache_modify));
+  assert(zone >= 0 && zone < data_.size());
+  assert((pg.get_flags() & page::fl_cache_mask) == pg_flags[zone]);
 
-      i->update_accessed_dirty();
-      cache_page_lock l{ *i, try_to_lock };
-      if (!l) continue;
+  bool result = false;
+  data_[zone].erase_and_dispose(
+      data_[zone].iterator_to(&pg),
+      [&result](page* pg) {
+        pg->clear_flag(page::fl_cache_present);
+        result = true;
+      });
+  if (!result) return false;
 
-      if (l.flags() & page::fl_accessed) {
-        lock_guard<mutex> cl{ cold_guard_ };
-        i->assign_masked_flags(page::fl_cache_cold,
-                               page::fl_cache_mask | page::fl_accessed);
-        cold_.link_front(speculative_.unlink(i));
-        speculative_hit_.add();  // Update stats.
-        continue;
-      }
-
-      if (!l.flags() & page::fl_dirty) {
-        --npg;
-        continue;
-      }
-
-      i->undirty();
-    }
-  }
-
-  if (npg > page_count<native_arch>(0)) {
-    lock_guard<mutex> cl{ cold_guard_ };
-    for (list_type::iterator i_next = cold_.end();
-         i_next != cold_.begin() && npg > page_count<native_arch>(0);
-         --i_next) {
-      const list_type::iterator i = prev(i_next);
-
-      i->update_accessed_dirty();
-      cache_page_lock l{ *i, try_to_lock };
-      if (!l) continue;
-
-      if (l.flags() & page::fl_accessed) {
-        lock_guard<mutex> hl{ hot_guard_ };
-        i->assign_masked_flags(page::fl_cache_hot,
-                               page::fl_cache_mask | page::fl_accessed);
-        hot_.link_front(cold_.unlink(i));
-        hot_cold_diff_.fetch_add(2U, memory_order_relaxed);
-        continue;
-      }
-
-      if (!l.flags() & page::fl_dirty) {
-        --npg;
-        continue;
-      }
-
-      i->undirty();
-    }
-  }
-
-  if (npg > page_count<native_arch>(0)) {
-    lock_guard<mutex> hl{ hot_guard_ };
-    page* looped = nullptr;
-    for (list_type::iterator i_next = cold_.end();
-         i_next != cold_.begin() && &*prev(i_next) != looped &&
-         npg > page_count<native_arch>(0);
-         --i_next) {
-      const list_type::iterator i = prev(i_next);
-
-      i->update_accessed_dirty();
-      cache_page_lock l{ *i, try_to_lock };
-      if (!l) continue;
-
-      if (l.flags() & page::fl_accessed) {
-        i->clear_flag(page::fl_accessed);
-        if (looped == nullptr) looped = &*i;
-        hot_.link_front(hot_.unlink(i));
-        continue;
-      }
-
-      if (!l.flags() & page::fl_dirty) {
-        --npg;
-        continue;
-      }
-
-      i->undirty();
-    }
-  }
-}
-
-auto page_cache::manage_internal_(page_ptr pg, bool speculative) noexcept ->
-    bool {
-  cache_page_lock l{ *pg };
-  assert(!(l.flags() & page::fl_cache_present));
-
-  /*
-   * Mark page as being in the cache, clear its access bit.
-   */
-  pg->update_accessed_dirty();
-  pg->assign_masked_flags(((speculative ?
-                            page::fl_cache_speculative :
-                            page::fl_cache_cold) |
-                           page::fl_cache_present),
-                          (page::fl_cache_mask | page::fl_cache_present |
-                           page::fl_accessed));
-
-  if (speculative) {
-    lock_guard<mutex> cl{ speculative_guard_ };
-    speculative_.link_front(&*pg);
+  if (zone == hot_zone) {
+    if (hot_cold_diff_.fetch_sub(1, memory_order_relaxed) < 0)
+      workq_activate(hot_cold_rebalance_job_);
   } else {
-    lock_guard<mutex> cl{ cold_guard_ };
-    cold_.link_front(&*pg);
+    if (hot_cold_diff_.fetch_add(1, memory_order_relaxed) > 0)
+      workq_activate(hot_cold_rebalance_job_);
   }
-  auto diff = hot_cold_diff_.fetch_sub(1, memory_order_relaxed) - 1;
 
-  manage_.add();  // Update stats.
+  if (zone == spec_zone &&
+      spec_need_diff_.fetch_sub(1, memory_order_relaxed) <= 0)
+    workq_activate(spec_need_rebalance_job_);
 
-  return diff < -1;
+  return true;
 }
 
-auto page_cache::unmanage_internal_(page_ptr pg) noexcept -> bool {
-  cache_page_lock l{ *pg };
-  assert(l.flags() & page::fl_cache_present);
+auto page_cache::link_zone_(unsigned int zone, page& pg) noexcept -> bool {
+  assert((pg.get_flags() &
+          (page::fl_cache_present | page::fl_cache_modify)) ==
+         page::fl_cache_modify);
+  assert(zone >= 0 && zone < data_.size());
 
-  bool fire;
-  switch (l.flags() & page::fl_cache_mask) {
-  default:
-    assert_msg(false, "Page cache flags are wrong");
-    __builtin_unreachable();
-  case page::fl_cache_speculative:
-    {
-      /* Update speculative hit/miss statistic before page goes away. */
-      if (l.flags() & page::fl_accessed) {
-        speculative_hit_.add();
-      } else {
-        pg->update_accessed_dirty();
-        if (pg->get_flags() & page::fl_accessed)
-          speculative_hit_.add();
-        else
-          speculative_miss_.add();
-      }
+  if (!data_[zone].push_back(&pg)) return false;
+  pg.assign_masked_flags(page::fl_cache_present | pg_flags[zone],
+                         page::fl_cache_present | page::fl_cache_mask);
 
-      lock_guard<mutex> cl{ speculative_guard_ };
-      speculative_.unlink(&*pg);
-      fire = (hot_cold_diff_.fetch_add(1, memory_order_relaxed) + 1 > 1);
-    }
-  case page::fl_cache_cold:
-    {
-      lock_guard<mutex> cl{ cold_guard_ };
-      cold_.unlink(&*pg);
-      fire = (hot_cold_diff_.fetch_add(1, memory_order_relaxed) + 1 > 1);
-    }
-    break;
-  case page::fl_cache_hot:
-    {
-      lock_guard<mutex> hl{ hot_guard_ };
-      hot_.unlink(&*pg);
-      fire = (hot_cold_diff_.fetch_sub(1, memory_order_relaxed) - 1 < -1);
-    }
-    break;
+  if (zone == hot_zone) {
+    if (hot_cold_diff_.fetch_add(1, memory_order_relaxed) > 0)
+      workq_activate(hot_cold_rebalance_job_);
+  } else {
+    if (hot_cold_diff_.fetch_sub(1, memory_order_relaxed) < 0)
+      workq_activate(hot_cold_rebalance_job_);
   }
-  pg->clear_flag(page::fl_cache_present | page::fl_cache_mask);
 
-  unmanage_.add();  // Update stats.
+  if (zone == spec_zone)
+    spec_need_diff_.fetch_add(1, memory_order_relaxed);
 
-  return fire;
+  return true;
+}
+
+auto page_cache::promote_(unsigned int zone, page& i) noexcept ->
+    bool {
+  assert(i.get_flags() & page::fl_cache_modify);
+  assert((i.get_flags() & page::fl_cache_mask) == pg_flags[zone]);
+
+  const auto dst_zone = (zone == hot_zone ? hot_zone : zone + 1U);
+  page* pg = nullptr;
+  data_[zone].erase_and_dispose(data_[zone].iterator_to(&i),
+                                [&pg](page* p) { pg = p; });
+  if (!pg) return false;
+  data_[dst_zone].push_back(pg);
+
+  if (zone == cold_zone) {
+    if (hot_cold_diff_.fetch_add(2, memory_order_relaxed) >= 0)
+      workq_activate(hot_cold_rebalance_job_);
+  } else if (zone == spec_zone) {
+    if (spec_need_diff_.fetch_sub(1, memory_order_relaxed) <= 0)
+      workq_activate(spec_need_rebalance_job_);
+  }
+
+  if (zone == spec_zone)
+    speculative_hit_.add();
+
+  return true;
+}
+
+auto page_cache::demote_(unsigned int zone, page& i) noexcept ->
+    bool {
+  assert(i.get_flags() & page::fl_cache_modify);
+  assert((i.get_flags() & page::fl_cache_mask) == pg_flags[zone]);
+  if (zone == spec_zone) return false;
+
+  const auto dst_zone = zone - 1U;
+  page* pg = nullptr;
+  data_[zone].erase_and_dispose(data_[zone].iterator_to(&i),
+                                [&pg](page* p) { pg = p; });
+  if (!pg) return false;
+  data_[dst_zone].push_back(pg);
+
+  if (zone == hot_zone) {
+    if (hot_cold_diff_.fetch_sub(2, memory_order_relaxed) <= 0)
+      workq_activate(hot_cold_rebalance_job_);
+  } else if (zone == cold_zone) {
+    if (spec_need_diff_.fetch_add(1, memory_order_relaxed) < -1)
+      workq_activate(spec_need_rebalance_job_);
+  }
+
+  return true;
+}
+
+auto page_cache::try_release_urgent_zone_(unsigned int zone,
+                                          page_count<native_arch> npg,
+                                          page_list pgl)
+    noexcept -> page_list {
+  page* stop = nullptr;
+
+  for (list_type::iterator i_next, i = data_[zone].begin();
+       i != data_[zone].end() && &*i != stop && pgl.size() < npg;
+       i = i_next) {
+    i_next = next(i);
+
+    cache_page_lock l{ *i };
+    i->update_accessed_dirty();
+    page::flags_type pgfl = i->clear_flag(page::fl_accessed);
+    if (pgfl & page::fl_accessed) {
+      page& i_ref = *i;
+      if (promote_(zone, *i) && stop == nullptr) stop = &i_ref;
+      continue;
+    }
+    if (pgfl & page::fl_cannot_free_mask) continue;
+
+    page_refptr pg = i->try_release_urgent();
+    const bool unlinked_succes = unlink_zone_(zone, *pg);
+    assert(unlinked_succes);  // XXX can this fail?
+    pgl.push_back(move(pg));
+  }
+
+  return pgl;
+}
+
+auto page_cache::try_release_zone_(unsigned int /*zone*/,
+                                   page_count<native_arch> /*npg*/) noexcept ->
+    future<page_list> {
+  assert_msg(false, "XXX implement this");
+  return new_promise<page_list>([](promise<page_list> out) { out.set(page_list()); });  // XXX implement
 }
 
 

@@ -9,10 +9,6 @@ namespace ilias {
 namespace vm {
 
 
-inline page::page(page_no<native_arch> pgno) noexcept
-: pgno_(pgno)
-{}
-
 inline auto page::get_flags() const noexcept -> flags_type {
   return flags_.load(memory_order_relaxed);
 }

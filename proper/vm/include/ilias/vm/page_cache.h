@@ -8,6 +8,8 @@
 #include <ilias/linked_list.h>
 #include <ilias/promise.h>
 #include <memory>
+#include <ilias/ll_list.h>
+#include <ilias/workq.h>
 
 namespace ilias {
 namespace vm {
@@ -15,10 +17,23 @@ namespace vm {
 
 class page_cache {
  private:
-  using list_type = linked_list<page, tags::page_cache>;  // XXX make atomic linked list
+  using list_type = ll_smartptr_list<page, tags::page_cache,
+                                     ll_list_detail::no_acqrel>;
+
+  static constexpr unsigned int n_zones = 3;
+  static constexpr unsigned int spec_zone = 0;  // Speculative zone.
+  static constexpr unsigned int cold_zone = 1;
+  static constexpr unsigned int hot_zone  = 2;
+  static constexpr array<page::flags_type, n_zones> pg_flags = {{
+      page::fl_cache_speculative, page::fl_cache_cold, page::fl_cache_hot
+  }};
+
+  class hot_cold_rebalance_wqjob;
+  class spec_need_rebalance_wqjob;
 
  public:
-  explicit page_cache(stats_group&) noexcept;
+  page_cache(stats_group&, workq_ptr);
+  page_cache(stats_group&, workq_service&);
   page_cache(const page_cache&) = delete;
   page_cache(page_cache&&) = delete;
   page_cache& operator=(const page_cache&) = delete;
@@ -27,28 +42,35 @@ class page_cache {
 
   bool empty() const noexcept;
 
-  bool rebalance_job() noexcept;
-
-  void manage(page_refptr, bool) noexcept;
-  void unmanage(page_refptr) noexcept;
+  void manage(const page_refptr&, bool) noexcept;
+  void unmanage(const page_refptr&) noexcept;
 
   page_list try_release_urgent(page_count<native_arch>) noexcept;
   future<page_list> try_release(page_count<native_arch>) noexcept;
-  void undirty(page_count<native_arch>) noexcept;  // XXX this is inefficient, consider another interface
 
  private:
-  bool manage_internal_(page_refptr, bool) noexcept;
-  bool unmanage_internal_(page_refptr) noexcept;
+  bool unlink_zone_(unsigned int, page&) noexcept;
+  bool link_zone_(unsigned int, page&) noexcept;
+  bool promote_(unsigned int, page&) noexcept;
+  bool demote_(unsigned int, page&) noexcept;
 
-  list_type hot_, cold_, speculative_;
-  atomic<intptr_t> hot_cold_diff_{ 0 };  // #hot_ - (#cold_ + #speculative_).
-  mutable mutex speculative_guard_;
-  mutable mutex cold_guard_;
-  mutable mutex hot_guard_;
+  page_list try_release_urgent_zone_(unsigned int zone,
+                                     page_count<native_arch> npg,
+                                     page_list pgl) noexcept;
+  future<page_list> try_release_zone_(unsigned int,
+                                      page_count<native_arch> npg) noexcept;
+
+  atomic<intptr_t> hot_cold_diff_{ 0 };  // #hot - (#cold + #speculative).
+  atomic<intptr_t> spec_need_diff_{ 0 };  // #speculative - min(#speculative)
+  array<list_type, n_zones> data_;
+
+  workq_job_ptr hot_cold_rebalance_job_;
+  workq_job_ptr spec_need_rebalance_job_;
 
   stats_counter manage_,
                 unmanage_,
-                rebalance_,
+                hot_cold_rebalance_,
+                spec_need_rebalance_,
                 speculative_hit_,
                 speculative_miss_;
 };
