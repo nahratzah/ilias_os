@@ -1,6 +1,7 @@
 #include <ilias/vm/anon.h>
 #include <ilias/wq_promise.h>
 #include <ilias/vm/page_alloc.h>
+#include <ilias/vm/page_unbusy_future.h>
 
 namespace ilias {
 namespace vm {
@@ -29,7 +30,8 @@ auto anon_vme::entry::fault(shared_ptr<page_alloc> pga, workq_ptr wq) ->
 
 auto anon_vme::entry::assign(workq_ptr wq, future<page_refptr> f) ->
     future<page_refptr> {
-  return assign_locked_(move(wq), unique_lock<mutex>{ guard_ }, move(f));
+  return assign_locked_(wq, unique_lock<mutex>{ guard_ },
+                        page_unbusy_future(wq, move(f)));
 }
 
 auto anon_vme::entry::assign_locked_(workq_ptr wq, unique_lock<mutex>&& l,

@@ -67,7 +67,8 @@ auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
                 page_copy(pg.get_mutable(), orig_pg.move_or_copy());
                 out.set(pg.move_or_copy());
               },
-              pg, orig_pg);
+              move(pg),
+              page_unbusy_future(this->get_workq(), move(orig_pg)));
 #endif
 
   /* Assign the whole thing to the anon. */
