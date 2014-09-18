@@ -46,7 +46,8 @@ auto anon_vme::entry::assign_locked_(workq_ptr wq, unique_lock<mutex>&& l,
   rv = in_progress_ = new_promise<page_ptr>();
   l.unlock();  // In case promise has already completed.
   callback(f, move(wq),
-           bind(&entry::allocation_callback_, entry_ptr(this), _1));
+           bind(&entry::allocation_callback_, entry_ptr(this), _1),
+           0, PROM_DEFER);
   return rv;
 }
 
