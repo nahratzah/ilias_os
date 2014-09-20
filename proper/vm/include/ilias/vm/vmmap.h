@@ -85,6 +85,11 @@ struct vm_permission {
   perm_type perm_ = perm_type::none;
 };
 
+enum class fork_style : unsigned char {
+  copy,
+  share
+};
+
 constexpr vm_permission vm_perm_none{ vm_permission::perm_none_ };
 constexpr vm_permission vm_perm_read{ vm_permission::perm_read_ };
 constexpr vm_permission vm_perm_write{ vm_permission::perm_write_ };
@@ -155,8 +160,8 @@ class vmmap_shard {
     entry(entry&&) noexcept;
     entry& operator=(const entry&);
     entry& operator=(entry&&) noexcept;
-    entry(range, vpage_no<Arch>, vm_permission, vmmap_entry_ptr&&)
-        noexcept;
+    entry(range, vpage_no<Arch>, vm_permission, vmmap_entry_ptr&&,
+          fork_style = fork_style::copy) noexcept;
 
     range get_range_used() const noexcept;
     range get_range_free() const noexcept;
@@ -177,9 +182,12 @@ class vmmap_shard {
     future<page_ptr> fault_write(shared_ptr<page_alloc>,
                                  vpage_no<Arch>);
 
+    fork_style get_fork_style() const noexcept;
+    fork_style set_fork_style(fork_style s) noexcept;
+
    private:
     tuple<vpage_no<Arch>, page_count<Arch>, page_count<Arch>,
-          vm_permission, vmmap_entry_ptr> data_;
+          vm_permission, vmmap_entry_ptr, fork_style> data_;
   };
 
   static void entry_deletor_(entry* e) noexcept { delete e; }

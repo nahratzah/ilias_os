@@ -48,21 +48,22 @@ vmmap_entry_ptr make_vmmap_entry(Args&&... args) {
 template<arch Arch>
 vmmap_shard<Arch>::entry::entry(const entry& e)
 : data_(get<0>(e.data_), get<1>(e.data_), get<2>(e.data_), get<3>(e.data_),
-        get<4>(e.data_)->clone())
+        get<4>(e.data_)->clone(), get<5>(e.data_))
 {}
 
 template<arch Arch>
 vmmap_shard<Arch>::entry::entry(entry&& e) noexcept
 : data_(get<0>(e.data_), get<1>(e.data_), get<2>(e.data_), get<3>(e.data_),
-        move(get<4>(e.data_)))
+        move(get<4>(e.data_)), get<5>(e.data_))
 {}
 
 template<arch Arch>
 vmmap_shard<Arch>::entry::entry(range r, vpage_no<Arch> free_end,
                                 vm_permission perm,
-                                vmmap_entry_ptr&& data) noexcept
+                                vmmap_entry_ptr&& data,
+                                fork_style fs) noexcept
 : data_(get<0>(r), get<1>(r), free_end - (get<0>(r) + get<1>(r)), perm,
-        move(data))
+        move(data), fs)
 {
   assert(free_end >= get<0>(r) + get<1>(r));
 }
@@ -186,6 +187,17 @@ auto vmmap_shard<Arch>::entry::fault_write(shared_ptr<page_alloc> pga,
   page_count<native_arch> off = page_count<native_arch>(arch_off.get());
   assert(off.get() == arch_off.get());  // Verify cast.
   return data().fault_write(move(pga), off);
+}
+
+template<arch Arch>
+auto vmmap_shard<Arch>::entry::get_fork_style() const noexcept -> fork_style {
+  return get<fork_style>(data_);
+}
+
+template<arch Arch>
+auto vmmap_shard<Arch>::entry::set_fork_style(fork_style fs) noexcept ->
+    fork_style {
+  return exchange(get<fork_style>(data_), fs);
 }
 
 
