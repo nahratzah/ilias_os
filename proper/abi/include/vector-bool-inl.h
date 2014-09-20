@@ -852,7 +852,7 @@ auto vector<bool, Alloc>::insert(const_iterator pos,
   }
 
   resize(size() + dist.second);
-  move_backward(begin() + off, end() - dist.second(), end());
+  move_backward(begin() + off, end() - dist.second, end());
   copy(b, e, begin() + off);
   return begin() + off;
 }
