@@ -75,6 +75,18 @@ auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
   return this->anon_vme::fault_assign(off, move(copy_pg));
 }
 
+auto cow_vme::mincore() const -> vector<bool> {
+  vector<bool> rv = this->anon_vme::mincore();
+  if (nested_) {
+    vector<bool> nested_rv = nested_->mincore();
+    assert(rv.size() == nested_rv.size());
+
+    transform(rv.begin(), rv.end(), nested_rv.begin(), rv.begin(),
+              logical_or<bool>());
+  }
+  return rv;
+}
+
 auto cow_vme::clone() const -> vmmap_entry_ptr {
   return make_vmmap_entry<cow_vme>(*this);
 }

@@ -200,6 +200,14 @@ auto vmmap_shard<Arch>::entry::set_fork_style(fork_style fs) noexcept ->
   return exchange(get<fork_style>(data_), fs);
 }
 
+template<arch Arch>
+auto vmmap_shard<Arch>::entry::mincore() const -> vector<bool> {
+  /* Only return the mincore values for in-use memory. */
+  vector<bool> rv;
+  if (!unused()) rv = data().mincore();
+  return rv;
+}
+
 
 template<arch Arch>
 auto vmmap_shard<Arch>::entry_before_::operator()(const entry& x,
@@ -386,6 +394,40 @@ auto vmmap_shard<Arch>::largest_free_size() const noexcept ->
   return (free_list_.empty() ?
           page_count<Arch>(0) :
           get<1>(free_list_.back().get_range_free()));
+}
+
+template<arch Arch>
+auto vmmap_shard<Arch>::mincore(vpage_no<Arch> b_addr, vpage_no<Arch> e_addr)
+    const -> vector<bool> {
+  typename entries_type::const_iterator b, e;
+  tie(b, e) = entries_.equal_range(isect_(b_addr, e_addr));
+
+  vector<bool> rv;
+
+  /*
+   * Special handling for first entry, to handle erasing the first few elements
+   * from rv, before it is enourmous.
+   */
+  if (b != e) {
+    if (b->get_addr_free() > b_addr) {
+      rv = b->mincore();
+      rv.erase(rv.begin(), rv.begin() + (b_addr - b->get_addr_free()).get());
+    }
+
+    ++b;
+    rv.resize((b->get_addr_used() - b_addr).get());
+  }
+
+  /* Append mincore bits for the rest of the input. */
+  for_each(b, e,
+           [&rv](const entry& e) {
+             vector<bool> e_mincore = e.mincore();
+             rv.insert(rv.end(), e_mincore.begin(), e_mincore.end());
+             rv.resize(rv.size() + get<1>(e.get_range_free()).get());
+           });
+
+  rv.resize((e_addr - b_addr).get());
+  return rv;
 }
 
 template<arch Arch>
@@ -813,6 +855,21 @@ auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> future<void> {
                          done.set();
                        },
                        move(pg));
+}
+
+template<arch Arch>
+auto vmmap<Arch>::mincore(vpage_no<Arch> addr_b, vpage_no<Arch> addr_e)
+    const -> vector<bool> {
+  vector<bool> rv((addr_e - addr_b).get());
+
+  lock_guard<mutex> l{ avail_guard_ };
+  for (const vmmap_shard<Arch>& shard : avail_) {
+    vector<bool> shard_rv = shard.mincore(addr_b, addr_e);
+    transform(shard_rv.begin(), shard_rv.end(), rv.begin(), rv.begin(),
+              logical_or<bool>());
+  }
+
+  return rv;
 }
 
 template<arch Arch>

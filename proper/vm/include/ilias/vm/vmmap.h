@@ -11,6 +11,7 @@
 #include <utility>
 #include <algorithm>
 #include <mutex>
+#include <vector>
 #include <ilias/stats-fwd.h>
 #include <ilias/promise.h>
 #include <ilias/workq.h>
@@ -129,6 +130,8 @@ class vmmap_entry
   virtual pair<vmmap_entry_ptr, vmmap_entry_ptr> split(page_count<native_arch>)
       const = 0;
 
+  virtual vector<bool> mincore() const = 0;
+
   workq_ptr get_workq() const noexcept { return wq_; }
 
  private:
@@ -184,6 +187,8 @@ class vmmap_shard {
 
     fork_style get_fork_style() const noexcept;
     fork_style set_fork_style(fork_style s) noexcept;
+
+    vector<bool> mincore() const;
 
    private:
     tuple<vpage_no<Arch>, page_count<Arch>, page_count<Arch>,
@@ -246,6 +251,7 @@ class vmmap_shard {
 
   page_count<Arch> free_size() const noexcept { return npg_free_; }
   page_count<Arch> largest_free_size() const noexcept;
+  vector<bool> mincore(vpage_no<Arch>, vpage_no<Arch>) const;
 
   void merge(vmmap_shard&&) noexcept;
   template<typename Iter> void fanout(Iter, Iter) noexcept;
@@ -300,6 +306,7 @@ class vmmap {
 
   future<void> fault_read(vpage_no<Arch>);
   future<void> fault_write(vpage_no<Arch>);
+  vector<bool> mincore(vpage_no<Arch>, vpage_no<Arch>) const;
 
  private:
   typename shard_list::iterator find_shard_locked_(vpage_no<Arch>) noexcept;
@@ -315,7 +322,7 @@ class vmmap {
   void swap_slot_(size_t) noexcept;  // With lock held.
 
   //pmap<Arch> pmap_;
-  mutex avail_guard_;
+  mutable mutex avail_guard_;
   shard_list avail_;
   typename shard_list::size_type in_use_ = 0;
 

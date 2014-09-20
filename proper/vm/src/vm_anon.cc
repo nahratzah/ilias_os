@@ -155,6 +155,15 @@ auto anon_vme::fault_assign(page_count<native_arch> off,
   return elem->assign(get_workq(), move(pg));
 }
 
+auto anon_vme::mincore() const -> vector<bool> {
+  vector<bool> rv = vector<bool>(data_.size());
+  transform(data_.begin(), data_.end(), rv.begin(),
+            [](const entry_ptr& e_ptr) noexcept -> bool {
+              return (e_ptr != nullptr && e_ptr->present());
+            });
+  return rv;
+}
+
 auto anon_vme::clone() const -> vmmap_entry_ptr {
   return make_vmmap_entry<anon_vme>(*this);
 }
