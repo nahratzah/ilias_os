@@ -72,8 +72,12 @@ auto page::try_release_urgent() noexcept -> page_ptr {
     }
     if (!pgo) return nullptr;
 
+    if (!refcnt_acquire_iff_live(*this))
+      return nullptr;
+    page_ptr self_ptr = page_ptr(this, false);
+
     if (pgo->release_urgent(off, *this))
-      return page_ptr(this);
+      return self_ptr;
   } catch (...) {
     /* SKIP */
   }
