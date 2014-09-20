@@ -846,7 +846,7 @@ auto vector<bool, Alloc>::insert(const_iterator pos,
   const size_type off = pos - begin();
   const auto dist = impl::equal_support__distance(
       b, e, typename iterator_traits<InputIter>::iterator_category());
-  if (!dist.first()) {
+  if (!dist.first) {
     copy(b, e, inserter(*this, begin() + off));
     return begin() + off;
   }
