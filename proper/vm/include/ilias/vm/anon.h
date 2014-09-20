@@ -74,6 +74,8 @@ class anon_vme
   pair<anon_vme, anon_vme> split_no_alloc(page_count<native_arch>) const;
 
  private:
+  future<page_ptr> fault_rw_(shared_ptr<page_alloc>, page_count<native_arch>);
+
   data_type data_;
 };
 

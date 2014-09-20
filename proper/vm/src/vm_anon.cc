@@ -123,25 +123,13 @@ auto anon_vme::present(page_count<native_arch> off) const noexcept -> bool {
 auto anon_vme::fault_read(shared_ptr<page_alloc> pga,
                           page_count<native_arch> off) ->
     future<page_ptr> {
-  assert(off.get() >= 0 &&
-         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
-          data_.size()));
-
-  auto& elem = data_[off.get()];
-  if (elem == nullptr) elem = new entry();
-  return elem->fault(move(pga), this->get_workq());
+  return fault_rw_(move(pga), move(off));
 }
 
 auto anon_vme::fault_write(shared_ptr<page_alloc> pga,
                            page_count<native_arch> off) ->
     future<page_ptr> {
-  assert(off.get() >= 0 &&
-         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
-          data_.size()));
-
-  auto& elem = data_[off.get()];
-  if (elem == nullptr) elem = new entry();
-  return elem->fault(move(pga), this->get_workq());
+  return fault_rw_(move(pga), move(off));
 }
 
 auto anon_vme::fault_assign(page_count<native_arch> off,
@@ -182,6 +170,18 @@ auto anon_vme::split_no_alloc(page_count<native_arch> off) const ->
          static_cast<make_unsigned_t<decltype(split)>>(split) < data_.size());
   return { anon_vme(get_workq(), data_.begin(), data_.begin() + split),
            anon_vme(get_workq(), data_.begin() + split, data_.end()) };
+}
+
+auto anon_vme::fault_rw_(shared_ptr<page_alloc> pga,
+                         page_count<native_arch> off) ->
+    future<page_ptr> {
+  assert(off.get() >= 0 &&
+         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
+          data_.size()));
+
+  auto& elem = data_[off.get()];
+  if (elem == nullptr) elem = new entry();
+  return elem->fault(move(pga), this->get_workq());
 }
 
 
