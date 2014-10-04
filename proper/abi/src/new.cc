@@ -97,9 +97,10 @@ abi::big_heap& no_throw_array_heap() noexcept {
 }
 
 
-void* new_impl(abi::big_heap& heap, size_t sz) {
+void* new_impl(abi::big_heap& heap, size_t sz,
+               size_t align = alignof(_TYPES(max_align_t))) {
   void* p;
-  for (p = heap.malloc(sz); _predict_false(!p); p = heap.malloc(sz)) {
+  for (p = heap.malloc(sz); _predict_false(!p); p = heap.malloc(sz, align)) {
     _namespace(std)::new_handler nh = _namespace(std)::get_new_handler();
     if (!nh) _namespace(std)::__throw_bad_alloc();
     try {
@@ -115,9 +116,10 @@ void* new_impl(abi::big_heap& heap, size_t sz) {
   return p;
 }
 
-void* new_impl_nothrow(abi::big_heap& heap, size_t sz) noexcept {
+void* new_impl_nothrow(abi::big_heap& heap, size_t sz,
+                       size_t align = alignof(_TYPES(max_align_t))) noexcept {
   try {
-    return new_impl(heap, sz);
+    return new_impl(heap, sz, align);
   } catch (const _namespace(std)::bad_alloc&) {
     return nullptr;
   }
@@ -135,6 +137,17 @@ void* __attribute__((weak)) operator new(
   return new_impl_nothrow(no_throw_heap(), sz);
 }
 
+void* __attribute__((weak)) operator new(
+    size_t sz, _namespace(std)::align_val_t align) {
+  return new_impl(throwing_heap(), sz, static_cast<size_t>(align));
+}
+
+void* __attribute__((weak)) operator new(
+    size_t sz, _namespace(std)::align_val_t align,
+    const _namespace(std)::nothrow_t&) noexcept {
+  return new_impl_nothrow(no_throw_heap(), sz, static_cast<size_t>(align));
+}
+
 void __attribute__((weak)) operator delete(void* p) noexcept {
   if (p) throwing_heap().free(p);
 }
@@ -144,12 +157,34 @@ void __attribute__((weak)) operator delete(
   if (p) no_throw_heap().free(p);
 }
 
+void __attribute__((weak)) operator delete(
+    void* p, _namespace(std)::align_val_t) noexcept {
+  if (p) throwing_heap().free(p);
+}
+
+void __attribute__((weak)) operator delete(
+    void* p, _namespace(std)::align_val_t,
+    const _namespace(std)::nothrow_t&) noexcept {
+  if (p) no_throw_heap().free(p);
+}
+
 void __attribute__((weak)) operator delete(void* p, size_t sz) noexcept {
   if (p) throwing_heap().free(p, sz);
 }
 
 void __attribute__((weak)) operator delete(
     void* p, size_t sz, const _namespace(std)::nothrow_t&) noexcept {
+  if (p) no_throw_heap().free(p, sz);
+}
+
+void __attribute__((weak)) operator delete(
+    void* p, size_t sz, _namespace(std)::align_val_t) noexcept {
+  if (p) throwing_heap().free(p, sz);
+}
+
+void __attribute__((weak)) operator delete(
+    void* p, size_t sz, _namespace(std)::align_val_t,
+    const _namespace(std)::nothrow_t&) noexcept {
   if (p) no_throw_heap().free(p, sz);
 }
 
@@ -163,6 +198,18 @@ void* __attribute__((weak)) operator new[](
   return new_impl_nothrow(no_throw_array_heap(), sz);
 }
 
+void* __attribute__((weak)) operator new[](
+    size_t sz, _namespace(std)::align_val_t align) {
+  return new_impl(throwing_array_heap(), sz, static_cast<size_t>(align));
+}
+
+void* __attribute__((weak)) operator new[](
+    size_t sz, _namespace(std)::align_val_t align,
+    const _namespace(std)::nothrow_t&) noexcept {
+  return new_impl_nothrow(no_throw_array_heap(),
+                          sz, static_cast<size_t>(align));
+}
+
 void __attribute__((weak)) operator delete[](void* p) noexcept {
   if (p) throwing_array_heap().free(p);
 }
@@ -172,12 +219,34 @@ void __attribute__((weak)) operator delete[](
   if (p) no_throw_array_heap().free(p);
 }
 
+void __attribute__((weak)) operator delete[](
+    void* p, _namespace(std)::align_val_t) noexcept {
+  if (p) throwing_array_heap().free(p);
+}
+
+void __attribute__((weak)) operator delete[](
+    void* p, _namespace(std)::align_val_t,
+    const _namespace(std)::nothrow_t&) noexcept {
+  if (p) no_throw_array_heap().free(p);
+}
+
 void __attribute__((weak)) operator delete[](void* p, size_t sz) noexcept {
   if (p) throwing_array_heap().free(p, sz);
 }
 
 void __attribute__((weak)) operator delete[](
     void* p, size_t sz, const _namespace(std)::nothrow_t&) noexcept {
+  if (p) no_throw_array_heap().free(p, sz);
+}
+
+void __attribute__((weak)) operator delete[](
+    void* p, size_t sz, _namespace(std)::align_val_t) noexcept {
+  if (p) throwing_array_heap().free(p, sz);
+}
+
+void __attribute__((weak)) operator delete[](
+    void* p, size_t sz, _namespace(std)::align_val_t,
+    const _namespace(std)::nothrow_t&) noexcept {
   if (p) no_throw_array_heap().free(p, sz);
 }
 
