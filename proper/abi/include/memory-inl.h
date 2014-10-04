@@ -1157,11 +1157,11 @@ template<typename T, typename A, typename... Args>
 shared_ptr<T> allocate_shared(const A& alloc, Args&&... args) {
   shared_ptr<T> rv;
 
-  auto ownership_impl = impl::create_placement_shared_ptr_ownership(
+  auto ownership_impl = impl::create_placement_shared_ptr_ownership<T>(
       alloc, forward<Args>(args)...);
   rv.ownership_ = ownership_impl;
-  rv.ptr_ = ownership_impl.get();
-  fixup_shared_from_this(rv.ownership_, rv.ptr_);
+  rv.ptr_ = ownership_impl->get();
+  shared_ptr<T>::fixup_shared_from_this(rv.ownership_, rv.ptr_);
   return rv;
 }
 
