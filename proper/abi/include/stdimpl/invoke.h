@@ -19,8 +19,8 @@ namespace impl {
 template<typename F, typename T, typename... Args, typename T1, typename... TT>
 auto invoke(F (T::*f)(Args...), T1&& t1, TT&&... tt)
     noexcept(noexcept((forward<T1>(t1).*f)(forward<TT>(tt)...))) ->
-    enable_if_t<(is_same<T, T1>::value ||
-                 is_base_of<T, remove_reference_t<T1>>::value),
+    enable_if_t<(is_same<T, remove_cv_t<remove_reference_t<T1>>>::value ||
+                 is_base_of<T, remove_cv_t<remove_reference_t<T1>>>::value),
                 decltype((forward<T1>(t1).*f)(forward<TT>(tt)...))> {
   return (forward<T1>(t1).*f)(forward<TT>(tt)...);
 }
@@ -33,8 +33,8 @@ auto invoke(F (T::*f)(Args...), T1&& t1, TT&&... tt)
 template<typename F, typename T, typename... Args, typename T1, typename... TT>
 auto invoke(F (T::*f)(Args...), T1&& t1, TT&&... tt)
     noexcept(noexcept(((*forward<T1>(t1)).*f)(forward<TT>(tt)...))) ->
-    enable_if_t<!(is_same<T, T1>::value ||
-                  is_base_of<T, remove_reference_t<T1>>::value),
+    enable_if_t<!(is_same<T, remove_cv_t<remove_reference_t<T1>>>::value ||
+                  is_base_of<T, remove_cv_t<remove_reference_t<T1>>>::value),
                 decltype(((*forward<T1>(t1)).*f)(forward<TT>(tt)...))> {
   return ((*forward<T1>(t1)).*f)(forward<TT>(tt)...);
 }
@@ -49,8 +49,8 @@ auto invoke(F (T::*f)(Args...), T1&& t1, TT&&... tt)
 template<typename F, typename T, typename T1>
 auto invoke(F T::*f, T1&& t1)
     noexcept(noexcept(forward<T1>(t1).*f)) ->
-    enable_if_t<(is_same<T, T1>::value ||
-                 is_base_of<T, remove_reference_t<T1>>::value),
+    enable_if_t<(is_same<T, remove_cv_t<remove_reference_t<T1>>>::value ||
+                 is_base_of<T, remove_cv_t<remove_reference_t<T1>>>::value),
                 decltype(forward<T1>(t1).*f)> {
   return forward<T1>(t1).*f;
 }
@@ -63,8 +63,8 @@ auto invoke(F T::*f, T1&& t1)
 template<typename F, typename T, typename T1>
 auto invoke(F T::*f, T1&& t1)
     noexcept(noexcept((*forward<T1>(t1)).*f)) ->
-    enable_if_t<!(is_same<T, T1>::value ||
-                  is_base_of<T, remove_reference_t<T1>>::value),
+    enable_if_t<!(is_same<T, remove_cv_t<remove_reference_t<T1>>>::value ||
+                  is_base_of<T, remove_cv_t<remove_reference_t<T1>>>::value),
                 decltype((*forward<T1>(t1)).*f)> {
   return (*forward<T1>(t1)).*f;
 }
