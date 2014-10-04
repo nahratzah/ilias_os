@@ -39,7 +39,7 @@ struct map_hash_wrapper {
 
   template<typename X>
   auto operator()(const X& x) const ->
-      decltype(declval<const Hash&>()(declval<const T&>())) {
+      decltype(declval<const Hash&>()(declval<const Key&>())) {
     return hash_(unwrap_(x));
   }
 };

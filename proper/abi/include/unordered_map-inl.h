@@ -16,8 +16,8 @@ unordered_map<Key, T, Hash, Pred, A>::unordered_map(size_type buckets,
                                                     const allocator_type& a)
 : alloc_base(a),
   data_(buckets,
-        impl::map_hash_wrapper<Hash, T, Key, elem>(h),
-        impl::map_equal_wrapper<Pred, T, Key, elem>(k),
+        impl::map_hash_wrapper<Hash, Key, T, elem>(h),
+        impl::map_equal_wrapper<Pred, Key, T, elem>(k),
         a)
 {}
 
@@ -531,8 +531,8 @@ unordered_multimap<Key, T, Hash, Pred, A>::unordered_multimap(
     const allocator_type& a)
 : alloc_base(a),
   data_(buckets,
-        impl::map_hash_wrapper<Hash, T, Key, elem>(h),
-        impl::map_equal_wrapper<Pred, T, Key, elem>(k),
+        impl::map_hash_wrapper<Hash, Key, T, elem>(h),
+        impl::map_equal_wrapper<Pred, Key, T, elem>(k),
         a)
 {}
 
