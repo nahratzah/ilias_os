@@ -62,39 +62,23 @@ template<typename T, typename A>
 class placement_shared_ptr_ownership
 : public shared_ptr_ownership
 {
- public:
-  using offset_type = uint16_t;
-
  private:
-  union placement {
-    placement(nullptr_t) noexcept {}
-    ~placement() noexcept {}
-
-    T value_;
-  };
-
-  using data_type = tuple<placement, A, offset_type>;
+  using placement = aligned_storage_t<sizeof(T), alignof(T)>;
+  using data_type = tuple<placement, A>;
 
  public:
+  placement_shared_ptr_ownership() = delete;
+  placement_shared_ptr_ownership(const placement_shared_ptr_ownership&) =
+      delete;
+  placement_shared_ptr_ownership& operator=(
+      const placement_shared_ptr_ownership&) = delete;
+
   template<typename... Args>
-  placement_shared_ptr_ownership(A, offset_type, Args&&...);
+  placement_shared_ptr_ownership(A, Args&&...);
   ~placement_shared_ptr_ownership() noexcept = default;
 
   void* get_deleter(const type_info&) noexcept override;
-
-  static constexpr size_t n_elems() noexcept {
-    size_t sz = sizeof(placement_shared_ptr_ownership);
-    size_t align = alignof(placement_shared_ptr_ownership);
-    size_t alloc_sz = sizeof(typename allocator_traits<A>::value_type);
-    size_t alloc_align = alignof(typename allocator_traits<A>::value_type);
-
-    /* Number of bytes we may have to shift, due to alignment constraints. */
-    size_t align_slack = (align > alloc_align ? align - alloc_align : 0);
-
-    return (sz + align_slack + alloc_sz - 1) / alloc_sz;
-  }
-
-  T* get() noexcept { return &get<0>(data_).value; }
+  T* get() noexcept;
 
  private:
   void release_pointee() noexcept override;
@@ -102,6 +86,11 @@ class placement_shared_ptr_ownership
 
   data_type data_;
 };
+
+template<typename T, typename A, typename... Args>
+auto create_placement_shared_ptr_ownership(A alloc_arg, Args&&... args) ->
+    placement_shared_ptr_ownership<
+        T, typename allocator_traits<A>::template rebind_alloc<void>>*;
 
 
 } /* namespace impl */

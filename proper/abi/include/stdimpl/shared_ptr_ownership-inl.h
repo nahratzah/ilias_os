@@ -11,12 +11,14 @@ inline long shared_ptr_ownership::count_ptrs_to_me() const noexcept {
 }
 
 
-inline void shared_ptr_ownership::acquire(shared_ptr_ownership* spd, size_t n) noexcept {
+inline void shared_ptr_ownership::acquire(shared_ptr_ownership* spd, size_t n)
+    noexcept {
   auto old_refcount = spd->refcount_.fetch_add(n, memory_order_acquire);
   assert(old_refcount > 0);
 }
 
-inline void shared_ptr_ownership::release(shared_ptr_ownership* spd, size_t n) noexcept {
+inline void shared_ptr_ownership::release(shared_ptr_ownership* spd, size_t n)
+    noexcept {
   if (size_t(spd->refcount_.fetch_sub(n, memory_order_release)) == n)
     destroy_(spd);
 }
@@ -53,10 +55,10 @@ auto shared_ptr_ownership::weak_ptr_convert(U* ptr) noexcept ->
 template<typename T, typename A>
 template<typename... Args>
 placement_shared_ptr_ownership<T, A>::placement_shared_ptr_ownership(
-    A alloc, offset_type off, Args&&... args)
-: data_(nullptr, move_if_noexcept(alloc), off)
+    A alloc, Args&&... args)
+: data_({}, move_if_noexcept(alloc))
 {
-  void* placement_addr = &_namespace(std)::get<0>(data_).value_;
+  void* placement_addr = &_namespace(std)::get<0>(data_);
   new (placement_addr) T(forward<Args>(args)...);
 }
 
@@ -67,69 +69,69 @@ void* placement_shared_ptr_ownership<T, A>::get_deleter(const type_info&)
 }
 
 template<typename T, typename A>
+auto placement_shared_ptr_ownership<T, A>::get() noexcept -> T* {
+  void* placement_addr = &_namespace(std)::get<0>(data_);
+  return static_cast<T*>(placement_addr);
+}
+
+template<typename T, typename A>
 void placement_shared_ptr_ownership<T, A>::release_pointee() noexcept {
-  _namespace(std)::get<0>(data_).value.~T();
+  void* placement_addr = &_namespace(std)::get<0>(data_);
+  T* t_ptr = static_cast<T*>(placement_addr);
+  t_ptr->~T();
 }
 
 template<typename T, typename A>
 void placement_shared_ptr_ownership<T, A>::destroy_me() noexcept {
-  /* Rescue the allocator, so it won't be destroyed before use. */
-  A alloc = move_if_noexcept(_namespace(std)::get<1>(data_));
+  using impl = placement_shared_ptr_ownership<T, A>;
+  using alloc_type =
+      typename allocator_traits<A>::template rebind_alloc<impl>;
+  using alloc_traits = allocator_traits<alloc_type>;
 
-  /* Figure out the address and number of allocated allocator elements. */
-  const offset_type off = _namespace(std)::get<2>(data_);
-  typename allocator_traits<A>::value_type* addr =
-      reinterpret_cast<typename allocator_traits<A>::value_type*>(this);
-  addr -= off;
-  const size_t n = n_elems();
+  /* Rescue the allocator, so it won't be destroyed before use. */
+  alloc_type alloc = move_if_noexcept(_namespace(std)::get<1>(data_));
 
   /* Destroy ourselves.  Access to this is no longer allowed from now on. */
   this->~placement_shared_ptr_ownership();
   /* Release memory, using the saved allocator. */
-  alloc.deallocate(addr, n);
+  alloc_traits::deallocate(alloc, this, 1);
 }
 
 template<typename T, typename A, typename... Args>
 auto create_placement_shared_ptr_ownership(A alloc_arg, Args&&... args) ->
     placement_shared_ptr_ownership<
-        T, typename allocator_traits<A>::template rebind_alloc<uint64_t>> {
+        T, typename allocator_traits<A>::template rebind_alloc<void>>* {
+  using impl = placement_shared_ptr_ownership<
+      T, typename allocator_traits<A>::template rebind_alloc<void>>;
   using alloc_type =
-      typename allocator_traits<A>::template rebind_alloc<uint64_t>;
-  using impl = placement_shared_ptr_ownership<T, alloc_type>;
-  using alloc_vt = typename allocator_traits<alloc_type>::value_type;
+      typename allocator_traits<A>::template rebind_alloc<impl>;
+  using alloc_traits = allocator_traits<alloc_type>;
 
   struct temp_store_deleter {
    public:
     temp_store_deleter(alloc_type& alloc) noexcept : alloc_(alloc) {}
 
-    void operator()(alloc_vt* p) { alloc_.deallocate(p, impl::n_items()); }
+    void operator()(impl* p) {
+      alloc_traits::deallocate(alloc_, p, 1);
+    }
 
    private:
     alloc_type& alloc_;
   };
 
-  alloc_type alloc = move_if_noexcept(alloc_arg);
-  auto store = unique_ptr<alloc_vt, temp_store_deleter>(
-      alloc.allocate(impl::n_items()), alloc);
+  using uptr_type = unique_ptr<impl, temp_store_deleter>;
 
-  /* Figure out storage address and find a suitable address for impl. */
-  uintptr_t store_addr = reinterpret_cast<uintptr_t>(store.get());
-  uintptr_t impl_addr = (store_addr + alignof(impl) - 1U) &
-                        ~uintptr_t(alignof(impl) - 1U);
 
-  /* Calculate offset and assert it fits in the offset type. */
-  typename impl::offset_type off = (impl_addr - store_addr) / sizeof(alloc_vt);
-  assert(uintptr_t(off) * sizeof(alloc_vt) == impl_addr - store_addr);
-
-  /* Assert object fits in allocated storage. */
-  assert(impl_addr + sizeof(impl) <=
-         store_addr + impl::n_items() * sizeof(alloc_vt));
+  /* Allocate storage. */
+  alloc_type alloc = alloc_arg;
+  auto p = uptr_type(alloc_traits::allocate(alloc, 1),
+                     temp_store_deleter(alloc));
 
   /* Run constructor and (if succesful) return impl addr. */
-  new (reinterpret_cast<void*>(impl_addr)) impl(alloc, off,
-                                                forward<Args>(args)...);
-  store.release();
-  return static_cast<impl*>(reinterpret_cast<void*>(impl_addr));
+  void* void_p = reinterpret_cast<void*>(p.get());
+  impl* rv = new (void_p) impl(alloc, forward<Args>(args)...);
+  p.release();
+  return rv;
 }
 
 
