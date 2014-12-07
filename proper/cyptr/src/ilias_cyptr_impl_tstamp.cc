@@ -11,6 +11,7 @@ namespace impl {
 tstamp tstamp::now() noexcept {
   using std::make_tuple;
   using std::tie;
+  using clock = time_point_type::clock;
 
   static std::atomic<tid_type> tid_allocator{ 1U };
   static thread_local time_point_type prev_time_point;
@@ -23,7 +24,7 @@ tstamp tstamp::now() noexcept {
    * we use our own thread ids which are never re-used.
    */
   if (_predict_false(tid == 0U)) {
-    tid = tid_allocator.fetch_add(1U, memory_order_relaxed);
+    tid = tid_allocator.fetch_add(1U, std::memory_order_relaxed);
     assert(tid != 0U);
   }
 
@@ -33,15 +34,14 @@ tstamp tstamp::now() noexcept {
    * (due to its value needs to be reset when the timestamp increments).
    */
   tstamp rv;
-  tie(rv.time_point, rv.tid, rv.tick) =
-      make_tuple(time_point_type::now(), tid, 0U);
+  tie(rv.time_point, rv.tid, rv.tick) = make_tuple(clock::now(), tid, 0U);
 
   /*
    * Assign tick value.
    * If timestamp is the same, tick must increase,
    * otherwise it must reset.
    */
-  if (rv.time_point == prev_timepoint) {
+  if (rv.time_point == prev_time_point) {
     rv.tick = prev_tick++;
     assert(prev_tick != 0U);
   } else {
