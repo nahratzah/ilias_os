@@ -1,6 +1,7 @@
 #include <ilias/cyptr/impl/tstamp.h>
 #include <cdecl.h>
 #include <atomic>
+#include <cassert>
 #include <tuple>
 
 namespace ilias {
