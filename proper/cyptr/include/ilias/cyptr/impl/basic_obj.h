@@ -51,7 +51,7 @@ class basic_obj
   mutable llptr<generation> gen_;
   mutable std::mutex mtx_;
   mutable edge_list edge_list_;
-  mutable obj_color color_;
+  mutable std::atomic<obj_color> color_;
   mutable std::atomic<std::uintptr_t> refcnt_;
 };
 

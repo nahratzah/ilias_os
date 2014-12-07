@@ -15,7 +15,7 @@ class edge;
 
 enum class obj_color : unsigned int {
   unlinked,
-  gen_linked,
+  linked,
   maybe_dying,
   dying,
   dead,

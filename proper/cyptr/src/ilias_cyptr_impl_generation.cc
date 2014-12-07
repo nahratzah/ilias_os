@@ -21,14 +21,12 @@ void generation::marksweep() noexcept {
 
     /* XXX invoke pre-destruction function for dead_obj. */
 
-    switch (dead_obj->color_) {
-    default:
-      break;
-    case obj_color::dying:
-      dead_obj->color_ = obj_color::dead;
-
+    obj_color expect = obj_color::dying;
+    if (dead_obj->color_.compare_exchange_strong(expect,
+                                                 obj_color::dead,
+                                                 std::memory_order_acq_rel,
+                                                 std::memory_order_relaxed)) {
       /* XXX invoke destructor function for dead_obj. */
-      break;
     }
 
     lck.lock();
@@ -42,11 +40,22 @@ void generation::marksweep() noexcept {
 linked_list<basic_obj, wavefront_tag> generation::marksweep_init_() noexcept {
   linked_list<basic_obj, wavefront_tag> wavefront;
   for (basic_obj& o : obj_) {
-    if (o.refcnt_.load(std::memory_order_relaxed) == 0U &&
-        o.color_ == obj_color::gen_linked)
-      o.color_ = obj_color::maybe_dying;
-    else
-      wavefront.link_back(&o);
+    obj_color expect = obj_color::linked;
+
+    if (o.refcnt_.load(std::memory_order_relaxed) != 0U) {
+      /* Add to wavefront below. */ ;
+    } else if (o.color_.compare_exchange_strong(expect,
+                                                obj_color::maybe_dying,
+                                                std::memory_order_acq_rel,
+                                                std::memory_order_acquire)) {
+      continue;
+    } else if (expect == obj_color::unlinked) {
+      /* SKIP: Add to wavefront below. */
+    } else {
+      continue;
+    }
+
+    wavefront.link_back(&o);
   }
 
   return wavefront;
@@ -81,12 +90,12 @@ void generation::marksweep_process_(
           this)
         continue;
       /* Skip edges already declared reachable. */
-      assert(dst.color_ != obj_color::gen_linked);
-      if (dst.color_ != obj_color::maybe_dying)
+      assert(dst.color_.load() != obj_color::linked);
+      if (dst.color_.load(std::memory_order_relaxed) != obj_color::maybe_dying)
         continue;
 
       /* Add dst object to wavefront, since it is reachable. */
-      dst.color_ = obj_color::gen_linked;
+      dst.color_.store(obj_color::linked, std::memory_order_relaxed);
       wavefront.link_back(&dst);
     }
 
@@ -99,10 +108,12 @@ linked_list<basic_obj, wavefront_tag> generation::marksweep_dead_() noexcept {
   linked_list<basic_obj, wavefront_tag> rv;
 
   for (basic_obj o : obj_) {
-    if (o.color_ == obj_color::maybe_dying) {
-      o.color_ = obj_color::dying;
+    obj_color expect = obj_color::maybe_dying;
+    if (o.color_.compare_exchange_strong(expect,
+                                         obj_color::dying,
+                                         std::memory_order_acq_rel,
+                                         std::memory_order_relaxed))
       rv.link_back(&o);
-    }
   }
 
   return rv;
