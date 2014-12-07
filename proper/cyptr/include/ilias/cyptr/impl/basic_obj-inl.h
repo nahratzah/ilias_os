@@ -53,13 +53,6 @@ inline void basic_obj::remove_edge_(edge& e) const noexcept {
 }
 
 
-inline void refcnt_acquire(const basic_obj& o, std::uintptr_t n) noexcept {
-  const auto old = o.refcnt_.fetch_add(n, std::memory_order_acquire);
-  assert(old + n != 0U);
-  o.color_.store(obj_color::linked, std::memory_order_relaxed);
-}
-
-
 inline basic_obj_lock::basic_obj_lock(basic_obj_lock&& o) noexcept
 : obj_(std::exchange(o.obj_, nullptr)),
   gen_(std::exchange(o.gen_, nullptr))

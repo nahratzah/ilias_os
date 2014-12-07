@@ -21,6 +21,26 @@ tstamp get_generation_seq(const basic_obj& o) noexcept {
   return gen->get_tstamp();
 }
 
+void refcnt_acquire(const basic_obj& o, std::uintptr_t n) noexcept {
+  const auto old = o.refcnt_.fetch_add(n, std::memory_order_acquire);
+  assert(old + n != 0U);
+
+  if (old == 0U) {
+    old_color = obj_color::unlinked;
+    o.color_.compare_exchange_strong(old_color, obj_color::linked,
+                                     std::memory_order_relaxed,
+                                     std::memory_order_relaxed);
+
+    /*
+     * This invariant holds, because the object is reachable
+     * (otherwise we would not have been able to acquire a reference).
+     */
+    assert(old_color == obj_color::unlinked ||
+                        old_color == obj_color::linked ||
+                        old_color == obj_color::maybe_dead);
+  }
+}
+
 void refcnt_release(const basic_obj& o, std::uintptr_t n) noexcept {
   generation_ptr gen;
 
