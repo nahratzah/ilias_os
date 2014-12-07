@@ -2,6 +2,8 @@
 #define _ILIAS_CYPTR_IMPL_GENERATION_INL_H_
 
 #include <ilias/cyptr/impl/generation.h>
+#include <mutex>
+#include <ilias/cyptr/impl/basic_obj.h>
 
 namespace ilias {
 namespace cyptr {
@@ -22,6 +24,16 @@ inline bool generation::try_lock() noexcept {
 
 inline void generation::unlock() noexcept {
   mtx_.unlock();
+}
+
+inline void generation::register_obj(basic_obj& o) noexcept {
+  std::lock_guard<generation> lck{ *this };
+  obj_.link_back(&o);
+}
+
+inline void generation::unregister_obj(basic_obj& o) noexcept {
+  std::lock_guard<generation> lck{ *this };
+  obj_.unlink(&o);
 }
 
 

@@ -8,6 +8,9 @@ namespace impl {
 
 
 basic_obj::~basic_obj() noexcept {
+  generation_ptr gen = std::get<0>(gen_.load(std::memory_order_acquire));
+  gen->unregister_obj(*this);
+
   std::lock_guard<std::mutex> guard{ mtx_ };
   assert(edge_list_.empty());
 }

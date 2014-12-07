@@ -4,6 +4,7 @@
 #include <cdecl.h>
 #include <bitset>
 #include <cassert>
+#include <functional>
 #include <tuple>
 #include <ilias/cyptr/impl/basic_obj.h>
 #include <ilias/cyptr/impl/generation.h>
@@ -35,10 +36,10 @@ inline basic_obj& basic_obj::operator=(basic_obj&&) noexcept {
 }
 
 inline basic_obj::basic_obj(refpointer<generation> gen) noexcept
-: gen_(std::make_tuple(std::move(gen), std::bitset<0>()))
+: gen_(std::make_tuple(std::cref(gen), std::bitset<0>()))
 {
-  assert(std::get<0>(this->gen_.load_no_acquire(std::memory_order_relaxed)) !=
-         nullptr);
+  assert(gen != nullptr);
+  gen->register_obj(*this);
 }
 
 inline void basic_obj::add_edge_(edge& e) const noexcept {

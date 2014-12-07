@@ -36,6 +36,9 @@ class generation
   bool try_lock() noexcept;
   void unlock() noexcept;
 
+  void register_obj(basic_obj&) noexcept;
+  void unregister_obj(basic_obj&) noexcept;
+
  private:
   std::mutex mtx_;
   obj_list obj_;
