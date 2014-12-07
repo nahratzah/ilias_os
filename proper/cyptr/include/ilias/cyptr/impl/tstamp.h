@@ -10,6 +10,12 @@ namespace cyptr {
 namespace impl {
 
 
+/*
+ * A timestamp class.
+ *
+ * Tstamp is designed to be roughly ordered by time.
+ * tstamp::now() yields a new timestamp, that is guaranteed unique.
+ */
 struct tstamp {
  public:
   using clock = std::chrono::steady_clock;
