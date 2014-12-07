@@ -1,6 +1,8 @@
 #ifndef _ILIAS_CYPTR_IMPL_BASIC_OBJ_H_
 #define _ILIAS_CYPTR_IMPL_BASIC_OBJ_H_
 
+#include <atomic>
+#include <cstdint>
 #include <mutex>
 #include <new>
 #include <ilias/refcnt.h>
@@ -17,6 +19,9 @@ namespace impl {
 
 tstamp get_generation_seq(const basic_obj&) noexcept;
 
+void refcnt_acquire(const basic_obj&, std::uintptr_t = 1U) noexcept;
+void refcnt_release(const basic_obj&, std::uintptr_t = 1U) noexcept;
+
 
 class basic_obj
 : public linked_list_element<basic_obj_gen_linktag>,
@@ -25,7 +30,10 @@ class basic_obj
   friend basic_obj_lock;
   friend edge;
   friend generation;
+
   friend tstamp get_generation_seq(const basic_obj&) noexcept;
+  friend void refcnt_acquire(const basic_obj&, std::uintptr_t) noexcept;
+  friend void refcnt_release(const basic_obj&, std::uintptr_t) noexcept;
 
  private:
   using edge_list = linked_list<edge, edge_objtag>;

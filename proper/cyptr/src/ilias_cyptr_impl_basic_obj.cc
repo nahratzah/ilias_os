@@ -21,6 +21,23 @@ tstamp get_generation_seq(const basic_obj& o) noexcept {
   return gen->get_tstamp();
 }
 
+void refcnt_release(const basic_obj& o, std::uintptr_t n) noexcept {
+  generation_ptr gen;
+
+  std::uintptr_t expect = o.refcnt_.load(std::memory_order_relaxed);
+  do {
+    assert(expect >= n);
+    if (gen == nullptr && expect == n)
+      gen = std::get<0>(o.gen_.load(std::memory_order_acquire));
+  } while (!o.refcnt_.compare_exchange_weak(expect,
+                                            expect - n,
+                                            std::memory_order_release,
+                                            std::memory_order_relaxed));
+
+  if (expect == n)
+    gen->marksweep();
+}
+
 
 auto basic_obj_lock::lock() -> void {
   using std::system_error;
