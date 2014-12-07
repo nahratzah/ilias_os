@@ -15,9 +15,10 @@ class edge;
 
 enum class obj_color : unsigned int {
   unlinked,
-  strong_linked,
   gen_linked,
-  maybe_dead,
+  maybe_dying,
+  dying,
+  dead,
 };
 
 using generation_ptr = refpointer<generation>;

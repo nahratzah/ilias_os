@@ -39,14 +39,14 @@ class generation
   void register_obj(basic_obj&) noexcept;
   void unregister_obj(basic_obj&) noexcept;
 
-  /* Run a collection cycle after basic_obj had a reference go away. */
-  void release_ref(basic_obj&) noexcept;
+  /* Execute mark-sweep on the generation. */
+  void marksweep() noexcept;
 
  private:
   /* Mark-sweep processing functions -- requires lock. */
-  void marksweep_() noexcept;
   linked_list<basic_obj, wavefront_tag> marksweep_init_() noexcept;
   void marksweep_process_(linked_list<basic_obj, wavefront_tag>&&) noexcept;
+  linked_list<basic_obj, wavefront_tag> marksweep_dead_() noexcept;
 
   std::mutex mtx_;
   obj_list obj_;

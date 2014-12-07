@@ -9,24 +9,31 @@ generation_ptr generation::new_generation() throw (std::bad_alloc) {
   return make_refpointer<generation>();
 }
 
-void generation::release_ref(basic_obj& o) noexcept {
-  std::lock_guard<generation>{ *this };
+void generation::marksweep() noexcept {
+  std::unique_lock<generation> lck{ *this };
 
-  const auto o_refcnt = o.refcnt_.fetch_sub(1U, std::memory_order_release);
-  assert(o_refcnt != 0U);
-  if (o_refcnt != 1U) return;  // Still live.
-  o.color_ = obj_color::gen_linked;
+  marksweep_process_(marksweep_init_());
+  linked_list<basic_obj, wavefront_tag> dead = marksweep_dead_();
 
-  marksweep_();
+  while (!dead.empty()) {
+    basic_obj* dead_obj = dead.unlink_front();
+    lck.unlock();
+
+    /* XXX invoke pre-destruction function for dead_obj. */
+
+    switch (dead_obj->color_) {
+    default:
+      break;
+    case obj_color::dying:
+      dead_obj->color_ = obj_color::dead;
+
+      /* XXX invoke destructor function for dead_obj. */
+      break;
+    }
+
+    lck.lock();
+  }
 }
-
-
-void generation::marksweep_() noexcept {
-  auto wavefront = marksweep_init_();
-  marksweep_process_(std::move(wavefront));
-  /* XXX delete left overs */
-}
-
 
 /*
  * Build the wavefront and mark any object not on the wavefront as
@@ -35,19 +42,15 @@ void generation::marksweep_() noexcept {
 linked_list<basic_obj, wavefront_tag> generation::marksweep_init_() noexcept {
   linked_list<basic_obj, wavefront_tag> wavefront;
   for (basic_obj& o : obj_) {
-    assert(o.color_ == obj_color::unlinked ||
-           o.color_ == obj_color::strong_linked ||
-           o.color_ == obj_color::gen_linked);
     if (o.refcnt_.load(std::memory_order_relaxed) == 0U &&
         o.color_ == obj_color::gen_linked)
-      o.color_ = obj_color::maybe_dead;
+      o.color_ = obj_color::maybe_dying;
     else
       wavefront.link_back(&o);
   }
 
   return wavefront;
 }
-
 
 /*
  * Process the wavefront.
@@ -79,7 +82,7 @@ void generation::marksweep_process_(
         continue;
       /* Skip edges already declared reachable. */
       assert(dst.color_ != obj_color::gen_linked);
-      if (dst.color_ != obj_color::maybe_dead)
+      if (dst.color_ != obj_color::maybe_dying)
         continue;
 
       /* Add dst object to wavefront, since it is reachable. */
@@ -90,6 +93,19 @@ void generation::marksweep_process_(
     /* Done processing front of wavefront. */
     wavefront.unlink_front();
   }
+}
+
+linked_list<basic_obj, wavefront_tag> generation::marksweep_dead_() noexcept {
+  linked_list<basic_obj, wavefront_tag> rv;
+
+  for (basic_obj o : obj_) {
+    if (o.color_ == obj_color::maybe_dying) {
+      o.color_ = obj_color::dying;
+      rv.link_back(&o);
+    }
+  }
+
+  return rv;
 }
 
 
