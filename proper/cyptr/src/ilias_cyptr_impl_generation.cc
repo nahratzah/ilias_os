@@ -5,7 +5,7 @@ namespace cyptr {
 namespace impl {
 
 
-refpointer<generation> generation::new_generation() throw (std::bad_alloc) {
+generation_ptr generation::new_generation() throw (std::bad_alloc) {
   return make_refpointer<generation>();
 }
 

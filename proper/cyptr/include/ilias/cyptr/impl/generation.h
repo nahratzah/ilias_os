@@ -26,8 +26,15 @@ class generation
   generation& operator=(const generation&) = delete;
   generation& operator=(generation&&) = delete;
 
+  tstamp get_tstamp() const noexcept { return tstamp_; }
+
   bool before(const generation&) const noexcept;
-  static refpointer<generation> new_generation() throw (std::bad_alloc);
+  static generation_ptr new_generation() throw (std::bad_alloc);
+
+  /* Implement lockable. */
+  void lock() noexcept;
+  bool try_lock() noexcept;
+  void unlock() noexcept;
 
  private:
   std::mutex mtx_;

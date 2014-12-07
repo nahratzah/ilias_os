@@ -4,19 +4,26 @@
 #include <mutex>
 #include <new>
 #include <ilias/refcnt.h>
+#include <ilias/llptr.h>
 #include <ilias/linked_list.h>
 #include <ilias/cyptr/impl/fwd.h>
 #include <ilias/cyptr/impl/tags.h>
+#include <ilias/cyptr/impl/tstamp.h>
 
 namespace ilias {
 namespace cyptr {
 namespace impl {
 
 
+tstamp get_generation_seq(const basic_obj&) noexcept;
+
+
 class basic_obj
 : public linked_list_element<basic_obj_gen_linktag>
 {
   friend edge;
+  friend basic_obj_lock;
+  friend tstamp get_generation_seq(const basic_obj&) noexcept;
 
  private:
   using edge_list = linked_list<edge, edge_objtag>;
@@ -39,9 +46,42 @@ class basic_obj
   void add_edge_(edge&) const noexcept;
   void remove_edge_(edge&) const noexcept;
 
-  mutable refpointer<generation> gen_;
+  mutable llptr<generation> gen_;
   mutable std::mutex mtx_;
   mutable edge_list edge_list_;
+  // mutable obj_color color_;
+  // mutable std::uintptr_t refcnt_;
+};
+
+
+class basic_obj_lock {
+ public:
+  basic_obj_lock() noexcept = default;
+  basic_obj_lock(const basic_obj_lock&) = delete;
+  basic_obj_lock(basic_obj_lock&&) noexcept;
+  basic_obj_lock& operator=(const basic_obj_lock&) = delete;
+  basic_obj_lock& operator=(basic_obj_lock&&) noexcept;
+  ~basic_obj_lock() noexcept;
+
+  explicit basic_obj_lock(basic_obj&);
+  basic_obj_lock(basic_obj&, std::defer_lock_t) noexcept;
+  basic_obj_lock(basic_obj&, std::try_to_lock_t);
+  basic_obj_lock(basic_obj&, std::adopt_lock_t);
+
+  void lock();
+  bool try_lock();
+  generation_ptr unlock();
+
+  explicit operator bool() const noexcept;
+  basic_obj* get_obj_ptr() const noexcept;
+  basic_obj& get_obj() const noexcept;
+  generation& get_generation() const noexcept;
+  generation_ptr get_generation_ptr() const noexcept;
+  generation_ptr release() noexcept;
+
+ private:
+  basic_obj* obj_ = nullptr;
+  generation_ptr gen_;
 };
 
 
