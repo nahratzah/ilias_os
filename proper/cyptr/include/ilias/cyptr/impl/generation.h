@@ -41,6 +41,10 @@ class generation
 
   /* Execute mark-sweep on the generation. */
   void marksweep() noexcept;
+  void marksweep(std::unique_lock<generation>) noexcept;
+
+  /* Fix generation relation between two objects that are to be linked. */
+  static void fix_relation(basic_obj_lock&, basic_obj&, basic_obj&) noexcept;
 
  private:
   /* Mark-sweep processing functions -- requires lock. */

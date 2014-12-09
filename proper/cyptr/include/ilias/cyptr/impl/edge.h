@@ -2,6 +2,7 @@
 #define _ILIAS_CYPTR_IMPL_EDGE_H_
 
 #include <ilias/llptr.h>
+#include <ilias/linked_list.h>
 #include <ilias/cyptr/impl/fwd.h>
 #include <ilias/cyptr/impl/tags.h>
 
@@ -35,8 +36,9 @@ class edge
   bool try_lock() noexcept;
   void unlock() noexcept;
 
- protected:
-  static void swap_same_src_(edge&, edge&) noexcept;
+  void reset() noexcept;
+  void reset(std::nullptr_t) noexcept { reset(); }
+  void reset(basic_obj*) noexcept;
 
  private:
   basic_obj& src_;

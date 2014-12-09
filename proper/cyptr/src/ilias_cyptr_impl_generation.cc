@@ -10,7 +10,12 @@ generation_ptr generation::new_generation() throw (std::bad_alloc) {
 }
 
 void generation::marksweep() noexcept {
-  std::unique_lock<generation> lck{ *this };
+  marksweep(std::unique_lock<generation>(*this));
+}
+
+void generation::marksweep(std::unique_lock<generation> lck) noexcept {
+  assert(lck.mutex() == this);
+  if (!lck.owns_lock()) lck.lock();
 
   marksweep_process_(marksweep_init_());
   linked_list<basic_obj, wavefront_tag> dead = marksweep_dead_();

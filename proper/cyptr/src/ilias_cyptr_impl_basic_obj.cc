@@ -26,7 +26,7 @@ void refcnt_acquire(const basic_obj& o, std::uintptr_t n) noexcept {
   assert(old + n != 0U);
 
   if (old == 0U) {
-    old_color = obj_color::unlinked;
+    obj_color old_color = obj_color::unlinked;
     o.color_.compare_exchange_strong(old_color, obj_color::linked,
                                      std::memory_order_relaxed,
                                      std::memory_order_relaxed);
@@ -37,7 +37,7 @@ void refcnt_acquire(const basic_obj& o, std::uintptr_t n) noexcept {
      */
     assert(old_color == obj_color::unlinked ||
                         old_color == obj_color::linked ||
-                        old_color == obj_color::maybe_dead);
+                        old_color == obj_color::maybe_dying);
   }
 }
 

@@ -3,6 +3,7 @@
 
 #include <ilias/cyptr/impl/edge.h>
 #include <cassert>
+#include <ilias/cyptr/impl/basic_obj.h>
 
 namespace ilias {
 namespace cyptr {
@@ -16,7 +17,7 @@ inline edge::edge(basic_obj& src) noexcept
 }
 
 inline edge::~edge() noexcept {
-  assert(dst_.load() == std::make_tuple(nullptr, UNLOCKED));
+  reset();
   src_.remove_edge_(*this);
 }
 
@@ -37,29 +38,6 @@ inline bool edge::try_lock() noexcept {
 
 inline void edge::unlock() noexcept {
   dst_.fetch_and(UNLOCKED, std::memory_order_release);
-}
-
-inline void edge::swap_same_src_(edge& x, edge& y) noexcept {
-  assert(&x.src_ == &y.src_);
-
-  std::unique_lock<edge> x_lock;
-  std::unique_lock<edge> y_lock;
-
-  if (&x < &y) {
-    x_lock = std::unique_lock<edge>(x);
-    y_lock = std::unique_lock<edge>(y);
-  } else if (&y < &x) {
-    y_lock = std::unique_lock<edge>(y);
-    x_lock = std::unique_lock<edge>(x);
-  }
-
-  const auto x_ptr = std::get<0>(x.dst_.load(std::memory_order_relaxed));
-  const auto y_ptr = std::get<0>(y.dst_.load(std::memory_order_relaxed));
-
-  x.dst_.store(std::make_tuple(y_ptr, UNLOCKED));
-  y.dst_.store(std::make_tuple(x_ptr, UNLOCKED));
-  x_lock.release();
-  y_lock.release();
 }
 
 
