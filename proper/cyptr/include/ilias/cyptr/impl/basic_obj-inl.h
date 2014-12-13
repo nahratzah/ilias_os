@@ -42,6 +42,14 @@ inline basic_obj::basic_obj(refpointer<generation> gen) noexcept
   gen->register_obj(*this);
 }
 
+inline bool basic_obj::has_generation(const generation& g) const noexcept {
+  return &g == std::get<0>(gen_.load_no_acquire(std::memory_order_relaxed));
+}
+
+inline generation_ptr basic_obj::get_generation() const noexcept {
+  return std::get<0>(gen_.load(std::memory_order_relaxed));
+}
+
 inline void basic_obj::add_edge_(edge& e) const noexcept {
   std::unique_lock<std::mutex> guard{ mtx_ };
   edge_list_.link_back(&e);
@@ -83,14 +91,15 @@ inline basic_obj_lock::basic_obj_lock(basic_obj& o, std::defer_lock_t)
 {}
 
 inline basic_obj_lock::basic_obj_lock(basic_obj& o, std::try_to_lock_t)
+    noexcept
 : basic_obj_lock(o, std::defer_lock)
 {
   try_lock();
 }
 
-inline basic_obj_lock::basic_obj_lock(basic_obj& o, std::adopt_lock_t)
+inline basic_obj_lock::basic_obj_lock(basic_obj& o, std::adopt_lock_t) noexcept
 : obj_(&o),
-  gen_(std::get<0>(o.gen_.load(std::memory_order_relaxed)))
+  gen_(o.get_generation())
 {}
 
 inline basic_obj_lock::operator bool() const noexcept {

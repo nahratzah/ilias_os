@@ -26,30 +26,34 @@ auto edge::reset() noexcept -> void {
 }
 
 auto edge::reset(basic_obj* new_dst) noexcept -> void {
-  if (new_dst == nullptr) {
+  if (_predict_false(new_dst == nullptr)) {
     reset();
     return;
   }
 
-  basic_obj_lock objlck{ src_ };
-  if (_predict_false(get_generation_seq(*new_dst) <
-                     objlck.get_generation().get_tstamp()))
-    generation::fix_relation(objlck, src_, *new_dst);
+  /* Fix relationship between src and new_dst and lock src. */
+  std::unique_lock<generation> objlck = generation::fix_relation(src_,
+                                                                 *new_dst);
+  assert(objlck.owns_lock());
+  assert(src_.has_generation(*objlck.mutex()));
 
+  /* Exchange dst pointer. */
   std::unique_lock<edge> lck{ *this };
   if (std::get<0>(new_dst->gen_.load(std::memory_order_relaxed)) !=
-      &objlck.get_generation())
+      objlck.mutex())
     refcnt_acquire(*new_dst);
   basic_obj* old_dst =
       std::get<0>(dst_.exchange(std::make_tuple(new_dst, UNLOCKED),
                                 std::memory_order_release));
   lck.release();  // Unlocked by assignment.
 
+  /* Drop reference to old value. */
   if (old_dst != nullptr &&
       (std::get<0>(old_dst->gen_.load(std::memory_order_relaxed)) ==
-       &objlck.get_generation())) {
-    generation_ptr gen = objlck.release();
-    gen->marksweep(std::unique_lock<generation>(*gen, std::adopt_lock));
+       objlck.mutex())) {
+    generation_ptr gen = src_.get_generation();
+    assert(gen == objlck.mutex());
+    gen->marksweep(std::move(objlck));
   } else {
     objlck.unlock();
     if (old_dst != nullptr)

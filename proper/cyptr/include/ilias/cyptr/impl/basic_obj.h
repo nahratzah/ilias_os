@@ -50,6 +50,9 @@ class basic_obj
  public:
   ~basic_obj() noexcept;
 
+  bool has_generation(const generation&) const noexcept;
+  generation_ptr get_generation() const noexcept;
+
  private:
   basic_obj(refpointer<generation>) noexcept;
 
@@ -57,7 +60,7 @@ class basic_obj
   void remove_edge_(edge&) const noexcept;
 
   mutable llptr<generation> gen_;
-  mutable std::mutex mtx_;
+  mutable std::mutex mtx_;  // XXX change to generation mutex
   mutable edge_list edge_list_;
   mutable std::atomic<obj_color> color_;
   mutable std::atomic<std::uintptr_t> refcnt_;
@@ -75,8 +78,8 @@ class basic_obj_lock {
 
   explicit basic_obj_lock(basic_obj&);
   basic_obj_lock(basic_obj&, std::defer_lock_t) noexcept;
-  basic_obj_lock(basic_obj&, std::try_to_lock_t);
-  basic_obj_lock(basic_obj&, std::adopt_lock_t);
+  basic_obj_lock(basic_obj&, std::try_to_lock_t) noexcept;
+  basic_obj_lock(basic_obj&, std::adopt_lock_t) noexcept;
 
   void lock();
   bool try_lock();
