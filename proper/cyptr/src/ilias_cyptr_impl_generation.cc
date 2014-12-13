@@ -393,8 +393,6 @@ auto generation::fixrel_lock_1_(fix_relation_state& s, fixrel_queue& locks) ->
 auto generation::fixrel_lock_add_edges_(generation& gen,
                                         fixrel_queue& locks) -> void {
   for (basic_obj& obj : gen.obj_) {
-    std::lock_guard<std::mutex> objlck{ obj.mtx_ };
-
     for (edge& e : obj.edge_list_) {
       std::lock_guard<edge> elck{ e };
 
@@ -449,8 +447,6 @@ basic_obj_lock generation::fixrel_slow_1_(basic_obj& src,
 
   /* Double for loop: for each object reachable from dstlck-generation... */
   for (basic_obj& obj : dstlck.get_generation().obj_) {
-    std::unique_lock<std::mutex> objedgelck{ obj.mtx_ };
-
     for (edge& out : obj.edge_list_) {
       /* Lock edge. */
       std::lock_guard<edge> edgelck{ out };
@@ -556,7 +552,6 @@ void generation::fixrel_splice_(generation& src, generation& dst) noexcept {
                    std::memory_order_relaxed);
 
     /* Update objects pointed to by edges. */
-    std::lock_guard<std::mutex> objlck{ obj.mtx_ };
     for (edge& e : obj.edge_list_) {
       std::lock_guard<edge> lck{ e };
 
@@ -604,7 +599,6 @@ void generation::marksweep_process_(
     linked_list<basic_obj, wavefront_tag>&& wavefront) noexcept {
   while (!wavefront.empty()) {
     basic_obj& o = wavefront.front();
-    std::lock_guard<std::mutex> edge_lock{ o.mtx_ };
 
     /* Process all objects for each edge. */
     for (edge& e : o.edge_list_) {

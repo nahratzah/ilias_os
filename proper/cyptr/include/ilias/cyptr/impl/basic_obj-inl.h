@@ -39,6 +39,7 @@ inline basic_obj::basic_obj(refpointer<generation> gen) noexcept
 : gen_(std::make_tuple(std::cref(gen), std::bitset<0>()))
 {
   assert(gen != nullptr);
+  std::lock_guard<generation> genlck{ *gen };
   gen->register_obj(*this);
 }
 
@@ -51,12 +52,12 @@ inline generation_ptr basic_obj::get_generation() const noexcept {
 }
 
 inline void basic_obj::add_edge_(edge& e) const noexcept {
-  std::unique_lock<std::mutex> guard{ mtx_ };
+  basic_obj_lock guard{ const_cast<basic_obj&>(*this) };
   edge_list_.link_back(&e);
 }
 
 inline void basic_obj::remove_edge_(edge& e) const noexcept {
-  std::unique_lock<std::mutex> guard{ mtx_ };
+  basic_obj_lock guard{ const_cast<basic_obj&>(*this) };
   edge_list_.unlink(&e);
 }
 

@@ -8,10 +8,14 @@ namespace impl {
 
 
 basic_obj::~basic_obj() noexcept {
-  generation_ptr gen = std::get<0>(gen_.load(std::memory_order_acquire));
-  gen->unregister_obj(*this);
+  /*
+   * Acquire object lock, because otherwise another thread may drag us away
+   * from our current generation,
+   * as part of a generation::fix_relation() invocation.
+   */
+  basic_obj_lock lck{ *this };
 
-  std::lock_guard<std::mutex> guard{ mtx_ };
+  lck.get_generation().unregister_obj(*this);
   assert(edge_list_.empty());
 }
 

@@ -60,7 +60,6 @@ class basic_obj
   void remove_edge_(edge&) const noexcept;
 
   mutable llptr<generation> gen_;
-  mutable std::mutex mtx_;  // XXX change to generation mutex
   mutable edge_list edge_list_;
   mutable std::atomic<obj_color> color_;
   mutable std::atomic<std::uintptr_t> refcnt_;
