@@ -3,7 +3,6 @@
 
 #include <atomic>
 #include <cstdint>
-#include <mutex>
 #include <new>
 #include <ilias/refcnt.h>
 #include <ilias/llptr.h>
