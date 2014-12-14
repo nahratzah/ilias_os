@@ -58,12 +58,13 @@ void generation::marksweep(std::unique_lock<generation> lck) noexcept {
   }
 
   /* Destroy the dead. */
+  lck.unlock();
   while (!dead.empty()) {
     basic_obj* dead_obj = dead.unlink_front();
     assert(dead_obj->color_.load(std::memory_order_acquire) ==
            obj_color::dead);
 
-      /* XXX invoke destructor */
+    /* XXX invoke destructor */
   }
 }
 
