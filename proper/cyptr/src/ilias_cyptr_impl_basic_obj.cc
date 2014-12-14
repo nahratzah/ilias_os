@@ -7,6 +7,18 @@ namespace cyptr {
 namespace impl {
 
 
+basic_obj::basic_obj() throw (std::bad_alloc)
+: basic_obj(generation::new_generation())
+{}
+
+basic_obj::basic_obj(refpointer<generation> gen) noexcept
+: gen_(std::make_tuple(std::cref(gen), std::bitset<0>()))
+{
+  assert(gen != nullptr);
+  std::lock_guard<generation> genlck{ *gen };
+  gen->register_obj(*this);
+}
+
 basic_obj::~basic_obj() noexcept {
   /*
    * Acquire object lock, because otherwise another thread may drag us away

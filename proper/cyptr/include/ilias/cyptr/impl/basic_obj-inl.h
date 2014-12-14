@@ -15,10 +15,6 @@ namespace cyptr {
 namespace impl {
 
 
-inline basic_obj::basic_obj() throw (std::bad_alloc)
-: basic_obj(generation::new_generation())
-{}
-
 inline basic_obj::basic_obj(const basic_obj& o) noexcept
 : basic_obj(std::get<0>(o.gen_.load(std::memory_order_relaxed)))
 {}
@@ -33,14 +29,6 @@ inline basic_obj& basic_obj::operator=(const basic_obj&) noexcept {
 
 inline basic_obj& basic_obj::operator=(basic_obj&&) noexcept {
   return *this;
-}
-
-inline basic_obj::basic_obj(refpointer<generation> gen) noexcept
-: gen_(std::make_tuple(std::cref(gen), std::bitset<0>()))
-{
-  assert(gen != nullptr);
-  std::lock_guard<generation> genlck{ *gen };
-  gen->register_obj(*this);
 }
 
 inline bool basic_obj::has_generation(const generation& g) const noexcept {

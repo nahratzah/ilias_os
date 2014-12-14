@@ -19,7 +19,7 @@ namespace impl {
 
 tstamp get_generation_seq(const basic_obj&) noexcept;
 
-basic_obj* refcnt_initialize(basic_obj&, std::function<void (void*)>,
+basic_obj* refcnt_initialize(basic_obj*, std::function<void (void*)>,
                              void*) noexcept;
 void refcnt_acquire(const basic_obj&, std::uintptr_t = 1U) noexcept;
 void refcnt_release(const basic_obj&, std::uintptr_t = 1U) noexcept;
@@ -34,7 +34,7 @@ class basic_obj final
   friend generation;
 
   friend tstamp get_generation_seq(const basic_obj&) noexcept;
-  friend basic_obj* refcnt_initialize(basic_obj&, std::function<void (void*)>,
+  friend basic_obj* refcnt_initialize(basic_obj*, std::function<void (void*)>,
                                       void*) noexcept;
   friend void refcnt_acquire(const basic_obj&, std::uintptr_t) noexcept;
   friend void refcnt_release(const basic_obj&, std::uintptr_t) noexcept;
@@ -64,7 +64,7 @@ class basic_obj final
   mutable edge_list edge_list_;
   mutable std::atomic<obj_color> color_;
   mutable std::atomic<std::uintptr_t> refcnt_;
-  std::function<void ()> destructor_;
+  std::function<void (void*)> destructor_;
   void* destructor_arg_ = nullptr;
 };
 
