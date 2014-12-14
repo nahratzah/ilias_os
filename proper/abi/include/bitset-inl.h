@@ -11,19 +11,19 @@ _namespace_begin(std)
 template<size_t N>
 constexpr auto operator&(const bitset<N>& x, const bitset<N>& y) noexcept ->
     bitset<N> {
-  return bitset<N>(bitset<N>::and_tag(), x, y);
+  return bitset<N>(typename bitset<N>::and_tag(), x, y);
 }
 
 template<size_t N>
 constexpr auto operator|(const bitset<N>& x, const bitset<N>& y) noexcept ->
     bitset<N> {
-  return bitset<N>(bitset<N>::or_tag(), x, y);
+  return bitset<N>(typename bitset<N>::or_tag(), x, y);
 }
 
 template<size_t N>
 constexpr auto operator^(const bitset<N>& x, const bitset<N>& y) noexcept ->
     bitset<N> {
-  return bitset<N>(bitset<N>::xor_tag(), x, y);
+  return bitset<N>(typename bitset<N>::xor_tag(), x, y);
 }
 
 
@@ -455,6 +455,45 @@ auto bitset<N>::operator>>(size_t n) const noexcept -> bitset {
   bitset tmp = *this;
   tmp >>= n;
   return tmp;
+}
+
+
+template<typename Char, typename Traits, typename Alloc>
+bitset<0>::bitset(const basic_string<Char, Traits, Alloc>& s,
+                  typename basic_string<Char, Traits, Alloc>::size_type pos,
+                  typename basic_string<Char, Traits, Alloc>::size_type n,
+                  Char zero, Char one)
+: bitset(basic_string_ref<Char, Traits>(s).substr(pos, n), zero, one)
+{}
+
+template<typename Char>
+bitset<0>::bitset(const Char* s,
+                  typename basic_string<Char>::size_type n,
+                  Char zero, Char one)
+: bitset((n == basic_string<Char>::npos ?
+          basic_string_ref<Char>(s) :
+          basic_string_ref<Char>(s, n)),
+         zero, one)
+{}
+
+template<typename Char, typename Traits>
+bitset<0>::bitset(basic_string_ref<Char, Traits> s,
+                  Char zero, Char one)
+: bitset()
+{
+  using traits = typename basic_string_ref<Char, Traits>::traits_type;
+
+  for_each(s.begin(), s.end(),
+           [&zero, &one](const Char& c) {
+             if (!traits::eq(c, zero) && !traits::eq(c, one))
+               throw invalid_argument("bitset from string");
+           });
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto bitset<0>::to_string(Char, Char) const ->
+    basic_string<Char, Traits, Alloc> {
+  return basic_string<Char, Traits, Alloc>();
 }
 
 
