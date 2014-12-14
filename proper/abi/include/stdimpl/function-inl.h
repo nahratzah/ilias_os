@@ -1,3 +1,9 @@
+#ifndef _STDIMPL_FUNCTION_INL_H_
+#define _STDIMPL_FUNCTION_INL_H_
+
+#include <stdimpl/function.h>
+#include <stdimpl/invoke.h>
+
 _namespace_begin(std)
 namespace impl {
 
@@ -63,3 +69,5 @@ auto functor_wrapper_impl<R(ArgTypes...), F>::get_impl_pointer(
 
 } /* namespace impl */
 _namespace_end(std)
+
+#endif /* _STDIMPL_FUNCTION_INL_H_ */
