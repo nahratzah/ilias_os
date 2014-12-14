@@ -40,6 +40,10 @@ inline void edge::unlock() noexcept {
   dst_.fetch_and(UNLOCKED, std::memory_order_release);
 }
 
+inline basic_obj* edge::get() const noexcept {
+  return std::get<0>(dst_.load(std::memory_order_relaxed));
+}
+
 
 }}} /* namespace ilias::cyptr::impl */
 

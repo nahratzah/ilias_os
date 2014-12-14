@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cstdint>
 #include <new>
+#include <functional>
 #include <ilias/refcnt.h>
 #include <ilias/llptr.h>
 #include <ilias/linked_list.h>
@@ -18,6 +19,8 @@ namespace impl {
 
 tstamp get_generation_seq(const basic_obj&) noexcept;
 
+basic_obj* refcnt_initialize(basic_obj&, std::function<void (void*)>,
+                             void*) noexcept;
 void refcnt_acquire(const basic_obj&, std::uintptr_t = 1U) noexcept;
 void refcnt_release(const basic_obj&, std::uintptr_t = 1U) noexcept;
 
@@ -31,6 +34,8 @@ class basic_obj final
   friend generation;
 
   friend tstamp get_generation_seq(const basic_obj&) noexcept;
+  friend basic_obj* refcnt_initialize(basic_obj&, std::function<void (void*)>,
+                                      void*) noexcept;
   friend void refcnt_acquire(const basic_obj&, std::uintptr_t) noexcept;
   friend void refcnt_release(const basic_obj&, std::uintptr_t) noexcept;
 
@@ -53,11 +58,14 @@ class basic_obj final
 
   void add_edge_(edge&) const noexcept;
   void remove_edge_(edge&) const noexcept;
+  void set_destructor_(std::function<void (void*)>, void*) noexcept;
 
   mutable llptr<generation> gen_;
   mutable edge_list edge_list_;
   mutable std::atomic<obj_color> color_;
   mutable std::atomic<std::uintptr_t> refcnt_;
+  std::function<void ()> destructor_;
+  void* destructor_arg_ = nullptr;
 };
 
 

@@ -39,6 +39,7 @@ class edge
   void reset() noexcept;
   void reset(std::nullptr_t) noexcept { reset(); }
   void reset(basic_obj*) noexcept;
+  basic_obj* get() const noexcept;
 
  private:
   basic_obj& src_;

@@ -64,7 +64,11 @@ void generation::marksweep(std::unique_lock<generation> lck) noexcept {
     assert(dead_obj->color_.load(std::memory_order_acquire) ==
            obj_color::dead);
 
-    /* XXX invoke destructor */
+    /* Invoke destructor. */
+    std::function<void (void*)> destructor = std::move(dead_obj->destructor_);
+    void* destructor_arg = dead_obj->destructor_arg_;
+    assert(destructor);
+    destructor(destructor_arg);
   }
 }
 

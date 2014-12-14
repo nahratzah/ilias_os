@@ -25,24 +25,37 @@ tstamp get_generation_seq(const basic_obj& o) noexcept {
   return gen->get_tstamp();
 }
 
+basic_obj* refcnt_initialize(basic_obj* o,
+                             std::function<void (void*)> destructor,
+                             void* destructor_arg) noexcept {
+  if (_predict_false(o == nullptr)) return nullptr;
+
+  auto old_refcnt = o->refcnt_.exchange(1U,
+                                        std::memory_order_acquire);
+  assert_msg(old_refcnt == 0U, "Pointer initialized twice!");
+
+  o->set_destructor_(std::move(destructor), std::move(destructor_arg));
+  return o;
+}
+
+void basic_obj::set_destructor_(std::function<void (void*)> destructor,
+                                void* destructor_arg) noexcept {
+  assert(!destructor_);
+  assert(!destructor_arg_);
+
+  /* Assign destructor. */
+  destructor_ = std::move(destructor);
+  destructor_arg_ = destructor_arg;
+
+  /* Mark as linked. */
+  obj_color old_color = color_.exchange(obj_color::linked,
+                                        std::memory_order_release);
+  assert(old_color == obj_color::unlinked);
+}
+
 void refcnt_acquire(const basic_obj& o, std::uintptr_t n) noexcept {
   const auto old = o.refcnt_.fetch_add(n, std::memory_order_acquire);
   assert(old + n != 0U);
-
-  if (old == 0U) {
-    obj_color old_color = obj_color::unlinked;
-    o.color_.compare_exchange_strong(old_color, obj_color::linked,
-                                     std::memory_order_relaxed,
-                                     std::memory_order_relaxed);
-
-    /*
-     * This invariant holds, because the object is reachable
-     * (otherwise we would not have been able to acquire a reference).
-     */
-    assert(old_color == obj_color::unlinked ||
-                        old_color == obj_color::linked ||
-                        old_color == obj_color::maybe_dying);
-  }
 }
 
 void refcnt_release(const basic_obj& o, std::uintptr_t n) noexcept {
