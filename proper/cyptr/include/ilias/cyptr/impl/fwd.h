@@ -24,6 +24,14 @@ enum class obj_color : unsigned int {
 using generation_ptr = refpointer<generation>;
 
 
-}}} /* namespace ilias::cyptr::impl */
+} /* namespace ilias::cyptr::impl */
+
+
+class node;
+template<typename> class edge;
+template<typename> class cyptr;
+
+
+}} /* namespace ilias::cyptr */
 
 #endif /* _ILIAS_CYPTR_IMPL_FWD_H_ */

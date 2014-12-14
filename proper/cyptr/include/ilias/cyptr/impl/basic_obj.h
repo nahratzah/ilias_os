@@ -22,7 +22,7 @@ void refcnt_acquire(const basic_obj&, std::uintptr_t = 1U) noexcept;
 void refcnt_release(const basic_obj&, std::uintptr_t = 1U) noexcept;
 
 
-class basic_obj
+class basic_obj final
 : public linked_list_element<basic_obj_gen_linktag>,
   public linked_list_element<wavefront_tag>
 {
@@ -39,14 +39,10 @@ class basic_obj
 
  public:
   basic_obj() throw (std::bad_alloc);
-
- protected:
   basic_obj(const basic_obj&) noexcept;
   basic_obj(basic_obj&&) noexcept;
   basic_obj& operator=(const basic_obj&) noexcept;
   basic_obj& operator=(basic_obj&&) noexcept;
-
- public:
   ~basic_obj() noexcept;
 
   bool has_generation(const generation&) const noexcept;

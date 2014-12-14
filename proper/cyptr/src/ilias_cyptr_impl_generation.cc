@@ -23,24 +23,47 @@ void generation::marksweep(std::unique_lock<generation> lck) noexcept {
   assert(lck.mutex() == this);
   if (!lck.owns_lock()) lck.lock();
 
+  /* Run mark-sweep algorithm on graph contained in this generation. */
   marksweep_process_(marksweep_init_());
   linked_list<basic_obj, wavefront_tag> dead = marksweep_dead_();
+  using iterator = linked_list<basic_obj, wavefront_tag>::iterator;
 
-  while (!dead.empty()) {
-    basic_obj* dead_obj = dead.unlink_front();
-    lck.unlock();
-
-    /* XXX invoke pre-destruction function for dead_obj. */
+  /* Collect the dying and mark them as dead. */
+  for (iterator dead_obj_iter = dead.begin(),
+                dead_obj_iter_next;
+       dead_obj_iter != dead.end();
+       dead_obj_iter = dead_obj_iter_next) {
+    basic_obj& dead_obj = *dead_obj_iter;
+    dead_obj_iter_next = std::next(dead_obj_iter);
 
     obj_color expect = obj_color::dying;
-    if (dead_obj->color_.compare_exchange_strong(expect,
-                                                 obj_color::dead,
-                                                 std::memory_order_acq_rel,
-                                                 std::memory_order_relaxed)) {
-      /* XXX invoke destructor function for dead_obj. */
-    }
+    if (dead_obj.color_.compare_exchange_strong(expect,
+                                                obj_color::dead,
+                                                std::memory_order_acq_rel,
+                                                std::memory_order_relaxed)) {
+      /* Break edges. */
+      for (edge& e : dead_obj.edge_list_) {
+        std::unique_lock<edge> elck{ e };
+        basic_obj* edst = std::get<0>(e.dst_.load(std::memory_order_relaxed));
+        if (!edst || !edst->has_generation(*this))
+          continue;
 
-    lck.lock();
+        e.dst_.store(std::make_tuple(nullptr, edge::UNLOCKED),
+                     std::memory_order_relaxed);
+        elck.release();  // Above unlocks edge.
+      }
+    } else {
+      dead.unlink(dead_obj_iter);
+    }
+  }
+
+  /* Destroy the dead. */
+  while (!dead.empty()) {
+    basic_obj* dead_obj = dead.unlink_front();
+    assert(dead_obj->color_.load(std::memory_order_acquire) ==
+           obj_color::dead);
+
+      /* XXX invoke destructor */
   }
 }
 
