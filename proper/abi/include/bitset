@@ -4,6 +4,7 @@
 #include <cdecl.h>
 #include <string>
 #include <iosfwd>
+#include <stdexcept>
 
 _namespace_begin(std)
 
@@ -173,6 +174,67 @@ class bitset {
   using data_type = int_type[N_int_type];
 
   data_type data_;
+};
+
+template<>
+class bitset<0> {
+ public:
+  constexpr bitset() noexcept {}
+  constexpr bitset(unsigned long long) noexcept {}
+
+  template<typename Char, typename Traits, typename Alloc>
+  explicit bitset(const basic_string<Char, Traits, Alloc>&,
+                  typename basic_string<Char, Traits, Alloc>::size_type = 0,
+                  typename basic_string<Char, Traits, Alloc>::size_type =
+                      basic_string<Char, Traits, Alloc>::npos,
+                  Char = Char('0'), Char = Char('1'));
+
+  template<typename Char>
+  explicit bitset(const Char*,
+                  typename basic_string<Char>::size_type =
+                      basic_string<Char>::npos,
+                  Char = Char('0'), Char = Char('1'));
+
+  template<typename Char, typename Traits>
+  explicit bitset(basic_string_ref<Char, Traits>,
+                  Char = Char('0'), Char = Char('1'));
+
+  bitset& operator&=(const bitset&) noexcept { return *this; }
+  bitset& operator|=(const bitset&) noexcept { return *this; }
+  bitset& operator^=(const bitset&) noexcept { return *this; }
+  bitset& operator<<=(size_t) noexcept { return *this; }
+  bitset& operator>>=(size_t) noexcept { return *this; }
+  bitset& set() noexcept { return *this; }
+  bitset& set(size_t, bool = true) { throw out_of_range("bitset"); }
+  bitset& reset() noexcept { return *this; }
+  bitset& reset(size_t) { throw out_of_range("bitset"); }
+  constexpr bitset operator~() const noexcept { return *this; }
+  bitset& flip() noexcept { return *this; }
+  bitset& flip(size_t) { throw out_of_range("bitset"); }
+
+  bool operator[](size_t) const { throw out_of_range("bitset"); }
+  bool& operator[](size_t) { throw out_of_range("bitset"); }
+
+  unsigned long to_ulong() const { return 0U; }
+  unsigned long long to_ullong() const { return 0U; }
+
+  template<typename Char, typename Traits = char_traits<Char>,
+           typename Alloc = allocator<Char>>
+  basic_string<Char, Traits, Alloc> to_string(Char = Char('0'),
+                                              Char = Char('1')) const;
+
+  size_t count() const noexcept { return 0; }
+  constexpr size_t size() const noexcept { return 0; }
+  bool operator==(const bitset&) const noexcept { return true; }
+  bool operator!=(const bitset&) const noexcept { return false; }
+
+  bool test(size_t) const { throw out_of_range("bitset"); }
+  bool all() const noexcept { return true; }
+  bool any() const noexcept { return false; }
+  bool none() const noexcept { return true; }
+
+  bitset operator<<(size_t) const noexcept { return *this; }
+  bitset operator>>(size_t) const noexcept { return *this; }
 };
 
 
