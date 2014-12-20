@@ -6,7 +6,6 @@
 #include <type_traits>
 #include <stdimpl/utility_get.h>
 #include <stdimpl/utility_mkpair.h>
-#include <stdimpl/utility_seq.h>
 
 _namespace_begin(std)
 namespace rel_ops {
@@ -99,19 +98,36 @@ template<typename T, T...> struct integer_sequence;
 template<size_t... I> using index_sequence = integer_sequence<size_t, I...>;
 
 
+namespace impl {
+
+template<typename T, T N, T... Args>
+struct extend_sequence_ {
+  using type = typename conditional_t<N == 0,
+                                      identity<integer_sequence<T, Args...>>,
+                                      extend_sequence_<T, N - 1U, N - 1U,
+                                                       Args...>>::type;
+};
+
+} /* namespace std::impl */
+
 template<typename T, T N> using make_integer_sequence =
-    typename impl::extend_sequence<integer_sequence<T>, N>::type;
+    typename impl::extend_sequence_<T, N>::type;
 template<size_t N> using make_index_sequence =
     make_integer_sequence<size_t, N>;
 
 template<typename... T> using index_sequence_for =
     make_index_sequence<sizeof...(T)>;
 
+static_assert(is_same<index_sequence<>, make_index_sequence<0>>::value,
+              "std::make_index_sequence broken?");
+static_assert(is_same<index_sequence<0>, make_index_sequence<1>>::value,
+              "std::make_index_sequence broken?");
 static_assert(is_same<index_sequence_for<>, index_sequence<>>::value,
               "std::index_sequence_for broken?");
 static_assert(is_same<index_sequence_for<int>, index_sequence<0>>::value,
               "std::index_sequence_for broken?");
-static_assert(is_same<index_sequence_for<char, int>, index_sequence<0, 1>>::value,
+static_assert(is_same<index_sequence_for<char, int>,
+                      index_sequence<0, 1>>::value,
               "std::index_sequence_for broken?");
 
 
