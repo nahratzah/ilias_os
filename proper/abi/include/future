@@ -1,0 +1,426 @@
+#ifndef _FUTURE_
+#define _FUTURE_
+
+#include <cdecl.h>
+#include <system_error>
+#include <memory-fwd.h>
+#include <type_traits>
+#include <exception>
+#include <stdexcept>
+#include <chrono>
+#include <stdimpl/future_state.h>
+
+_namespace_begin(std)
+
+
+enum class future_errc {
+  broken_promise = 1,
+  future_already_retrieved = 2,
+  promise_already_satisfied = 3,
+  no_state = 4
+};
+
+enum class launch {
+  async = 0x01,
+  deferred = 0x02
+};
+
+constexpr launch operator|(launch, launch) noexcept;
+constexpr launch operator&(launch, launch) noexcept;
+constexpr launch operator^(launch, launch) noexcept;
+constexpr launch operator~(launch) noexcept;
+
+enum class future_status {
+  ready,
+  timeout,
+  deferred
+};
+
+template<>
+struct is_error_code_enum<future_errc> : public true_type {};
+
+
+error_code make_error_code(future_errc) noexcept;
+error_condition make_error_condition(future_errc) noexcept;
+
+const error_category& future_category() noexcept;
+
+
+class future_error
+: public logic_error
+{
+ public:
+  future_error(error_code c);
+  ~future_error() noexcept override;
+
+  const error_code& code() const noexcept;
+
+  static void __throw(future_errc) __attribute__((__noreturn__));
+
+ private:
+  const error_code ec_;
+};
+
+
+template<typename> class promise;
+template<typename> class future;
+template<typename> class shared_future;
+template<typename> class packaged_task;  // undefined
+
+
+template<typename F, typename... Args>
+auto async(F&&, Args&&...) ->
+    future<typename enable_if_t<!is_same<launch, decay_t<F>>::value,
+                                identity<decltype(declval<F>()(
+                                                      declval<Args>()...))>
+                               >::type>;
+
+template<typename F, typename... Args>
+auto async(launch, F&&, Args&&...) ->
+    future<decltype(declval<F>()(declval<Args>()...))>;
+
+
+template<typename R>
+class promise {
+ public:
+  promise();
+  promise(const promise&) = delete;
+  promise(promise&&) noexcept;
+  template<typename Alloc> promise(allocator_arg_t, const Alloc&);
+
+  ~promise() noexcept;
+
+  promise& operator=(const promise&) = delete;
+  promise& operator=(promise&&) noexcept;
+  void swap(promise&) noexcept;
+
+  future<R> get_future();
+
+  void set_value(const R&);
+  void set_value(R&&);
+  void set_exception(exception_ptr);
+
+  void set_value_at_thread_exit(const R&);
+  void set_value_at_thread_exit(R&&);
+  void set_exception_at_thread_exit(exception_ptr);
+
+ private:
+  impl::future_state<R>* state_ = nullptr;
+};
+
+template<typename R>
+class promise<R&> {
+ public:
+  promise();
+  promise(const promise&) = delete;
+  promise(promise&&) noexcept;
+  template<typename Alloc> promise(allocator_arg_t, const Alloc&);
+
+  ~promise() noexcept;
+
+  promise& operator=(const promise&) = delete;
+  promise& operator=(promise&&) noexcept;
+  void swap(promise&) noexcept;
+
+  future<R&> get_future();
+
+  void set_value(R&);
+  void set_exception(exception_ptr);
+
+  void set_value_at_thread_exit(R&);
+  void set_exception_at_thread_exit(exception_ptr);
+
+ private:
+  impl::future_state<R*>* state_ = nullptr;
+};
+
+template<>
+class promise<void> {
+ public:
+  promise();
+  promise(const promise&) = delete;
+  promise(promise&&) noexcept;
+  template<typename Alloc> promise(allocator_arg_t, const Alloc&);
+
+  ~promise() noexcept;
+
+  promise& operator=(const promise&) = delete;
+  promise& operator=(promise&&) noexcept;
+  void swap(promise&) noexcept;
+
+  future<void> get_future();
+
+  void set_value();
+  void set_exception(exception_ptr);
+
+  void set_value_at_thread_exit();
+  void set_exception_at_thread_exit(exception_ptr);
+
+ private:
+  impl::future_state<void>* state_ = nullptr;
+};
+
+template<typename R>
+void swap(promise<R>&, promise<R>&) noexcept;
+
+template<typename R, class Alloc>
+struct uses_allocator<promise<R>, Alloc> : true_type {};
+
+
+template<typename R>
+class future {
+  friend promise<R>;
+  template<typename> friend class packaged_task;
+
+  template<typename F, typename... Args> friend auto async(launch, F&&,
+                                                           Args&&...) ->
+      future<decltype(declval<F>()(declval<Args>()...))>;
+
+ public:
+  future() noexcept;
+  future(const future&) = delete;
+  future(future&&) noexcept;
+
+  ~future() noexcept;
+
+  future& operator=(const future&) = delete;
+  future& operator=(future&&) noexcept;
+  void swap(future&) noexcept;  // extension
+
+  shared_future<R> share();
+
+  R get();
+
+  bool valid() const noexcept;
+
+  void wait() const;
+  template<typename Rep, typename Period>
+  future_status wait_for(const chrono::duration<Rep, Period>&) const;
+  template<typename Clock, typename Duration>
+  future_status wait_until(const chrono::time_point<Clock, Duration>&) const;
+
+ private:
+  explicit future(impl::future_state<R>*) noexcept;
+
+  impl::future_state<R>* state_ = nullptr;
+};
+
+template<typename R>
+class future<R&> {
+  friend promise<R&>;
+  template<typename> friend class packaged_task;
+
+  template<typename F, typename... Args> friend auto async(launch, F&&,
+                                                           Args&&...) ->
+      future<decltype(declval<F>()(declval<Args>()...))>;
+
+ public:
+  future() noexcept;
+  future(const future&) = delete;
+  future(future&&) noexcept;
+
+  ~future() noexcept;
+
+  future& operator=(const future&) = delete;
+  future& operator=(future&&) noexcept;
+  void swap(future&) noexcept;  // extension
+
+  shared_future<R&> share();
+
+  R& get();
+
+  bool valid() const noexcept;
+
+  void wait() const;
+  template<typename Rep, typename Period>
+  future_status wait_for(const chrono::duration<Rep, Period>&) const;
+  template<typename Clock, typename Duration>
+  future_status wait_until(const chrono::time_point<Clock, Duration>&) const;
+
+ private:
+  explicit future(impl::future_state<R*>*) noexcept;
+
+  impl::future_state<R*>* state_ = nullptr;
+};
+
+template<>
+class future<void> {
+  friend promise<void>;
+  template<typename> friend class packaged_task;
+
+  template<typename F, typename... Args> friend auto async(launch, F&&,
+                                                           Args&&...) ->
+      future<decltype(declval<F>()(declval<Args>()...))>;
+
+ public:
+  future() noexcept;
+  future(const future&) = delete;
+  future(future&&) noexcept;
+
+  ~future() noexcept;
+
+  future& operator=(const future&) = delete;
+  future& operator=(future&&) noexcept;
+  void swap(future&) noexcept;  // extension
+
+  shared_future<void> share();
+
+  void get();
+
+  bool valid() const noexcept;
+
+  void wait() const;
+  template<typename Rep, typename Period>
+  future_status wait_for(const chrono::duration<Rep, Period>&) const;
+  template<typename Clock, typename Duration>
+  future_status wait_until(const chrono::time_point<Clock, Duration>&) const;
+
+ private:
+  explicit future(impl::future_state<void>*) noexcept;
+
+  impl::future_state<void>* state_ = nullptr;
+};
+
+template<typename R>
+void swap(future<R>&, future<R>&) noexcept;
+
+
+template<typename R>
+class shared_future {
+  friend future<R>;
+
+ public:
+  shared_future() noexcept = default;
+  shared_future(const shared_future&);
+  shared_future(shared_future&&) noexcept;
+  shared_future(future<R>&&) noexcept;
+
+  ~shared_future() noexcept;
+
+  shared_future& operator=(const shared_future&);
+  shared_future& operator=(shared_future&&);
+  void swap(shared_future&) noexcept;  // extension
+
+  const R& get() const;
+
+  bool valid() const noexcept;
+
+  void wait() const;
+  template<typename Rep, typename Period>
+  future_status wait_for(const chrono::duration<Rep, Period>&) const;
+  template<typename Clock, typename Duration>
+  future_status wait_until(const chrono::time_point<Clock, Duration>&) const;
+
+ private:
+  explicit shared_future(impl::future_state<R>*) noexcept;
+
+  impl::future_state<R>* state_ = nullptr;
+};
+
+template<typename R>
+class shared_future<R&> {
+  friend future<R&>;
+
+ public:
+  shared_future() noexcept = default;
+  shared_future(const shared_future&);
+  shared_future(shared_future&&) noexcept;
+  shared_future(future<R&>&&) noexcept;
+
+  ~shared_future() noexcept;
+
+  shared_future& operator=(const shared_future&);
+  shared_future& operator=(shared_future&&);
+  void swap(shared_future&) noexcept;  // extension
+
+  R& get() const;
+
+  bool valid() const noexcept;
+
+  void wait() const;
+  template<typename Rep, typename Period>
+  future_status wait_for(const chrono::duration<Rep, Period>&) const;
+  template<typename Clock, typename Duration>
+  future_status wait_until(const chrono::time_point<Clock, Duration>&) const;
+
+ private:
+  explicit shared_future(impl::future_state<R*>*) noexcept;
+
+  impl::future_state<R*>* state_ = nullptr;
+};
+
+template<>
+class shared_future<void> {
+  friend future<void>;
+
+ public:
+  shared_future() noexcept = default;
+  shared_future(const shared_future&);
+  shared_future(shared_future&&) noexcept;
+  shared_future(future<void>&&) noexcept;
+
+  ~shared_future() noexcept;
+
+  shared_future& operator=(const shared_future&);
+  shared_future& operator=(shared_future&&);
+  void swap(shared_future&) noexcept;  // extension
+
+  void get() const;
+
+  bool valid() const noexcept;
+
+  void wait() const;
+  template<typename Rep, typename Period>
+  future_status wait_for(const chrono::duration<Rep, Period>&) const;
+  template<typename Clock, typename Duration>
+  future_status wait_until(const chrono::time_point<Clock, Duration>&) const;
+
+ private:
+  explicit shared_future(impl::future_state<void>*) noexcept;
+
+  impl::future_state<void>* state_ = nullptr;
+};
+
+
+template<typename R, typename... ArgTypes>
+class packaged_task<R(ArgTypes...)> {
+ public:
+  packaged_task() noexcept = default;
+  packaged_task(const packaged_task&) = delete;
+  packaged_task(packaged_task&&) noexcept;
+  template<typename F> packaged_task(F&&);
+  template<typename F, typename Alloc> packaged_task(allocator_arg_t,
+                                                     const Alloc&,
+                                                     F&&);
+  ~packaged_task() noexcept;
+
+  packaged_task& operator=(const packaged_task&) = delete;
+  packaged_task& operator=(packaged_task&&) noexcept;
+  void swap(packaged_task&) noexcept;
+
+  bool valid() const noexcept;
+
+  future<R> get_future();
+
+  void operator()(ArgTypes...);
+  void make_ready_at_thread_exit(ArgTypes...);
+
+  void reset();
+
+ private:
+  impl::future_state_task<R(ArgTypes...)>* state_ = nullptr;
+};
+
+template<typename R, typename... ArgTypes>
+void swap(packaged_task<R(ArgTypes...)>&,
+          packaged_task<R(ArgTypes...)>&) noexcept;
+
+template<typename R, typename Alloc>
+struct uses_allocator<packaged_task<R>, Alloc> : true_type {};
+
+
+_namespace_end(std)
+
+#include <future-inl.h>
+
+#endif /* _FUTURE_ */

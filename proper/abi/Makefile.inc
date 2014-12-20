@@ -25,6 +25,7 @@ ABI_SRCS += abi/src/cwchar.cc
 ABI_SRCS += abi/src/chrono.cc
 ABI_SRCS += abi/src/exception.cc
 ABI_SRCS += abi/src/functional.cc
+ABI_SRCS += abi/src/future.cc
 ABI_SRCS += abi/src/ios.cc
 ABI_SRCS += abi/src/memory.cc
 ABI_SRCS += abi/src/mutex.cc
@@ -53,6 +54,7 @@ ABI_SRCS += abi/src/stdimpl_shared_ptr_ownership.cc
 ABI_SRCS += abi/src/stdimpl_locale_numeric.cc
 ABI_SRCS += abi/src/stdimpl_circular_buffer.cc
 ABI_SRCS += abi/src/stdimpl_exc_errno.cc
+ABI_SRCS += abi/src/stdimpl_future_state.cc
 
 ILIAS_STD_SRCS += abi/src/ilias_linked_list.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_forward_list.cc
