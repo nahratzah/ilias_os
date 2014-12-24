@@ -30,4 +30,27 @@ std::size_t process(bool wait, std::size_t n) noexcept {
 }
 
 
-}}} /* namespace ilias::cyptr::background_processing */
+} /* namespace ilias::cyptr::background_processing */
+
+
+#ifndef _SINGLE_THREADED
+threaded_processing::threaded_processing() {
+  background_processing::enable();
+  try {
+    thr_ = std::thread(&background_processing::process, true, 0);
+  } catch (...) {
+    background_processing::disable();
+    throw;
+  }
+}
+
+threaded_processing::~threaded_processing() noexcept {
+  if (thr_.joinable()) {
+    background_processing::disable();
+    thr_.join();
+  }
+}
+#endif
+
+
+}} /* namespace ilias::cyptr */
