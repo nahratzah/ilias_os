@@ -1,4 +1,5 @@
 #include <ilias/cyptr/impl/generation.h>
+#include <ilias/cyptr/impl/background.h>
 #include <vector>
 #include <algorithm>
 #include <bitset>
@@ -16,12 +17,31 @@ generation_ptr generation::new_generation() throw (std::bad_alloc) {
 }
 
 void generation::marksweep() noexcept {
-  marksweep(std::unique_lock<generation>(*this));
+  if (backgrounded_.exchange(true, std::memory_order_acquire)) return;
+
+  background* bg = get_background();
+  if (bg && bg->enqueue(generation_ptr(this))) return;
+
+  marksweep_bg();
 }
 
 void generation::marksweep(std::unique_lock<generation> lck) noexcept {
+  if (backgrounded_.exchange(true, std::memory_order_acquire)) return;
+
+  background* bg = get_background();
+  if (bg && bg->enqueue(generation_ptr(this))) return;
+
+  marksweep_bg(std::move(lck));
+}
+
+void generation::marksweep_bg() noexcept {
+  marksweep(std::unique_lock<generation>(*this));
+}
+
+void generation::marksweep_bg(std::unique_lock<generation> lck) noexcept {
   assert(lck.mutex() == this);
   if (!lck.owns_lock()) lck.lock();
+  backgrounded_.exchange(false, std::memory_order_acquire);
 
   /* Run mark-sweep algorithm on graph contained in this generation. */
   marksweep_process_(marksweep_init_());

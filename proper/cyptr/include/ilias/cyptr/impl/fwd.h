@@ -12,6 +12,7 @@ class generation;
 class basic_obj;
 class basic_obj_lock;
 class edge;
+class background;
 
 enum class obj_color : unsigned int {
   unlinked,

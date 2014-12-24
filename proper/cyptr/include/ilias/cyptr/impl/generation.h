@@ -19,8 +19,11 @@ namespace impl {
 
 
 class generation final
-: public refcount_base<generation>
+: public refcount_base<generation>,
+  public linked_list_element<background_tag>
 {
+  friend background;
+
  public:
   using obj_list = linked_list<basic_obj, basic_obj_gen_linktag>;
 
@@ -47,6 +50,17 @@ class generation final
   void marksweep() noexcept;
   void marksweep(std::unique_lock<generation>) noexcept;
 
+ private:
+  /*
+   * Mark-sweep implementation.
+   *
+   * Called either from marksweep() directory,
+   * or from background processor.
+   */
+  void marksweep_bg() noexcept;
+  void marksweep_bg(std::unique_lock<generation>) noexcept;
+
+ public:
   /* Fix generation relation between two objects that are to be linked. */
   static std::unique_lock<generation> fix_relation(basic_obj&, basic_obj&)
       noexcept;
@@ -84,6 +98,7 @@ class generation final
   std::mutex mtx_;
   obj_list obj_;
   const tstamp tstamp_ = tstamp::now();
+  std::atomic<bool> backgrounded_{ false };
 };
 
 

@@ -9,6 +9,7 @@ namespace impl {
 struct basic_obj_gen_linktag {};
 struct edge_objtag {};
 struct wavefront_tag {};
+struct background_tag {};
 
 
 }}} /* namespace ilias::cyptr::impl */
