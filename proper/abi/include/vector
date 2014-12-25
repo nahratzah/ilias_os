@@ -15,17 +15,27 @@ _namespace_begin(std)
 
 template<typename T, typename Alloc = allocator<T>>
 class vector
-: public impl::alloc_base<Alloc>
+: private impl::alloc_base<
+      typename allocator_traits<Alloc>::template rebind_alloc<T>>
 {
+ private:
+  using alloc_base = impl::alloc_base<typename allocator_traits<Alloc>::
+                         template rebind_alloc<T>>;
+
  public:
   using value_type = T;
-  using allocator_type = typename impl::alloc_base<Alloc>::allocator_type;
+  using allocator_type = Alloc;
   using difference_type =
-      typename allocator_traits<allocator_type>::difference_type;
-  using pointer = typename allocator_traits<allocator_type>::pointer;
+      typename allocator_traits<typename alloc_base::allocator_type
+                               >::difference_type;
+  using pointer = typename allocator_traits<typename alloc_base::allocator_type
+                                           >::pointer;
   using const_pointer =
-      typename allocator_traits<allocator_type>::const_pointer;
-  using size_type = typename allocator_traits<allocator_type>::size_type;
+      typename allocator_traits<typename alloc_base::allocator_type
+                               >::const_pointer;
+  using size_type =
+      typename allocator_traits<typename alloc_base::allocator_type
+                               >::size_type;
   using reference = value_type&;
   using const_reference = const value_type&;
   using iterator = value_type*;
