@@ -61,6 +61,8 @@ class vector
   vector& operator=(vector&&);
   vector& operator=(initializer_list<value_type>);
 
+  allocator_type get_allocator() const;
+
   iterator begin() noexcept;
   iterator end() noexcept;
   const_iterator begin() const noexcept;

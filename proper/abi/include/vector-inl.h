@@ -245,6 +245,11 @@ auto vector<T, Alloc>::operator=(initializer_list<value_type> il) -> vector& {
 }
 
 template<typename T, typename Alloc>
+auto vector<T, Alloc>::get_allocator() const -> allocator_type {
+  return this->alloc_base::get_allocator();
+}
+
+template<typename T, typename Alloc>
 auto vector<T, Alloc>::begin() noexcept -> iterator {
   return &*heap_;
 }
