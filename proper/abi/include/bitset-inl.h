@@ -11,19 +11,22 @@ _namespace_begin(std)
 template<size_t N>
 constexpr auto operator&(const bitset<N>& x, const bitset<N>& y) noexcept ->
     bitset<N> {
-  return bitset<N>(typename bitset<N>::and_tag(), x, y);
+  return bitset<N>(typename bitset<N>::and_tag(), x, y,
+                   make_index_sequence<bitset<N>::N_int_type>());
 }
 
 template<size_t N>
 constexpr auto operator|(const bitset<N>& x, const bitset<N>& y) noexcept ->
     bitset<N> {
-  return bitset<N>(typename bitset<N>::or_tag(), x, y);
+  return bitset<N>(typename bitset<N>::or_tag(), x, y,
+                   make_index_sequence<bitset<N>::N_int_type>());
 }
 
 template<size_t N>
 constexpr auto operator^(const bitset<N>& x, const bitset<N>& y) noexcept ->
     bitset<N> {
-  return bitset<N>(typename bitset<N>::xor_tag(), x, y);
+  return bitset<N>(typename bitset<N>::xor_tag(), x, y,
+                   make_index_sequence<bitset<N>::N_int_type>());
 }
 
 
@@ -99,30 +102,30 @@ constexpr bitset<N>::bitset(enable_if_t<sizeof...(T) < N_int_type, init_tag>,
 
 template<size_t N>
 template<size_t... Indices>
-constexpr bitset<N>::bitset(invert_tag, int_type arr[N_int_type],
+constexpr bitset<N>::bitset(invert_tag, const bitset& x,
                             index_sequence<Indices...>) noexcept
-: data_(invert_tag::op(arr[Indices])...)
+: data_{ invert_tag::op(x.data_[Indices])... }
 {}
 
 template<size_t N>
 template<size_t... Indices>
 constexpr bitset<N>::bitset(and_tag, const bitset& x, const bitset& y,
                             index_sequence<Indices...>) noexcept
-: data_(and_tag::op(x.data_[Indices], y.data_[Indices])...)
+: data_{ and_tag::op(x.data_[Indices], y.data_[Indices])... }
 {}
 
 template<size_t N>
 template<size_t... Indices>
 constexpr bitset<N>::bitset(or_tag, const bitset& x, const bitset& y,
                             index_sequence<Indices...>) noexcept
-: data_(or_tag::op(x.data_[Indices], y.data_[Indices])...)
+: data_{ or_tag::op(x.data_[Indices], y.data_[Indices])... }
 {}
 
 template<size_t N>
 template<size_t... Indices>
 constexpr bitset<N>::bitset(xor_tag, const bitset& x, const bitset& y,
                             index_sequence<Indices...>) noexcept
-: data_(xor_tag::op(x.data_[Indices], y.data_[Indices])...)
+: data_{ xor_tag::op(x.data_[Indices], y.data_[Indices])... }
 {}
 
 template<size_t N>
@@ -278,7 +281,7 @@ auto bitset<N>::reset(size_t i) -> bitset& {
 
 template<size_t N>
 constexpr auto bitset<N>::operator~() const noexcept -> bitset {
-  return bitset(invert_tag(), *this);
+  return bitset(invert_tag(), *this, make_index_sequence<N_int_type>());
 }
 
 template<size_t N>
@@ -300,7 +303,7 @@ template<size_t N>
 constexpr auto bitset<N>::operator[](size_t i) const -> bool {
   constexpr unsigned int digits = numeric_limits<int_type>::digits;
 
-  if (i <= 0 || i >= N) throw out_of_range("bitset::set");
+  if (i < 0 || i >= N) throw out_of_range("bitset::set");
   return data_[i / digits] & (int_type(1) << (i % digits));
 }
 
@@ -308,7 +311,7 @@ template<size_t N>
 auto bitset<N>::operator[](size_t i) -> reference {
   constexpr unsigned int digits = numeric_limits<int_type>::digits;
 
-  if (i <= 0 || i >= N) throw out_of_range("bitset::set");
+  if (i < 0 || i >= N) throw out_of_range("bitset::set");
   reference rv;
   rv.ptr_ = &data_[i / digits];
   rv.msk_ = (int_type(1) << (i % digits));
@@ -378,24 +381,14 @@ constexpr auto bitset<N>::size() const noexcept -> size_t {
 }
 
 template<size_t N>
-auto bitset<N>::operator==(const bitset<N>& o) const noexcept -> bool {
-  constexpr unsigned int digits = numeric_limits<int_type>::digits;
-
-  int_type msk;
-  if (N % digits != 0)
-    msk = (int_type(1) << (N % digits)) - 1U;
-  else
-    msk = ~int_type(0);
-
-  const int_type* i;
-  const int_type* j;
-  for (i = begin(data_), j = begin(o.data_); i != end(data_) - 1U; ++i, ++j)
-    if (*i != *j) return false;
-  return (*i & msk) == (*j & msk);
+constexpr auto bitset<N>::operator==(const bitset<N>& o) const noexcept ->
+    bool {
+  return eq_(*this, o, make_index_sequence<N_int_type>());
 }
 
 template<size_t N>
-auto bitset<N>::operator!=(const bitset<N>& o) const noexcept -> bool {
+constexpr auto bitset<N>::operator!=(const bitset<N>& o) const noexcept ->
+    bool {
   return !(*this == o);
 }
 
@@ -457,6 +450,38 @@ auto bitset<N>::operator>>(size_t n) const noexcept -> bitset {
   return tmp;
 }
 
+template<size_t N>
+template<size_t... I>
+constexpr bool bitset<N>::eq_(const bitset& x, const bitset& y,
+                              index_sequence<I...>) noexcept {
+  return eq_combine_(eq_1_(x, y, I)...);
+}
+
+template<size_t N>
+constexpr bool bitset<N>::eq_1_(const bitset& x, const bitset& y,
+                                size_t idx) noexcept {
+  constexpr unsigned int digits = numeric_limits<int_type>::digits;
+
+  constexpr int_type tail_msk =
+      (N % digits != 0 ?
+       (int_type(1) << (N % digits)) - 1U :
+       ~int_type(0));
+  const int_type msk = (idx == N - 1U ? tail_msk : ~int_type(0));
+
+  return (x[idx] & msk) == (y[idx] & msk);
+}
+
+template<size_t N>
+template<typename... ZZZ>
+constexpr bool bitset<N>::eq_combine_(bool x, bool y, ZZZ... zzz) noexcept {
+  return eq_combine_(x && y, zzz...);
+}
+
+template<size_t N>
+constexpr bool bitset<N>::eq_combine_(bool x) noexcept {
+  return x;
+}
+
 
 template<typename Char, typename Traits, typename Alloc>
 bitset<0>::bitset(const basic_string<Char, Traits, Alloc>& s,
@@ -495,6 +520,16 @@ auto bitset<0>::to_string(Char, Char) const ->
     basic_string<Char, Traits, Alloc> {
   return basic_string<Char, Traits, Alloc>();
 }
+
+
+static_assert((bitset<2>(0x1) | bitset<2>(0x2)) == bitset<2>(0x3),
+              "bitset or-operation broken");
+static_assert((bitset<3>(0x3) & bitset<3>(0x6)) == bitset<3>(0x2),
+              "bitset and-operation broken");
+static_assert((bitset<2>(0x2) ^ bitset<2>(0x1)) == bitset<2>(0x3),
+              "bitset xor-operation broken");
+static_assert(~bitset<2>(0x2) == bitset<2>(0x1),
+              "bitset invert-operation broken");
 
 
 _namespace_end(std)

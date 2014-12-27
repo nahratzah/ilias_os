@@ -28,8 +28,6 @@ basic_ostream<Char, Traits> operator<<(basic_ostream<Char, Traits>&,
 
 template<size_t N>
 class bitset {
-  static_assert(N > 0, "bitset with zero bits");
-
   template<size_t M> friend constexpr bitset<M> operator&(const bitset<M>&,
                                                           const bitset<M>&)
       noexcept;
@@ -95,22 +93,18 @@ class bitset {
       noexcept;
 
   template<size_t... Indices>
-  constexpr bitset(invert_tag, int_type[N_int_type],
-                   index_sequence<Indices...> =
-                       make_index_sequence<N_int_type>()) noexcept;
+  constexpr bitset(invert_tag, const bitset&,
+                   index_sequence<Indices...>) noexcept;
 
   template<size_t... Indices>
   constexpr bitset(and_tag, const bitset&, const bitset&,
-                   index_sequence<Indices...> =
-                       make_index_sequence<N_int_type>()) noexcept;
+                   index_sequence<Indices...>) noexcept;
   template<size_t... Indices>
   constexpr bitset(or_tag, const bitset&, const bitset&,
-                   index_sequence<Indices...> =
-                       make_index_sequence<N_int_type>()) noexcept;
+                   index_sequence<Indices...>) noexcept;
   template<size_t... Indices>
   constexpr bitset(xor_tag, const bitset&, const bitset&,
-                   index_sequence<Indices...> =
-                       make_index_sequence<N_int_type>()) noexcept;
+                   index_sequence<Indices...>) noexcept;
 
  public:
   constexpr bitset() noexcept;
@@ -159,8 +153,8 @@ class bitset {
 
   size_t count() const noexcept;
   constexpr size_t size() const noexcept;
-  bool operator==(const bitset&) const noexcept;
-  bool operator!=(const bitset&) const noexcept;
+  constexpr bool operator==(const bitset&) const noexcept;
+  constexpr bool operator!=(const bitset&) const noexcept;
 
   bool test(size_t) const;
   bool all() const noexcept;
@@ -171,6 +165,15 @@ class bitset {
   bitset operator>>(size_t) const noexcept;
 
  private:
+  template<std::size_t... I>
+  static constexpr bool eq_(const bitset&, const bitset&,
+                            std::index_sequence<I...>) noexcept;
+  static constexpr bool eq_1_(const bitset&, const bitset&, size_t)
+      noexcept;
+  template<typename... ZZZ>
+  static constexpr bool eq_combine_(bool, bool, ZZZ...) noexcept;
+  static constexpr bool eq_combine_(bool) noexcept;
+
   using data_type = int_type[N_int_type];
 
   data_type data_;
