@@ -367,6 +367,13 @@ auto swap(basic_istringstream<Char, Traits, Allocator>& x,
 
 template<typename Char, typename Traits, typename Allocator>
 basic_ostringstream<Char, Traits, Allocator>::basic_ostringstream(
+    ios_base::openmode which)
+: basic_ostream<Char, Traits>(&this->sb_),
+  sb_(which)
+{}
+
+template<typename Char, typename Traits, typename Allocator>
+basic_ostringstream<Char, Traits, Allocator>::basic_ostringstream(
     const basic_string<char_type, traits_type, allocator_type>& s,
     ios_base::openmode which)
 : basic_ostream<Char, Traits>(&this->sb_),
