@@ -393,7 +393,7 @@ auto page_cache::try_release_zone_(unsigned int /*zone*/,
                                    page_count<native_arch> /*npg*/) noexcept ->
     future<page_list> {
   assert_msg(false, "XXX implement this");
-  return new_promise<page_list>([](promise<page_list> out) { out.set(page_list()); });  // XXX implement
+  return async_lazy([]() -> page_list { return page_list(); });  // XXX implement
 }
 
 

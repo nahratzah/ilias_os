@@ -6,7 +6,7 @@
 #include <atomic>
 #include <mutex>
 #include <ilias/linked_list.h>
-#include <ilias/promise.h>
+#include <ilias/future.h>
 #include <memory>
 #include <ilias/ll_list.h>
 #include <ilias/workq.h>

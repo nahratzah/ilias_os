@@ -11,7 +11,7 @@ namespace vm {
 
 inline auto anon_vme::entry::present() const noexcept -> bool {
   lock_guard<mutex> l{ guard_ };
-  return page_ != nullptr || in_progress_.is_initialized();
+  return page_ != nullptr || in_progress_.valid();
 }
 
 

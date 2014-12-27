@@ -2,7 +2,6 @@
 #include <cdecl.h>
 #include <new>
 #include <abi/panic.h>
-#include <ilias/wq_promise.h>
 
 namespace ilias {
 namespace vm {
@@ -55,13 +54,12 @@ auto default_page_alloc::allocate(alloc_style style) -> future<page_ptr> {
 
   auto self_ptr =
       static_pointer_cast<default_page_alloc>(this->shared_from_this());
-  return new_promise<page_ptr>(
-      this->get_workq(),
-      bind([](promise<page_ptr> out, const shared_ptr<default_page_alloc>& p,
-              alloc_style style) {
-             out.set(p->allocate_prom_(style));
-           },
-           _1, move(self_ptr), style));
+  return async(this->get_workq(),
+               [](shared_ptr<default_page_alloc> p,
+                  alloc_style style) -> page_ptr {
+                 return p->allocate_prom_(style);
+               },
+               move(self_ptr), style);
 }
 
 auto default_page_alloc::allocate_prom_(alloc_style style) -> page_ptr {
@@ -171,27 +169,26 @@ auto default_page_alloc::allocate(page_count<native_arch> npg,
     break;
   }
 
-  promise<page_list> rv = new_promise<page_list>();
   if (_predict_false(npg == page_count<native_arch>(0))) {
-    rv.set(page_list());
-    return rv;
+    promise<page_list> rv;
+    rv.set_value(page_list());
+    return rv.get_future();
   }
   assert(npg > page_count<native_arch>(0));
 
   auto self_ptr =
       static_pointer_cast<default_page_alloc>(this->shared_from_this());
-  callback(rv, this->get_workq(),
-           bind([](promise<page_list> out,
-                   const shared_ptr<default_page_alloc>& p,
-                   page_count<native_arch> npg, alloc_style style) {
-                  out.set(p->allocate_prom_(npg, style));
-                },
-                _1, move(self_ptr), npg, style));
-  return rv;
+  return async(this->get_workq(),
+               [](shared_ptr<default_page_alloc> p,
+                  page_count<native_arch> npg,
+                  alloc_style style) -> page_list {
+                 return p->allocate_prom_(npg, style);
+               },
+               move(self_ptr), npg, style);
 }
 
 auto default_page_alloc::allocate_prom_(page_count<native_arch> npg,
-                                alloc_style style) -> page_list {
+                                        alloc_style style) -> page_list {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -220,7 +217,7 @@ auto default_page_alloc::allocate_prom_(page_count<native_arch> npg,
   /*
    * Try to reclaim from page cache.
    */
-  rv.merge(move(cache_.try_release(npg - rv.size()).get_mutable()));  // XXX: may throw, may fail, may block
+  rv.merge(move(cache_.try_release(npg - rv.size()).get()));  // XXX: may throw, may fail, may block
 
   if (_predict_true(rv.size() == npg)) return rv;
 

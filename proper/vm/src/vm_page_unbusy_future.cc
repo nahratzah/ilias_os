@@ -14,89 +14,103 @@ class page_unbusy_job final
 : public workq_job
 {
  public:
-  page_unbusy_job(workq_ptr wq, future<page_ptr> src)
-  : workq_job(wq, TYPE_PERSIST | TYPE_PARALLEL),
-    src_(src)
-  {}
+  page_unbusy_job(workq_ptr);
 
-  page_unbusy_job() = delete;
-  page_unbusy_job(const page_unbusy_job&) = delete;
-  page_unbusy_job& operator=(const page_unbusy_job&) = delete;
-
-  static future<page_ptr> install(workq_ptr wq, future<page_ptr> src) {
-    using std::placeholders::_1;
-
-    shared_ptr<page_unbusy_job> self = new_workq_job<page_unbusy_job>(move(wq),
-                                                                      src);
-
-    callback(src, bind(&src_callback, weak_ptr<page_unbusy_job>(self)),
-             PROM_DEFER);
-    return new_promise<page_ptr>(bind(&dst_callback, move(self), _1));
-  }
+  void run() noexcept override;
+  static void start(promise<page_ptr> out, shared_ptr<page_unbusy_job> self, page_ptr in) noexcept;
 
  private:
-  static bool activate_wqjob(const shared_ptr<page_unbusy_job>& self)
-      noexcept {
-    if (self == nullptr ||
-        self->started_.exchange(true, memory_order_relaxed) != true)
-      return false;
+  void start_(promise<page_ptr> out, shared_ptr<page_unbusy_job> self, page_ptr in) noexcept;
 
-    page_unbusy_job& self_ref = *self;
-    self_ref.self_ = self;
-    self_ref.activate(ACT_IMMED);
-    return true;
-  }
-
-  static void dst_callback(const shared_ptr<page_unbusy_job>& self,
-                           promise<page_ptr> out) noexcept {
-    using std::placeholders::_1;
-    assert(self->src_.is_initialized());
-
-    self->dst_ = move(out);
-    if (!activate_wqjob(self))
-      self->src_.start();
-  }
-
-  static void src_callback(const weak_ptr<page_unbusy_job>& weak_self)
-      noexcept {
-    shared_ptr<page_unbusy_job> self = weak_self.lock();
-    if (self != nullptr) activate_wqjob(move(self));
-  }
-
-  void run() noexcept override {
-    assert(src_.is_initialized() && dst_.is_initialized());
-    assert(src_.ready());
-
-    try {
-      if (src_.get()->get_flags() & page::fl_busy) return;
-      dst_.set(src_.move_or_copy());
-    } catch (...) {
-      dst_.set_exception(current_exception());
-    }
-    self_.reset();
-    this->deactivate();
-  }
-
-  shared_ptr<page_unbusy_job> self_;
-  future<page_ptr> src_;
-  promise<page_ptr> dst_;
-  atomic<bool> started_{ false };
+  std::shared_ptr<void> self_;
+  std::aligned_union_t<0, promise<page_ptr>> out_;
+  page_ptr pg_ = nullptr;
 };
+
+
+page_unbusy_job::page_unbusy_job(workq_ptr wq)
+: workq_job(wq, TYPE_PERSIST | TYPE_PARALLEL)
+{}
+
+auto page_unbusy_job::run() noexcept -> void {
+  /* Validate state. */
+  assert(self_ != nullptr);
+  assert(pg_ != nullptr);
+
+  /* Check if page is busy. */
+  if (pg_->get_flags() & page::fl_busy) return;
+
+  /* Mark as ready. */
+  void* voidprom = &out_;
+  promise<page_ptr>& prom = *static_cast<promise<page_ptr>*>(voidprom);
+
+  /* Cleanup. */
+  deactivate();
+  prom.set_value(std::move(pg_));
+  prom.~promise<page_ptr>();
+  self_.reset();
+}
+
+auto page_unbusy_job::start(promise<page_ptr> out,
+                            shared_ptr<page_unbusy_job> self,
+                            page_ptr in) noexcept -> void {
+  assert(self != nullptr);
+  assert(self->self_ == nullptr);
+
+  self->start(std::move(out), self, std::move(in));
+}
+
+auto page_unbusy_job::start_(promise<page_ptr> out,
+                             shared_ptr<page_unbusy_job> self,
+                             page_ptr in) noexcept -> void {
+  /* Skip workq dance if page is not busy. */
+  if (!(in->get_flags() & page::fl_busy)) {
+    out.set_value(std::move(in));
+    return;
+  }
+
+  /* Keep reference to self, in order to survive. */
+  self_ = std::move(self);
+
+  /* Initialize promise. */
+  void* voidprom = &out_;
+  new (voidprom) promise<page_ptr>(std::move(out));
+
+  /* Store page pointer. */
+  pg_ = std::move(in);
+
+  /* Start doing some work. */
+  activate();
+}
 
 
 } /* namespace ilias::vm::<unnamed> */
 
 
-auto page_unbusy_future(workq_service& wqs, future<page_ptr> f) ->
+auto page_unbusy_future(workq_service& wqs, future<page_ptr>&& f) ->
     future<page_ptr> {
   return page_unbusy_future(wqs.new_workq(), move(f));
 }
 
-auto page_unbusy_future(workq_ptr wq, future<page_ptr> f) ->
+auto page_unbusy_future(workq_ptr wq, future<page_ptr>&& f) ->
     future<page_ptr> {
-  if (f.ready() && !(f.get()->get_flags() & page::fl_busy)) return f;
+  auto job = new_workq_job<page_unbusy_job>(std::move(wq));
 
-  return page_unbusy_job::install(move(wq), move(f));
+  return async_lazy(pass_promise<page_ptr>(&page_unbusy_job::start),
+                    std::move(job), std::move(f));
+}
+
+auto page_unbusy_future(workq_service& wqs, shared_future<page_ptr> f) ->
+    future<page_ptr> {
+  return page_unbusy_future(wqs.new_workq(), move(f));
+}
+
+auto page_unbusy_future(workq_ptr wq, shared_future<page_ptr> f) ->
+    future<page_ptr> {
+  auto job = new_workq_job<page_unbusy_job>(std::move(wq));
+
+  return async_lazy(pass_promise<page_ptr>(&page_unbusy_job::start),
+                    std::move(job), std::move(f));
 }
 
 

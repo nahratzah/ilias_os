@@ -6,7 +6,7 @@
 #include <type_traits>
 #include <mutex>
 #include <ilias/linked_set.h>
-#include <ilias/promise.h>
+#include <ilias/future.h>
 #include <ilias/workq.h>
 
 namespace ilias {

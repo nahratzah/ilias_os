@@ -1,6 +1,7 @@
 #include <ilias/vm/cow.h>
 #include <ilias/stats.h>
 #include <ilias/vm/page_alloc.h>
+#include <ilias/vm/page_unbusy_future.h>
 
 namespace ilias {
 namespace vm {
@@ -38,14 +39,16 @@ cow_vme::cow_vme(cow_vme&& o) noexcept
 cow_vme::~cow_vme() noexcept {}
 
 auto cow_vme::fault_read(shared_ptr<page_alloc> pga,
-                         page_count<native_arch> off) -> future<page_ptr> {
+                         page_count<native_arch> off) ->
+    shared_future<page_ptr> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_read(move(pga), off);
   return nested_->fault_read(move(pga), off);
 }
 
 auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
-                          page_count<native_arch> off) -> future<page_ptr> {
+                          page_count<native_arch> off) ->
+    shared_future<page_ptr> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_write(move(pga), off);
 
@@ -57,19 +60,21 @@ auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
   /* Allocate page for anon. */
   future<page_ptr> pg = pga->allocate(alloc_fail_not_ok);
   /* Fault underlying storage for read access. */
-  future<page_ptr> orig_pg = nested_->fault_read(move(pga), off);
+  shared_future<page_ptr> orig_pg = nested_->fault_read(move(pga), off);
 
   /* Copy original page to anon page. */
-  future<page_ptr> copy_pg;  // XXX =
-#if 0
-      combine([](promise<page_ptr> out,
-                 future<page_ptr> pg, future<page_ptr> orig_pg) {
-                page_copy(pg.get_mutable(), orig_pg.move_or_copy());
-                out.set(pg.move_or_copy());
-              },
-              move(pg),
-              page_unbusy_future(this->get_workq(), move(orig_pg)));
-#endif
+  future<page_ptr> copy_pg =
+      async(this->get_workq(), launch::aid | launch::parallel | launch::defer,
+            [](page_ptr pg, page_ptr orig_pg) -> page_ptr {
+              assert(pg != nullptr);
+              assert(orig_pg != nullptr);
+
+              assert_msg(false, "XXX implement page_copy");
+              // XXX: page_copy(pg, std::move(orig_pg));
+              return pg;
+            },
+            move(pg),
+            page_unbusy_future(this->get_workq(), move(orig_pg)));
 
   /* Assign the whole thing to the anon. */
   return this->anon_vme::fault_assign(off, move(copy_pg));

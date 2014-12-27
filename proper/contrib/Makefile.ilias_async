@@ -1,17 +1,15 @@
 INCLUDES += -Icontrib/ilias_async/include
 INCLUDES += -Icontrib/glue/include
-SRCS += contrib/ilias_async/src/combi_promise.cc
+SRCS += contrib/ilias_async/src/future.cc
 SRCS += contrib/ilias_async/src/hazard.cc
 SRCS += contrib/ilias_async/src/ll_list.cc
 # SRCS += contrib/ilias_async/src/ll_queue.cc
 SRCS += contrib/ilias_async/src/ll_simple_list.cc
 # SRCS += contrib/ilias_async/src/mq_ptr.cc
 # SRCS += contrib/ilias_async/src/msg_queue.cc
-SRCS += contrib/ilias_async/src/promise.cc
 SRCS += contrib/ilias_async/src/refcnt.cc
 # OMIT: contrib/ilias_async/src/threadpool.cc
 SRCS += contrib/ilias_async/src/threadpool_intf.cc
 SRCS += contrib/ilias_async/src/workq.cc
-SRCS += contrib/ilias_async/src/wq_promise.cc
 
 CXXFLAGS += -DHAS_TLS=1 -DHAS_THREAD_LOCAL=1 -DTHREAD_LOCAL=thread_local
