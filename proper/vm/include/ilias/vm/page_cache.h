@@ -46,7 +46,7 @@ class page_cache {
   void unmanage(const page_ptr&) noexcept;
 
   page_list try_release_urgent(page_count<native_arch>) noexcept;
-  future<page_list> try_release(page_count<native_arch>) noexcept;
+  cb_future<page_list> try_release(page_count<native_arch>) noexcept;
 
  private:
   bool unlink_zone_(unsigned int, page&) noexcept;
@@ -57,7 +57,7 @@ class page_cache {
   page_list try_release_urgent_zone_(unsigned int zone,
                                      page_count<native_arch> npg,
                                      page_list pgl) noexcept;
-  future<page_list> try_release_zone_(unsigned int,
+  cb_future<page_list> try_release_zone_(unsigned int,
                                       page_count<native_arch> npg) noexcept;
 
   atomic<intptr_t> hot_cold_diff_{ 0 };  // #hot - (#cold + #speculative).

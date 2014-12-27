@@ -17,13 +17,15 @@ class page_unbusy_job final
   page_unbusy_job(workq_ptr);
 
   void run() noexcept override;
-  static void start(promise<page_ptr> out, shared_ptr<page_unbusy_job> self, page_ptr in) noexcept;
+  static void start(cb_promise<page_ptr> out, shared_ptr<page_unbusy_job> self,
+                    page_ptr in) noexcept;
 
  private:
-  void start_(promise<page_ptr> out, shared_ptr<page_unbusy_job> self, page_ptr in) noexcept;
+  void start_(cb_promise<page_ptr> out, shared_ptr<page_unbusy_job> self,
+              page_ptr in) noexcept;
 
   std::shared_ptr<void> self_;
-  std::aligned_union_t<0, promise<page_ptr>> out_;
+  std::aligned_union_t<0, cb_promise<page_ptr>> out_;
   page_ptr pg_ = nullptr;
 };
 
@@ -42,16 +44,16 @@ auto page_unbusy_job::run() noexcept -> void {
 
   /* Mark as ready. */
   void* voidprom = &out_;
-  promise<page_ptr>& prom = *static_cast<promise<page_ptr>*>(voidprom);
+  cb_promise<page_ptr>& prom = *static_cast<cb_promise<page_ptr>*>(voidprom);
 
   /* Cleanup. */
   deactivate();
   prom.set_value(std::move(pg_));
-  prom.~promise<page_ptr>();
+  prom.~cb_promise<page_ptr>();
   self_.reset();
 }
 
-auto page_unbusy_job::start(promise<page_ptr> out,
+auto page_unbusy_job::start(cb_promise<page_ptr> out,
                             shared_ptr<page_unbusy_job> self,
                             page_ptr in) noexcept -> void {
   assert(self != nullptr);
@@ -60,7 +62,7 @@ auto page_unbusy_job::start(promise<page_ptr> out,
   self->start(std::move(out), self, std::move(in));
 }
 
-auto page_unbusy_job::start_(promise<page_ptr> out,
+auto page_unbusy_job::start_(cb_promise<page_ptr> out,
                              shared_ptr<page_unbusy_job> self,
                              page_ptr in) noexcept -> void {
   /* Skip workq dance if page is not busy. */
@@ -74,7 +76,7 @@ auto page_unbusy_job::start_(promise<page_ptr> out,
 
   /* Initialize promise. */
   void* voidprom = &out_;
-  new (voidprom) promise<page_ptr>(std::move(out));
+  new (voidprom) cb_promise<page_ptr>(std::move(out));
 
   /* Store page pointer. */
   pg_ = std::move(in);
@@ -87,26 +89,26 @@ auto page_unbusy_job::start_(promise<page_ptr> out,
 } /* namespace ilias::vm::<unnamed> */
 
 
-auto page_unbusy_future(workq_service& wqs, future<page_ptr>&& f) ->
-    future<page_ptr> {
+auto page_unbusy_future(workq_service& wqs, cb_future<page_ptr>&& f) ->
+    cb_future<page_ptr> {
   return page_unbusy_future(wqs.new_workq(), move(f));
 }
 
-auto page_unbusy_future(workq_ptr wq, future<page_ptr>&& f) ->
-    future<page_ptr> {
+auto page_unbusy_future(workq_ptr wq, cb_future<page_ptr>&& f) ->
+    cb_future<page_ptr> {
   auto job = new_workq_job<page_unbusy_job>(std::move(wq));
 
   return async_lazy(pass_promise<page_ptr>(&page_unbusy_job::start),
                     std::move(job), std::move(f));
 }
 
-auto page_unbusy_future(workq_service& wqs, shared_future<page_ptr> f) ->
-    future<page_ptr> {
+auto page_unbusy_future(workq_service& wqs, shared_cb_future<page_ptr> f) ->
+    cb_future<page_ptr> {
   return page_unbusy_future(wqs.new_workq(), move(f));
 }
 
-auto page_unbusy_future(workq_ptr wq, shared_future<page_ptr> f) ->
-    future<page_ptr> {
+auto page_unbusy_future(workq_ptr wq, shared_cb_future<page_ptr> f) ->
+    cb_future<page_ptr> {
   auto job = new_workq_job<page_unbusy_job>(std::move(wq));
 
   return async_lazy(pass_promise<page_ptr>(&page_unbusy_job::start),

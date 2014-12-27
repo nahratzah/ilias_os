@@ -34,9 +34,10 @@ class page_alloc
   page_alloc& operator=(const page_alloc&) = delete;
   virtual ~page_alloc() noexcept;
 
-  virtual future<page_ptr> allocate(alloc_style) = 0;
-  virtual future<page_list> allocate(page_count<native_arch>, alloc_style) = 0;
-  virtual future<page_list> allocate(page_count<native_arch>, spec) = 0;
+  virtual cb_future<page_ptr> allocate(alloc_style) = 0;
+  virtual cb_future<page_list> allocate(page_count<native_arch>,
+                                        alloc_style) = 0;
+  virtual cb_future<page_list> allocate(page_count<native_arch>, spec) = 0;
 
  private:
   virtual void deallocate(page*) noexcept = 0;
@@ -117,21 +118,21 @@ class default_page_alloc
   default_page_alloc(stats_group&, workq_service&) noexcept;
   ~default_page_alloc() noexcept override;
 
-  future<page_ptr> allocate(alloc_style) override;
+  cb_future<page_ptr> allocate(alloc_style) override;
  private:
   page_ptr allocate_prom_(alloc_style);
 
  public:
   page_ptr allocate_urgent(alloc_style);
 
-  future<page_list> allocate(page_count<native_arch>, alloc_style) override;
+  cb_future<page_list> allocate(page_count<native_arch>, alloc_style) override;
  private:
   page_list allocate_prom_(page_count<native_arch>, alloc_style);
 
  public:
   page_list allocate_urgent(page_count<native_arch>, alloc_style);
 
-  future<page_list> allocate(page_count<native_arch>, spec) override;
+  cb_future<page_list> allocate(page_count<native_arch>, spec) override;
   page_list allocate_urgent(page_count<native_arch>, spec);
 
   void deallocate(page*) noexcept override;

@@ -40,7 +40,7 @@ cow_vme::~cow_vme() noexcept {}
 
 auto cow_vme::fault_read(shared_ptr<page_alloc> pga,
                          page_count<native_arch> off) ->
-    shared_future<page_ptr> {
+    shared_cb_future<page_ptr> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_read(move(pga), off);
   return nested_->fault_read(move(pga), off);
@@ -48,7 +48,7 @@ auto cow_vme::fault_read(shared_ptr<page_alloc> pga,
 
 auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
                           page_count<native_arch> off) ->
-    shared_future<page_ptr> {
+    shared_cb_future<page_ptr> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_write(move(pga), off);
 
@@ -58,12 +58,12 @@ auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
   for (;;);
 
   /* Allocate page for anon. */
-  future<page_ptr> pg = pga->allocate(alloc_fail_not_ok);
+  cb_future<page_ptr> pg = pga->allocate(alloc_fail_not_ok);
   /* Fault underlying storage for read access. */
-  shared_future<page_ptr> orig_pg = nested_->fault_read(move(pga), off);
+  shared_cb_future<page_ptr> orig_pg = nested_->fault_read(move(pga), off);
 
   /* Copy original page to anon page. */
-  future<page_ptr> copy_pg =
+  cb_future<page_ptr> copy_pg =
       async(this->get_workq(), launch::aid | launch::parallel | launch::defer,
             [](page_ptr pg, page_ptr orig_pg) -> page_ptr {
               assert(pg != nullptr);

@@ -167,7 +167,7 @@ auto vmmap_shard<Arch>::entry::data() const noexcept -> vmmap_entry& {
 template<arch Arch>
 auto vmmap_shard<Arch>::entry::fault_read(shared_ptr<page_alloc> pga,
                                           vpage_no<Arch> pgno) ->
-    shared_future<page_ptr> {
+    shared_cb_future<page_ptr> {
   assert(pgno >= get_addr_used() && pgno < get_addr_free());
 
   auto arch_off = pgno - get_addr_used();
@@ -179,7 +179,7 @@ auto vmmap_shard<Arch>::entry::fault_read(shared_ptr<page_alloc> pga,
 template<arch Arch>
 auto vmmap_shard<Arch>::entry::fault_write(shared_ptr<page_alloc> pga,
                                            vpage_no<Arch> pgno) ->
-    shared_future<page_ptr> {
+    shared_cb_future<page_ptr> {
   assert(pgno >= get_addr_used() && pgno < get_addr_free());
 
   auto arch_off = pgno - get_addr_used();
@@ -521,7 +521,7 @@ auto vmmap_shard<Arch>::fanout(Iter b, Iter e) noexcept -> void {
 template<arch Arch>
 auto vmmap_shard<Arch>::fault_read(shared_ptr<page_alloc> pga,
                                    vpage_no<Arch> pgno) ->
-    shared_future<page_ptr> {
+    shared_cb_future<page_ptr> {
   entry* e = find_entry_for_addr_(pgno);
   if (_predict_false(e == nullptr))
     return efault_future_<page_ptr>(pgno);
@@ -531,7 +531,7 @@ auto vmmap_shard<Arch>::fault_read(shared_ptr<page_alloc> pga,
 template<arch Arch>
 auto vmmap_shard<Arch>::fault_write(shared_ptr<page_alloc> pga,
                                     vpage_no<Arch> pgno) ->
-    shared_future<page_ptr> {
+    shared_cb_future<page_ptr> {
   entry* e = find_entry_for_addr_(pgno);
   if (_predict_false(e == nullptr))
     return efault_future_<page_ptr>(pgno);
@@ -736,7 +736,7 @@ auto vmmap_shard<Arch>::find_entry_for_addr_(vpage_no<Arch> pg) noexcept ->
 
 template<arch Arch>
 template<typename T>
-auto vmmap_shard<Arch>::efault_future_(vpage_no<Arch>) -> future<T> {
+auto vmmap_shard<Arch>::efault_future_(vpage_no<Arch>) -> cb_future<T> {
   return async_lazy([]() -> T {
                       throw system_error(make_error_code(errc::bad_address));
                     });
@@ -813,7 +813,7 @@ auto vmmap<Arch>::reshard(size_t n_shards, size_t in_use) -> void {
 }
 
 template<arch Arch>
-auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> future<void> {
+auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> cb_future<void> {
   typename shard_list::iterator shard;
 
   unique_lock<mutex> l{ avail_guard_ };
@@ -822,7 +822,7 @@ auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> future<void> {
     return vmmap_shard<Arch>::template efault_future_<void>(pgno);
 
   // XXX lock shard, unlock avail_guard_.
-  shared_future<page_ptr> pg ;//= shard->fault_read(pga_, pgno);
+  shared_cb_future<page_ptr> pg = shard->fault_read(pga_, pgno);
   l.unlock();  // XXX unlock shard
 
   return async(wq_,
@@ -835,7 +835,7 @@ auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> future<void> {
 }
 
 template<arch Arch>
-auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> future<void> {
+auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> cb_future<void> {
   typename shard_list::iterator shard;
 
   unique_lock<mutex> l{ avail_guard_ };
@@ -844,7 +844,7 @@ auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> future<void> {
     return vmmap_shard<Arch>::template efault_future_<void>(pgno);
 
   // XXX lock shard, unlock avail_guard_.
-  shared_future<page_ptr> pg = shard->fault_write(pga_, pgno);
+  shared_cb_future<page_ptr> pg = shard->fault_write(pga_, pgno);
   l.unlock();  // XXX unlock shard
 
   return async_lazy([](page_ptr pg, vpage_no<Arch>) -> void {

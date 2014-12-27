@@ -35,7 +35,7 @@ default_page_alloc::~default_page_alloc() noexcept {
   ranges_.unlink_all();
 }
 
-auto default_page_alloc::allocate(alloc_style style) -> future<page_ptr> {
+auto default_page_alloc::allocate(alloc_style style) -> cb_future<page_ptr> {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -152,7 +152,7 @@ auto default_page_alloc::allocate_urgent(alloc_style style) -> page_ptr {
 }
 
 auto default_page_alloc::allocate(page_count<native_arch> npg,
-                                  alloc_style style) -> future<page_list> {
+                                  alloc_style style) -> cb_future<page_list> {
   using alloc_style::fail_not_ok;
   using alloc_style::fail_ok;
   using alloc_style::fail_ok_nothrow;
@@ -170,7 +170,7 @@ auto default_page_alloc::allocate(page_count<native_arch> npg,
   }
 
   if (_predict_false(npg == page_count<native_arch>(0))) {
-    promise<page_list> rv;
+    cb_promise<page_list> rv;
     rv.set_value(page_list());
     return rv.get_future();
   }
@@ -251,7 +251,7 @@ auto default_page_alloc::allocate_urgent(page_count<native_arch>,
 }
 
 auto default_page_alloc::allocate(page_count<native_arch>, spec) ->
-    future<page_list> {
+    cb_future<page_list> {
   assert_msg(false, "XXX: implement");  // XXX implement
   for (;;);
 }

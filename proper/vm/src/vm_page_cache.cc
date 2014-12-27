@@ -250,7 +250,7 @@ auto page_cache::try_release_urgent(page_count<native_arch> npg) noexcept ->
 }
 
 auto page_cache::try_release(page_count<native_arch> npg) noexcept ->
-    future<page_list> {
+    cb_future<page_list> {
   return try_release_zone_(spec_zone, npg);
 }
 
@@ -391,7 +391,7 @@ auto page_cache::try_release_urgent_zone_(unsigned int zone,
 
 auto page_cache::try_release_zone_(unsigned int /*zone*/,
                                    page_count<native_arch> /*npg*/) noexcept ->
-    future<page_list> {
+    cb_future<page_list> {
   assert_msg(false, "XXX implement this");
   return async_lazy([]() -> page_list { return page_list(); });  // XXX implement
 }

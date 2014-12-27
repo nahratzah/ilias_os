@@ -18,10 +18,10 @@ class cow_vme
   cow_vme(cow_vme&&) noexcept;
   ~cow_vme() noexcept override;
 
-  shared_future<page_ptr> fault_read(shared_ptr<page_alloc>,
-                                     page_count<native_arch>) override;
-  shared_future<page_ptr> fault_write(shared_ptr<page_alloc>,
-                                      page_count<native_arch>) override;
+  shared_cb_future<page_ptr> fault_read(shared_ptr<page_alloc>,
+                                        page_count<native_arch>) override;
+  shared_cb_future<page_ptr> fault_write(shared_ptr<page_alloc>,
+                                         page_count<native_arch>) override;
   vector<bool> mincore() const override;
 
   vmmap_entry_ptr clone() const override;
