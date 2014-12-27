@@ -190,13 +190,13 @@ auto future_state<T>::init_value(Args&&... args) -> void {
 
 template<typename T>
 auto future_state<T>::set_exc(exception_ptr ptr) -> void {
-  auto lck = assign_exc_(std::move(ptr));
+  auto lck = assign_exc_(move(ptr));
   set_ready_exc();
 }
 
 template<typename T>
 auto future_state<T>::init_exc(exception_ptr ptr) -> void {
-  auto lck = assign_exc_(std::move(ptr));
+  auto lck = assign_exc_(move(ptr));
   set_initialized_exc();
 }
 
@@ -208,7 +208,7 @@ auto future_state<T>::assign_value_(Args&&... args) ->
   this->ensure_uninitialized();
 
   void* storage_ptr = &storage_;
-  new (storage_ptr) T_(std::forward<Args>(args)...);
+  new (storage_ptr) T_(forward<Args>(args)...);
   return lck;
 }
 
@@ -219,7 +219,7 @@ auto future_state<T>::assign_exc_(exception_ptr ptr) ->
   this->ensure_uninitialized();
 
   void* storage_ptr = &storage_;
-  new (storage_ptr) exception_ptr(std::move(ptr));
+  new (storage_ptr) exception_ptr(move(ptr));
   return lck;
 }
 
