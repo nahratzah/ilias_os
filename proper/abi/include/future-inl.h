@@ -307,14 +307,13 @@ template<typename R>
 template<typename Rep, typename Period>
 auto future<R>::wait_for(const chrono::duration<Rep, Period>& d) const ->
     future_status {
-  return wait_until(chrono::system_clock::now() + d);
+  return wait_until(chrono::steady_clock::now() + d);
 }
 
 template<typename R>
 template<typename Clock, typename Duration>
 auto future<R>::wait_until(const chrono::time_point<Clock, Duration>& tp)
     const -> future_status {
-  using clock = typename chrono::time_point<Clock, Duration>::clock;
   using state_t = impl::future_state_base::state_t;
 
   if (!state_)  // no state
@@ -393,14 +392,13 @@ template<typename R>
 template<typename Rep, typename Period>
 auto future<R&>::wait_for(const chrono::duration<Rep, Period>& d) const ->
     future_status {
-  return wait_until(chrono::system_clock::now() + d);
+  return wait_until(chrono::steady_clock::now() + d);
 }
 
 template<typename R>
 template<typename Clock, typename Duration>
 auto future<R&>::wait_until(const chrono::time_point<Clock, Duration>& tp)
     const -> future_status {
-  using clock = typename chrono::time_point<Clock, Duration>::clock;
   using state_t = impl::future_state_base::state_t;
 
   if (!state_)  // no state
@@ -454,13 +452,12 @@ inline auto future<void>::valid() const noexcept -> bool {
 template<typename Rep, typename Period>
 auto future<void>::wait_for(const chrono::duration<Rep, Period>& d) const ->
     future_status {
-  return wait_until(chrono::system_clock::now() + d);
+  return wait_until(chrono::steady_clock::now() + d);
 }
 
 template<typename Clock, typename Duration>
 auto future<void>::wait_until(const chrono::time_point<Clock, Duration>& tp)
     const -> future_status {
-  using clock = typename chrono::time_point<Clock, Duration>::clock;
   using state_t = impl::future_state_base::state_t;
 
   if (!state_)  // no state
@@ -553,14 +550,13 @@ template<typename R>
 template<typename Rep, typename Period>
 auto shared_future<R>::wait_for(const chrono::duration<Rep, Period>& d)
     const -> future_status {
-  return wait_until(chrono::system_clock::now() + d);
+  return wait_until(chrono::steady_clock::now() + d);
 }
 
 template<typename R>
 template<typename Clock, typename Duration>
 auto shared_future<R>::wait_until(
     const chrono::time_point<Clock, Duration>& tp) const -> future_status {
-  using clock = typename chrono::time_point<Clock, Duration>::clock;
   using state_t = impl::future_state_base::state_t;
 
   if (!state_)  // no state
@@ -648,14 +644,13 @@ template<typename R>
 template<typename Rep, typename Period>
 auto shared_future<R&>::wait_for(const chrono::duration<Rep, Period>& d)
     const -> future_status {
-  return wait_until(chrono::system_clock::now() + d);
+  return wait_until(chrono::steady_clock::now() + d);
 }
 
 template<typename R>
 template<typename Clock, typename Duration>
 auto shared_future<R&>::wait_until(
     const chrono::time_point<Clock, Duration>& tp) const -> future_status {
-  using clock = typename chrono::time_point<Clock, Duration>::clock;
   using state_t = impl::future_state_base::state_t;
 
   if (!state_)  // no state
@@ -720,13 +715,12 @@ inline auto shared_future<void>::valid() const noexcept -> bool {
 template<typename Rep, typename Period>
 auto shared_future<void>::wait_for(const chrono::duration<Rep, Period>& d)
     const -> future_status {
-  return wait_until(chrono::system_clock::now() + d);
+  return wait_until(chrono::steady_clock::now() + d);
 }
 
 template<typename Clock, typename Duration>
 auto shared_future<void>::wait_until(
     const chrono::time_point<Clock, Duration>& tp) const -> future_status {
-  using clock = typename chrono::time_point<Clock, Duration>::clock;
   using state_t = impl::future_state_base::state_t;
 
   if (!state_)  // no state
