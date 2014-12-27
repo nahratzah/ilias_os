@@ -5,6 +5,10 @@ namespace cyptr {
 namespace impl {
 
 
+constexpr edge::dst_pointer::flags_type edge::LOCKED;
+constexpr edge::dst_pointer::flags_type edge::UNLOCKED;
+
+
 auto edge::reset() noexcept -> void {
   basic_obj_lock objlck{ src_ };
   std::unique_lock<edge> lck{ *this };
