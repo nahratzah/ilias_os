@@ -52,7 +52,10 @@ SECTIONS
 
 	.eh_frame ALIGN(0x1000):
 	{
+		__eh_frame_begin = .;
 		*(.eh_frame)
+		*(.eh_frame*)
+		__eh_frame_end = .;
 	}
 
 	.boot_stack ALIGN(0x1000):

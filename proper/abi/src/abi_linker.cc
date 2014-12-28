@@ -29,6 +29,22 @@ semaphore rtdt_spl{ 1U };
 
 #if defined(_KERNEL) || defined(_LOADER)
 void* __attribute__((visibility("hidden"))) __dso_handle = &__dso_handle;
+extern "C" __eh_frame_type __eh_frame_begin, __eh_frame_end;
+#endif
+
+#if defined(_KERNEL) || defined(_LOADER)
+__eh_frame_data __resolve_eh_frame(void* dso_handle) noexcept {
+  __eh_frame_data efd{ nullptr, 0U };
+
+  if (dso_handle == __dso_handle) {
+    efd.base = &__eh_frame_begin;
+    efd.size = reinterpret_cast<uintptr_t>(&__eh_frame_end) -
+               reinterpret_cast<uintptr_t>(&__eh_frame_begin);
+  }
+  return efd;
+}
+#else
+// XXX implement generic __resolve_eh_frame function (maybe supplied by ld.so?)
 #endif
 
 int __cxa_atexit(void (*fn)(void*) noexcept, void* arg, void* dso_handle)

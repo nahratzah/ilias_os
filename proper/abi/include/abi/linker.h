@@ -8,9 +8,19 @@ namespace __cxxabiv1 {
 
 _cdecl_begin
 
+#if defined(_KERNEL) || defined(_LOADER)
+struct __eh_frame_type;
 extern void* __dso_handle;
+#endif
+
+struct __eh_frame_data {
+  __eh_frame_type* base;
+  uintptr_t size;
+};
 
 struct __cxa_guard;
+
+__eh_frame_data __resolve_eh_frame(void*) noexcept;
 
 int __cxa_atexit(void (*)(void*) noexcept, void*, void*) noexcept;
 void __cxa_finalize(void*) noexcept;
