@@ -8,7 +8,7 @@ auto cie::get_record() const noexcept -> record {
   using _namespace(std)::tie;
 
   record rv;
-  rv.valid = is_valid();
+  rv.valid = is_cie();
   rv.is_64bit = is_64bit();
 
   if (is_cie()) {
