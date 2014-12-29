@@ -40,11 +40,12 @@ class frame_record {
   frame_record succ() const noexcept;
 
  protected:
-  static const void* advance_(const void*, _namespace(std)::size_t) noexcept;
+  static const void __attribute__((aligned(1))) * advance_(
+      const void*, _namespace(std)::size_t) noexcept;
   data_type<_namespace(std)::size_t> length_() const noexcept;
 
  private:
-  const void* data_ = nullptr;
+  const void __attribute__((aligned(4))) * data_ = nullptr;
   _namespace(std)::size_t len_ = 0U;
   bool is_64bit_ = false;
   bool valid_ = false;

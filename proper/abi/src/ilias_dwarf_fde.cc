@@ -12,7 +12,7 @@ auto fde::get_record() const noexcept -> record {
   rv.is_64bit = is_64bit();
 
   if (is_fde()) {
-    const void* ptr;
+    const void __attribute__((aligned(1))) * ptr;
     tie(rv.length, ptr) = length_();
     if (is_64bit())
       tie(rv.pointer, ptr) = read_unaligned<uint64_t>(ptr);

@@ -12,7 +12,7 @@ auto cie::get_record() const noexcept -> record {
   rv.is_64bit = is_64bit();
 
   if (is_cie()) {
-    const void* ptr;
+    const void __attribute__((aligned(1))) * ptr;
     tie(rv.length, ptr) = length_();
     if (is_64bit())
       tie(rv.id, ptr) = read_unaligned<uint64_t>(ptr);

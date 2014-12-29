@@ -8,7 +8,7 @@ namespace dwarf {
 
 
 template<typename T>
-auto read_unaligned(const void* vptr) noexcept ->
+auto read_unaligned(const void __attribute__((aligned(1))) * vptr) noexcept ->
     _namespace(std)::tuple<T, const void*> {
   using _namespace(std)::make_tuple;
 

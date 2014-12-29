@@ -6,7 +6,7 @@ _namespace_begin(ilias)
 namespace dwarf {
 
 
-auto read_leb128(const void* vptr) noexcept ->
+auto read_leb128(const void __attribute__((aligned(1))) * vptr) noexcept ->
     _namespace(std)::tuple<_namespace(std)::uint64_t, const void*> {
   using return_type =
       _namespace(std)::tuple<_namespace(std)::uint64_t, const void*>;
@@ -28,7 +28,7 @@ auto read_leb128(const void* vptr) noexcept ->
   return return_type(rv, ptr);
 }
 
-auto read_utf8(const void* vptr) noexcept ->
+auto read_utf8(const void __attribute__((aligned(1))) * vptr) noexcept ->
     _namespace(std)::tuple<_namespace(std)::string_ref, const void*> {
   using return_type =
       _namespace(std)::tuple<_namespace(std)::string_ref, const void*>;
