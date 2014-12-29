@@ -33,6 +33,7 @@ class frame_record {
   bool is_32bit() const noexcept { return !is_64bit_; }
   bool is_cie() const noexcept { return is_valid() && is_cie_; }
   bool is_fde() const noexcept { return is_valid() && !is_cie_; }
+  const void* data_ptr() const noexcept { return data_; }
 
   _namespace(std)::size_t size() const noexcept;
   const void* succ_ptr() const noexcept;
@@ -49,6 +50,9 @@ class frame_record {
   bool valid_ = false;
   bool is_cie_;
 };
+
+bool operator==(const frame_record&, const frame_record&) noexcept;
+bool operator!=(const frame_record&, const frame_record&) noexcept;
 
 
 } /* namespace ilias::dwarf */

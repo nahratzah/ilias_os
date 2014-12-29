@@ -25,6 +25,17 @@ inline auto frame_record::length_() const noexcept ->
 }
 
 
+inline auto operator==(const frame_record& x, const frame_record& y)
+    noexcept -> bool {
+  return x.data_ptr() == y.data_ptr();
+}
+
+inline auto operator!=(const frame_record& x, const frame_record& y)
+    noexcept -> bool {
+  return !(x == y);
+}
+
+
 } /* namespace ilias::dwarf */
 _namespace_end(ilias)
 
