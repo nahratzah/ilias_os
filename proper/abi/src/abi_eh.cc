@@ -17,7 +17,7 @@ namespace __cxxabiv1 {
 
 
 struct _Unwind_Context {
-  uintptr_t ip, frame;
+  uintptr_t ip;
 
 #if defined(__amd64__) || defined(__x86_64__)
   /* The only registers that are to be used to initialize landing pad. */
@@ -492,7 +492,6 @@ _Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *exception_o
   _Unwind_Context ctx;
   ctx.ip = reinterpret_cast<uintptr_t>(__builtin_extract_return_addr(
                                            __builtin_return_address(0)));
-  ctx.frame = reinterpret_cast<uintptr_t>(__builtin_frame_address(0));
 
   panic("TODO: implement %s(%p)", __func__, exception_object);  // XXX implement
   __builtin_unreachable();
