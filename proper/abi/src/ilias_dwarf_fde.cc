@@ -11,7 +11,7 @@ auto fde::get_record() const noexcept -> record {
   rv.valid = is_valid();
   rv.is_64bit = is_64bit();
 
-  if (is_valid()) {
+  if (is_fde()) {
     const void* ptr;
     tie(rv.length, ptr) = length_();
     if (is_64bit())

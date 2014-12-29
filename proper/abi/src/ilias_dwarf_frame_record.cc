@@ -22,6 +22,16 @@ frame_record::frame_record(const void* data) noexcept
     tie(len_, ptr) = read_unaligned<uint64_t>(ptr);
   else
     len_ = len32;
+
+  if (is_64bit_) {
+    _namespace(std)::uint64_t cie_discriminant;
+    tie(cie_discriminant, ptr) = read_unaligned<uint64_t>(ptr);
+    is_cie_ = (~cie_discriminant == 0U);
+  } else {
+    _namespace(std)::uint32_t cie_discriminant;
+    tie(cie_discriminant, ptr) = read_unaligned<uint32_t>(ptr);
+    is_cie_ = (~cie_discriminant == 0U);
+  }
 }
 
 auto frame_record::succ_ptr() const noexcept -> const void* {

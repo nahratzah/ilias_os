@@ -31,6 +31,8 @@ class frame_record {
   bool is_valid() const noexcept { return valid_; }
   bool is_64bit() const noexcept { return is_64bit_; }
   bool is_32bit() const noexcept { return !is_64bit_; }
+  bool is_cie() const noexcept { return is_valid() && is_cie_; }
+  bool is_fde() const noexcept { return is_valid() && !is_cie_; }
 
   _namespace(std)::size_t size() const noexcept;
   const void* succ_ptr() const noexcept;
@@ -41,10 +43,11 @@ class frame_record {
   data_type<_namespace(std)::size_t> length_() const noexcept;
 
  private:
-  _namespace(std)::size_t len_ = 0U;
   const void* data_ = nullptr;
+  _namespace(std)::size_t len_ = 0U;
   bool is_64bit_ = false;
   bool valid_ = false;
+  bool is_cie_;
 };
 
 
