@@ -5,25 +5,20 @@
 #include <cstdint>
 #include <string>
 #include <tuple>
+#include <ilias/dwarf/frame_record.h>
 
 _namespace_begin(ilias)
 namespace dwarf {
 
 
-class cie {
+class cie
+: public frame_record
+{
  private:
-  template<typename T> using data_type =
-      _namespace(std)::tuple<T, const void*>;
-
   using uint32_t = _namespace(std)::uint32_t;
   using uint64_t = _namespace(std)::uint64_t;
 
  public:
-  using sbyte = _namespace(std)::int8_t;
-  using ubyte = _namespace(std)::uint8_t;
-  using uhalf = _namespace(std)::uint16_t;
-  using uword = _namespace(std)::uint32_t;
-
   /* Decoded form of data. */
   struct record {
     _namespace(std)::string_ref augmentation;
@@ -43,27 +38,10 @@ class cie {
   cie() noexcept = default;
   cie(const cie&) noexcept = default;
   cie& operator=(const cie&) noexcept = default;
-  cie(const void*) noexcept;
-  ~cie() noexcept = default;
-
-  bool is_valid() const noexcept { return valid_; }
-  bool is_64bit() const noexcept { return is_64bit_; }
-  bool is_32bit() const noexcept { return !is_64bit_; }
-
-  uint64_t size() const noexcept;
-  const void* succ_ptr() const noexcept;
-  cie succ() const noexcept;
+  explicit cie(const void*) noexcept;
+  cie(const frame_record&) noexcept;
 
   record get_record() const noexcept;
-
- private:
-  static const void* advance_(const void*, _namespace(std)::size_t) noexcept;
-  data_type<_namespace(std)::size_t> length_() const noexcept;
-
-  _namespace(std)::size_t len_ = 0U;
-  const void* data_ = nullptr;
-  bool is_64bit_ = false;
-  bool valid_ = false;
 };
 
 

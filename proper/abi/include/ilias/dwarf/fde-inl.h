@@ -9,56 +9,12 @@ namespace dwarf {
 
 
 inline fde::fde(const void* data) noexcept
-: data_(data)
-{
-  using _namespace(std)::tie;
+: frame_record(data)
+{}
 
-  if (data_ == nullptr) return;
-
-  const void* ptr = data_;
-  uint32_t len32;
-  tie(len32, ptr) = read_unaligned<uint32_t>(ptr);
-  valid_ = (len32 == 0xffffffffU || len32 < 0xfffffff0U);
-  if (!valid_) return;
-
-  is_64bit_ = (len32 == 0xffffffffU);
-  if (is_64bit_)
-    tie(len_, ptr) = read_unaligned<uint64_t>(ptr);
-  else
-    len_ = len32;
-}
-
-inline auto fde::size() const noexcept -> uint64_t {
-  return len_ + (is_64bit() ? 12 : 4);
-}
-
-inline auto fde::succ_ptr() const noexcept -> const void* {
-  using _namespace(std)::tie;
-
-  const void* ptr = nullptr;
-  if (is_valid()) {
-    _namespace(std)::size_t len;
-    tie(len, ptr) = length_();
-    ptr = advance_(ptr, len);
-  }
-  return ptr;
-}
-
-inline auto fde::succ() const noexcept -> fde {
-  return fde(succ_ptr());
-}
-
-inline auto fde::advance_(const void* p, _namespace(std)::size_t n) noexcept ->
-    const void* {
-  return reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(p) + n);
-}
-
-inline auto fde::length_() const noexcept ->
-    data_type<_namespace(std)::size_t> {
-  using return_type = data_type<_namespace(std)::size_t>;
-
-  return return_type(len_, advance_(data_, (is_64bit() ? 12 : 4)));
-}
+inline fde::fde(const frame_record& fr) noexcept
+: frame_record(fr)
+{}
 
 
 } /* namespace ilias::dwarf */
