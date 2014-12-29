@@ -32,7 +32,7 @@ static_assert(
     _namespace(std)::is_trivially_destructible<_Unwind_Context>::value,
     "Unwind context may not have destructors.");
 
-uint64_t _Unwind_GetGR(_Unwind_Context* context, int index) noexcept {
+auto _Unwind_GetGR(_Unwind_Context* context, int index) noexcept -> uintptr_t {
   using _namespace(ilias)::dwarf::dwarf_reg;
   using _namespace(ilias)::dwarf::dwarf_reg_count;
   using _namespace(ilias)::dwarf::dwarf_reg_name;
@@ -59,8 +59,8 @@ uint64_t _Unwind_GetGR(_Unwind_Context* context, int index) noexcept {
   }
 }
 
-void _Unwind_SetGR(_Unwind_Context* context, int index,
-                   uint64_t new_value) noexcept {
+auto _Unwind_SetGR(_Unwind_Context* context, int index,
+                   uintptr_t new_value) noexcept -> void {
   using _namespace(ilias)::dwarf::dwarf_reg;
   using _namespace(ilias)::dwarf::dwarf_reg_count;
   using _namespace(ilias)::dwarf::dwarf_reg_name;
@@ -92,15 +92,21 @@ void _Unwind_SetGR(_Unwind_Context* context, int index,
   }
 }
 
-uint64_t _Unwind_GetIP(_Unwind_Context* context) noexcept {
+auto _Unwind_GetIP(_Unwind_Context* context) noexcept -> uintptr_t {
   return context->ip;
 }
 
+auto _Unwind_SetIP(_Unwind_Context* context, uintptr_t new_value) noexcept ->
+    void {
+  context->ip = new_value;
+}
 
-_Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action actions,
-                                         uint64_t exceptionClass,
-                                         _Unwind_Exception* exceptionObject,
-                                         _Unwind_Context* context) noexcept {
+
+auto __gxx_personality_v0(int version, _Unwind_Action actions,
+                          uint64_t exceptionClass,
+                          _Unwind_Exception* exceptionObject,
+                          _Unwind_Context* context) noexcept ->
+    _Unwind_Reason_Code {
   using ull = unsigned long long;
   panic("TODO: implement %s(%i, %i, %#llu, %p, %p)", __func__,
         version, int(actions), ull(exceptionClass),
@@ -108,12 +114,13 @@ _Unwind_Reason_Code __gxx_personality_v0(int version, _Unwind_Action actions,
   __builtin_unreachable();
 }
 
-void _Unwind_Resume(_Unwind_Exception *exception_object) noexcept {
+auto _Unwind_Resume(_Unwind_Exception *exception_object) noexcept -> void {
   panic("TODO: implement %s(%p)", __func__, exception_object);  // XXX implement
   __builtin_unreachable();
 }
 
-_Unwind_Reason_Code _Unwind_RaiseException(struct _Unwind_Exception *exception_object) noexcept {
+auto _Unwind_RaiseException(_Unwind_Exception *exception_object) noexcept ->
+    _Unwind_Reason_Code {
   _Unwind_Context ctx;
   ctx.ip = reinterpret_cast<uintptr_t>(__builtin_extract_return_addr(
                                            __builtin_return_address(0)));

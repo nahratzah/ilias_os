@@ -129,15 +129,16 @@ void __cxa_call_unexpected(Struct _Unwind_Exception *exception_object) noexcept;
 
 
 /* Deletes exception_object. */
-void _Unwind_DeleteException(struct _Unwind_Exception *exception_object) noexcept;
+void _Unwind_DeleteException(struct _Unwind_Exception*) noexcept;
 
 
 /* Extract/modify register in context. */
-uint64_t _Unwind_GetGR(Struct _Unwind_Context *context, int index) noexcept;
-void _Unwind_SetGR(Struct _Unwind_Context *context, int index, uint64_t new_value) noexcept;
+uintptr_t _Unwind_GetGR(Struct _Unwind_Context*, int) noexcept;
+void _Unwind_SetGR(Struct _Unwind_Context*, int, uintptr_t) noexcept;
 
 /* Return the Instruction Pointer of the context. */
-uint64_t _Unwind_GetIP(Struct _Unwind_Context *context) noexcept;
+uintptr_t _Unwind_GetIP(Struct _Unwind_Context *context) noexcept;
+void _Unwind_SetIP(Struct _Unwind_Context*, uintptr_t) noexcept;
 
 /* Returns the language specific data address from the context. */
 uint64_t _Unwind_GetLanguageSpecificData(struct _Unwind_Context *context) noexcept;
