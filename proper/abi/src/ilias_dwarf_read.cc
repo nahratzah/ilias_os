@@ -6,7 +6,7 @@ _namespace_begin(ilias)
 namespace dwarf {
 
 
-auto read_leb128(const void __attribute__((aligned(1))) * vptr) noexcept ->
+auto read_uleb128(const void __attribute__((aligned(1))) * vptr) noexcept ->
     _namespace(std)::tuple<_namespace(std)::uint64_t, const void*> {
   using return_type =
       _namespace(std)::tuple<_namespace(std)::uint64_t, const void*>;
@@ -23,8 +23,38 @@ auto read_leb128(const void __attribute__((aligned(1))) * vptr) noexcept ->
     assert(shift < 64);
 
     rd = *ptr++;
-    rv |= rv_type(rd & 0x7fU) << shift++;
+    rv |= rv_type(rd & 0x7fU) << shift;
+    shift += 7;
   } while (rd & 0x80);
+  return return_type(rv, ptr);
+}
+
+auto read_sleb128(const void __attribute__((aligned(1))) * vptr) noexcept ->
+    _namespace(std)::tuple<_namespace(std)::int64_t, const void*> {
+  using return_type =
+      _namespace(std)::tuple<_namespace(std)::int64_t, const void*>;
+  using _namespace(std)::int64_t;
+  using _namespace(std)::uint8_t;
+
+  using rv_type = uint64_t;
+
+  rv_type rv = 0U;
+  const uint8_t* ptr = static_cast<const uint8_t*>(vptr);
+  uint8_t rd;
+
+  rd = *ptr++;
+  if (rd & 0x40) rv = ~int64_t(0x7f);  // Sign-extend.
+  rv |= rd;
+
+  unsigned int shift = 7;
+  while (rd & 0x80) {
+    assert(shift < 64);
+
+    rd = *ptr++;
+    rv &= ~(int64_t(0x7fU) << shift);
+    rv |= rv_type(rd & 0x7fU) << shift;
+    shift += 7;
+  }
   return return_type(rv, ptr);
 }
 

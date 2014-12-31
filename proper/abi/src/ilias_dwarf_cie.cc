@@ -22,9 +22,9 @@ auto cie::get_record() const noexcept -> record {
     tie(rv.augmentation, ptr) = read_utf8(ptr);
     tie(rv.address_size, ptr) = read_unaligned<ubyte>(ptr);
     tie(rv.segment_size, ptr) = read_unaligned<ubyte>(ptr);
-    tie(rv.code_alignment_factor, ptr) = read_leb128(ptr);
-    tie(rv.data_alignment_factor, ptr) = read_leb128(ptr);
-    tie(rv.return_address_register, ptr) = read_leb128(ptr);
+    tie(rv.code_alignment_factor, ptr) = read_uleb128(ptr);
+    tie(rv.data_alignment_factor, ptr) = read_uleb128(ptr);
+    tie(rv.return_address_register, ptr) = read_uleb128(ptr);
     rv.initial_instructions = _namespace(std)::make_tuple(
         static_cast<const ubyte*>(ptr),
         static_cast<const ubyte*>(succ_ptr()));

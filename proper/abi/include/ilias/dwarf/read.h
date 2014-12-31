@@ -10,8 +10,11 @@ _namespace_begin(ilias)
 namespace dwarf {
 
 
-auto read_leb128(const void __attribute__((aligned(1))) * vptr) noexcept ->
+auto read_uleb128(const void __attribute__((aligned(1))) * vptr) noexcept ->
     _namespace(std)::tuple<_namespace(std)::uint64_t, const void*>;
+
+auto read_sleb128(const void __attribute__((aligned(1))) * vptr) noexcept ->
+    _namespace(std)::tuple<_namespace(std)::int64_t, const void*>;
 
 template<typename T>
 auto read_unaligned(const void __attribute__((aligned(1))) * vptr) noexcept ->
