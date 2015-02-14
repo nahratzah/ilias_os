@@ -69,6 +69,7 @@ ILIAS_STD_SRCS += abi/src/ilias_dwarf_registers.cc
 ILIAS_STD_SRCS += abi/src/ilias_dwarf_frame_record.cc
 ILIAS_STD_SRCS += abi/src/ilias_dwarf_frame_record_collection.cc
 ILIAS_STD_SRCS += abi/src/ilias_dwarf_dw_op.cc
+ILIAS_STD_SRCS += abi/src/ilias_dwarf_eval.cc
 
 include abi/Makefile.compiler_rt.inc
 
