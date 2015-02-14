@@ -394,7 +394,7 @@ auto op_lshift_stream(basic_ostream<Char, Traits>& os,
                          if (!left && width > s.length())
                            out = fill_n(out, width - s.length(), os.fill());
 
-                         out = copy(begin(s), end(s), out);
+                         os.rdbuf()->sputn(s.data(), s.size());
 
                          if (left && width > s.length())
                            out = fill_n(out, width - s.length(), os.fill());
