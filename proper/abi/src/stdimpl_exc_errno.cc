@@ -21,9 +21,11 @@ pair<bool, int> errno_from_current_exception(bool throw_unrecognized) {
     return { true, EINVAL };
   } catch (const system_error& err) {
     const error_code& errc = err.code();
-    if (errc.category() == system_category()) {
-      errno = errc.value();
+    if (errc.category() == system_category())
       return { true, errc.value() };
+    else {
+      if (throw_unrecognized) throw;
+      return { false, 0 };
     }
   } catch (...) {
     if (throw_unrecognized) throw;
