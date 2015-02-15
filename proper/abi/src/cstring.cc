@@ -274,7 +274,8 @@ const void* memrchr(const void* p, int c, size_t len) noexcept {
 void* memccpy(void*__restrict dst, const void*__restrict src, int c,
     size_t len) noexcept {
   c &= 0xff;
-  if (len == 0) return nullptr;  // Reader needs at least 1 readable byte.
+  if (_predict_false(len == 0))
+    return nullptr;  // Reader needs at least 1 readable byte.
   auto r = reader<DIR_FORWARD, uint8_t>(src, len);
 
   /* Read single bytes, until output is aligned to ALIGN. */
