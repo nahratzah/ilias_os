@@ -331,6 +331,7 @@ auto basic_istringstream<Char, Traits, Allocator>::swap(
   this->basic_istream<Char, Traits>::swap(other);
   sb_.swap(other.sb_);
   this->set_rdbuf(&sb_);
+  other.set_rdbuf(&other.sb_);
 }
 
 template<typename Char, typename Traits, typename Allocator>
@@ -412,6 +413,7 @@ auto basic_ostringstream<Char, Traits, Allocator>::swap(
   this->basic_ostream<Char, Traits>::swap(other);
   sb_.swap(other.sb_);
   this->set_rdbuf(&sb_);
+  other.set_rdbuf(&other.sb_);
 }
 
 template<typename Char, typename Traits, typename Allocator>
@@ -486,6 +488,7 @@ auto basic_stringstream<Char, Traits, Allocator>::swap(
   this->basic_ostream<Char, Traits>::swap(other);
   sb_.swap(other.sb_);
   this->set_rdbuf(&sb_);
+  other.set_rdbuf(&other.sb_);
 }
 
 template<typename Char, typename Traits, typename Allocator>
