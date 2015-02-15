@@ -20,6 +20,7 @@ ABI_SRCS += abi/src/abi_typeinfo.cc
 ABI_SRCS += abi/src/atomic.cc
 ABI_SRCS += abi/src/cstdlib.cc
 ABI_SRCS += abi/src/cstdio.cc
+ABI_SRCS += abi/src/cstdio_file.cc
 ABI_SRCS += abi/src/cstring.cc
 ABI_SRCS += abi/src/cwchar.cc
 ABI_SRCS += abi/src/chrono.cc

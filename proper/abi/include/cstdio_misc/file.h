@@ -6,11 +6,9 @@
 _namespace_begin(std)
 
 #ifdef __cplusplus
-class _file;
-typedef _file* FILE;
+class FILE;
 #else
-struct _file;
-typedef struct _file* FILE;
+typedef struct FILE FILE;
 #endif
 
 _namespace_end(std)

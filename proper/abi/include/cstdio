@@ -20,11 +20,9 @@ typedef _TYPES(fpos_t) fpos_t;
 #define L_ctermid	1024
 #define L_tmpnam	1024  // PATH_MAX, but that may not be constexpr...
 
-#if 0
-#define _IOFBF		...  // Fully buffered IO
-#define _IOLBF		...  // Line buffered IO
-#define _IONBF		...  // Unbuffered IO
-#endif
+#define _IOFBF		31  // Fully buffered IO
+#define _IOLBF		37  // Line buffered IO
+#define _IONBF		41  // Unbuffered IO
 
 #define SEEK_SET	0  // ios_base::beg
 #define SEEK_CUR	1  // ios_base::cur
@@ -57,7 +55,7 @@ void flockfile(FILE*) noexcept;
 FILE* fmemopen(void*__restrict, size_t, const char*__restrict) noexcept;
 FILE* fopen(const char*__restrict, const char*__restrict) noexcept;
 int fputc(int, FILE*) noexcept;
-int fputs(const char*, FILE*) noexcept;
+int fputs(const char*__restrict, FILE*__restrict) noexcept;
 size_t fread(void*__restrict, size_t, size_t, FILE*__restrict) noexcept;
 FILE* freopen(const char*__restrict, const char*__restrict, FILE*__restrict)
     noexcept;

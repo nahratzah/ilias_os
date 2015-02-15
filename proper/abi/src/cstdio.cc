@@ -5,8 +5,26 @@
 #include <climits>
 #include <system_error>
 #include <abi/ext/printf.h>
+#include <abi/misc_int.h>
+#include <stdimpl/exc_errno.h>
+#include <sstream>
+#include <streambuf>
+#include "cstdio_file.h"
 
 _namespace_begin(std)
+namespace {
+
+
+inline void check_null_file(FILE* f) {
+  if (_predict_false(f == nullptr))
+    throw system_error(make_error_code(errc::bad_file_descriptor));
+}
+
+
+} /* namespace std::<unnamed> */
+
+
+using impl::errno_catch_handler;
 
 
 #if 0  // XXX: need std::c{in,out,err}
@@ -16,66 +34,444 @@ extern FILE* const stderr = reinterpret_cast<FILE*>(&cerr);
 #endif
 
 
-void clearerr(FILE*) noexcept;
-char* ctermid(char*) noexcept;
-int fclose(FILE*) noexcept;
-FILE* fdopen(int, const char*) noexcept;
-int feof(FILE*) noexcept;
-int ferror(FILE*) noexcept;
-int fflush(FILE*) noexcept;
-int fgetc(FILE*) noexcept;
-int fgetpos(FILE*__restrict, fpos_t*__restrict) noexcept;
-char* fgets(char*__restrict, int, FILE*__restrict) noexcept;
-int fileno(FILE*) noexcept;
-void flockfile(FILE*) noexcept;
-FILE* fmemopen(void*__restrict, size_t, const char*__restrict) noexcept;
-FILE* fopen(const char*__restrict, const char*__restrict) noexcept;
-int fputc(int, FILE*) noexcept;
-int fputs(const char*, FILE*) noexcept;
-size_t fread(void*__restrict, size_t, size_t, FILE*__restrict) noexcept;
+void clearerr(FILE* f) noexcept {
+  check_null_file(f);
+  f->get_ios().setstate(ios_base::goodbit);
+}
+
+char* ctermid(char*) noexcept;  // XXX: implement
+
+int fclose(FILE* f) noexcept {
+  try {
+    check_null_file(f);
+    delete f;
+  } catch (...) {
+    errno_catch_handler();
+
+    try {
+      check_null_file(f);
+      f->rdbuf().pubsync();
+      f->rdbuf().pubseekoff(0, ios_base::end);
+    } catch (...) {
+      /* Best effort. */
+    }
+    return EOF;
+  }
+  return 0;
+}
+
+FILE* fdopen(int, const char*) noexcept;  // XXX: implement file descriptors?
+
+int feof(FILE* f) noexcept {
+  check_null_file(f);
+  return f->get_ios().eof();
+}
+
+int ferror(FILE* f) noexcept {
+  check_null_file(f);
+  return !f->get_ios();
+}
+
+int fflush(FILE* f) noexcept {
+  if (f == nullptr) {
+    throw runtime_error("XXX need implementation");  // XXX
+#if 0  // Pseudocode
+    for (_file& f : all_files) {
+      try {
+        f->get_ostream().pubsync();
+        f->get_ostream().pubseekoff(0, ios_base::seekend);
+      } catch (...) {
+        /* SKIP: ignore */
+      }
+    }
+#endif
+  } else {
+    try {
+      f->rdbuf().pubsync();
+      f->rdbuf().pubseekoff(0, ios_base::end);
+    } catch (...) {
+      errno_catch_handler();
+      return EOF;
+    }
+  }
+  return 0;
+}
+
+int fgetc(FILE* f) noexcept {
+  try {
+    return f->get_istream().get();
+  } catch (...) {
+    errno_catch_handler();
+    return EOF;
+  }
+}
+
+int fgetpos(FILE*__restrict f, fpos_t*__restrict p) noexcept {
+  try {
+    check_null_file(f);
+    const auto pos = f->rdbuf().pubseekoff(0, ios_base::cur);
+    const decltype(pos) zero{ fpos_t(0) };
+    *p = pos - zero;
+  } catch (...) {
+    errno_catch_handler();
+    return -1;
+  }
+  return 0;
+}
+
+char* fgets(char*__restrict s, int n, FILE*__restrict f) noexcept {
+  try {
+    check_null_file(f);
+    if (_predict_false(s == nullptr)) throw invalid_argument("null string");
+    if (_predict_false(n == 0)) throw invalid_argument("zero-length string");
+
+    if (f->get_istream().eof()) return nullptr;
+    f->get_istream().getline(s, n);
+  } catch (...) {
+    errno_catch_handler();
+    return nullptr;
+  }
+  return s;
+}
+
+int fileno(FILE*) noexcept;  // XXX: implement file descriptors
+void flockfile(FILE*) noexcept;  // XXX
+
+FILE* fmemopen(void*__restrict, size_t, const char*__restrict) noexcept;  // XXX
+
+FILE* fopen(const char*__restrict, const char*__restrict) noexcept;  // XXX fstream
+
+int fputc(int cc, FILE* f) noexcept {
+  try {
+    check_null_file(f);
+    f->get_ostream().put(FILE::traits_type::to_char_type(cc));
+    if (_predict_false(f->get_ostream().bad())) return EOF;
+  } catch (...) {
+    errno_catch_handler();
+    return EOF;
+  }
+  return 0;
+}
+
+int fputs(const char*__restrict s, FILE*__restrict f) noexcept {
+  try {
+    check_null_file(f);
+    if (_predict_false(s == nullptr)) throw invalid_argument("null string");
+    f->get_ostream().write(s, strlen(s));
+    return 0;
+  } catch (...) {
+    errno_catch_handler();
+    return EOF;
+  }
+}
+
+size_t fread(void*__restrict ptr, size_t size, size_t nitems,
+             FILE*__restrict f) noexcept {
+  using abi::umul_overflow;
+  using ussize = make_unsigned_t<streamsize>;
+
+  try {
+    check_null_file(f);
+    auto& in = f->get_istream();
+
+    ussize bytes;
+    if (_predict_false(umul_overflow(ussize(size), ussize(nitems),
+                                     &bytes)) ||
+        _predict_false(bytes > numeric_limits<streamsize>::max())) {
+      size_t n = 0;
+      char*__restrict p = static_cast<char*__restrict>(ptr);
+      for (n = 0; n < nitems && in; p += size) {
+        if (!in.read(p, n)) break;
+        ++n;
+      }
+      return n;
+    } else if (_predict_false(bytes == 0)) {
+      return 0;
+    } else {
+      streamsize read = in.readsome(static_cast<char*>(ptr), bytes);
+      return read / size;
+    }
+  } catch (...) {
+    errno_catch_handler();
+    return 0;
+  }
+}
+
 FILE* freopen(const char*__restrict, const char*__restrict, FILE*__restrict)
-    noexcept;
-int fscanf(FILE*__restrict, const char*__restrict, ...) noexcept;
-int fseek(FILE*, long, int) noexcept;
-int fseeko(FILE*, off_t, int) noexcept;
-int fsetpos(FILE*, const fpos_t*) noexcept;
-long ftell(FILE*) noexcept;
-off_t ftello(FILE*) noexcept;
-int ftrylockfile(FILE*) noexcept;
-void funlockfile(FILE*) noexcept;
-size_t fwrite(const void*__restrict, size_t, size_t, FILE*__restrict) noexcept;
-int getc(FILE*) noexcept;
-int getchar() noexcept;
-int getc_unlocked(FILE*) noexcept;
-int getchar_unlocked() noexcept;
-ssize_t getdelim(char**__restrict, size_t*__restrict, int, FILE*__restrict)
-    noexcept;
-ssize_t getline(char**__restrict, size_t*__restrict, FILE*__restrict) noexcept;
-char* gets(char*) noexcept;
-FILE* open_memstream(char**, size_t) noexcept;
-int pclose(FILE*) noexcept;
-void perror(const char*) noexcept;
-FILE* popen(const char*, const char*) noexcept;
-int putc(int, FILE*) noexcept;
-int putchar(int) noexcept;
-int putc_unlocked(int, FILE*) noexcept;
-int putchar_unlocked(int) noexcept;
-int puts(const char*) noexcept;
-int remove(const char*) noexcept;
-int rename(const char*, const char*) noexcept;
-int renameat(int, const char*, int, const char*) noexcept;
-void rewind(FILE*) noexcept;
-int scanf(const char*__restrict, ...) noexcept;
-void setbuf(FILE*__restrict, char*__restrict) noexcept;
-int setvbuf(FILE*__restrict, char*__restrict, int, size_t) noexcept;
-int sscanf(const char*__restrict, const char*__restrict, ...) noexcept;
+    noexcept;  // XXX
+
+int fscanf(FILE*__restrict, const char*__restrict, ...) noexcept;  // XXX
+
+int fseek(FILE* f, long off, int whence) noexcept {
+  return fseeko(f, off, whence);
+}
+
+int fseeko(FILE* f, off_t off, int whence) noexcept {
+  try {
+    check_null_file(f);
+
+    ios_base::seekdir seekdir;
+    switch (whence) {
+    default:
+      throw invalid_argument("invalid seek direction");
+    case SEEK_SET:
+      seekdir = ios_base::beg;
+      break;
+    case SEEK_CUR:
+      seekdir = ios_base::cur;
+      break;
+    case SEEK_END:
+      seekdir = ios_base::end;
+      break;
+    }
+
+    auto rv = f->rdbuf().pubseekoff(off, seekdir);
+    const decltype(rv) fail{ fpos_t(-1) };
+    if (_predict_false(rv == fail))
+      throw system_error(make_error_code(errc::bad_file_descriptor));
+    return 0;
+  } catch (...) {
+    errno_catch_handler();
+    return -1;
+  }
+}
+
+int fsetpos(FILE* f, const fpos_t* pos) noexcept {
+  try {
+    check_null_file(f);
+
+    auto rv = f->rdbuf().pubseekpos(*pos);
+    const decltype(rv) fail{ fpos_t(-1) };
+    if (_predict_false(rv == fail))
+      throw system_error(make_error_code(errc::bad_file_descriptor));
+    return 0;
+  } catch (...) {
+    errno_catch_handler();
+    return -1;
+  }
+}
+
+long ftell(FILE* f) noexcept {
+  off_t rv = ftello(f);
+  if (_predict_false(rv > LONG_MAX)) {
+    errno = _ABI_EOVERFLOW;
+    return -1;
+  }
+  return rv;
+}
+
+off_t ftello(FILE* f) noexcept {
+  try {
+    auto rv = f->rdbuf().pubseekoff(0, ios_base::cur);
+    const decltype(rv) fail{ fpos_t(-1) };
+    const decltype(rv) zero{ fpos_t(0) };
+
+    if (_predict_false(rv == fail))
+      throw system_error(make_error_code(errc::bad_file_descriptor));
+    return rv - zero;
+  } catch (...) {
+    errno_catch_handler();
+    return -1;
+  }
+}
+
+int ftrylockfile(FILE*) noexcept;  // XXX
+void funlockfile(FILE*) noexcept;  // XXX
+
+size_t fwrite(const void*__restrict ptr, size_t size, size_t nitems,
+              FILE*__restrict f) noexcept {
+  using abi::umul_overflow;
+  using ussize = make_unsigned_t<streamsize>;
+
+  size_t n = 0;
+  try {
+    check_null_file(f);
+    auto& out = f->get_ostream();
+
+    const char*__restrict p = static_cast<const char*__restrict>(ptr);
+    for (n = 0; n < nitems && out; p += size) {
+      if (!out.write(p, n)) break;
+      ++n;
+    }
+    return n;
+  } catch (...) {
+    errno_catch_handler();
+    return n;
+  }
+}
+
+int getc(FILE* f) noexcept {
+  try {
+    check_null_file(f);
+    return f->get_istream().get();
+  } catch (...) {
+    errno_catch_handler();
+    return EOF;
+  }
+}
+
+int getchar() noexcept;  // XXX stdio
+
+int getc_unlocked(FILE* f) noexcept {
+  try {
+    check_null_file(f);
+    return f->get_istream().get();  // XXX may change once stream locks?
+  } catch (...) {
+    errno_catch_handler();
+    return EOF;
+  }
+}
+
+int getchar_unlocked() noexcept;  // XXX stdio
+
+ssize_t getdelim(char**__restrict lineptr, size_t*__restrict n, int delimiter,
+                 FILE*__restrict f) noexcept {
+  using impl::copybuf;
+
+  try {
+    check_null_file(f);
+    if (_predict_false(lineptr == nullptr))
+      throw invalid_argument("lineptr");
+    if (_predict_false(n && *n != 0 && *lineptr == nullptr))
+      throw invalid_argument("lineptr is a nullptr, but size is given");
+
+    istream& in = f->get_istream();
+    basic_ostringstream<FILE::char_type, FILE::traits_type> tmp;
+    const auto len = copybuf(*tmp.rdbuf(), *in.rdbuf(),
+                             FILE::traits_type::to_char_type(delimiter));
+
+    if (!in.eof()) {
+      const auto cc = in.rdbuf()->sgetc();
+      if (!FILE::traits_type::eq_int_type(cc, FILE::traits_type::eof())) {
+        assert(FILE::traits_type::eq_int_type(cc, delimiter));
+        const auto c = FILE::traits_type::to_char_type(cc);
+        auto put_result = tmp.rdbuf()->sputc(c);
+        assert(!FILE::traits_type::eq_int_type(put_result,
+                                               FILE::traits_type::eof()));
+        in.rdbuf()->sbumpc();
+      }
+    } else if (len == 0) {
+      return -1;
+    }
+
+    const auto result = tmp.str();
+    if (!n || *n < result.size() + 1U) {
+      char* repl = static_cast<char*>(realloc(*lineptr, result.size() + 1U));
+      if (!repl) throw bad_alloc();
+
+      *lineptr = repl;
+      if (n) *n = result.size() + 1U;
+    }
+    copy_n(result.c_str(), result.size() + 1U, *lineptr);
+    return result.size();
+  } catch (...) {
+    errno_catch_handler();
+    return -1;
+  }
+}
+
+ssize_t getline(char**__restrict lineptr, size_t*__restrict n,
+                FILE*__restrict f) noexcept {
+  return getdelim(lineptr, n, FILE::traits_type::to_int_type('\n'), f);
+}
+
+char* gets(char*) noexcept;  // XXX stdio
+FILE* open_memstream(char**, size_t) noexcept;  // XXX
+int pclose(FILE*) noexcept;  // XXX popen
+void perror(const char*) noexcept;  // XXX stderr
+FILE* popen(const char*, const char*) noexcept;  // XXX fork
+
+int putc(int cc, FILE* f) noexcept {
+  return fputc(cc, f);
+}
+
+int putchar(int) noexcept;  // XXX stdio
+
+int putc_unlocked(int cc, FILE* f) noexcept {
+  try {
+    check_null_file(f);
+    f->get_ostream().put(FILE::traits_type::to_char_type(cc));
+        // XXX may change once stream locks?
+    if (_predict_false(f->get_ostream().bad())) return EOF;
+  } catch (...) {
+    errno_catch_handler();
+    return EOF;
+  }
+  return 0;
+}
+
+int putchar_unlocked(int) noexcept;  // XXX stdio
+int puts(const char*) noexcept;  // XXX stdio
+int remove(const char*) noexcept;  // XXX stdio
+int rename(const char*, const char*) noexcept;  // XXX filesystem
+int renameat(int, const char*, int, const char*) noexcept;  // XXX filesystem
+
+void rewind(FILE* f) noexcept {
+  try {
+    check_null_file(f);
+
+    f->rdbuf().pubseekoff(0, ios_base::beg);
+    f->get_ios().setstate(ios_base::goodbit);
+  } catch (...) {
+    errno_catch_handler();
+  }
+}
+
+int scanf(const char*__restrict, ...) noexcept;  // XXX
+
+void setbuf(FILE*__restrict f, char*__restrict buf) noexcept {
+  try {
+    check_null_file(f);
+    f->rdbuf().pubsetbuf(buf, BUFSIZ);
+  } catch (...) {
+    errno_catch_handler();
+  }
+}
+
+int setvbuf(FILE*__restrict f, char*__restrict buf, int type, size_t size)
+    noexcept {
+  try {
+    check_null_file(f);
+    switch (type) {
+    default:
+      throw invalid_argument("type must be one of _IOFBF, _IOLBF or IONBF");
+    case _IOFBF:
+    case _IOLBF:
+    case _IONBF:
+      break;
+    }
+
+    f->rdbuf().pubsetbuf(buf, size);
+    return 0;
+  } catch (...) {
+    errno_catch_handler();
+    return -1;
+  }
+}
+
+int sscanf(const char*__restrict, const char*__restrict, ...) noexcept;  // XXX
 char* tempnam(const char*, const char*) noexcept;  // OBsolete
-FILE* tmpfile() noexcept;
+FILE* tmpfile() noexcept;  // XXX fstream, filesystem
 char* tmpnam(char*) noexcept;  // OBsolete
-int ungetc(int, FILE*) noexcept;
-int vfscanf(FILE*__restrict, const char*__restrict, va_list) noexcept;
-int vscanf(const char*__restrict, va_list) noexcept;
-int vsscanf(const char*__restrict, const char*__restrict, va_list) noexcept;
+
+int ungetc(int cc, FILE* f) noexcept {
+  try {
+    check_null_file(f);
+
+    const auto c = FILE::traits_type::to_char_type(cc);
+    const auto rv = f->get_istream().rdbuf()->sputbackc(c);
+    if (FILE::traits_type::eq_int_type(rv, FILE::traits_type::eof()))
+      return EOF;
+  } catch (...) {
+    errno_catch_handler();
+    return EOF;
+  }
+  return 0;
+}
+
+int vfscanf(FILE*__restrict, const char*__restrict, va_list) noexcept;  // XXX
+int vscanf(const char*__restrict, va_list) noexcept;  // XXX
+int vsscanf(const char*__restrict, const char*__restrict, va_list) noexcept;  // XXX
 
 
 /*
