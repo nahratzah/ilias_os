@@ -76,7 +76,7 @@ ssize_t getdelim(char**__restrict, size_t*__restrict, int, FILE*__restrict)
     noexcept;
 ssize_t getline(char**__restrict, size_t*__restrict, FILE*__restrict) noexcept;
 char* gets(char*) noexcept;
-FILE* open_memstream(char**, size_t) noexcept;
+FILE* open_memstream(char**, size_t*) noexcept;
 int pclose(FILE*) noexcept;
 void perror(const char*) noexcept;
 FILE* popen(const char*, const char*) noexcept;

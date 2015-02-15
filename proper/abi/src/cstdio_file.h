@@ -43,7 +43,7 @@ class iostream_file
   ostream& get_ostream() const noexcept override { return f_; }
 
  private:
-  IOStream f_;
+  mutable IOStream f_;
 };
 
 template<typename IStream>
@@ -57,7 +57,7 @@ class istream_file
   istream& get_istream() const noexcept override { return f_; }
 
  private:
-  IStream f_;
+  mutable IStream f_;
 };
 
 template<typename OStream>
@@ -71,7 +71,7 @@ class ostream_file
   ostream& get_ostream() const noexcept override { return f_; }
 
  private:
-  OStream f_;
+  mutable OStream f_;
 };
 
 

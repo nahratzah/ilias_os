@@ -10,6 +10,7 @@
 #include <sstream>
 #include <streambuf>
 #include "cstdio_file.h"
+#include "memstream.h"
 
 _namespace_begin(std)
 namespace {
@@ -376,7 +377,19 @@ ssize_t getline(char**__restrict lineptr, size_t*__restrict n,
 }
 
 char* gets(char*) noexcept;  // XXX stdio
-FILE* open_memstream(char**, size_t) noexcept;  // XXX
+
+FILE* open_memstream(char** pub_buf, size_t* pub_len) noexcept {
+  using memstream = basic_memstream<char>;
+  using file = ostream_file<memstream>;
+
+  try {
+    return new file(memstream(*pub_buf, *pub_len));
+  } catch (...) {
+    errno_catch_handler();
+    return nullptr;
+  }
+}
+
 int pclose(FILE*) noexcept;  // XXX popen
 void perror(const char*) noexcept;  // XXX stderr
 FILE* popen(const char*, const char*) noexcept;  // XXX fork
