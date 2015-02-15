@@ -6,6 +6,9 @@
 #include <cstring>
 #include <cstdio>
 #include <cwchar>
+#include <locale_misc/ctype.h>
+#include <stdimpl/ostream_lshift.h>
+#include <stdimpl/istream_rshift.h>
 
 _namespace_begin(std)
 
@@ -2059,6 +2062,87 @@ auto operator+(basic_string_ref<Char, Traits> a,
   basic_string<Char, Traits, Alloc> rv = move(b);
   rv.insert(rv.begin(), a);
   return rv;
+}
+
+
+template<typename C, typename T, typename A>
+auto swap(basic_string<C, T, A>& x, basic_string<C, T, A>& y) -> void {
+  x.swap(y);
+}
+
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator>>(basic_istream<Char, Traits>& in,
+                basic_string<Char, Traits, Alloc>& s) ->
+    basic_istream<Char, Traits>& {
+  using ios_base = basic_istream<Char, Traits>;
+  using ctype_t = ctype<Char>;
+
+  op_rshift_stream(in,
+                   [&]() {
+                     s.clear();
+                     const auto in_width = in.width();
+                     using uwidth_t = make_unsigned_t<decltype(in_width)>;
+                     const auto width = (in_width <= 0 ?
+                                         s.max_size() :
+                                         uwidth_t(in_width));
+                     const ctype_t& ct = use_facet<ctype_t>(in.getloc());
+
+                     auto& src = *in.rdbuf();
+                     for (bool delim_seen = false;
+                          !delim_seen && s.size() < width; ) {
+                       auto egptr = min(src.gptr() + (width - s.size()),
+                                        src.egptr());
+                       auto src_delim =
+                           ct.scan_is(ctype_t::space,
+                                      src.gptr(), egptr);
+                       auto src_avail = src_delim - src.gptr();
+                       delim_seen = (src_delim != egptr);
+                       if (src_avail > INT_MAX) {
+                         src_avail = INT_MAX;
+                         delim_seen = false;
+                       }
+
+                       if (src_avail == 0) {
+                         /* No buffer available: transfer single char. */
+                         const typename Traits::int_type cc = src.sgetc();
+                         if (Traits::eq_int_type(cc, Traits::eof())) {
+                           delim_seen = true;
+                           continue;
+                         }
+                         const typename Traits::char_type c =
+                             Traits::to_char_type(cc);
+                         if (ct.is(ctype_t::space, c)) {
+                           delim_seen = true;
+                           continue;
+                         }
+                         s.append(c);
+                         src.sbumpc();
+                       } else {
+                         /* Buffer available, copy entire block. */
+                         s.append(src.gptr(), egptr);
+                         src.gbump(src_avail);
+                       }
+                     }
+                     s.width(0);
+                     if (s.empty()) in.setstate(ios_base::failbit);
+
+                     assert(s.size() < width);
+                   });
+}
+
+template<typename Char, typename Traits, typename Alloc>
+auto operator<<(basic_ostream<Char, Traits>& out,
+                const basic_string<Char, Traits, Alloc>& s) ->
+    basic_ostream<Char, Traits>& {
+  return out << basic_string_ref<Char, Traits>(s);
+}
+
+template<typename Char, typename Traits>
+auto operator<<(basic_ostream<Char, Traits>& out,
+                basic_string_ref<Char, Traits> s) ->
+    basic_ostream<Char, Traits>& {
+  return impl::op_lshift_stream(out, s);
 }
 
 

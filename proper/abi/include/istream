@@ -5,6 +5,7 @@
 #include <ios>
 #include <ostream>
 #include <cstdint>
+#include <stdimpl/istream_rshift.h>
 
 _namespace_begin(std)
 
@@ -28,6 +29,9 @@ class basic_istream
       basic_istream<C, T>&, C&);
   template<typename C, typename T> friend basic_istream<C, T>& operator>> (
       basic_istream<C, T>&, C*);
+  template<typename C, typename T, typename Fn, typename... Args>
+  friend auto impl::op_rshift_stream(basic_istream<C, T>&, Fn, Args&&...) ->
+      basic_istream<C, T>&;
 
  public:
   using char_type = typename basic_ios<Char, Traits>::char_type;

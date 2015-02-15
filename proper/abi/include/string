@@ -606,6 +606,23 @@ extern template class basic_string<char16_t>;
 extern template class basic_string<char32_t>;
 
 
+template<typename C, typename T, typename A>
+void swap(basic_string<C, T, A>&, basic_string<C, T, A>&);
+
+
+template<typename Char, typename Traits, typename Alloc>
+basic_istream<Char, Traits>& operator>>(basic_istream<Char, Traits>&,
+                                        basic_string<Char, Traits, Alloc>&);
+
+template<typename Char, typename Traits, typename Alloc>
+basic_ostream<Char, Traits>& operator<<(
+    basic_ostream<Char, Traits>&, const basic_string<Char, Traits, Alloc>&);
+
+template<typename Char, typename Traits>
+basic_ostream<Char, Traits>& operator<<(
+    basic_ostream<Char, Traits>&, basic_string_ref<Char, Traits>);
+
+
 template<> struct hash<string> {
   using result_type = size_t;
   using argument_type = string;

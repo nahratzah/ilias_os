@@ -5,23 +5,9 @@
 #include <ios>
 #include <cstdint>
 #include <type_traits>
+#include <stdimpl/ostream_lshift.h>
 
 _namespace_begin(std)
-namespace impl {
-
-template<typename Char, typename Traits, typename SChar, typename STraits>
-auto op_lshift_stream(basic_ostream<Char, Traits>&,
-                      basic_string_ref<SChar, STraits>) ->
-    enable_if_t<is_same<Char, SChar>::value, basic_ostream<Char, Traits>&>;
-
-template<typename Char, typename Traits, typename SChar, typename STraits,
-         typename Fn>
-auto op_lshift_stream(basic_ostream<Char, Traits>&,
-                      basic_string_ref<SChar, STraits>,
-                      Fn) ->
-    enable_if_t<!is_same<Char, SChar>::value, basic_ostream<Char, Traits>&>;
-
-} /* namespace impl */
 
 
 template<typename Char, typename Traits>

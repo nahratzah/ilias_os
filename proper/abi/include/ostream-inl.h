@@ -375,65 +375,6 @@ auto basic_ostream<Char, Traits>::unformatted_(Fn fn, Args&&... args) ->
   return *this;
 }
 
-namespace impl {
-
-template<typename Char, typename Traits, typename SChar, typename STraits>
-auto op_lshift_stream(basic_ostream<Char, Traits>& os,
-                      basic_string_ref<SChar, STraits> s) ->
-    enable_if_t<is_same<Char, SChar>::value, basic_ostream<Char, Traits>&> {
-  return os.op_lshift_([&]() -> bool {
-                         using out_iter = ostreambuf_iterator<Char, Traits>;
-
-                         const make_unsigned_t<streamsize> width =
-                             (os.width() < 0 ? 0 : os.width());
-                         const bool left =
-                             ((os.flags() & ios_base::adjustfield) ==
-                              ios_base::left);
-                         out_iter out{ os };
-
-                         if (!left && width > s.length())
-                           out = fill_n(out, width - s.length(), os.fill());
-
-                         os.rdbuf()->sputn(s.data(), s.size());
-
-                         if (left && width > s.length())
-                           out = fill_n(out, width - s.length(), os.fill());
-
-                         os.width(0);
-                         return out.failed();
-                       });
-}
-
-template<typename Char, typename Traits, typename SChar, typename STraits,
-         typename Fn>
-auto op_lshift_stream(basic_ostream<Char, Traits>& os,
-                      basic_string_ref<SChar, STraits> s,
-                      Fn tf) ->
-    enable_if_t<!is_same<Char, SChar>::value, basic_ostream<Char, Traits>&> {
-  return os.op_lshift_([&]() -> bool {
-                         using out_iter = ostreambuf_iterator<Char, Traits>;
-
-                         const make_unsigned_t<streamsize> width =
-                             (os.width() < 0 ? 0 : os.width());
-                         const bool left =
-                             ((os.flags() & ios_base::adjustfield) ==
-                              ios_base::left);
-                         out_iter out{ os };
-
-                         if (!left && width > s.length())
-                           out = fill_n(out, width - s.length(), os.fill());
-
-                         out = transform(begin(s), end(s), out, move(tf));
-
-                         if (left && width > s.length())
-                           out = fill_n(out, width - s.length(), os.fill());
-
-                         os.width(0);
-                         return out.failed();
-                       });
-}
-
-} /* namespace std::impl */
 
 template<typename Char, typename Traits>
 auto operator<< (basic_ostream<Char, Traits>& os, Char ch) ->
