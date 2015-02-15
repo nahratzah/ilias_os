@@ -24,6 +24,10 @@ class basic_memstreambuf
       ios_base::openmode = ios_base::in | ios_base::out);
   basic_memstreambuf(char_type*&, size_type&,
                      ios_base::openmode = ios_base::in | ios_base::out);
+  basic_memstreambuf(char_type*&, size_type&,
+                     char_type*, size_type,
+                     ios_base::openmode = ios_base::in | ios_base::out)
+      noexcept;
   basic_memstreambuf(basic_memstreambuf&&);
   ~basic_memstreambuf() noexcept override;
 
@@ -86,6 +90,9 @@ class basic_imemstream
   explicit basic_imemstream(ios_base::openmode = ios_base::in);
   basic_imemstream(char_type*&, size_type&,
                    ios_base::openmode = ios_base::in);
+  basic_imemstream(char_type*&, size_type&,
+                   char_type*, size_type,
+                   ios_base::openmode = ios_base::in);
   basic_imemstream(basic_imemstream&&);
   ~basic_imemstream() noexcept override = default;
 
@@ -119,6 +126,9 @@ class basic_omemstream
   explicit basic_omemstream(ios_base::openmode = ios_base::out);
   basic_omemstream(char_type*&, size_type&,
                    ios_base::openmode = ios_base::out);
+  basic_omemstream(char_type*&, size_type&,
+                   char_type*, size_type,
+                   ios_base::openmode = ios_base::out);
   basic_omemstream(basic_omemstream&&);
   ~basic_omemstream() noexcept override = default;
 
@@ -151,7 +161,10 @@ class basic_memstream
 
   explicit basic_memstream(ios_base::openmode = ios_base::in | ios_base::out);
   basic_memstream(char_type*&, size_type&,
-                   ios_base::openmode = ios_base::in | ios_base::out);
+                  ios_base::openmode = ios_base::in | ios_base::out);
+  basic_memstream(char_type*&, size_type&,
+                  char_type*, size_type,
+                  ios_base::openmode = ios_base::in | ios_base::out);
   basic_memstream(basic_memstream&&);
   ~basic_memstream() noexcept override = default;
 

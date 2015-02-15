@@ -19,6 +19,27 @@ basic_memstreambuf<Char, Traits>::basic_memstreambuf(char_type*& pub_buf,
 : mode_(mode),
   pub_buf_(&pub_buf),
   pub_len_(&pub_len)
+{
+  buf_ = static_cast<char_type*>(malloc(sizeof(char_type)));
+  if (buf_ == nullptr) throw bad_alloc();
+  traits_type::assign(*buf_, char_type());
+  len_ = 0;
+  buf_end_ = buf_;
+}
+
+template<typename Char, typename Traits>
+basic_memstreambuf<Char, Traits>::basic_memstreambuf(char_type*& pub_buf,
+                                                     size_type& pub_len,
+                                                     char_type* init_buf,
+                                                     size_type init_len,
+                                                     ios_base::openmode mode)
+    noexcept
+: mode_(mode),
+  buf_(init_buf),
+  buf_end_(init_buf + init_len),
+  len_(init_len),
+  pub_buf_(&pub_buf),
+  pub_len_(&pub_len)
 {}
 
 template<typename Char, typename Traits>
@@ -73,7 +94,7 @@ auto basic_memstreambuf<Char, Traits>::pbackfail(int_type c) -> int_type {
       traits_type::eq_int_type(traits_type::to_int_type(*pos), c)) {
     /* SKIP */
   } else if ((mode_ & ios_base::out) == ios_base::out) {
-    *pos = traits_type::to_char_type(c);
+    traits_type::assign(*pos, traits_type::to_char_type(c));
   } else {
     return traits_type::eof();
   }
@@ -172,7 +193,7 @@ auto basic_memstreambuf<Char, Traits>::seekpos(
 template<typename Char, typename Traits>
 auto basic_memstreambuf<Char, Traits>::sync() -> int {
   /* Append nul char_type (epptr always points at the end of the buffer). */
-  *this->epptr() = char_type();
+  if (this->epptr()) *this->epptr() = char_type();
 
   if (pub_buf_) *pub_buf_ = buf_;
   if (pub_len_) *pub_len_ = len_;
@@ -278,6 +299,16 @@ basic_imemstream<Char, Traits>::basic_imemstream(char_type*& pub_buf,
 {}
 
 template<typename Char, typename Traits>
+basic_imemstream<Char, Traits>::basic_imemstream(char_type*& pub_buf,
+                                                 size_type& pub_len,
+                                                 char_type* init_buf,
+                                                 size_type init_len,
+                                                 ios_base::openmode which)
+: basic_istream<Char, Traits>(&this->sb_),
+  sb_(pub_buf, pub_len, init_buf, init_len, which)
+{}
+
+template<typename Char, typename Traits>
 basic_imemstream<Char, Traits>::basic_imemstream(
     basic_imemstream&& other)
 : basic_istream<Char, Traits>(move(other)),
@@ -330,6 +361,16 @@ basic_omemstream<Char, Traits>::basic_omemstream(char_type*& pub_buf,
 {}
 
 template<typename Char, typename Traits>
+basic_omemstream<Char, Traits>::basic_omemstream(char_type*& pub_buf,
+                                                 size_type& pub_len,
+                                                 char_type* init_buf,
+                                                 size_type init_len,
+                                                 ios_base::openmode which)
+: basic_ostream<Char, Traits>(&this->sb_),
+  sb_(pub_buf, pub_len, init_buf, init_len, which)
+{}
+
+template<typename Char, typename Traits>
 basic_omemstream<Char, Traits>::basic_omemstream(
     basic_omemstream&& other)
 : basic_ostream<Char, Traits>(move(other)),
@@ -379,6 +420,16 @@ basic_memstream<Char, Traits>::basic_memstream(char_type*& pub_buf,
                                                ios_base::openmode which)
 : basic_iostream<Char, Traits>(&this->sb_),
   sb_(pub_buf, pub_len, which)
+{}
+
+template<typename Char, typename Traits>
+basic_memstream<Char, Traits>::basic_memstream(char_type*& pub_buf,
+                                               size_type& pub_len,
+                                               char_type* init_buf,
+                                               size_type init_len,
+                                               ios_base::openmode which)
+: basic_iostream<Char, Traits>(&this->sb_),
+  sb_(pub_buf, pub_len, init_buf, init_len, which)
 {}
 
 template<typename Char, typename Traits>
