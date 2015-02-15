@@ -8,6 +8,7 @@
 #include <ostream>
 #include <streambuf>
 #include <utility>
+#include <mutex>
 
 _namespace_begin(std)
 
@@ -29,6 +30,13 @@ class FILE {
   streambuf& rdbuf() const noexcept;
   virtual istream& get_istream() const;
   virtual ostream& get_ostream() const;
+
+  void lock() { mtx_.lock(); }
+  bool try_lock() noexcept { return mtx_.try_lock(); }
+  void unlock() noexcept { mtx_.unlock(); }
+
+ private:
+  recursive_mutex mtx_;
 };
 
 template<typename IOStream>
@@ -75,6 +83,42 @@ class ostream_file
 };
 
 
+class file_lock {
+ public:
+  file_lock() noexcept = default;
+  explicit file_lock(FILE*);
+  file_lock(FILE*, defer_lock_t) noexcept;
+  file_lock(FILE*, try_to_lock_t);
+  file_lock(FILE*, adopt_lock_t) noexcept;
+  ~file_lock() noexcept;
+
+  file_lock(const file_lock&) = delete;
+  file_lock& operator=(const file_lock&) = delete;
+
+  file_lock(file_lock&&) noexcept;
+  file_lock& operator=(file_lock&&) noexcept;
+
+  void lock();
+  bool try_lock();
+  void unlock();
+
+  void swap(file_lock&) noexcept;
+  FILE* release() noexcept;
+
+  bool owns_lock() const noexcept { return locked_; }
+  explicit operator bool() const noexcept { return locked_; }
+  FILE* mutex() const noexcept { return file_; }
+
+ private:
+  FILE* file_ = nullptr;
+  bool locked_ = false;
+};
+
+void swap(file_lock&, file_lock&) noexcept;
+
+
 _namespace_end(std)
+
+#include "cstdio_file-inl.h"
 
 #endif /* _CSTDIO_FILE_H_ */
