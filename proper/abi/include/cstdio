@@ -5,6 +5,7 @@
 #include <cdecl.h>
 #include <cstdio_misc/eof.h>
 #include <cstdio_misc/file.h>
+#include <cstdio_misc/off_t.h>
 
 #ifdef __cplusplus
 # include <string>
@@ -12,6 +13,96 @@
 
 _namespace_begin(std)
 _cdecl_begin
+
+typedef _TYPES(fpos_t) fpos_t;
+
+#define BUFSIZ		1024
+#define L_ctermid	1024
+#define L_tmpnam	1024  // PATH_MAX, but that may not be constexpr...
+
+#if 0
+#define _IOFBF		...  // Fully buffered IO
+#define _IOLBF		...  // Line buffered IO
+#define _IONBF		...  // Unbuffered IO
+#endif
+
+#define SEEK_SET	0  // ios_base::beg
+#define SEEK_CUR	1  // ios_base::cur
+#define SEEK_END	2  // ios_base::end
+
+#define FILENAME_MAX	1024  // FILENAME_MAX <= PATH_MAX
+#define FOPEN_MAX	20  // A minimum, FOPEN_MAX <= OPEN_MAX
+#define TMP_MAX		(26 * 26 * 26 * 26 * 26 * 26)
+#define P_tmpdir	"/tmp/"
+
+#if 0  // XXX: implement scaffolding
+extern FILE*const stdin;
+extern FILE*const stdout;
+extern FILE*const stderr;
+#endif
+
+
+void clearerr(FILE*) noexcept;
+char* ctermid(char*) noexcept;
+int fclose(FILE*) noexcept;
+FILE* fdopen(int, const char*) noexcept;
+int feof(FILE*) noexcept;
+int ferror(FILE*) noexcept;
+int fflush(FILE*) noexcept;
+int fgetc(FILE*) noexcept;
+int fgetpos(FILE*__restrict, fpos_t*__restrict) noexcept;
+char* fgets(char*__restrict, int, FILE*__restrict) noexcept;
+int fileno(FILE*) noexcept;
+void flockfile(FILE*) noexcept;
+FILE* fmemopen(void*__restrict, size_t, const char*__restrict) noexcept;
+FILE* fopen(const char*__restrict, const char*__restrict) noexcept;
+int fputc(int, FILE*) noexcept;
+int fputs(const char*, FILE*) noexcept;
+size_t fread(void*__restrict, size_t, size_t, FILE*__restrict) noexcept;
+FILE* freopen(const char*__restrict, const char*__restrict, FILE*__restrict)
+    noexcept;
+int fscanf(FILE*__restrict, const char*__restrict, ...) noexcept;
+int fseek(FILE*, long, int) noexcept;
+int fseeko(FILE*, off_t, int) noexcept;
+int fsetpos(FILE*, const fpos_t*) noexcept;
+long ftell(FILE*) noexcept;
+off_t ftello(FILE*) noexcept;
+int ftrylockfile(FILE*) noexcept;
+void funlockfile(FILE*) noexcept;
+size_t fwrite(const void*__restrict, size_t, size_t, FILE*__restrict) noexcept;
+int getc(FILE*) noexcept;
+int getchar() noexcept;
+int getc_unlocked(FILE*) noexcept;
+int getchar_unlocked() noexcept;
+ssize_t getdelim(char**__restrict, size_t*__restrict, int, FILE*__restrict)
+    noexcept;
+ssize_t getline(char**__restrict, size_t*__restrict, FILE*__restrict) noexcept;
+char* gets(char*) noexcept;
+FILE* open_memstream(char**, size_t) noexcept;
+int pclose(FILE*) noexcept;
+void perror(const char*) noexcept;
+FILE* popen(const char*, const char*) noexcept;
+int putc(int, FILE*) noexcept;
+int putchar(int) noexcept;
+int putc_unlocked(int, FILE*) noexcept;
+int putchar_unlocked(int) noexcept;
+int puts(const char*) noexcept;
+int remove(const char*) noexcept;
+int rename(const char*, const char*) noexcept;
+int renameat(int, const char*, int, const char*) noexcept;
+void rewind(FILE*) noexcept;
+int scanf(const char*__restrict, ...) noexcept;
+void setbuf(FILE*__restrict, char*__restrict) noexcept;
+int setvbuf(FILE*__restrict, char*__restrict, int, size_t) noexcept;
+int sscanf(const char*__restrict, const char*__restrict, ...) noexcept;
+char* tempnam(const char*, const char*) noexcept;  // OBsolete
+FILE* tmpfile() noexcept;
+char* tmpnam(char*) noexcept;  // OBsolete
+int ungetc(int, FILE*) noexcept;
+int vfscanf(FILE*__restrict, const char*__restrict, va_list) noexcept;
+int vscanf(const char*__restrict, va_list) noexcept;
+int vsscanf(const char*__restrict, const char*__restrict, va_list) noexcept;
+
 
 #if 0  // XXX need more environ
 int dprintf(int, const char*__restrict, ...) noexcept;
@@ -34,7 +125,7 @@ int vasprintf(char**, const char*__restrict, va_list) noexcept;
 
 _cdecl_end
 
-#ifdef __cplusplus
+#ifdef __cplusplus  // Extension
 string format(string_ref, ...);
 string wformat(wstring_ref, ...);
 string u16format(u16string_ref, ...);
@@ -44,6 +135,74 @@ string u32format(u32string_ref, ...);
 _namespace_end(std)
 
 #if !defined(_TEST) && defined(__cplusplus)
+using std::fpos_t;
+
+#if 0  // XXX: implement scaffolding
+using std::stdin;
+using std::stdout;
+using std::stderr;
+#endif
+
+using std::clearerr;
+using std::ctermid;
+using std::fclose;
+using std::fdopen;
+using std::feof;
+using std::ferror;
+using std::fflush;
+using std::fgetc;
+using std::fgetpos;
+using std::fgets;
+using std::fileno;
+using std::flockfile;
+using std::fmemopen;
+using std::fopen;
+using std::fputc;
+using std::fputs;
+using std::fread;
+using std::freopen;
+using std::fscanf;
+using std::fseek;
+using std::fseeko;
+using std::fsetpos;
+using std::ftell;
+using std::ftello;
+using std::ftrylockfile;
+using std::funlockfile;
+using std::fwrite;
+using std::getc;
+using std::getchar;
+using std::getc_unlocked;
+using std::getchar_unlocked;
+using std::getdelim;
+using std::getline;
+using std::gets;
+using std::open_memstream;
+using std::pclose;
+using std::perror;
+using std::popen;
+using std::putc;
+using std::putchar;
+using std::putc_unlocked;
+using std::putchar_unlocked;
+using std::puts;
+using std::remove;
+using std::rename;
+using std::renameat;
+using std::rewind;
+using std::scanf;
+using std::setbuf;
+using std::setvbuf;
+using std::sscanf;
+using std::tempnam;
+using std::tmpfile;
+using std::tmpnam;
+using std::ungetc;
+using std::vfscanf;
+using std::vscanf;
+using std::vsscanf;
+
+
 #if 0  // XXX need more environ
 using std::dprintf;
 using std::fprintf;

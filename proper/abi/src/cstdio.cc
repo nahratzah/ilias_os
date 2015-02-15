@@ -9,6 +9,75 @@
 _namespace_begin(std)
 
 
+#if 0  // XXX: need std::c{in,out,err}
+extern FILE* const stdin = reinterpret_cast<FILE*>(&cin);
+extern FILE* const stdout = reinterpret_cast<FILE*>(&cout);
+extern FILE* const stderr = reinterpret_cast<FILE*>(&cerr);
+#endif
+
+
+void clearerr(FILE*) noexcept;
+char* ctermid(char*) noexcept;
+int fclose(FILE*) noexcept;
+FILE* fdopen(int, const char*) noexcept;
+int feof(FILE*) noexcept;
+int ferror(FILE*) noexcept;
+int fflush(FILE*) noexcept;
+int fgetc(FILE*) noexcept;
+int fgetpos(FILE*__restrict, fpos_t*__restrict) noexcept;
+char* fgets(char*__restrict, int, FILE*__restrict) noexcept;
+int fileno(FILE*) noexcept;
+void flockfile(FILE*) noexcept;
+FILE* fmemopen(void*__restrict, size_t, const char*__restrict) noexcept;
+FILE* fopen(const char*__restrict, const char*__restrict) noexcept;
+int fputc(int, FILE*) noexcept;
+int fputs(const char*, FILE*) noexcept;
+size_t fread(void*__restrict, size_t, size_t, FILE*__restrict) noexcept;
+FILE* freopen(const char*__restrict, const char*__restrict, FILE*__restrict)
+    noexcept;
+int fscanf(FILE*__restrict, const char*__restrict, ...) noexcept;
+int fseek(FILE*, long, int) noexcept;
+int fseeko(FILE*, off_t, int) noexcept;
+int fsetpos(FILE*, const fpos_t*) noexcept;
+long ftell(FILE*) noexcept;
+off_t ftello(FILE*) noexcept;
+int ftrylockfile(FILE*) noexcept;
+void funlockfile(FILE*) noexcept;
+size_t fwrite(const void*__restrict, size_t, size_t, FILE*__restrict) noexcept;
+int getc(FILE*) noexcept;
+int getchar() noexcept;
+int getc_unlocked(FILE*) noexcept;
+int getchar_unlocked() noexcept;
+ssize_t getdelim(char**__restrict, size_t*__restrict, int, FILE*__restrict)
+    noexcept;
+ssize_t getline(char**__restrict, size_t*__restrict, FILE*__restrict) noexcept;
+char* gets(char*) noexcept;
+FILE* open_memstream(char**, size_t) noexcept;
+int pclose(FILE*) noexcept;
+void perror(const char*) noexcept;
+FILE* popen(const char*, const char*) noexcept;
+int putc(int, FILE*) noexcept;
+int putchar(int) noexcept;
+int putc_unlocked(int, FILE*) noexcept;
+int putchar_unlocked(int) noexcept;
+int puts(const char*) noexcept;
+int remove(const char*) noexcept;
+int rename(const char*, const char*) noexcept;
+int renameat(int, const char*, int, const char*) noexcept;
+void rewind(FILE*) noexcept;
+int scanf(const char*__restrict, ...) noexcept;
+void setbuf(FILE*__restrict, char*__restrict) noexcept;
+int setvbuf(FILE*__restrict, char*__restrict, int, size_t) noexcept;
+int sscanf(const char*__restrict, const char*__restrict, ...) noexcept;
+char* tempnam(const char*, const char*) noexcept;  // OBsolete
+FILE* tmpfile() noexcept;
+char* tmpnam(char*) noexcept;  // OBsolete
+int ungetc(int, FILE*) noexcept;
+int vfscanf(FILE*__restrict, const char*__restrict, va_list) noexcept;
+int vscanf(const char*__restrict, va_list) noexcept;
+int vsscanf(const char*__restrict, const char*__restrict, va_list) noexcept;
+
+
 /*
  * printf functions forward to their vprintf counterparts.
  */
@@ -362,6 +431,7 @@ u32string format(u32string_ref fmt, ...) {
                                                      "std::format");
   return rv;
 }
+
 
 
 _namespace_end(std)
