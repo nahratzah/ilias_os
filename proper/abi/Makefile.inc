@@ -52,6 +52,7 @@ ABI_SRCS += abi/src/stdimpl_simple_bitset.cc
 ABI_SRCS += abi/src/stdimpl_stats.cc
 ABI_SRCS += abi/src/stdimpl_shared_ptr_ownership.cc
 ABI_SRCS += abi/src/stdimpl_locale_numeric.cc
+ABI_SRCS += abi/src/stdimpl_locale_catalogs.cc
 ABI_SRCS += abi/src/stdimpl_circular_buffer.cc
 ABI_SRCS += abi/src/stdimpl_exc_errno.cc
 ABI_SRCS += abi/src/stdimpl_future_state.cc

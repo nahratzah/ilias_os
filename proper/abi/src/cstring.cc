@@ -2,10 +2,14 @@
 #include <abi/errno.h>
 #include <abi/memory.h>
 #include <cstring>
+#include <sstream>
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
 #include <locale>
+#include <type_traits>
+#include <stdimpl/exc_errno.h>
+#include <stdimpl/locale_catalogs.h>
 
 _namespace_begin(std)
 
@@ -52,7 +56,39 @@ int strcoll_l(const char* s1, const char* s2, locale_t loc) noexcept {
   }
 }
 
-char* strerror_l(int e, locale_t loc) noexcept;  // XXX return string for errno e in given locale
+namespace {
+
+char* strerror_l(int errnum, const locale& loc) noexcept {
+  using messages = _namespace(std)::messages<char>;
+  using abi::sys_nerr;
+  using abi::sys_errlist;
+  using abi::errno;
+
+  static thread_local array<char, 128> buf;
+  if (_predict_false(errnum < 0 || errnum >= sys_nerr))
+    errno = _ABI_EINVAL;
+
+  try {
+    string msg = impl::strerror<char>(errnum, loc);
+    if (msg.length() > buf.size() - 1U) msg.resize(buf.size() - 1U);
+    copy_n(msg.c_str(), msg.length() + 1U, buf.begin());
+  } catch (...) {
+    if (_predict_false(errnum < 0 || errnum >= sys_nerr))
+      snprintf(buf.data(), buf.size(), "unknown error %d", errnum);
+    else
+      strlcpy(buf.data(), sys_errlist[errnum], buf.size());
+    impl::errno_catch_handler(false);
+  }
+
+  return buf.data();
+}
+
+} /* namespace std::<unnamed> */
+
+char* strerror_l(int errnum, locale_t loc) noexcept {
+  return strerror_l(errnum, reinterpret_cast<const locale&>(loc));
+}
+
 char* strsignal(int sig) noexcept;  // XXX return signal name in current locale
 size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n) noexcept;  // XXX find current locale, invoke strxfrm_l(..., current_locale())
 size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n, locale_t loc) noexcept;  // XXX transform b into a (at most n chars long), such that strcoll_l(b, ..., loc) returns the same result as strcmp(a, ...).  Return length of a, if n was infinite.
@@ -773,26 +809,51 @@ char* strtok_r(char*__restrict s, const char*__restrict sep,
 }
 
 int strerror_r(int errnum, char* buf, size_t buflen) noexcept {
+  using messages = _namespace(std)::messages<char>;
   using abi::sys_nerr;
   using abi::sys_errlist;
+  using abi::errno;
 
-#if 0 // XXX _ILIAS_LOCALE
-  ...  // XXX
-#else /* __has_include(<clocale>) */
-  if (_predict_false(errnum < 0 || errnum >= sys_nerr)) {
-    snprintf(buf, buflen, "Unknown error: %d", errnum);
-    return _ABI_EINVAL;
+  int rv = 0;
+  if (_predict_false(buflen == 0)) {
+    rv = _ABI_ERANGE;
+    errno = rv;
+    return rv;
   }
-  return (strlcpy(buf, sys_errlist[errnum], buflen) >= buflen ?
-          _ABI_ERANGE :
-          0);
-#endif /* __has_include(<clocale>) ... else */
+
+  if (_predict_false(errnum < 0 || errnum >= sys_nerr))
+    rv = _ABI_EINVAL;
+
+  try {
+    string msg = impl::strerror<char>(errnum, locale());
+    if (msg.length() > buflen - 1U) msg.resize(buflen - 1U);
+    copy_n(msg.c_str(), msg.length() + 1U, buf);
+  } catch (...) {
+    if (_predict_false(errnum < 0 || errnum >= sys_nerr)) {
+      auto p = snprintf(buf, buflen, "unknown error %d", errnum);
+      if (p == -1)
+        rv = errno;
+      else if (p < 0 || make_unsigned_t<decltype(p)>(p) >= buflen)
+        rv = _ABI_ERANGE;
+    } else {
+      if (strlcpy(buf, sys_errlist[errnum], buflen) >= buflen)
+        rv = _ABI_ERANGE;
+    }
+
+    /* Handle exception, overriding errno. */
+    bool recognized;
+    int e;
+    tie(recognized, e) = impl::errno_from_current_exception(false);
+    if (recognized && e != 0)
+      rv = e;
+  }
+
+  if (rv != 0) errno = rv;
+  return rv;
 }
 
 char* strerror(int errnum) noexcept {
-  static thread_local char buf[32];
-  strerror_r(errnum, buf, sizeof(buf) / sizeof(buf[0]));
-  return buf;
+  return strerror_l(errnum, locale());
 }
 
 
