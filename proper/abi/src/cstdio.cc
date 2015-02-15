@@ -21,6 +21,52 @@ inline void check_null_file(FILE* f) {
     throw system_error(make_error_code(errc::bad_file_descriptor));
 }
 
+ios_base::openmode openmode_from_string(string_ref s) {
+  static constexpr string_ref s_r   = string_ref("r", 1);
+  static constexpr string_ref s_rb  = string_ref("rb", 2);
+  static constexpr string_ref s_w   = string_ref("w", 1);
+  static constexpr string_ref s_wb  = string_ref("wb", 2);
+  static constexpr string_ref s_a   = string_ref("a", 1);
+  static constexpr string_ref s_ab  = string_ref("ab", 2);
+  static constexpr string_ref s_rP  = string_ref("r+", 2);
+  static constexpr string_ref s_rbP = string_ref("rb+", 3);
+  static constexpr string_ref s_rPb = string_ref("r+b", 3);
+  static constexpr string_ref s_wP  = string_ref("w+", 2);
+  static constexpr string_ref s_wbP = string_ref("wb+", 3);
+  static constexpr string_ref s_wPb = string_ref("w+b", 3);
+  static constexpr string_ref s_aP  = string_ref("a+", 2);
+  static constexpr string_ref s_abP = string_ref("ab+", 3);
+  static constexpr string_ref s_aPb = string_ref("a+b", 3);
+
+  /* Basics. */
+  ios_base::openmode rv;
+  if (s == s_r || s == s_rb)
+    rv = ios_base::in;
+  else if (s == s_w || s == s_wb)
+    rv = ios_base::out;
+  else if (s == s_a || s == s_ab)
+    rv = ios_base::out | ios_base::ate;
+  else if (s == s_rP || s == s_rbP || s == s_rPb)
+    rv = ios_base::in | ios_base::out;
+  else if (s == s_wP || s == s_wbP || s == s_wPb)
+    rv = ios_base::in | ios_base::out | ios_base::trunc;
+  else if (s == s_aP || s == s_abP || s == s_aPb)
+    rv = ios_base::in | ios_base::out | ios_base::ate;
+  else
+    throw invalid_argument("openmode");
+
+  /* Check for binary setting. */
+  if (s == s_rb ||
+      s == s_wb ||
+      s == s_ab ||
+      s == s_rbP || s == s_rPb ||
+      s == s_wbP || s == s_wPb ||
+      s == s_abP || s == s_aPb)
+    rv |= ios_base::binary;
+
+  return rv;
+}
+
 
 } /* namespace std::<unnamed> */
 
@@ -138,7 +184,30 @@ char* fgets(char*__restrict s, int n, FILE*__restrict f) noexcept {
 int fileno(FILE*) noexcept;  // XXX: implement file descriptors
 void flockfile(FILE*) noexcept;  // XXX
 
-FILE* fmemopen(void*__restrict, size_t, const char*__restrict) noexcept;  // XXX
+FILE* fmemopen(void*__restrict buf, size_t size,
+               const char*__restrict mode_str) noexcept {
+  try {
+    ios_base::openmode mode = openmode_from_string(mode_str);
+
+    if (buf) {
+      using buf_type = basic_memstreambuf_noalloc<char>;
+      using stream_type = basic_memstream<char, char_traits<char>, buf_type>;
+      using file_type = iostream_file<stream_type>;
+
+      return new file_type(stream_type(no_publish(),
+                                       static_cast<char*>(buf), size, mode));
+    } else {
+      using buf_type = basic_memstreambuf_exact<char>;
+      using stream_type = basic_memstream<char, char_traits<char>, buf_type>;
+      using file_type = iostream_file<stream_type>;
+
+      return new file_type(stream_type(no_publish(), nullptr, size, mode));
+    }
+  } catch (...) {
+    errno_catch_handler();
+    return nullptr;
+  }
+}
 
 FILE* fopen(const char*__restrict, const char*__restrict) noexcept;  // XXX fstream
 

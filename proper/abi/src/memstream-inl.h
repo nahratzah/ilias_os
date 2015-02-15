@@ -43,6 +43,18 @@ basic_memstreambuf<Char, Traits>::basic_memstreambuf(char_type*& pub_buf,
 {}
 
 template<typename Char, typename Traits>
+basic_memstreambuf<Char, Traits>::basic_memstreambuf(no_publish,
+                                                     char_type* init_buf,
+                                                     size_type init_len,
+                                                     ios_base::openmode mode)
+    noexcept
+: mode_(mode),
+  buf_(init_buf),
+  buf_end_(init_buf + init_len),
+  len_(init_len)
+{}
+
+template<typename Char, typename Traits>
 basic_memstreambuf<Char, Traits>::basic_memstreambuf(
     basic_memstreambuf&& other)
 : mode_(other.mode_)
@@ -52,10 +64,7 @@ basic_memstreambuf<Char, Traits>::basic_memstreambuf(
 
 template<typename Char, typename Traits>
 basic_memstreambuf<Char, Traits>::~basic_memstreambuf() noexcept {
-  if (!pub_buf_)
-    free(buf_);
-  else
-    sync();
+  sync();
 }
 
 template<typename Char, typename Traits>
@@ -192,6 +201,8 @@ auto basic_memstreambuf<Char, Traits>::seekpos(
 
 template<typename Char, typename Traits>
 auto basic_memstreambuf<Char, Traits>::sync() -> int {
+  if ((mode_ & ios_base::out) != ios_base::out) return 0;
+
   /* Append nul char_type (epptr always points at the end of the buffer). */
   if (this->epptr()) *this->epptr() = char_type();
 
@@ -232,6 +243,37 @@ auto basic_memstreambuf<Char, Traits>::extend_(size_type n) -> bool {
   size_type new_size;
 
   /* Allocate buffer. */
+  tie(buf, new_size) = extend_realloc_(buf_, cur_size, n);
+  if (!buf) return false;
+  /* No exceptions past this point. */
+
+  /* Update get pointers. */
+  if ((mode_ & ios_base::in) == ios_base::in)
+    this->setg(buf, buf + (this->gptr() - begin), buf + cur_size + n);
+  /* Update put pointers. */
+  size_type cur_pos = this->pptr() - begin;
+  this->setp(buf, buf + cur_size + n);
+  while (_predict_false(cur_pos > INT_MAX)) {
+    this->pbump(INT_MAX);
+    cur_pos -= INT_MAX;
+  }
+  this->pbump(cur_pos);
+  buf_ = buf;
+  buf_end_ = buf + new_size;
+
+  return true;
+}
+
+/*
+ * Allocate at least (cur_size+n+1) bytes, by reallocing buf.
+ */
+template<typename Char, typename Traits>
+auto basic_memstreambuf<Char, Traits>::extend_realloc_(char_type* buf,
+                                                       size_type cur_size,
+                                                       size_type n) ->
+    pair<char_type*, size_type> {
+  size_type new_size;
+
   if (n < cur_size && SIZE_MAX / sizeof(char_type) / 2U > cur_size) {
     if (_predict_true(!umul_overflow(cur_size, 2, &new_size))) {
       size_t bytes;
@@ -258,29 +300,58 @@ auto basic_memstreambuf<Char, Traits>::extend_(size_type n) -> bool {
       }
     }
   }
-  if (!buf) return false;
-  /* No exceptions past this point. */
-
-  /* Update get pointers. */
-  if ((mode_ & ios_base::in) == ios_base::in)
-    this->setg(buf, buf + (this->gptr() - begin), buf + cur_size + n);
-  /* Update put pointers. */
-  size_type cur_pos = this->pptr() - begin;
-  this->setp(buf, buf + cur_size + n);
-  while (_predict_false(cur_pos > INT_MAX)) {
-    this->pbump(INT_MAX);
-    cur_pos -= INT_MAX;
-  }
-  this->pbump(cur_pos);
-  buf_end_ = buf + new_size;
-
-  return true;
+  return make_pair(buf, new_size);
 }
 
 template<typename Char, typename Traits>
 auto swap(basic_memstreambuf<Char, Traits>& x,
           basic_memstreambuf<Char, Traits>& y) -> void {
   x.swap(y);
+}
+
+
+template<typename Char, typename Traits>
+auto basic_memstreambuf_noalloc<Char, Traits>::extend_realloc_(char_type*,
+                                                               size_type,
+                                                               size_type)
+    noexcept -> pair<char_type*, size_type> {
+  return make_pair(nullptr, 0);
+}
+
+
+template<typename Char, typename Traits>
+basic_memstreambuf_exact<Char, Traits>::basic_memstreambuf_exact(
+    basic_memstreambuf_exact&& other)
+: basic_memstreambuf_noalloc<Char, Traits>(move(other))
+{}
+
+template<typename Char, typename Traits>
+basic_memstreambuf_exact<Char, Traits>::basic_memstreambuf_exact(
+    no_publish np, char_type*,
+    size_type size, ios_base::openmode mode)
+: basic_memstreambuf_noalloc<Char, Traits>(np, alloc_(size), size, mode)
+{}
+
+template<typename Char, typename Traits>
+basic_memstreambuf_exact<Char, Traits>::~basic_memstreambuf_exact() noexcept {
+  free(this->get_buf());
+}
+
+template<typename Char, typename Traits>
+auto basic_memstreambuf_exact<Char, Traits>::alloc_(size_type len) ->
+    char_type* {
+  using abi::umul_overflow;
+  using abi::addc;
+
+  void* p = nullptr;
+  size_type carry;
+  size_t bytes;
+  size_type elems = addc(len, 1, 0, &carry);
+  if (_predict_true(carry == 0 &&
+                    !umul_overflow(elems, sizeof(char_type), &bytes)))
+    p = malloc(bytes);
+  if (_predict_false(!p)) throw bad_alloc();
+  return static_cast<char_type*>(p);
 }
 
 
@@ -331,6 +402,7 @@ auto basic_imemstream<Char, Traits>::swap(basic_imemstream& other) -> void {
   this->basic_istream<Char, Traits>::swap(other);
   sb_.swap(other.sb_);
   this->set_rdbuf(&sb_);
+  other.set_rdbuf(&other.sb_);
 }
 
 template<typename Char, typename Traits>
@@ -393,6 +465,7 @@ auto basic_omemstream<Char, Traits>::swap(basic_omemstream& other) -> void {
   this->basic_ostream<Char, Traits>::swap(other);
   sb_.swap(other.sb_);
   this->set_rdbuf(&sb_);
+  other.set_rdbuf(&other.sb_);
 }
 
 template<typename Char, typename Traits>
@@ -408,32 +481,41 @@ auto swap(basic_omemstream<Char, Traits>& x,
 }
 
 
-template<typename Char, typename Traits>
-basic_memstream<Char, Traits>::basic_memstream(ios_base::openmode which)
+template<typename Char, typename Traits, typename S>
+basic_memstream<Char, Traits, S>::basic_memstream(ios_base::openmode which)
 : basic_iostream<Char, Traits>(&this->sb_),
   sb_(which)
 {}
 
-template<typename Char, typename Traits>
-basic_memstream<Char, Traits>::basic_memstream(char_type*& pub_buf,
-                                               size_type& pub_len,
-                                               ios_base::openmode which)
+template<typename Char, typename Traits, typename S>
+basic_memstream<Char, Traits, S>::basic_memstream(char_type*& pub_buf,
+                                                  size_type& pub_len,
+                                                  ios_base::openmode which)
 : basic_iostream<Char, Traits>(&this->sb_),
   sb_(pub_buf, pub_len, which)
 {}
 
-template<typename Char, typename Traits>
-basic_memstream<Char, Traits>::basic_memstream(char_type*& pub_buf,
-                                               size_type& pub_len,
-                                               char_type* init_buf,
-                                               size_type init_len,
-                                               ios_base::openmode which)
+template<typename Char, typename Traits, typename S>
+basic_memstream<Char, Traits, S>::basic_memstream(char_type*& pub_buf,
+                                                  size_type& pub_len,
+                                                  char_type* init_buf,
+                                                  size_type init_len,
+                                                  ios_base::openmode which)
 : basic_iostream<Char, Traits>(&this->sb_),
   sb_(pub_buf, pub_len, init_buf, init_len, which)
 {}
 
-template<typename Char, typename Traits>
-basic_memstream<Char, Traits>::basic_memstream(
+template<typename Char, typename Traits, typename S>
+basic_memstream<Char, Traits, S>::basic_memstream(no_publish np,
+                                                  char_type* init_buf,
+                                                  size_type init_len,
+                                                  ios_base::openmode which)
+: basic_iostream<Char, Traits>(&this->sb_),
+  sb_(np, init_buf, init_len, which)
+{}
+
+template<typename Char, typename Traits, typename S>
+basic_memstream<Char, Traits, S>::basic_memstream(
     basic_memstream&& other)
 : basic_iostream<Char, Traits>(move(other)),
   sb_(move(other.sb_))
@@ -441,8 +523,8 @@ basic_memstream<Char, Traits>::basic_memstream(
   this->set_rdbuf(&sb_);
 }
 
-template<typename Char, typename Traits>
-auto basic_memstream<Char, Traits>::operator=(basic_memstream&& other) ->
+template<typename Char, typename Traits, typename S>
+auto basic_memstream<Char, Traits, S>::operator=(basic_memstream&& other) ->
     basic_memstream& {
   this->basic_iostream<Char, Traits>::operator=(move(other));
   sb_ = move(other.sb_);
@@ -450,22 +532,22 @@ auto basic_memstream<Char, Traits>::operator=(basic_memstream&& other) ->
   return *this;
 }
 
-template<typename Char, typename Traits>
-auto basic_memstream<Char, Traits>::swap(basic_memstream& other) -> void {
+template<typename Char, typename Traits, typename S>
+auto basic_memstream<Char, Traits, S>::swap(basic_memstream& other) -> void {
   this->basic_iostream<Char, Traits>::swap(other);
   sb_.swap(other.sb_);
   this->set_rdbuf(&sb_);
+  other.set_rdbuf(&other.sb_);
 }
 
-template<typename Char, typename Traits>
-auto basic_memstream<Char, Traits>::rdbuf() const ->
-    basic_memstreambuf<char_type, traits_type>* {
-  return const_cast<basic_memstreambuf<char_type, traits_type>*>(&this->sb_);
+template<typename Char, typename Traits, typename S>
+auto basic_memstream<Char, Traits, S>::rdbuf() const -> S* {
+  return const_cast<S*>(&this->sb_);
 }
 
-template<typename Char, typename Traits>
-auto swap(basic_memstream<Char, Traits>& x,
-          basic_memstream<Char, Traits>& y) -> void {
+template<typename Char, typename Traits, typename S>
+auto swap(basic_memstream<Char, Traits, S>& x,
+          basic_memstream<Char, Traits, S>& y) -> void {
   x.swap(y);
 }
 

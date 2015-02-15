@@ -8,6 +8,8 @@
 _namespace_begin(std)
 
 
+struct no_publish {};
+
 template<typename Char, typename Traits = char_traits<Char>>
 class basic_memstreambuf
 : public basic_streambuf<Char, Traits>
@@ -25,6 +27,10 @@ class basic_memstreambuf
   basic_memstreambuf(char_type*&, size_type&,
                      ios_base::openmode = ios_base::in | ios_base::out);
   basic_memstreambuf(char_type*&, size_type&,
+                     char_type*, size_type,
+                     ios_base::openmode = ios_base::in | ios_base::out)
+      noexcept;
+  basic_memstreambuf(no_publish,
                      char_type*, size_type,
                      ios_base::openmode = ios_base::in | ios_base::out)
       noexcept;
@@ -47,9 +53,12 @@ class basic_memstreambuf
                    ios_base::openmode = ios_base::in | ios_base::out)
       override;
   int sync() override;
+  char_type* get_buf() const noexcept { return buf_; }
 
  private:
   bool extend_(size_type);
+  virtual pair<char_type*, size_type> extend_realloc_(char_type*, size_type,
+                                                      size_type);
 
   ios_base::openmode mode_;
   char_type* buf_ = nullptr;
@@ -65,12 +74,46 @@ void swap(basic_memstreambuf<Char, Traits>&,
 
 
 template<typename Char, typename Traits = char_traits<Char>>
+class basic_memstreambuf_noalloc
+: public basic_memstreambuf<Char, Traits>
+{
+ public:
+  using char_type = typename basic_memstreambuf<Char, Traits>::char_type;
+  using size_type = typename basic_memstreambuf<Char, Traits>::size_type;
+
+  using basic_memstreambuf<Char, Traits>::basic_memstreambuf;
+
+ private:
+  pair<char_type*, size_type> extend_realloc_(char_type*, size_type, size_type)
+      noexcept override;
+};
+
+template<typename Char, typename Traits = char_traits<Char>>
+class basic_memstreambuf_exact
+: public basic_memstreambuf_noalloc<Char, Traits>
+{
+ public:
+  using char_type = typename basic_memstreambuf<Char, Traits>::char_type;
+  using size_type = typename basic_memstreambuf<Char, Traits>::size_type;
+
+  basic_memstreambuf_exact(basic_memstreambuf_exact&&);
+  basic_memstreambuf_exact(no_publish, char_type*, size_type,
+                           ios_base::openmode);
+  ~basic_memstreambuf_exact() noexcept override;
+
+ private:
+  static char_type* alloc_(size_type);
+};
+
+
+template<typename Char, typename Traits = char_traits<Char>>
 class basic_imemstream;
 
 template<typename Char, typename Traits = char_traits<Char>>
 class basic_omemstream;
 
-template<typename Char, typename Traits = char_traits<Char>>
+template<typename Char, typename Traits = char_traits<Char>,
+         typename S = basic_memstreambuf<Char, Traits>>
 class basic_memstream;
 
 
@@ -146,7 +189,7 @@ void swap(basic_omemstream<Char, Traits>&,
           basic_omemstream<Char, Traits>&);
 
 
-template<typename Char, typename Traits>
+template<typename Char, typename Traits, typename S>
 class basic_memstream
 : public basic_iostream<Char, Traits>
 {
@@ -165,16 +208,19 @@ class basic_memstream
   basic_memstream(char_type*&, size_type&,
                   char_type*, size_type,
                   ios_base::openmode = ios_base::in | ios_base::out);
+  basic_memstream(no_publish,
+                  char_type*, size_type,
+                  ios_base::openmode = ios_base::in | ios_base::out);
   basic_memstream(basic_memstream&&);
   ~basic_memstream() noexcept override = default;
 
   basic_memstream& operator=(basic_memstream&&);
   void swap(basic_memstream&);
 
-  basic_memstreambuf<char_type, traits_type>* rdbuf() const;
+  S* rdbuf() const;
 
  private:
-  basic_memstreambuf<char_type, traits_type> sb_;
+  S sb_;
 };
 
 template<typename Char, typename Traits>
