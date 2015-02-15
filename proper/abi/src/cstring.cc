@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <locale>
 #include <type_traits>
+#include <algorithm>
 #include <stdimpl/exc_errno.h>
 #include <stdimpl/locale_catalogs.h>
 
@@ -77,7 +78,7 @@ char* strerror_l(int errnum, const locale& loc) noexcept {
       snprintf(buf.data(), buf.size(), "unknown error %d", errnum);
     else
       strlcpy(buf.data(), sys_errlist[errnum], buf.size());
-    impl::errno_catch_handler();
+    impl::errno_catch_handler(false);
   }
 
   return buf.data();
@@ -105,13 +106,46 @@ char* strsignal(int sig) noexcept {
     copy_n(msg.c_str(), msg.size() + 1U, buf.begin());
   } catch (...) {
     snprintf(buf.data(), buf.size(), "%d", sig);
-    impl::errno_catch_handler();
+    impl::errno_catch_handler(false);
   }
   return buf.data();
 }
 
-size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n) noexcept;  // XXX find current locale, invoke strxfrm_l(..., current_locale())
-size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n, locale_t loc) noexcept;  // XXX transform b into a (at most n chars long), such that strcoll_l(b, ..., loc) returns the same result as strcmp(a, ...).  Return length of a, if n was infinite.
+namespace {
+
+size_t strxfrm(char*__restrict a, string_ref b, size_t n, const locale& loc)
+    noexcept {
+  using abi::errno;
+
+  string rv;
+  try {
+    const collate<char>& col = use_facet<collate<char>>(loc);
+    rv = col.transform(b.begin(), b.end());
+  } catch (...) {
+    *a = '\0';
+    try {
+      impl::errno_catch_handler(true);
+    } catch (...) {
+      errno = _ABI_EINVAL;
+    }
+    return 0;  // No return value is reserved to indicate error.
+  }
+
+  if (_predict_true(n > 0))
+    *copy_n(rv.c_str(), min(rv.size(), n - 1U), a) = '\0';
+  return rv.size();
+}
+
+} /* namespace std::<unnamed> */
+
+size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n) noexcept {
+  return strxfrm(a, b, n, locale());
+}
+
+size_t strxfrm_l(char*__restrict a, const char*__restrict b, size_t n,
+                 locale_t loc) noexcept {
+  return strxfrm(a, b, n, reinterpret_cast<const locale&>(loc));
+}
 
 
 size_t strlen(const char* s) noexcept {
