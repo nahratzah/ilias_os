@@ -646,15 +646,11 @@ size_t strcspn(const char* s, const char* set) noexcept {
 }
 
 char* strdup(const char* s) noexcept {
-#ifdef _TEST  // Figure out why malloc doesn't want to connect properly.
-  return nullptr;
-#else
   const size_t sz = strlen(s) + 1U;
   void*const dup = malloc(sz);
   if (_predict_false(dup == nullptr)) return nullptr;
   memcpy(dup, s, sz);
   return reinterpret_cast<char*>(dup);
-#endif
 }
 
 int strncmp(const char* a, const char* b, size_t len) noexcept {
@@ -698,15 +694,11 @@ int strncmp(const char* a, const char* b, size_t len) noexcept {
 }
 
 char* strndup(const char* s, size_t len) noexcept {
-#ifdef _TEST  // Figure out why malloc doesn't want to connect properly.
-  return nullptr;
-#else
   const size_t sz = strnlen(s, len) + 1U;
   void*const dup = malloc(sz);
   if (_predict_false(dup == nullptr)) return nullptr;
   strlcpy(reinterpret_cast<char*>(dup), s, sz);
   return reinterpret_cast<char*>(dup);
-#endif
 }
 
 size_t strnlen(const char* s, size_t len) noexcept {
