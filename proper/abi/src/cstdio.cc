@@ -244,23 +244,13 @@ size_t fread(void*__restrict ptr, size_t size, size_t nitems,
     check_null_file(f);
     auto& in = f->get_istream();
 
-    ussize bytes;
-    if (_predict_false(umul_overflow(ussize(size), ussize(nitems),
-                                     &bytes)) ||
-        _predict_false(bytes > numeric_limits<streamsize>::max())) {
-      size_t n = 0;
-      char*__restrict p = static_cast<char*__restrict>(ptr);
-      for (n = 0; n < nitems && in; p += size) {
-        if (!in.read(p, n)) break;
-        ++n;
-      }
-      return n;
-    } else if (_predict_false(bytes == 0)) {
-      return 0;
-    } else {
-      streamsize read = in.readsome(static_cast<char*>(ptr), bytes);
-      return read / size;
+    size_t n = 0;
+    char*__restrict p = static_cast<char*__restrict>(ptr);
+    for (n = 0; n < nitems && in; p += size) {
+      if (!in.read(p, n)) break;
+      ++n;
     }
+    return n;
   } catch (...) {
     errno_catch_handler();
     return 0;
