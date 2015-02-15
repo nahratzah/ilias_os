@@ -77,7 +77,7 @@ char* strerror_l(int errnum, const locale& loc) noexcept {
       snprintf(buf.data(), buf.size(), "unknown error %d", errnum);
     else
       strlcpy(buf.data(), sys_errlist[errnum], buf.size());
-    impl::errno_catch_handler(false);
+    impl::errno_catch_handler();
   }
 
   return buf.data();
@@ -89,7 +89,27 @@ char* strerror_l(int errnum, locale_t loc) noexcept {
   return strerror_l(errnum, reinterpret_cast<const locale&>(loc));
 }
 
-char* strsignal(int sig) noexcept;  // XXX return signal name in current locale
+char* strsignal(int sig) noexcept {
+  using impl::get_message;
+  using impl::ilias_c_catalog_set;
+
+  static thread_local array<char, 16> buf;
+
+  try {
+    ostringstream dfl;
+    dfl.imbue(locale());
+    dfl << sig;
+    string msg = get_message(ilias_c_catalog_set::strsignal, sig, dfl.str());
+
+    if (msg.size() > buf.size() - 1U) msg.resize(buf.size() - 1U);
+    copy_n(msg.c_str(), msg.size() + 1U, buf.begin());
+  } catch (...) {
+    snprintf(buf.data(), buf.size(), "%d", sig);
+    impl::errno_catch_handler();
+  }
+  return buf.data();
+}
+
 size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n) noexcept;  // XXX find current locale, invoke strxfrm_l(..., current_locale())
 size_t strxfrm(char*__restrict a, const char*__restrict b, size_t n, locale_t loc) noexcept;  // XXX transform b into a (at most n chars long), such that strcoll_l(b, ..., loc) returns the same result as strcmp(a, ...).  Return length of a, if n was infinite.
 

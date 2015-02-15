@@ -13,6 +13,7 @@ extern const string ilias_c_catalog_name;
 
 enum class ilias_c_catalog_set : int {
   strerror = 0,
+  strsignal = 1,
 };
 
 
