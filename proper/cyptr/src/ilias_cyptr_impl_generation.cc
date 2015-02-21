@@ -283,11 +283,6 @@ struct generation::basic_obj_gencmp_ {
 
 basic_obj_lock generation::fix_relation_(basic_obj& src, basic_obj& dst)
     noexcept {
-  /* Heap to hold objects with their generations. */
-  using vector =
-      std::vector<fix_relation_state,
-                  std::temporary_buffer_allocator<fix_relation_state>>;
-
   /*
    * Optimisticly try to acquire src lock.
    * Common case, it's the only lock we need.
@@ -368,8 +363,6 @@ void generation::lock_2_(basic_obj_lock& x, basic_obj_lock& y) noexcept {
  */
 auto generation::fixrel_lock_(basic_obj& src, basic_obj_lock dst) ->
     fixrel_locks {
-  using predicate = std::greater<fix_relation_state>;
-
   assert(dst);
 
   /*
@@ -650,8 +643,6 @@ void generation::marksweep_process_(
 
     /* Process all objects for each edge. */
     for (edge& e : o.edge_list_) {
-      using flags_type = edge::dst_pointer::flags_type;
-
       /*
        * Read the destination pointer and acquire the lock on edge.
        */
