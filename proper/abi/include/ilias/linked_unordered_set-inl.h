@@ -861,8 +861,6 @@ auto operator==(const linked_unordered_set<T, Tag, Hash, Pred, A>& x,
       typename linked_unordered_set<T, Tag, Hash, Pred, A>::const_iterator;
   using reference =
       typename linked_unordered_set<T, Tag, Hash, Pred, A>::const_reference;
-  using size_type =
-      typename linked_unordered_set<T, Tag, Hash, Pred, A>::size_type;
 
   if (x.size() != y.size()) return false;
   auto eq = x.key_eq();

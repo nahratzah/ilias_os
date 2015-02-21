@@ -238,8 +238,8 @@ auto pair<T1, T2>::operator=(pair<U, V>&& o) -> pair& {
 
 template<typename T1, typename T2>
 void pair<T1, T2>::swap(pair& o)
-    noexcept(noexcept(swap(first, o.first)) &&
-             noexcept(swap(second, o.second))) {
+    noexcept(noexcept(_namespace(std)::swap(first, o.first)) &&
+             noexcept(_namespace(std)::swap(second, o.second))) {
   using _namespace(std)::swap;
 
   swap(first, o.first);

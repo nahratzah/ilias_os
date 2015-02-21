@@ -156,8 +156,8 @@ template<typename T1, typename T2> struct pair {
   template<typename U, typename V> pair& operator=(pair<U, V>&&);
 
   void swap(pair& o)
-      noexcept(noexcept(swap(first, o.first)) &&
-               noexcept(swap(second, o.second)));
+      noexcept(noexcept(_namespace(std)::swap(first, o.first)) &&
+               noexcept(_namespace(std)::swap(second, o.second)));
 
  private:
   template<typename F, typename S, size_t... I, size_t... J>

@@ -15,7 +15,8 @@ void array<T, N>::fill(const T& v) {
 template<typename T, size_t N>
 void array<T, N>::swap(array& other)
     noexcept(N == 0 ||
-             noexcept(swap(declval<reference>(), declval<reference>()))) {
+             noexcept(_namespace(std)::swap(declval<reference>(),
+                                            declval<reference>()))) {
   swap_ranges(begin(), end(), other.begin());
 }
 

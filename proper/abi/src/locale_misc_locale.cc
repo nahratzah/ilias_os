@@ -351,7 +351,6 @@ facet_vector_map_ptr classic_facet_vector_map(const string_ref name) {
   using facet_tmp_t =
       vector<facet_vector_map_value_type,
              temporary_buffer_allocator<facet_vector_map_value_type>>;
-  using vtype = facet_vector_map_value_type;
 
   facet_tmp_t facets;
 

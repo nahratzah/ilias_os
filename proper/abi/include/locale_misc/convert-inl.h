@@ -284,7 +284,6 @@ template<typename Codecvt, typename Elem, typename Tr>
 auto wbuffer_convert<Codecvt, Elem, Tr>::xsputn(
     const typename basic_streambuf<Elem, Tr>::char_type* s, streamsize n) ->
     streamsize {
-  using traits_type = typename basic_streambuf<Elem, Tr>::traits_type;
   using char_type = typename basic_streambuf<Elem, Tr>::char_type;
 
   if (!buf_) return 0;  // XXX exception?
@@ -357,7 +356,6 @@ template<typename Codecvt, typename Elem, typename Tr>
 auto wbuffer_convert<Codecvt, Elem, Tr>::underflow_(bool do_bump) ->
     tuple<typename basic_streambuf<Elem, Tr>::int_type, streamsize, bool> {
   using traits_type = typename basic_streambuf<Elem, Tr>::traits_type;
-  using int_type = typename basic_streambuf<Elem, Tr>::int_type;
   using char_type = typename basic_streambuf<Elem, Tr>::char_type;
 
   if (!buf_) return { traits_type::eof(), 0, false };  // XXX exception?

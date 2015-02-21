@@ -841,8 +841,10 @@ template<typename F, typename... Args>
 auto async(launch l, F&& f, Args&&... args) ->
     future<decltype(declval<F>()(declval<Args>()...))> {
   using rv_type = decltype(declval<F>()(declval<Args>()...));
-  using task_type = packaged_task<rv_type(Args...)>;
   using future_type = future<rv_type>;
+#ifndef _SINGLE_THREADED
+  using task_type = packaged_task<rv_type(Args...)>;
+#endif  // ! _SINGLE_THREADED
 
 #ifndef _SINGLE_THREADED
   /* Case for thread. */

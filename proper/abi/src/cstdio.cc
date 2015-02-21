@@ -5,7 +5,6 @@
 #include <climits>
 #include <system_error>
 #include <abi/ext/printf.h>
-#include <abi/misc_int.h>
 #include <stdimpl/exc_errno.h>
 #include <sstream>
 #include <streambuf>
@@ -265,9 +264,6 @@ int fputs(const char*__restrict s, FILE*__restrict f) noexcept {
 
 size_t fread(void*__restrict ptr, size_t size, size_t nitems,
              FILE*__restrict f) noexcept {
-  using abi::umul_overflow;
-  using ussize = make_unsigned_t<streamsize>;
-
   file_lock lck{ f };
 
   try {
@@ -394,9 +390,6 @@ void funlockfile(FILE* f) noexcept {
 
 size_t fwrite(const void*__restrict ptr, size_t size, size_t nitems,
               FILE*__restrict f) noexcept {
-  using abi::umul_overflow;
-  using ussize = make_unsigned_t<streamsize>;
-
   file_lock lck{ f };
 
   size_t n = 0;

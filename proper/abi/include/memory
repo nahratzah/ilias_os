@@ -542,7 +542,7 @@ class bad_weak_ptr : public exception {
  public:
   bad_weak_ptr() noexcept;
   ~bad_weak_ptr() noexcept override;
-  const char* what() const noexcept;
+  const char* what() const noexcept override;
 };
 
 template<typename> class shared_ptr;

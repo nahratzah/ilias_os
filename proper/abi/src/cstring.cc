@@ -60,7 +60,6 @@ int strcoll_l(const char* s1, const char* s2, locale_t loc) noexcept {
 namespace {
 
 char* strerror_l(int errnum, const locale& loc) noexcept {
-  using messages = _namespace(std)::messages<char>;
   using abi::sys_nerr;
   using abi::sys_errlist;
   using abi::errno;
@@ -855,7 +854,6 @@ char* strtok_r(char*__restrict s, const char*__restrict sep,
 }
 
 int strerror_r(int errnum, char* buf, size_t buflen) noexcept {
-  using messages = _namespace(std)::messages<char>;
   using abi::sys_nerr;
   using abi::sys_errlist;
   using abi::errno;

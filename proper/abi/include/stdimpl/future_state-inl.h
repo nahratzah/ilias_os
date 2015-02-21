@@ -407,8 +407,6 @@ auto allocate_future_state(const Alloc& alloc) -> future_state<T>* {
   using type = future_state_nofn<T, void_alloc>;
   using alloc_type = typename allocator_traits<Alloc>::
       template rebind_alloc<type>;
-  using alloc_traits = typename allocator_traits<Alloc>::
-      template rebind_traits<type>;
 
   alloc_type alloc_impl = alloc;
   return new_alloc_deleter<type>(alloc_impl, nullptr, alloc).release();
@@ -423,8 +421,6 @@ auto allocate_future_state(const Alloc& alloc, Fn&& fn, Args&&... args) ->
   using type = future_state_fn<T, void_alloc, decay_t<Fn>, decay_t<Args>...>;
   using alloc_type = typename allocator_traits<Alloc>::
       template rebind_alloc<type>;
-  using alloc_traits = typename allocator_traits<Alloc>::
-      template rebind_traits<type>;
 
   alloc_type alloc_impl = alloc;
   return new_alloc_deleter<type>(alloc_impl, nullptr, alloc,
@@ -441,8 +437,6 @@ auto allocate_future_state_task(const Alloc& alloc, Fn&& fn) ->
   using type = future_state_task_impl<T, void_alloc, decay_t<Fn>>;
   using alloc_type = typename allocator_traits<Alloc>::
       template rebind_alloc<type>;
-  using alloc_traits = typename allocator_traits<Alloc>::
-      template rebind_traits<type>;
 
   alloc_type alloc_impl = alloc;
   return new_alloc_deleter<type>(alloc_impl, nullptr, alloc,
