@@ -136,11 +136,12 @@ constexpr bitset<N>::bitset() noexcept
 template<size_t N>
 constexpr bitset<N>::bitset(unsigned long long v) noexcept
 : bitset(init_tag(),
-         int_type(v) & (N >= numeric_limits<int_type>::digits ?
-                        ~int_type(0) :
-                        (int_type(1) << N) - 1U))
+         static_cast<int_type>(int_type(v) &
+                               (N >= numeric_limits<int_type>::digits ?
+                                ~int_type(0) :
+                                (int_type(1) << N) - 1U)))
 {
-  static_assert(sizeof(int_type) >= sizeof(v),
+  static_assert(sizeof(int_type) >= sizeof(v) || N_int_type <= 1U,
                 "bitset::int_type must be at least unsigned long long");
 }
 
@@ -202,15 +203,15 @@ auto bitset<N>::operator<<=(size_t n) noexcept -> bitset& {
   if (_predict_false(n >= N)) return *this = bitset();
 
   constexpr unsigned int digits = numeric_limits<int_type>::digits;
-  if (n > digits) {
+  if (n >= digits) {
     move_backward(begin(data_), end(data_) - n / digits, end(data_));
     fill(begin(data_), begin(data_) + n / digits, int_type(0));
     n %= digits;
   }
   if (n == 0) return *this;
 
-  int_type* dst = &data_[N_int_type - 1U];
-  while (dst != &data_[0]) {
+  int_type* dst;
+  for (dst = &data_[N_int_type - 1U]; dst != &data_[0]; --dst) {
     int_type* src = dst - 1U;
     *dst = (*dst << n) |
            (*src >> (digits - n));
@@ -225,18 +226,22 @@ auto bitset<N>::operator>>=(size_t n) noexcept -> bitset& {
   if (_predict_false(n >= N)) return *this = bitset();
 
   constexpr unsigned int digits = numeric_limits<int_type>::digits;
-  if (N % digits != 0)
-    data_[N_int_type - 1U] &= (int_type(1) << (N % digits)) - 1U;
-
-  if (n > digits) {
+  if (n >= digits) {
     move(begin(data_) + n / digits, end(data_), begin(data_));
     fill(end(data_) - n / digits, end(data_), int_type(0));
     n %= digits;
   }
   if (n == 0) return *this;
 
-  int_type* dst = &data_[0];
-  while (dst != &data_[N_int_type - 1U]) {
+  /* Prevent high bits with undetermined value from entering bitset. */
+  constexpr int_type tail_msk =
+      (N % digits != 0 ?
+       (int_type(1) << (N % digits)) - 1U :
+       ~int_type(0));
+  data_[N_int_type - 1U] &= tail_msk;
+
+  int_type* dst;
+  for (dst = &data_[0]; dst != &data_[N_int_type - 1U]; ++dst) {
     int_type* src = dst + 1U;
     *dst = (*dst >> n) |
            (*src << (digits - n));
@@ -466,9 +471,9 @@ constexpr bool bitset<N>::eq_1_(const bitset& x, const bitset& y,
       (N % digits != 0 ?
        (int_type(1) << (N % digits)) - 1U :
        ~int_type(0));
-  const int_type msk = (idx == N - 1U ? tail_msk : ~int_type(0));
+  const int_type msk = (idx == N_int_type - 1U ? tail_msk : ~int_type(0));
 
-  return (x[idx] & msk) == (y[idx] & msk);
+  return (x.data_[idx] & msk) == (y.data_[idx] & msk);
 }
 
 template<size_t N>
@@ -522,6 +527,12 @@ auto bitset<0>::to_string(Char, Char) const ->
 }
 
 
+static_assert(bitset<2>(0xf1) == bitset<2>(0x1),
+              "bitset performs incorrect masking");
+static_assert(bitset<9>(0x7) == bitset<9>(0x7),
+              "bitset equality-operation broken");
+static_assert(!(bitset<9>(0x7) == bitset<9>(0xf)),
+              "bitset equality-operation broken");
 static_assert((bitset<2>(0x1) | bitset<2>(0x2)) == bitset<2>(0x3),
               "bitset or-operation broken");
 static_assert((bitset<3>(0x3) & bitset<3>(0x6)) == bitset<3>(0x2),

@@ -39,8 +39,20 @@ class bitset {
       noexcept;
 
  private:
-  using int_type = unsigned long long;
+  /*
+   * Use smallest integer type that can hold all bits,
+   * clamped to unsigned long long size.
+   */
+  static constexpr size_t bytes_ = (N + numeric_limits<char>::digits - 1U) /
+                                   numeric_limits<char>::digits;
+  static constexpr size_t type_bytes_ = (bytes_ < sizeof(unsigned long long) ?
+                                         bytes_ :
+                                         sizeof(unsigned long long));
+  using int_type = make_unsigned_t<char[type_bytes_]>;
 
+  /*
+   * Decide how many integer types we need to hold all bits.
+   */
   static constexpr size_t N_int_type =
       (N + numeric_limits<int_type>::digits - 1U) /
       numeric_limits<int_type>::digits;
