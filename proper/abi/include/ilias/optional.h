@@ -20,6 +20,8 @@ class optional_error
 
   ~optional_error() noexcept override;
 
+  static void __throw()
+      __attribute__((__noreturn__));
   static void __throw(_namespace(std)::string_ref)
       __attribute__((__noreturn__));
   static void __throw(const _namespace(std)::string&)
@@ -37,10 +39,18 @@ class optional {
   static_assert(!_namespace(std)::is_reference<T>::value,
                 "Optional may not be a reference type.");
 
-  static constexpr bool nothrow_copy_() { return _namespace(std)::is_nothrow_copy_constructible<T>::value; }
-  static constexpr bool nothrow_move_() { return _namespace(std)::is_nothrow_copy_constructible<T>::value; }
-  static constexpr bool nothrow_assign_() { return _namespace(std)::is_nothrow_assignable<T, const T&>::value; }
-  static constexpr bool nothrow_move_assign_() { return _namespace(std)::is_nothrow_assignable<T, T&&>::value; }
+  static constexpr bool nothrow_copy_() {
+    return _namespace(std)::is_nothrow_copy_constructible<T>::value;
+  }
+  static constexpr bool nothrow_move_() {
+    return _namespace(std)::is_nothrow_copy_constructible<T>::value;
+  }
+  static constexpr bool nothrow_assign_() {
+    return _namespace(std)::is_nothrow_assignable<T, const T&>::value;
+  }
+  static constexpr bool nothrow_move_assign_() {
+    return _namespace(std)::is_nothrow_assignable<T, T&&>::value;
+  }
 
  public:
   using value_type = T;

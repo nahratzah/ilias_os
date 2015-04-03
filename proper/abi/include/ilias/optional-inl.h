@@ -182,7 +182,7 @@ auto optional<T>::get() -> value_type& {
 template<typename T>
 auto optional<T>::ensure_present_() const -> void {
   if (_predict_false(!is_present()))
-    optional_error::__throw("optional value not present");
+    optional_error::__throw();
 }
 
 
