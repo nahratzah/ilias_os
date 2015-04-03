@@ -14,9 +14,7 @@ include pmap/Makefile.inc
 include vm/Makefile.inc
 
 include contrib/Makefile.ilias_async
-#include "freestanding/Makefile.inc"
 #include "c_util/Makefile.inc"
-#include contrib/freestanding/libcxx/Makefile.inc
 
 # Import build rules.
 include Makefile.rules
