@@ -13,8 +13,8 @@ char* __attribute__((weak)) __cxa_demangle(const char*, char*,
   return nullptr;
 }
 
-char* __attribute__((weak)) __cxa_demangle_gnu3(const char*) noexcept {
-  return nullptr;
+char* __attribute__((weak)) __cxa_demangle_gnu3(const char* mangled) noexcept {
+  return __cxa_demangle(mangled, nullptr, nullptr, nullptr);
 }
 
 } /* namespace __cxxabiv1 */
