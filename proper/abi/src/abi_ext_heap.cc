@@ -1,9 +1,9 @@
 #include <abi/ext/heap.h>
 #include <abi/ext/hash_set.h>
 #include <abi/semaphore.h>
-#include <abi/hashcode.h>
 #include <abi/ext/log2.h>
 #include <abi/panic.h>
+#include <functional>
 #include <mutex>
 #include <new>
 
@@ -102,10 +102,11 @@ class global_heap {
 
 
 inline size_t hash_code(const global_heap::memory& m) noexcept {
-  using abi::hash_code;
+  using _namespace(std)::hash;
   using _namespace(std)::get;
 
-  return hash_code(get<0>(m.get_used_space()));
+  auto addr = get<0>(m.get_used_space());
+  return hash<decltype(addr)>()(addr);
 }
 
 
@@ -412,11 +413,11 @@ auto global_heap::get_singleton() noexcept -> global_heap& {
 
 auto global_heap::lookup_used_addr_(const void* p) const noexcept ->
     const memory* {
-  using abi::hash_code;
+  using _namespace(std)::hash;
   using _namespace(std)::get;
 
   for (const auto& i :
-       used_.get_bucket(used_set::hashcode_2_bucket(hash_code(p))))
+       used_.get_bucket(used_set::hashcode_2_bucket(hash<const void*>()(p))))
     if (get<0>(i.get_used_space()) == p) return &i;
   return nullptr;
 }

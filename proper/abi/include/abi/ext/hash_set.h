@@ -3,7 +3,6 @@
 
 #include <abi/abi.h>
 #include <abi/ext/list.h>
-#include <abi/hashcode.h>
 
 namespace __cxxabiv1 {
 namespace ext {
@@ -150,4 +149,5 @@ class hash_set<T, Buckets, Tag>::const_bucket {
 }} /* namespace __cxxabiv1::ext */
 
 #include <abi/ext/hash_set-inl.h>
+
 #endif /* _ABI_EXT_HASH_SET_H_ */

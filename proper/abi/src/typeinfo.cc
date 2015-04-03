@@ -1,5 +1,6 @@
 #include <typeinfo>
 #include <functional>
+#include <string>
 
 _namespace_begin(std)
 
@@ -31,7 +32,7 @@ const char* bad_typeid::what() const noexcept {
 
 
 size_t type_info::hash_code() const noexcept {
-  return hash<const char*>()(name());
+  return hash<string_ref>()(name());
 }
 
 bool type_info::__is_pointer_p() const noexcept {

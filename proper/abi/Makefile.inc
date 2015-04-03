@@ -10,7 +10,6 @@ ABI_SRCS += abi/src/abi_ext_c_string_ptr.cc
 ABI_SRCS += abi/src/abi_ext_heap.cc
 ABI_SRCS += abi/src/abi_ext_printf.cc
 ABI_SRCS += abi/src/abi_ext_reader.cc
-ABI_SRCS += abi/src/abi_hashcode.cc
 ABI_SRCS += abi/src/abi_linker.cc
 ABI_SRCS += abi/src/abi_memory.cc
 ABI_SRCS += abi/src/abi_misc_int.cc
