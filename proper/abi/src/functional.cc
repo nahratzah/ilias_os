@@ -113,6 +113,12 @@ size_t hash<unsigned long long>::operator()(unsigned long long n) const {
   return hash_impl(n);
 }
 
+#if _USE_INT128
+size_t hash<_TYPES(uint128_t)>::operator()(_TYPES(uint128_t) n) const {
+  return hash_impl(n);
+}
+#endif
+
 size_t hash<float>::operator()(float) const {
   assert_msg(false, "hash<float> needs to be implemented");  // XXX
   return 0;

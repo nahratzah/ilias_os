@@ -668,6 +668,22 @@ template<> struct hash<unsigned long long> {
   size_t operator()(unsigned long long) const;
 };
 
+#if _USE_INT128
+template<> struct hash<_TYPES(int128_t)> {
+  using result_type = size_t;
+  using argument_type = _TYPES(int128_t);
+
+  size_t operator()(_TYPES(int128_t)) const;
+};
+
+template<> struct hash<_TYPES(uint128_t)> {
+  using result_type = size_t;
+  using argument_type = _TYPES(uint128_t);
+
+  size_t operator()(_TYPES(uint128_t)) const;
+};
+#endif
+
 template<> struct hash<float> {
   using result_type = size_t;
   using argument_type = float;

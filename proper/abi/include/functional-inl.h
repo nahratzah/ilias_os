@@ -879,6 +879,12 @@ inline size_t hash<long long>::operator()(long long n) const {
   return hash<unsigned long long>()(n);
 }
 
+#if _USE_INT128
+inline size_t hash<_TYPES(int128_t)>::operator()(_TYPES(int128_t) n) const {
+  return hash<_TYPES(uint128_t)>()(n);
+}
+#endif
+
 template<typename T>
 size_t hash<T*>::operator()(T* p) const {
   return hash<uintptr_t>()(reinterpret_cast<uintptr_t>(p));
