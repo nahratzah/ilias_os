@@ -63,6 +63,7 @@ ILIAS_STD_SRCS += abi/src/ilias_linked_forward_list.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_set.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_unordered_set.cc
 ILIAS_STD_SRCS += abi/src/ilias_stats.cc
+ILIAS_STD_SRCS += abi/src/ilias_optional.cc
 
 include abi/Makefile.compiler_rt.inc
 
