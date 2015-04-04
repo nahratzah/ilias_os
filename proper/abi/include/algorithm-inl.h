@@ -987,6 +987,12 @@ OutputIterator rotate_copy(ForwardIterator b, ForwardIterator middle,
   return copy(b, middle, copy(middle, e, out));
 }
 
+template<typename RandomAccessIterator>
+void random_shuffle(RandomAccessIterator b, RandomAccessIterator e) {
+  for (auto d = distance(b, e); d > 1; --d, ++b)
+    iter_swap(b, next(b, arc4random_uniform64(d - 1)));
+}
+
 template<typename InputIterator, typename Predicate>
 bool is_partitioned(InputIterator b, InputIterator e, Predicate predicate) {
   b = find_if_not(b, e, ref(predicate));

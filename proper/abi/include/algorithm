@@ -254,10 +254,10 @@ template<typename ForwardIterator, typename OutputIterator>
 OutputIterator rotate_copy(ForwardIterator, ForwardIterator, ForwardIterator,
                            OutputIterator);
 
-#if 0 // XXX implement once randomization is implemented
 template<typename RandomAccessIterator>
 void random_shuffle(RandomAccessIterator, RandomAccessIterator);
 
+#if 0 // XXX implement once randomization is implemented
 template<typename RandomAccessIterator, typename RandomNumberGenerator>
 void random_shuffle(RandomAccessIterator, RandomAccessIterator, RandomNumberGenerator&&);
 
