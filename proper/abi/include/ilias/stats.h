@@ -4,6 +4,7 @@
 #include <ilias/stats-fwd.h>
 #include <cdecl.h>
 #include <atomic>
+#include <array>
 #include <cstddef>
 #include <string>
 #include <mutex>
@@ -115,6 +116,24 @@ class stats_counter final
 
  private:
   _namespace(std)::atomic<uint64_t> counter_;
+};
+
+template<size_t N>
+class stats_histogram final
+: public stats_leaf
+{
+ public:
+  stats_histogram(stats_group&, _namespace(std)::string_ref) noexcept;
+  ~stats_histogram() noexcept override;
+
+  void add(size_t, uint64_t n = 1) noexcept;
+  void sub(size_t, uint64_t n = 1) noexcept;
+
+  size_t size() const noexcept { return counters_.size(); }
+  bool empty() const noexcept { return counters_.empty(); }
+
+ private:
+  _namespace(std)::array<_namespace(std)::atomic<uint64_t>, N> counters_;
 };
 
 

@@ -3,6 +3,7 @@
 
 #include <cdecl.h>
 #include <cstddef>
+#include <cstdint>
 
 _namespace_begin(std)
 _cdecl_begin
@@ -23,7 +24,14 @@ void qsort(void*, size_t, size_t, int (*)(const void*, const void*));
 void* bsearch(const void*, const void*, size_t, size_t,
               int (*)(const void*, const void*));
 
+uint32_t arc4random() noexcept;
+uint64_t arc4random64() noexcept;
+void arc4random_buf(void*, size_t) noexcept;
+uint32_t arc4random_uniform(uint32_t) noexcept;
+uint64_t arc4random_uniform64(uint64_t) noexcept;
+
 _cdecl_end
+
 _namespace_end(std)
 
 #if !defined(_TEST) && defined(__cplusplus)
@@ -39,6 +47,12 @@ using std::realloc;
 using std::reallocarray;
 using std::qsort;
 using std::bsearch;
+
+using std::arc4random;
+using std::arc4random64;
+using std::arc4random_buf;
+using std::arc4random_uniform;
+using std::arc4random_uniform64;
 #endif /* !_TEST && __cplusplus */
 
 #endif /* _CSTDLIB_ */
