@@ -291,7 +291,7 @@ auto sha1::calculate(uint8_t rv[DIGEST_LENGTH],
                      const uint8_t* input, size_t len) noexcept -> void {
   sha1 ctx;
   ctx.update(input, len);
-  return ctx.finalize(rv);
+  ctx.finalize(rv);
 }
 
 
