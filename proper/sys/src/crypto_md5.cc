@@ -248,10 +248,12 @@ auto md5::finalize(uint8_t rv[MD5_DIGEST_LENGTH]) noexcept -> void {
   update(PADDING.data(), padlen - 8);  // padlen - 8 <= 64 */
   update(count.data(), count.size());
 
-  uint8_t* rv_iter = rv;
-  for (auto s : state_) {
-    put_32bit_le(rv_iter, s);
-    rv_iter += 4;
+  if (rv) {
+    uint8_t* rv_iter = rv;
+    for (auto s : state_) {
+      put_32bit_le(rv_iter, s);
+      rv_iter += 4;
+    }
   }
 }
 
