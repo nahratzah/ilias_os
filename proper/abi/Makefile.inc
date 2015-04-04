@@ -5,7 +5,6 @@ ABI_SRCS += abi/src/abi_demangle.cc
 ABI_SRCS += abi/src/abi_dynamic_cast.cc
 ABI_SRCS += abi/src/abi_eh.cc
 ABI_SRCS += abi/src/abi_errno.cc
-ABI_SRCS += abi/src/abi_ext_bigint.cc
 ABI_SRCS += abi/src/abi_ext_c_string_ptr.cc
 ABI_SRCS += abi/src/abi_ext_heap.cc
 ABI_SRCS += abi/src/abi_ext_printf.cc
