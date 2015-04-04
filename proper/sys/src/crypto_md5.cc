@@ -28,8 +28,8 @@ namespace crypto {
 using namespace std;
 
 
-constexpr size_t md5::MD5_BLOCK_LENGTH;
-constexpr size_t md5::MD5_DIGEST_LENGTH;
+constexpr size_t md5::BLOCK_LENGTH;
+constexpr size_t md5::DIGEST_LENGTH;
 
 
 namespace {
@@ -53,7 +53,7 @@ inline auto put_32bit_le(uint8_t* cp, uint32_t value) noexcept -> void {
   cp[0] = value >>  0;
 }
 
-constexpr array<uint8_t, md5::MD5_BLOCK_LENGTH> PADDING{{
+constexpr array<uint8_t, md5::BLOCK_LENGTH> PADDING{{
   0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -97,10 +97,10 @@ constexpr auto MD5STEP(uint32_t (*f)(uint32_t, uint32_t, uint32_t),
  * the data and convers bytes into longwords for this routine.
  */
 inline auto md5_transform(uint32_t state[4],
-                          const uint8_t block[md5::MD5_BLOCK_LENGTH])
+                          const uint8_t block[md5::BLOCK_LENGTH])
     noexcept -> void {
   uint32_t a, b, c, d;
-  array<uint32_t, md5::MD5_BLOCK_LENGTH / 4> in;
+  array<uint32_t, md5::BLOCK_LENGTH / 4> in;
 
 #if defined(__BIG_ENDIAN__)
   bcopy(block, in, sizeof(in));
@@ -206,8 +206,8 @@ md5::~md5() noexcept {
  */
 auto md5::update(const uint8_t* input, size_t len) noexcept -> void {
   /* Check how many bytes we already have and how many more we need. */
-  size_t have = static_cast<size_t>(count_ >> 3) % MD5_BLOCK_LENGTH;
-  size_t need = MD5_BLOCK_LENGTH - have;
+  size_t have = static_cast<size_t>(count_ >> 3) % BLOCK_LENGTH;
+  size_t need = BLOCK_LENGTH - have;
 
   /* Update bitcount */
   count_ += static_cast<uint64_t>(len) << 3;
@@ -221,11 +221,11 @@ auto md5::update(const uint8_t* input, size_t len) noexcept -> void {
       have = 0;
     }
 
-    /* Process data in MD5_BLOCK_LENGTH-byte chunks. */
-    while (len >= MD5_BLOCK_LENGTH) {
+    /* Process data in BLOCK_LENGTH-byte chunks. */
+    while (len >= BLOCK_LENGTH) {
       md5_transform(state_.data(), input);
-      input += MD5_BLOCK_LENGTH;
-      len -= MD5_BLOCK_LENGTH;
+      input += BLOCK_LENGTH;
+      len -= BLOCK_LENGTH;
     }
   }
 
@@ -237,14 +237,14 @@ auto md5::update(const uint8_t* input, size_t len) noexcept -> void {
  * Final wrapup - pad to 64-byte boundary with the bit pattern
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-auto md5::finalize(uint8_t rv[MD5_DIGEST_LENGTH]) noexcept -> void {
+auto md5::finalize(uint8_t rv[DIGEST_LENGTH]) noexcept -> void {
   /* Convert count to 8 bytes in little endian order. */
   array<uint8_t, 8> count;
   put_64bit_le(count.begin(), count_);
 
   /* Pad out to 56 mod 64. */
-  size_t padlen = MD5_BLOCK_LENGTH - ((count_ >> 3) % MD5_BLOCK_LENGTH);
-  if (padlen < 1 + 8) padlen += MD5_BLOCK_LENGTH;
+  size_t padlen = BLOCK_LENGTH - ((count_ >> 3) % BLOCK_LENGTH);
+  if (padlen < 1 + 8) padlen += BLOCK_LENGTH;
   update(PADDING.data(), padlen - 8);  // padlen - 8 <= 64 */
   update(count.data(), count.size());
 
@@ -278,7 +278,7 @@ auto md5::calculate(const uint8_t* input, size_t len) noexcept -> digest_type {
 /*
  * Convenience function, for if the entire byte stream is available.
  */
-auto md5::calculate(uint8_t rv[MD5_DIGEST_LENGTH],
+auto md5::calculate(uint8_t rv[DIGEST_LENGTH],
                     const uint8_t* input, size_t len) noexcept -> void {
   md5 ctx;
   ctx.update(input, len);

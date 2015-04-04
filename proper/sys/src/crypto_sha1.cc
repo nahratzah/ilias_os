@@ -23,8 +23,8 @@ namespace crypto {
 
 using namespace std;
 
-constexpr size_t sha1::SHA1_BLOCK_LENGTH;
-constexpr size_t sha1::SHA1_DIGEST_LENGTH;
+constexpr size_t sha1::BLOCK_LENGTH;
+constexpr size_t sha1::DIGEST_LENGTH;
 
 
 namespace {
@@ -32,7 +32,7 @@ namespace {
 
 class block {
  public:
-  block(const uint8_t buffer[sha1::SHA1_BLOCK_LENGTH]) noexcept;
+  block(const uint8_t buffer[sha1::BLOCK_LENGTH]) noexcept;
   ~block() noexcept;
 
   /* (R0+R1), R2, R3, R4 are the different operations used in SHA1 */
@@ -60,8 +60,8 @@ class block {
 };
 
 
-inline block::block(const uint8_t buffer[sha1::SHA1_BLOCK_LENGTH]) noexcept {
-  bcopy(buffer, l_.data(), sha1::SHA1_BLOCK_LENGTH);
+inline block::block(const uint8_t buffer[sha1::BLOCK_LENGTH]) noexcept {
+  bcopy(buffer, l_.data(), sha1::BLOCK_LENGTH);
 }
 
 inline block::~block() noexcept {
@@ -122,7 +122,7 @@ inline auto block::R4(uint32_t& v, uint32_t& w, uint32_t& x,
 
 /* Hash a single 512-bit block.  This is the core of the algorithm. */
 auto sha1_transform(uint32_t state[5],
-                    const uint8_t buffer[sha1::SHA1_BLOCK_LENGTH])
+                    const uint8_t buffer[sha1::BLOCK_LENGTH])
     noexcept -> void {
   block workspace{ buffer };
 
@@ -248,7 +248,7 @@ auto sha1::update(const uint8_t* data, size_t len) noexcept -> void {
 }
 
 /* Add padding and return message digest. */
-auto sha1::finalize(uint8_t rv[SHA1_DIGEST_LENGTH]) noexcept -> void {
+auto sha1::finalize(uint8_t rv[DIGEST_LENGTH]) noexcept -> void {
   array<uint8_t, 8> finalcount;
 
   for (size_t i = 0; i < 8; ++i) {
@@ -262,7 +262,7 @@ auto sha1::finalize(uint8_t rv[SHA1_DIGEST_LENGTH]) noexcept -> void {
          finalcount.size());  // Should cause a sha1_transform
 
   if (rv) {
-    for (size_t i = 0; i < SHA1_DIGEST_LENGTH; ++i)
+    for (size_t i = 0; i < DIGEST_LENGTH; ++i)
       rv[i] = state_[i >> 2] >> ((3 - (i & 3)) & 0xffU);
   }
   abi::safe_memzero(finalcount.data(), finalcount.size());
@@ -287,7 +287,7 @@ auto sha1::calculate(const uint8_t* input, size_t len) noexcept ->
 /*
  * Convenience function, for if the entire byte stream is available.
  */
-auto sha1::calculate(uint8_t rv[SHA1_DIGEST_LENGTH],
+auto sha1::calculate(uint8_t rv[DIGEST_LENGTH],
                      const uint8_t* input, size_t len) noexcept -> void {
   sha1 ctx;
   ctx.update(input, len);

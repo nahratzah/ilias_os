@@ -10,10 +10,10 @@ namespace crypto {
 
 class sha1 {
  public:
-  static constexpr size_t SHA1_BLOCK_LENGTH = 64;
-  static constexpr size_t SHA1_DIGEST_LENGTH = 20;
+  static constexpr size_t BLOCK_LENGTH = 64;
+  static constexpr size_t DIGEST_LENGTH = 20;
 
-  using digest_type = std::array<uint8_t, SHA1_DIGEST_LENGTH>;
+  using digest_type = std::array<uint8_t, DIGEST_LENGTH>;
 
   sha1() noexcept = default;
   ~sha1() noexcept;
@@ -21,14 +21,14 @@ class sha1 {
   void update(const uint8_t*, size_t) noexcept
       __attribute__((__bounded__(__string__, 1, 2)));
   digest_type finalize() noexcept;
-  void finalize(uint8_t[SHA1_DIGEST_LENGTH]) noexcept
-      __attribute__((__bounded__(__minbytes__, 1, SHA1_DIGEST_LENGTH)));
+  void finalize(uint8_t[DIGEST_LENGTH]) noexcept
+      __attribute__((__bounded__(__minbytes__, 1, DIGEST_LENGTH)));
 
   static digest_type calculate(const uint8_t*, size_t) noexcept
       __attribute__((__bounded__(__string__, 1, 2)));
-  static void calculate(uint8_t[SHA1_DIGEST_LENGTH],
+  static void calculate(uint8_t[DIGEST_LENGTH],
                         const uint8_t*, size_t) noexcept
-      __attribute__((__bounded__(__minbytes__, 1, SHA1_DIGEST_LENGTH)))
+      __attribute__((__bounded__(__minbytes__, 1, DIGEST_LENGTH)))
       __attribute__((__bounded__(__string__, 2, 3)));
 
  private:
@@ -40,7 +40,7 @@ class sha1 {
     0xc3d2e1f0U
   }};
   uint64_t count_ = 0;
-  std::array<uint8_t, SHA1_BLOCK_LENGTH> buffer_;
+  std::array<uint8_t, BLOCK_LENGTH> buffer_;
 };
 
 
