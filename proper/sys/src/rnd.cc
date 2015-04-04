@@ -120,7 +120,6 @@
  */
 
 namespace ilias {
-namespace dev {
 namespace rnd {
 
 
@@ -462,7 +461,7 @@ auto arc4_reinit(void*) noexcept -> void {
 }
 
 
-} /* namespace ilias::dev::rnd::<unnamed> */
+} /* namespace ilias::rnd::<unnamed> */
 
 
 /*
@@ -605,13 +604,13 @@ auto add_timer_randomness(int v) noexcept -> void {
 }
 
 
-}}} /* namespace ilias::dev::rnd */
+}} /* namespace ilias::rnd */
 
 /* These are declared by cstdlib. */
 namespace std {
 
 
-using namespace ilias::dev::rnd;
+using namespace ilias::rnd;
 
 
 /* Return one word of randomnes from an RC4 generator */

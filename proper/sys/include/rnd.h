@@ -8,7 +8,6 @@
 
 
 namespace ilias {
-namespace dev {
 namespace rnd {
 
 
@@ -49,7 +48,7 @@ entropy_source& get_timer_entropy_source() noexcept;
 void add_timer_randomness(int) noexcept;
 
 
-}}} /* namespace ilias::dev::rnd */
+}} /* namespace ilias::dev::rnd */
 
 
 #endif /* _DEV_RND_RND_H_ */
