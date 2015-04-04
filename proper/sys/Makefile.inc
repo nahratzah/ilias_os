@@ -1,4 +1,7 @@
 INCLUDES += -Isys/include
-SRCS += sys/src/crypto_md5.cc
-SRCS += sys/src/crypto_chacha.cc
-SRCS += sys/src/rnd.cc
+SYS_SRCS += sys/src/crypto_md5.cc
+SYS_SRCS += sys/src/crypto_chacha.cc
+SYS_SRCS += sys/src/rnd.cc
+
+SRCS += ${SYS_SRCS}
+SRCS_LOADER += ${SYS_SRCS}

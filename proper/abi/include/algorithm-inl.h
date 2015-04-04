@@ -2,6 +2,7 @@
 #define _ALGORITHM_INL_H_
 
 #include <algorithm>
+#include <cstdlib>
 #include <stdimpl/heap_array.h>
 #include <stdimpl/heap_support.h>
 
@@ -1166,7 +1167,7 @@ void sort(RandomAccessIterator b, RandomAccessIterator e,
    * - rotate the collection to become correctly ordered
    * Sort will proceed recursively on the two partitions.
    */
-  RandomAccessIterator mid = next(b, distance(b, e) / 2U);  // XXX use random generator!
+  RandomAccessIterator mid = next(b, arc4random_uniform64(distance(b, e) - 1U));  // XXX use random generator!
   auto left_mid = partition(
       b, mid,
       bind(logical_not<void>(), bind(ref(predicate), ref(*mid), _1)));
