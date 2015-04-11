@@ -3,11 +3,13 @@
 
 #include <random>
 #include <cassert>
+#include <cmath>
 #include <cstdlib>
 #include <algorithm>
 #include <iterator>
 #include <utility>
 #include <abi/ext/log2.h>
+#include <stdimpl/ziggurat.h>
 
 _namespace_begin(std)
 namespace impl {
@@ -643,7 +645,7 @@ auto seed_seq::generate(RandomAccessIterator begin,
   }
 }
 
-auto seed_seq::size() const -> size_t {
+inline auto seed_seq::size() const -> size_t {
   return v_.size();
 }
 
@@ -929,6 +931,39 @@ auto negative_binomial_distribution<IntType>::operator()(
       ++count;
   }
   return count;
+}
+
+
+template<typename RealType>
+normal_distribution<RealType>::normal_distribution(result_type mean,
+                                                   result_type stddev)
+: p_{ mean, stddev }
+{
+  assert(0 < stddev);
+}
+
+template<typename RealType>
+normal_distribution<RealType>::normal_distribution(const param_type& parm)
+: p_(parm)
+{}
+
+template<typename RealType>
+template<typename URNG>
+auto normal_distribution<RealType>::operator()(URNG& g) -> result_type {
+  return (*this)(g, p_);
+}
+
+template<typename RealType>
+template<typename URNG>
+auto normal_distribution<RealType>::operator()(URNG& g,
+                                               const param_type& parm) ->
+    result_type {
+  const int sign = uniform_int_distribution<int>(0, 1)(g);
+
+  auto x = impl::standard_normal_distribution_ziggurat(g);
+  if (sign == 0) x = -x;
+
+  return x * parm.stddev + parm.mean;
 }
 
 

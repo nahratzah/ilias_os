@@ -9,6 +9,7 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <stdimpl/ziggurat-fwd.h>
 
 _namespace_begin(std)
 
@@ -558,7 +559,31 @@ template<typename RealType = double>
 class extreme_value_distribution;
 
 template<typename RealType = double>
-class normal_distribution;
+class normal_distribution {
+ public:
+  using result_type = RealType;
+
+  struct param_type {
+    result_type mean, stddev;
+  };
+
+  explicit normal_distribution(result_type = 0, result_type = 1);
+  explicit normal_distribution(const param_type&);
+  void reset() {}
+
+  template<typename URNG> result_type operator()(URNG&);
+  template<typename URNG> result_type operator()(URNG&, const param_type&);
+
+  result_type mean() const { return p_.mean; }
+  result_type stddev() const { return p_.stddev; }
+  param_type params() const { return p_; }
+  void params(const param_type& parm) const { p_ = parm; }
+  result_type min() const { return numeric_limits<result_type>::min(); }
+  result_type max() const { return numeric_limits<result_type>::max(); }
+
+ private:
+  param_type p_;
+};
 
 template<typename RealType = double>
 class lognormal_distribution;

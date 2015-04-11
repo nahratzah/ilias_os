@@ -56,6 +56,7 @@ ABI_SRCS += abi/src/stdimpl_locale_catalogs.cc
 ABI_SRCS += abi/src/stdimpl_circular_buffer.cc
 ABI_SRCS += abi/src/stdimpl_exc_errno.cc
 ABI_SRCS += abi/src/stdimpl_future_state.cc
+ABI_SRCS += abi/src/stdimpl_ziggurat_standard_normal_distribution_ziggurat.cc
 
 ILIAS_STD_SRCS += abi/src/ilias_linked_list.cc
 ILIAS_STD_SRCS += abi/src/ilias_linked_forward_list.cc
