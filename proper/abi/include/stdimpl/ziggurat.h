@@ -72,7 +72,7 @@ class pfn_standard_normal_distribution {
 };
 
 
-extern ziggurat<512, pfn_standard_normal_distribution<>>
+extern const ziggurat<512, pfn_standard_normal_distribution<>>
     standard_normal_distribution_ziggurat;
 
 

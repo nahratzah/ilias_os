@@ -4,7 +4,7 @@ _namespace_begin(std)
 namespace impl {
 
 
-ziggurat<512, pfn_standard_normal_distribution<>>
+const ziggurat<512, pfn_standard_normal_distribution<>>
     standard_normal_distribution_ziggurat({
         100, 99, 98, 97, 96, 95, 94, 93, 92, 91,
          90, 89, 88, 87, 86, 85, 84, 83, 82, 81,
