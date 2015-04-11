@@ -990,7 +990,7 @@ OutputIterator rotate_copy(ForwardIterator b, ForwardIterator middle,
 template<typename RandomAccessIterator>
 void random_shuffle(RandomAccessIterator b, RandomAccessIterator e) {
   for (auto d = distance(b, e); d > 1; --d, ++b)
-    iter_swap(b, next(b, arc4random_uniform64(d - 1)));
+    iter_swap(b, next(b, arc4random_uniform64(d)));
 }
 
 template<typename InputIterator, typename Predicate>
@@ -1174,7 +1174,7 @@ void sort(RandomAccessIterator b, RandomAccessIterator e,
    * Sort will proceed recursively on the two partitions.
    */
   RandomAccessIterator mid =
-      next(b, arc4random_uniform64(distance(b, e) - 1U));
+      next(b, arc4random_uniform64(distance(b, e)));
   auto left_mid = partition(
       b, mid,
       bind(logical_not<void>(), bind(ref(predicate), ref(*mid), _1)));
@@ -1241,7 +1241,7 @@ void stable_sort(RandomAccessIterator b, RandomAccessIterator e,
    * Sort will proceed recursively on the two partitions.
    */
   RandomAccessIterator mid =
-      next(b, arc4random_uniform64(distance(b, e) - 1U));
+      next(b, arc4random_uniform64(distance(b, e)));
   auto left_mid = stable_partition(b, mid,
       bind(logical_not<void>(), bind(ref(predicate), ref(*mid), _1)));
   auto right_mid = stable_partition(next(mid), e,
@@ -1399,7 +1399,7 @@ void nth_element(RandomAccessIterator b, RandomAccessIterator nth,
    */
   while (b != e && next(b) != e) {
     RandomAccessIterator mid =
-        next(b, arc4random_uniform64(distance(b, e) - 1U));
+        next(b, arc4random_uniform64(distance(b, e)));
     auto left_mid = partition(
         b, mid,
         bind(logical_not<void>(), bind(ref(predicate), ref(*mid), _1)));
