@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstring>
 #include <algorithm>
+#include <ostream>
 
 _namespace_begin(ilias)
 
@@ -36,6 +37,11 @@ auto stats_group::deregister_child(basic_stats& child) const noexcept -> void {
   children_.unlink(&child);
 }
 
+auto stats_group::as_properties(_namespace(std)::ostream& out) const -> void {
+  _namespace(std)::lock_guard<_namespace(std)::mutex> l{ m_ };
+  for (const auto& child : children_) child.as_properties(out);
+}
+
 
 stats_leaf::~stats_leaf() noexcept {}
 
@@ -59,6 +65,30 @@ auto stats_leaf::deinit() noexcept -> void {
   auto* p = parent();
   assert(p);
   p->deregister_child(*this);
+}
+
+auto stats_leaf::as_properties_(
+    _namespace(std)::ostream& out,
+    const _namespace(std)::atomic<uint64_t>* iter,
+    size_t N) const -> void {
+  using _namespace(std)::string_ref;
+  using _namespace(std)::memory_order_relaxed;
+
+  bool first = true;
+  for (string_ref path_elem : path()) {
+    if (first)
+      first = false;
+    else
+      out << ".";
+    out << path_elem;
+  }
+
+  out << " = [ ";
+  for (size_t i = 0; i < N; ++i, ++iter) {
+    if (i != 0) out << ", ";
+    out << iter->load(memory_order_relaxed);
+  }
+  out << " ]";
 }
 
 
@@ -87,6 +117,29 @@ global_stats_group::operator stats_group&() noexcept {
             },
             p, parent_, name_);
   return *static_cast<stats_group*>(p);
+}
+
+auto global_stats_group::as_properties(_namespace(std)::ostream& out) ->
+    void {
+  const stats_group& self = *this;
+  self.as_properties(out);
+}
+
+
+auto stats_counter::as_properties(_namespace(std)::ostream& out) const ->
+    void {
+  using _namespace(std)::string_ref;
+  using _namespace(std)::memory_order_relaxed;
+
+  bool first = true;
+  for (string_ref path_elem : path()) {
+    if (first)
+      first = false;
+    else
+      out << ".";
+    out << path_elem;
+  }
+  out << " = " << counter_.load(memory_order_relaxed);
 }
 
 

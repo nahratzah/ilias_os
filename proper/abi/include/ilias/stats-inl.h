@@ -71,6 +71,12 @@ auto stats_histogram<N>::sub(size_t idx, uint64_t n) noexcept -> void {
   counters_[idx].fetch_sub(n, _namespace(std)::memory_order_relaxed);
 }
 
+template<size_t N>
+auto stats_histogram<N>::as_properties(_namespace(std)::ostream& out) const ->
+    void {
+  as_properties_(out, counters_.data(), counters_.size());
+}
+
 
 _namespace_end(ilias)
 

@@ -6,6 +6,7 @@
 #include <atomic>
 #include <array>
 #include <cstddef>
+#include <iosfwd>
 #include <string>
 #include <mutex>
 #include <vector>
@@ -34,6 +35,7 @@ class basic_stats
 
   _namespace(std)::string_ref name() const noexcept;
   const stats_group* parent() const noexcept;
+  virtual void as_properties(_namespace(std)::ostream&) const = 0;
 
   const stats_type type;
 
@@ -62,6 +64,8 @@ class stats_group
   void register_child(basic_stats&) const noexcept;
   void deregister_child(basic_stats&) const noexcept;
 
+  void as_properties(_namespace(std)::ostream&) const override;
+
  private:
   mutable linked_list<basic_stats> children_;
   mutable _namespace(std)::mutex m_;
@@ -81,6 +85,7 @@ struct global_stats_group final {
 
   global_stats_group*const parent_;
   const char*const name_;
+  void as_properties(_namespace(std)::ostream&);
 
   _namespace(std)::aligned_storage_t<sizeof(stats_group), alignof(stats_group)>
       data_;
@@ -99,6 +104,10 @@ class stats_leaf
  protected:
   void init() noexcept;
   void deinit() noexcept;
+
+  void as_properties_(_namespace(std)::ostream&,
+                      const _namespace(std)::atomic<uint64_t>*,
+                      size_t) const;
 };
 
 /*
@@ -113,6 +122,7 @@ class stats_counter final
 
   void add(uint64_t n = 1) noexcept;
   void sub(uint64_t n = 1) noexcept;
+  void as_properties(_namespace(std)::ostream&) const override;
 
  private:
   _namespace(std)::atomic<uint64_t> counter_;
@@ -131,6 +141,7 @@ class stats_histogram final
 
   size_t size() const noexcept { return counters_.size(); }
   bool empty() const noexcept { return counters_.empty(); }
+  void as_properties(_namespace(std)::ostream&) const override;
 
  private:
   _namespace(std)::array<_namespace(std)::atomic<uint64_t>, N> counters_;
