@@ -14,11 +14,12 @@ int at_quick_exit(void (*)()) noexcept;
 void exit(int) noexcept __attribute__((__noreturn__));
 void quick_exit(int) noexcept __attribute__((__noreturn__));
 
-void* malloc(size_t) noexcept;
-void* calloc(size_t, size_t) noexcept;
+void* malloc(size_t) noexcept __attribute__((malloc));
+void* calloc(size_t, size_t) noexcept __attribute__((malloc));
 void free(void*) noexcept;
-void* realloc(void*, size_t) noexcept;
-void* reallocarray(void*, size_t, size_t) noexcept;
+void* realloc(void*, size_t) noexcept __attribute__((warn_unused_result));
+void* reallocarray(void*, size_t, size_t) noexcept
+    __attribute__((warn_unused_result));
 
 void qsort(void*, size_t, size_t, int (*)(const void*, const void*));
 void* bsearch(const void*, const void*, size_t, size_t,

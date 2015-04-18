@@ -33,7 +33,7 @@ char*  strcpy(char*__restrict, const char*__restrict) noexcept
 size_t strcspn(const char*, const char*) noexcept
            __attribute__((nonnull));
 char*  strdup(const char*) noexcept
-           __attribute__((nonnull));
+           __attribute__((nonnull, malloc));
 char*  strerror(int) noexcept;
 int    strerror_r(int, char*, size_t) noexcept;
 size_t strlen(const char*) noexcept;
