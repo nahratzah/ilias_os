@@ -6,21 +6,33 @@
 _namespace_begin(std)
 _cdecl_begin
 
-#define HUGE_VALF	(__builtin_huge_valf())
-#define HUGE_VAL	(__builtin_huge_val())
-#define HUGE_VALL	(__builtin_huge_vall())
+#define HUGE_VALF       (__builtin_huge_valf())
+#define HUGE_VAL        (__builtin_huge_val())
+#define HUGE_VALL       (__builtin_huge_vall())
 
-//#define INFINITY	(__builtin_inff())
-//#define DBL_INFINITY	(__builtin_inf())
-//#define LDBL_INFINITY	(__builtin_infl())
+#define INFINITY        (__builtin_inff())
+#define DBL_INFINITY    (__builtin_inf())
+#define LDBL_INFINITY   (__builtin_infl())
 
-// (__builtin_nanf())
-// (__builtin_nan())
-// (__builtin_nanl())
+#define NAN             (__builtin_nanf(""))
+#define DBL_NAN	        (__builtin_nan(""))
+#define LDBL_NAN        (__builtin_nanl(""))
 
 // (__builtin_nansf())
 // (__builtin_nans())
 // (__builtin_nansl())
+
+#define FLT_MANT_DIG    (24)
+#define FLT_MAX_EXP     (128)
+#define FLT_MIN_EXP     (-125)
+
+#define DBL_MANT_DIG    (53)
+#define DBL_MAX_EXP     (1024)
+#define DBL_MIN_EXP     (-1021)
+
+#define LDBL_MANT_DIG   (64)
+#define LDBL_MAX_EXP    (16384)
+#define LDBL_MIN_EXP    (-16381)
 
 _cdecl_end
 _namespace_end(std)

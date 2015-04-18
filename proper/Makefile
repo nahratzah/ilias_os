@@ -6,6 +6,7 @@ all: kernel
 
 # Import lists of sources.
 include abi/Makefile.inc
+include abi/Makefile.openlibm
 include cyptr/Makefile.inc
 include loader/Makefile.inc
 include loader_exported/Makefile.inc

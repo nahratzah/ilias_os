@@ -4,7 +4,6 @@
 #include <cdecl.h>
 
 _namespace_begin(std)
-_cdecl_begin
 
 #if FLT_EVAL_METHOD == 0
 typedef float float_t;
@@ -16,6 +15,13 @@ typedef double double_t;
 typedef long double float_t;
 typedef long double double_t;
 #endif
+
+_namespace_end(std)
+
+#if !defined(_TEST) && defined(__cplusplus)
+using std::float_t;
+using std::double_t;
+#endif /* !_TEST && __cplusplus */
 
 #define M_El         (2.7182818284590452353602874713526624977572470936999595L)
 #define M_LOG2El     (1.4426950408889634073599246810018921374266459541529859L)
@@ -51,11 +57,6 @@ typedef long double double_t;
 #define FP_FAST_FMAL      ...
 #define FP_ILOGB0         ...
 #define FP_ILOGBNAN       ...
-#define FP_INFINITE       ...
-#define FP_NAN            ...
-#define FP_NORMAL         ...
-#define FP_SUBNORMAL      ...
-#define FP_ZERO           ...
 #define HUGE_VAL          ...
 #define HUGE_VALF         ...
 #define HUGE_VALL         ...
@@ -64,336 +65,531 @@ typedef long double double_t;
 #define math_errhandling  ...
 #endif // 0
 
+#define FP_INFINITE       (1)
+#define FP_NAN            (2)
+#define FP_NORMAL         (3)
+#define FP_SUBNORMAL      (4)
+#define FP_ZERO           (5)
+
 #define MATH_ERRNO        (1)
 #define MATH_ERREXCEPT    (2)
 
 
+#ifdef __cplusplus
+# define _USING_STD(x) using std::x;
+#else
+# define _USING_STD(x) /* NOOP */
+#endif
+
+_cdecl_begin
+_namespace_begin(std)
+
 double      acos(double) noexcept;
-float       acosf(float) noexcept;
-long double acosl(long double) noexcept;
-
 double      acosh(double) noexcept;
-float       acoshf(float) noexcept;
-long double acoshl(long double) noexcept;
-
-float       asin(float) noexcept;
-double      asinf(double) noexcept;
-long double asinl(long double) noexcept;
-
+double      asin(double) noexcept;
 double      asinh(double) noexcept;
-float       asinhf(float) noexcept;
-long double asinhl(long double) noexcept;
-
 double      atan(double) noexcept;
-float       atanf(float) noexcept;
-long double atanl(long double) noexcept;
-
 double      atan2(double, double) noexcept;
-float       atan2f(float, float) noexcept;
-long double atan2l(long double, long double) noexcept;
-
 double      atanh(double) noexcept;
-float       atanhf(float) noexcept;
-long double atanhl(long double) noexcept;
-
 double      cbrt(double) noexcept;
-float       cbrtf(float) noexcept;
-long double cbrtl(long double) noexcept;
-
 double      ceil(double) noexcept;
-float       ceilf(float) noexcept;
-long double ceill(long double) noexcept;
-
 double      copysign(double) noexcept;
-float       copysignf(float) noexcept;
-long double copysignl(long double) noexcept;
-
 double      cos(double) noexcept;
-float       cosf(float) noexcept;
-long double cosl(long double) noexcept;
-
 double      cosh(double) noexcept;
-float       coshf(float) noexcept;
-long double coshl(long double) noexcept;
-
 double      erf(double) noexcept;
-float       erff(float) noexcept;
-long double erfl(long double) noexcept;
-
 double      erfc(double) noexcept;
-float       erfcf(float) noexcept;
-long double erfcl(long double) noexcept;
-
 double      exp(double) noexcept;
-float       expf(float) noexcept;
-long double expl(long double) noexcept;
-
 double      exp2(double) noexcept;
-float       exp2f(float) noexcept;
-long double exp2l(long double) noexcept;
-
 double      expm1(double) noexcept;
-float       expm1f(float) noexcept;
-long double expm1l(long double) noexcept;
-
 double      fabs(double) noexcept;
-float       fabsf(float) noexcept;
-long double fabsl(long double) noexcept;
-
 double      fdim(double, double) noexcept;
-float       fdimf(float, float) noexcept;
-long double fdiml(long double, long double) noexcept;
-
 double      floor(double) noexcept;
-float       floorf(float) noexcept;
-long double floorl(long double) noexcept;
-
 double      fma(double, double, double) noexcept;
-float       fmaf(float, float, float) noexcept;
-long double fmal(long double, long double, long double) noexcept;
-
 double      fmax(double, double) noexcept;
-float       fmaxf(float, float) noexcept;
-long double fmaxl(long double, long double) noexcept;
-
 double      fmin(double, double) noexcept;
-float       fminf(float, float) noexcept;
-long double fminl(long double, long double) noexcept;
-
 double      fmod(double, double) noexcept;
-float       fmodf(float, float) noexcept;
-long double fmodl(long double, long double) noexcept;
-
 double      frexp(double, int*) noexcept;
-float       frexpf(float, int*) noexcept;
-long double frexpl(long double, int*) noexcept;
-
 double      hypot(double, double) noexcept;
-float       hypotf(float, float) noexcept;
-long double hypotl(long double, long double) noexcept;
-
 double      ilogb(double) noexcept;
-float       ilogbf(float) noexcept;
-long double ilogbl(long double) noexcept;
-
 double      j0(double) noexcept;
 double      j1(double) noexcept;
 double      jn(int, double) noexcept;
-
 double      ldexp(double, int) noexcept;
-float       ldexpf(float, int) noexcept;
-long double ldexpl(long double, int) noexcept;
-
 double      lgamma(double) noexcept;
-float       lgammaf(float) noexcept;
-long double lgammal(long double) noexcept;
-
 double      llrint(double) noexcept;
-float       llrintf(float) noexcept;
-long double llrintl(long double) noexcept;
-
 double      llround(double) noexcept;
-float       llroundf(float) noexcept;
-long double llroundl(long double) noexcept;
-
 double      log(double) noexcept;
-float       logf(float) noexcept;
-long double logl(long double) noexcept;
-
 double      log10(double) noexcept;
-float       log10f(float) noexcept;
-long double log10l(long double) noexcept;
-
 double      log1p(double) noexcept;
-float       log1pf(float) noexcept;
-long double log1pl(long double) noexcept;
-
 double      log2(double) noexcept;
-float       log2f(float) noexcept;
-long double log2l(long double) noexcept;
-
 double      logb(double) noexcept;
-float       logbf(float) noexcept;
-long double logbl(long double) noexcept;
-
 double      lrint(double) noexcept;
-float       lrintf(float) noexcept;
-long double lrintl(long double) noexcept;
-
 double      lround(double) noexcept;
-float       lroundf(float) noexcept;
-long double lroundl(long double) noexcept;
-
 double      modf(double, double*) noexcept;
-float       modff(float, float*) noexcept;
-long double modfl(long double, long double*) noexcept;
-
 double      nan(const char*) noexcept;
 float       nanf(const char*) noexcept;
 long double nanl(const char*) noexcept;
-
 double      nearbyint(double) noexcept;
-float       nearbyintf(float) noexcept;
-long double nearbyintl(long double) noexcept;
-
 double      nextafter(double, double) noexcept;
-float       nextafterf(float, float) noexcept;
-long double nextafterl(long double, long double) noexcept;
-
 double      nexttoward(double, long double) noexcept;
-float       nexttowardf(float, long double) noexcept;
-long double nexttowardl(long double, long double) noexcept;
-
 double      pow(double, double) noexcept;
-float       powf(float, float) noexcept;
-long double powl(long double, long double) noexcept;
-
 double      remainder(double, double) noexcept;
-float       remainderf(float, float) noexcept;
-long double remainderl(long double, long double) noexcept;
-
 double      remquo(double, double, int*) noexcept;
-float       remquof(float, float, int*) noexcept;
-long double remquol(long double, long double, int*) noexcept;
-
 double      rint(double) noexcept;
-float       rintf(float) noexcept;
-long double rintl(long double) noexcept;
-
 double      round(double) noexcept;
-float       roundf(float) noexcept;
-long double roundl(long double) noexcept;
-
 double      scalbln(double, long) noexcept;
-float       scalblnf(float, long) noexcept;
-long double scalblnl(long double, long) noexcept;
-
 double      scalbn(double, int) noexcept;
-float       scalbnf(float, int) noexcept;
-long double scalbnl(long double, int) noexcept;
-
 double      sin(double) noexcept;
-float       sinf(float) noexcept;
-long double sinl(long double) noexcept;
-
 double      sinh(double) noexcept;
-float       sinhf(float) noexcept;
-long double sinhl(long double) noexcept;
-
 double      sqrt(double) noexcept;
-float       sqrtf(float) noexcept;
-long double sqrtl(long double) noexcept;
-
 double      tan(double) noexcept;
-float       tanf(float) noexcept;
-long double tanl(long double) noexcept;
-
 double      tanh(double) noexcept;
-float       tanhf(float) noexcept;
-long double tanhl(long double) noexcept;
-
 double      tgamma(double) noexcept;
-float       tgammaf(float) noexcept;
-long double tgammal(long double) noexcept;
-
 double      trunc(double) noexcept;
-float       truncf(float) noexcept;
-long double truncl(long double) noexcept;
-
 double      y0(double) noexcept;
 double      y1(double) noexcept;
 double      yn(double) noexcept;
+
+_namespace_end(std)
+
+_USING_STD(acos)
+float       acosf(float) noexcept;
+long double acosl(long double) noexcept;
+
+_USING_STD(acosh)
+float       acoshf(float) noexcept;
+long double acoshl(long double) noexcept;
+
+_USING_STD(asin)
+float       asinf(float) noexcept;
+long double asinl(long double) noexcept;
+
+_USING_STD(asinh)
+float       asinhf(float) noexcept;
+long double asinhl(long double) noexcept;
+
+_USING_STD(atan)
+float       atanf(float) noexcept;
+long double atanl(long double) noexcept;
+
+_USING_STD(atan2)
+float       atan2f(float, float) noexcept;
+long double atan2l(long double, long double) noexcept;
+
+_USING_STD(atanh)
+float       atanhf(float) noexcept;
+long double atanhl(long double) noexcept;
+
+_USING_STD(cbrt)
+float       cbrtf(float) noexcept;
+long double cbrtl(long double) noexcept;
+
+_USING_STD(ceil)
+float       ceilf(float) noexcept;
+long double ceill(long double) noexcept;
+
+_USING_STD(copysign)
+float       copysignf(float) noexcept;
+long double copysignl(long double) noexcept;
+
+_USING_STD(cos)
+float       cosf(float) noexcept;
+long double cosl(long double) noexcept;
+
+_USING_STD(cosh)
+float       coshf(float) noexcept;
+long double coshl(long double) noexcept;
+
+_USING_STD(erf)
+float       erff(float) noexcept;
+long double erfl(long double) noexcept;
+
+_USING_STD(erfc)
+float       erfcf(float) noexcept;
+long double erfcl(long double) noexcept;
+
+_USING_STD(exp)
+float       expf(float) noexcept;
+long double expl(long double) noexcept;
+
+_USING_STD(exp2)
+float       exp2f(float) noexcept;
+long double exp2l(long double) noexcept;
+
+_USING_STD(expm1)
+float       expm1f(float) noexcept;
+long double expm1l(long double) noexcept;
+
+_USING_STD(fabs)
+float       fabsf(float) noexcept;
+long double fabsl(long double) noexcept;
+
+_USING_STD(fdim)
+float       fdimf(float, float) noexcept;
+long double fdiml(long double, long double) noexcept;
+
+_USING_STD(floor)
+float       floorf(float) noexcept;
+long double floorl(long double) noexcept;
+
+_USING_STD(fma)
+float       fmaf(float, float, float) noexcept;
+long double fmal(long double, long double, long double) noexcept;
+
+_USING_STD(fmax)
+float       fmaxf(float, float) noexcept;
+long double fmaxl(long double, long double) noexcept;
+
+_USING_STD(fmin)
+float       fminf(float, float) noexcept;
+long double fminl(long double, long double) noexcept;
+
+_USING_STD(fmod)
+float       fmodf(float, float) noexcept;
+long double fmodl(long double, long double) noexcept;
+
+_USING_STD(frexp)
+float       frexpf(float, int*) noexcept;
+long double frexpl(long double, int*) noexcept;
+
+_USING_STD(hypot)
+float       hypotf(float, float) noexcept;
+long double hypotl(long double, long double) noexcept;
+
+_USING_STD(ilogb)
+float       ilogbf(float) noexcept;
+long double ilogbl(long double) noexcept;
+
+_USING_STD(j0)
+_USING_STD(j1)
+_USING_STD(jn)
+
+_USING_STD(ldexp)
+float       ldexpf(float, int) noexcept;
+long double ldexpl(long double, int) noexcept;
+
+_USING_STD(lgamma)
+float       lgammaf(float) noexcept;
+long double lgammal(long double) noexcept;
+
+_USING_STD(llrint)
+float       llrintf(float) noexcept;
+long double llrintl(long double) noexcept;
+
+_USING_STD(llround)
+float       llroundf(float) noexcept;
+long double llroundl(long double) noexcept;
+
+_USING_STD(log)
+float       logf(float) noexcept;
+long double logl(long double) noexcept;
+
+_USING_STD(log10)
+float       log10f(float) noexcept;
+long double log10l(long double) noexcept;
+
+_USING_STD(log1p)
+float       log1pf(float) noexcept;
+long double log1pl(long double) noexcept;
+
+_USING_STD(log2)
+float       log2f(float) noexcept;
+long double log2l(long double) noexcept;
+
+_USING_STD(logb)
+float       logbf(float) noexcept;
+long double logbl(long double) noexcept;
+
+_USING_STD(lrint)
+float       lrintf(float) noexcept;
+long double lrintl(long double) noexcept;
+
+_USING_STD(lround)
+float       lroundf(float) noexcept;
+long double lroundl(long double) noexcept;
+
+_USING_STD(modf)
+float       modff(float, float*) noexcept;
+long double modfl(long double, long double*) noexcept;
+
+_USING_STD(nan)
+_USING_STD(nanf)
+_USING_STD(nanl)
+
+_USING_STD(nearbyint)
+float       nearbyintf(float) noexcept;
+long double nearbyintl(long double) noexcept;
+
+_USING_STD(nextafter)
+float       nextafterf(float, float) noexcept;
+long double nextafterl(long double, long double) noexcept;
+
+_USING_STD(nexttoward)
+float       nexttowardf(float, long double) noexcept;
+long double nexttowardl(long double, long double) noexcept;
+
+_USING_STD(pow)
+float       powf(float, float) noexcept;
+long double powl(long double, long double) noexcept;
+
+_USING_STD(remainder)
+float       remainderf(float, float) noexcept;
+long double remainderl(long double, long double) noexcept;
+
+_USING_STD(remquo)
+float       remquof(float, float, int*) noexcept;
+long double remquol(long double, long double, int*) noexcept;
+
+_USING_STD(rint)
+float       rintf(float) noexcept;
+long double rintl(long double) noexcept;
+
+_USING_STD(round)
+float       roundf(float) noexcept;
+long double roundl(long double) noexcept;
+
+_USING_STD(scalbln)
+float       scalblnf(float, long) noexcept;
+long double scalblnl(long double, long) noexcept;
+
+_USING_STD(scalbn)
+float       scalbnf(float, int) noexcept;
+long double scalbnl(long double, int) noexcept;
+
+_USING_STD(sin)
+float       sinf(float) noexcept;
+long double sinl(long double) noexcept;
+
+_USING_STD(sinh)
+float       sinhf(float) noexcept;
+long double sinhl(long double) noexcept;
+
+_USING_STD(sqrt)
+float       sqrtf(float) noexcept;
+long double sqrtl(long double) noexcept;
+
+_USING_STD(tan)
+float       tanf(float) noexcept;
+long double tanl(long double) noexcept;
+
+_USING_STD(tanh)
+float       tanhf(float) noexcept;
+long double tanhl(long double) noexcept;
+
+_USING_STD(tgamma)
+float       tgammaf(float) noexcept;
+long double tgammal(long double) noexcept;
+
+_USING_STD(trunc)
+float       truncf(float) noexcept;
+long double truncl(long double) noexcept;
+
+_USING_STD(y0)
+_USING_STD(y1)
+_USING_STD(yn)
 
 
 extern int signgam;
 
 
+_cdecl_end
+
+_namespace_begin(std)
+
 #if 0
-#define fpclassify(x)
-#define isfinite(x)
 #define isgreater(x, y)
 #define isgreaterequal(x, y)
-#define isinf(x)
 #define isless(x, y)
 #define islessequal(x, y)
 #define islessgreater(x, y)
-#define isnan(x)
-#define isnormal(x)
 #define isunordered(x)
-#define signbit(x)
 #endif
 
+_cdecl_begin
+
+#define fpclassify(x)                                                  \
+    (sizeof(x) == sizeof(float) ?                                      \
+     __fpclassifyf(x) :                                                \
+     (sizeof(x) == sizeof(double) ? __fpclassify(x) :                  \
+                                    __fpclassifyl(x)))
+int __fpclassifyf(float) noexcept __attribute__((pure));
+int __fpclassify(double) noexcept __attribute__((pure));
+int __fpclassifyl(long double) noexcept __attribute__((pure));
+
+#define isfinite(x)                                                    \
+    (sizeof(x) == sizeof(float) ?                                      \
+     __isfinitef(x) :                                                  \
+     (sizeof(x) == sizeof(double) ? __isfinite(x) :                    \
+                                    __isfinitel(x)))
+int __isfinitef(float) noexcept __attribute__((pure));
+int __isfinite(double) noexcept __attribute__((pure));
+int __isfinitel(long double) noexcept __attribute__((pure));
+
+#define isinf(x)                                                       \
+    (sizeof(x) == sizeof(float) ?                                      \
+     __isinff(x) :                                                     \
+     (sizeof(x) == sizeof(double) ? __isinf(x) :                       \
+                                    __isinfl(x)))
+int __isinff(float) noexcept __attribute__((pure));
+int __isinf(double) noexcept __attribute__((pure));
+int __isinfl(long double) noexcept __attribute__((pure));
+
+#define isnan(x)                                                       \
+    (sizeof(x) == sizeof(float) ?                                      \
+     __isnanf(x) :                                                     \
+     (sizeof(x) == sizeof(double) ? __isnan(x) :                       \
+                                    __isnanl(x)))
+int __isnanf(float) noexcept __attribute__((pure));
+int __isnan(double) noexcept __attribute__((pure));
+int __isnanl(long double) noexcept __attribute__((pure));
+
+#define isnormal(x)                                                    \
+    (sizeof(x) == sizeof(float) ?                                      \
+     __isnormalf(x) :                                                  \
+     (sizeof(x) == sizeof(double) ? __isnormal(x) :                    \
+                                    __isnormall(x)))
+int __isnormalf(float) noexcept __attribute__((pure));
+int __isnormal(double) noexcept __attribute__((pure));
+int __isnormall(long double) noexcept __attribute__((pure));
+
+#define signbit(x)                                                     \
+    (sizeof(x) == sizeof(float) ?                                      \
+     __signbitf(x) :                                                   \
+     (sizeof(x) == sizeof(double) ? __signbit(x) :                     \
+                                    __signbitl(x)))
+int __signbitf(float) noexcept __attribute__((pure));
+int __signbit(double) noexcept __attribute__((pure));
+int __signbitl(long double) noexcept __attribute__((pure));
 
 _cdecl_end
 
+
 #ifdef __cplusplus
-inline double abs(double x) noexcept { return fabs(x); }
+float       acos(float) noexcept;
+long double acos(long double) noexcept;
+float       acosh(float) noexcept;
+long double acosh(long double) noexcept;
+float       asin(float) noexcept;
+long double asin(long double) noexcept;
+float       asinh(float) noexcept;
+long double asinh(long double) noexcept;
+float       atan(float) noexcept;
+long double atan(long double) noexcept;
+float       atan2(float, float) noexcept;
+long double atan2(long double, long double) noexcept;
+float       atanh(float) noexcept;
+long double atanh(long double) noexcept;
+float       cbrt(float) noexcept;
+long double cbrt(long double) noexcept;
+float       ceil(float) noexcept;
+long double ceil(long double) noexcept;
+float       copysign(float) noexcept;
+long double copysign(long double) noexcept;
+float       cos(float) noexcept;
+long double cos(long double) noexcept;
+float       cosh(float) noexcept;
+long double cosh(long double) noexcept;
+float       erf(float) noexcept;
+long double erf(long double) noexcept;
+float       erfc(float) noexcept;
+long double erfc(long double) noexcept;
+float       exp(float) noexcept;
+long double exp(long double) noexcept;
+float       exp2(float) noexcept;
+long double exp2(long double) noexcept;
+float       expm1(float) noexcept;
+long double expm1(long double) noexcept;
+float       fabs(float) noexcept;
+long double fabs(long double) noexcept;
+float       fdim(float, float) noexcept;
+long double fdim(long double, long double) noexcept;
+float       floor(float) noexcept;
+long double floor(long double) noexcept;
+float       fma(float, float, float) noexcept;
+long double fma(long double, long double, long double) noexcept;
+float       fmax(float, float) noexcept;
+long double fmax(long double, long double) noexcept;
+float       fmin(float, float) noexcept;
+long double fmin(long double, long double) noexcept;
+float       fmod(float, float) noexcept;
+long double fmod(long double, long double) noexcept;
+float       frexp(float, int*) noexcept;
+long double frexp(long double, int*) noexcept;
+float       hypot(float, float) noexcept;
+long double hypot(long double, long double) noexcept;
+float       ilogb(float) noexcept;
+long double ilogb(long double) noexcept;
+float       ldexp(float, int) noexcept;
+long double ldexp(long double, int) noexcept;
+float       lgamma(float) noexcept;
+long double lgamma(long double) noexcept;
+float       llrint(float) noexcept;
+long double llrint(long double) noexcept;
+float       llround(float) noexcept;
+long double llround(long double) noexcept;
+float       log(float) noexcept;
+long double log(long double) noexcept;
+float       log10(float) noexcept;
+long double log10(long double) noexcept;
+float       log1p(float) noexcept;
+long double log1p(long double) noexcept;
+float       log2(float) noexcept;
+long double log2(long double) noexcept;
+float       logb(float) noexcept;
+long double logb(long double) noexcept;
+float       lrint(float) noexcept;
+long double lrint(long double) noexcept;
+float       lround(float) noexcept;
+long double lround(long double) noexcept;
+float       modf(float, float*) noexcept;
+long double modf(long double, long double*) noexcept;
+float       nearbyint(float) noexcept;
+long double nearbyint(long double) noexcept;
+float       nextafter(float, float) noexcept;
+long double nextafter(long double, long double) noexcept;
+float       nexttoward(float, float) noexcept;
+long double nexttoward(long double, long double) noexcept;
+float       pow(float, float) noexcept;
+long double pow(long double, long double) noexcept;
+float       remainder(float, float) noexcept;
+long double remainder(long double, long double) noexcept;
+float       remquo(float, float, int*) noexcept;
+long double remquo(long double, long double, int*) noexcept;
+float       rint(float) noexcept;
+long double rint(long double) noexcept;
+float       round(float) noexcept;
+long double round(long double) noexcept;
+float       scalbln(float, long) noexcept;
+long double scalbln(long double, long) noexcept;
+float       scalbn(float, int) noexcept;
+long double scalbn(long double, int) noexcept;
+float       sin(float) noexcept;
+long double sin(long double) noexcept;
+float       sinh(float) noexcept;
+long double sinh(long double) noexcept;
+float       sqrt(float) noexcept;
+long double sqrt(long double) noexcept;
+float       tan(float) noexcept;
+long double tan(long double) noexcept;
+float       tanh(float) noexcept;
+long double tanh(long double) noexcept;
+float       tgamma(float) noexcept;
+long double tgamma(long double) noexcept;
+float       trunc(float) noexcept;
+long double trunc(long double) noexcept;
+double abs(double) noexcept;
+float       abs(float) noexcept;
+long double abs(long double) noexcept;
+
+float abs(float x) noexcept;
+double abs(double x) noexcept;
+long double abs(long double x) noexcept;
 #endif
 
 _namespace_end(std)
 
-#if !defined(_TEST) && defined(__cplusplus)
-using std::acos;
-using std::acosf;
-using std::acosh;
-using std::acoshf;
-using std::asin;
-using std::asinh;
-using std::atan;
-using std::atan2;
-using std::atanh;
-using std::cbrt;
-using std::ceil;
-using std::copysign;
-using std::cos;
-using std::cosh;
-using std::erf;
-using std::erfc;
-using std::exp2;
-using std::exp;
-using std::expm1;
-using std::fabs;
-using std::fdim;
-using std::floor;
-using std::fma;
-using std::fmax;
-using std::fmin;
-using std::fmod;
-using std::frexp;
-using std::hypot;
-using std::ilogb;
-using std::ldexp;
-using std::lgamma;
-using std::llrint;
-using std::llround;
-using std::log;
-using std::log10;
-using std::log1p;
-using std::log2;
-using std::logb;
-using std::lrint;
-using std::lround;
-using std::modf;
-using std::nan;
-using std::nanf;
-using std::nanl;
-using std::nearbyint;
-using std::nextafter;
-using std::nexttoward;
-using std::pow;
-using std::remainder;
-using std::remquo;
-using std::rint;
-using std::round;
-using std::scalbln;
-using std::scalbn;
-using std::sin;
-using std::sinh;
-using std::sqrt;
-using std::tan;
-using std::tanh;
-using std::tgamma;
-using std::trunc;
-#endif /* !_TEST && __cplusplus */
+#undef _USING_STD
+
+#include "cmath-inl.h"
 
 #endif /* _CMATH_ */
