@@ -112,6 +112,15 @@ OPENLIBM_SRCS += abi/openlibm_src/ld80/k_sinl.cc
 OPENLIBM_SRCS += abi/openlibm_src/k_cos.cc
 OPENLIBM_SRCS += abi/openlibm_src/k_cosf.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/k_cosl.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_acos.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_acosf.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_acosl.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_acosh.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_acoshf.cc
+OPENLIBM_SRCS += abi/openlibm_src/ld80/e_acoshl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_log1p.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_log1pf.cc
+OPENLIBM_SRCS += abi/openlibm_src/ld80/s_log1pl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}

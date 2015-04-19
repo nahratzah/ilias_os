@@ -131,7 +131,7 @@ struct IEEE_l2bits {
   unsigned int exp   : 15;
   unsigned int sign  :  1;
   unsigned int junkl : 16;
-#if defined(__amd64__) || defined(__x86_64__)
+#ifdef __LP64__
   unsigned int junkh : 32;
 #endif
 };
@@ -141,7 +141,7 @@ struct IEEE_l2bits {
 struct IEEE_l2xbits {
   int64_t man        : 64;
   int64_t expsign    : 16;
-#if defined(__amd64__) || defined(__x86_64__)
+#ifdef __LP64__
   int64_t junk       : 48;
 #else
   int64_t junk       : 16;
