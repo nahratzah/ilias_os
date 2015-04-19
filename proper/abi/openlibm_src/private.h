@@ -124,6 +124,7 @@ struct IEEE_d2bits {
 
 #if defined(__amd64__) || defined(__x86_64__) || defined(__i386__)
 constexpr unsigned int LDBL_MANH_SIZE = 32;
+constexpr unsigned int LDBL_MANL_SIZE = 32;
 
 struct IEEE_l2bits {
   unsigned int manl  : 32;
