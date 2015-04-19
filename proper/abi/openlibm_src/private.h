@@ -226,6 +226,12 @@ inline void mask_nbit_l(IEEE_l2xbits& v) noexcept {
 }
 #endif /* defined(__i386__) || defined(__amd64__) || defined(__x86_64__) */
 
+inline long double set_ldouble_exp(long double d, int16_t se) noexcept {
+  IEEE_l2xbits u = IEEE_l2xbits_from_ldbl(d);
+  u.expsign = se;
+  return ldbl_from_IEEE_l2xbits(u);
+}
+
 
 } /* namespace <unnamed> */
 

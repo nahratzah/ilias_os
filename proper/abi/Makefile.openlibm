@@ -133,6 +133,9 @@ OPENLIBM_SRCS += abi/openlibm_src/e_atan2l.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_atan.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_atanf.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_atanl.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_atanh.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_atanhf.cc
+OPENLIBM_SRCS += abi/openlibm_src/ld80/e_atanhl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}
