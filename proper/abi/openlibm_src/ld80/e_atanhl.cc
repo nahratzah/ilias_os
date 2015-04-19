@@ -33,16 +33,6 @@
 
 using namespace _namespace(std);
 
-namespace {
-
-inline tuple<uint32_t, uint32_t, uint32_t> get_ldouble_words(long double x)
-    noexcept {
-  const IEEE_l2bits u = IEEE_l2bits_from_ldbl(x);
-  return make_tuple(u.exp | u.sign << 15, u.manh, u.manl);
-}
-
-} /* namespace <unnamed> */
-
 long double atanhl(long double x) noexcept {
   static constexpr long double one = 1.0, huge = 1e4900L;
   static constexpr long double zero = 0.0;

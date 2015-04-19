@@ -232,6 +232,14 @@ inline long double set_ldouble_exp(long double d, int16_t se) noexcept {
   return ldbl_from_IEEE_l2xbits(u);
 }
 
+inline auto get_ldouble_words(long double x) noexcept ->
+    _namespace(std)::tuple<int16_t, int32_t, uint32_t> {
+  const IEEE_l2bits u = IEEE_l2bits_from_ldbl(x);
+  int16_t se = u.exp;
+  se |= (u.sign << 15);
+  return _namespace(std)::make_tuple(se, u.manh, u.manl);
+}
+
 
 } /* namespace <unnamed> */
 
@@ -249,6 +257,9 @@ float __kernel_sindf(double) noexcept;
 float __kernel_cosdf(double) noexcept;
 long double __kernel_sinl(long double, long double, int) noexcept;
 long double __kernel_cosl(long double, long double) noexcept;
+
+double __ldexp_exp(double, int) noexcept;
+float __ldexp_expf(float, int) noexcept;
 
 } /* namespace std::impl */
 _namespace_end(std)

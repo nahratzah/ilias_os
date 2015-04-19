@@ -29,16 +29,6 @@
 
 using namespace _namespace(std);
 
-namespace {
-
-inline tuple<uint32_t, uint32_t, uint32_t> get_ldouble_words(long double x)
-    noexcept {
-  const IEEE_l2bits u = IEEE_l2bits_from_ldbl(x);
-  return make_tuple(u.exp | u.sign << 15, u.manh, u.manl);
-}
-
-} /* namespace <unnamed> */
-
 long double acoshl(long double x) noexcept {
   static constexpr long double one = 1.0;
   static constexpr long double ln2 = 6.931471805599453094287e-01L; /* 0x3FFE, 0xB17217F7, 0xD1CF79AC */
