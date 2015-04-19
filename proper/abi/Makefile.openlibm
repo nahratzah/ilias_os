@@ -121,6 +121,9 @@ OPENLIBM_SRCS += abi/openlibm_src/ld80/e_acoshl.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_log1p.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_log1pf.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/s_log1pl.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_asin.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_asinf.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_asinl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}
