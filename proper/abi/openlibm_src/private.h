@@ -216,13 +216,18 @@ inline long double ldbl_from_IEEE_l2xbits(IEEE_l2xbits v) noexcept {
 
 #if defined(__i386__) || defined(__amd64__) || defined(__x86_64__)
 inline void mask_nbit_l(IEEE_l2bits& v) noexcept {
-  constexpr unsigned int LDBL_NBIT = 0x80000000;
+  constexpr uint32_t LDBL_NBIT = 0x80000000;
   v.manh &= ~LDBL_NBIT;
 }
 
 inline void mask_nbit_l(IEEE_l2xbits& v) noexcept {
   constexpr uint64_t LDBL_NBIT = 0x8000000000000000LL;
   v.man &= ~LDBL_NBIT;
+}
+
+constexpr uint32_t masked_nbit_l(uint32_t manh) noexcept {
+  constexpr uint32_t LDBL_NBIT = 0x80000000;
+  return manh & ~LDBL_NBIT;
 }
 #endif /* defined(__i386__) || defined(__amd64__) || defined(__x86_64__) */
 

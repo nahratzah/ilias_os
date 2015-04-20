@@ -78,6 +78,7 @@ OPENLIBM_SRCS_64 += abi/openlibm_src/s_ceill.cc
 OPENLIBM_SRCS_64 += abi/openlibm_src/s_floor.cc
 OPENLIBM_SRCS_64 += abi/openlibm_src/s_floorf.cc
 OPENLIBM_SRCS_64 += abi/openlibm_src/s_floorl.cc
+OPENLIBM_SRCS_64 += abi/openlibm_src/e_fmod.cc
 
 OPENLIBM_SRCS += abi/openlibm_src/s_fpclassify.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_isfinite.cc
@@ -144,6 +145,8 @@ OPENLIBM_SRCS += abi/openlibm_src/s_expm1f.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/s_expm1l.cc
 OPENLIBM_SRCS += abi/openlibm_src/k_exp.cc
 OPENLIBM_SRCS += abi/openlibm_src/k_expf.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_fmodf.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_fmodl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}
