@@ -147,6 +147,9 @@ OPENLIBM_SRCS += abi/openlibm_src/k_exp.cc
 OPENLIBM_SRCS += abi/openlibm_src/k_expf.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_fmodf.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_fmodl.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_hypot.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_hypotf.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_hypotl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}

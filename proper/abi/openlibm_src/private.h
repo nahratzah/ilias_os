@@ -245,6 +245,29 @@ inline auto get_ldouble_words(long double x) noexcept ->
   return _namespace(std)::make_tuple(se, u.manh, u.manl);
 }
 
+inline auto set_ldouble_words(int16_t expsign, int32_t manh, uint32_t manl)
+    noexcept -> long double {
+  IEEE_l2bits u;
+
+  u.exp = expsign & 0x7fff;
+  u.sign = static_cast<uint16_t>(expsign) >> 15;
+  u.manh = manh;
+  u.manl = manl;
+
+  return ldbl_from_IEEE_l2bits(u);
+}
+
+inline auto mod_ldbl_expsign(long double x, int16_t expsign) noexcept ->
+    long double {
+  using _namespace(std)::ignore;
+  using _namespace(std)::tie;
+
+  int32_t manh;
+  uint32_t manl;
+  tie(ignore, manh, manl) = get_ldouble_words(x);
+  return set_ldouble_words(expsign, manh, manl);
+}
+
 
 } /* namespace <unnamed> */
 
