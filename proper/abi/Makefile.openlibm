@@ -166,6 +166,9 @@ OPENLIBM_SRCS += abi/openlibm_src/ld80/e_log10l.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_log2.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_log2f.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/e_log2l.cc
+# OPENLIBM_SRCS += abi/openlibm_src/e_remainder.cc
+# OPENLIBM_SRCS += abi/openlibm_src/e_remainderf.cc
+# OPENLIBM_SRCS += abi/openlibm_src/e_remainderl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}
