@@ -152,6 +152,12 @@ OPENLIBM_SRCS += abi/openlibm_src/e_fmodl.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_hypot.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_hypotf.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_hypotl.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_lgamma.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_lgammaf.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_lgammal.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_lgamma_r.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_lgammaf_r.cc
+OPENLIBM_SRCS += abi/openlibm_src/ld80/e_lgammal_r.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}

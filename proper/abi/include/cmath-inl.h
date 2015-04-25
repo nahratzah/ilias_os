@@ -211,6 +211,13 @@ inline long double lgamma(long double x) noexcept {
   return lgammal(x);
 }
 
+inline float lgamma_r(float x, int* signgam) noexcept {
+  return lgammaf_r(x, signgam);
+}
+inline long double lgamma_r(long double x, int* signgam) noexcept {
+  return lgammal_r(x, signgam);
+}
+
 inline float llrint(float x) noexcept {
   return llrintf(x);
 }

@@ -84,6 +84,8 @@ using std::double_t;
 _cdecl_begin
 _namespace_begin(std)
 
+extern thread_local int signgam;
+
 double      acos(double) noexcept;
 double      acosh(double) noexcept;
 double      asin(double) noexcept;
@@ -116,6 +118,7 @@ double      j1(double) noexcept;
 double      jn(int, double) noexcept;
 double      ldexp(double, int) noexcept;
 double      lgamma(double) noexcept;
+double      lgamma_r(double, int*) noexcept;
 double      llrint(double) noexcept;
 double      llround(double) noexcept;
 double      log(double) noexcept;
@@ -272,6 +275,10 @@ _USING_STD(lgamma)
 float       lgammaf(float) noexcept;
 long double lgammal(long double) noexcept;
 
+_USING_STD(lgamma_r)
+float       lgammaf_r(float, int*) noexcept;
+long double lgammal_r(long double, int*) noexcept;
+
 _USING_STD(llrint)
 float       llrintf(float) noexcept;
 long double llrintl(long double) noexcept;
@@ -388,8 +395,7 @@ _USING_STD(y0)
 _USING_STD(y1)
 _USING_STD(yn)
 
-
-extern int signgam;
+_USING_STD(signgam)
 
 
 _cdecl_end
@@ -523,6 +529,8 @@ float       ldexp(float, int) noexcept;
 long double ldexp(long double, int) noexcept;
 float       lgamma(float) noexcept;
 long double lgamma(long double) noexcept;
+float       lgamma_r(float, int*) noexcept;
+long double lgamma_r(long double, int*) noexcept;
 float       llrint(float) noexcept;
 long double llrint(long double) noexcept;
 float       llround(float) noexcept;
@@ -586,7 +594,9 @@ double abs(double x) noexcept;
 long double abs(long double x) noexcept;
 #endif
 
+
 _namespace_end(std)
+
 
 #undef _USING_STD
 
