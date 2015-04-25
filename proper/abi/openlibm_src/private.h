@@ -289,6 +289,9 @@ long double __kernel_cosl(long double, long double) noexcept;
 double __ldexp_exp(double, int) noexcept;
 float __ldexp_expf(float, int) noexcept;
 
+double k_log1p(double) noexcept;
+float k_log1pf(float) noexcept;
+
 } /* namespace std::impl */
 _namespace_end(std)
 
