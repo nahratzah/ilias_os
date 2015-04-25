@@ -172,9 +172,12 @@ OPENLIBM_SRCS += abi/openlibm_src/ld80/e_log2l.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_sinh.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_sinhf.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/e_sinhl.cc
-OPENLIBM_SRCS += abi/openlibm_src/e_sqrt.cc
-OPENLIBM_SRCS += abi/openlibm_src/e_sqrtf.cc
-OPENLIBM_SRCS += abi/openlibm_src/e_sqrtl.cc
+# OPENLIBM_SRCS += abi/openlibm_src/e_sqrt.cc
+# OPENLIBM_SRCS += abi/openlibm_src/e_sqrtf.cc
+# OPENLIBM_SRCS += abi/openlibm_src/e_sqrtl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_asinh.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_asinhf.cc
+OPENLIBM_SRCS += abi/openlibm_src/ld80/s_asinhl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}
