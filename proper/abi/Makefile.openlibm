@@ -97,6 +97,7 @@ OPENLIBM_SRCS += abi/openlibm_src/ld80/e_expl.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/e_logl.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_j0.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_j1.cc
+OPENLIBM_SRCS += abi/openlibm_src/e_jn.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_rem_pio2.cc
 OPENLIBM_SRCS += abi/openlibm_src/e_rem_pio2f.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/e_rem_pio2l.cc
