@@ -2,6 +2,7 @@
 #define _CMATH_
 
 #include <cdecl.h>
+#include <climits>
 
 _namespace_begin(std)
 
@@ -55,8 +56,10 @@ using std::double_t;
 #define FP_FAST_FMA       ...
 #define FP_FAST_FMAF      ...
 #define FP_FAST_FMAL      ...
-#define FP_ILOGB0         ...
-#define FP_ILOGBNAN       ...
+#endif // 0
+#define FP_ILOGB0         (-INT_MAX)
+#define FP_ILOGBNAN       (INT_MAX)
+#if 0 // XXX
 #define HUGE_VAL          ...
 #define HUGE_VALF         ...
 #define HUGE_VALL         ...
@@ -112,7 +115,7 @@ double      fmin(double, double) noexcept;
 double      fmod(double, double) noexcept;
 double      frexp(double, int*) noexcept;
 double      hypot(double, double) noexcept;
-double      ilogb(double) noexcept;
+int         ilogb(double) noexcept;
 double      j0(double) noexcept;
 double      j1(double) noexcept;
 double      jn(int, double) noexcept;
@@ -260,8 +263,8 @@ float       hypotf(float, float) noexcept;
 long double hypotl(long double, long double) noexcept;
 
 _USING_STD(ilogb)
-float       ilogbf(float) noexcept;
-long double ilogbl(long double) noexcept;
+int         ilogbf(float) noexcept;
+int         ilogbl(long double) noexcept;
 
 _USING_STD(j0)
 _USING_STD(j1)
@@ -523,8 +526,8 @@ float       frexp(float, int*) noexcept;
 long double frexp(long double, int*) noexcept;
 float       hypot(float, float) noexcept;
 long double hypot(long double, long double) noexcept;
-float       ilogb(float) noexcept;
-long double ilogb(long double) noexcept;
+int         ilogb(float) noexcept;
+int         ilogb(long double) noexcept;
 float       ldexp(float, int) noexcept;
 long double ldexp(long double, int) noexcept;
 float       lgamma(float) noexcept;

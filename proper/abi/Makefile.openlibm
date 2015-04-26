@@ -191,6 +191,15 @@ OPENLIBM_SRCS += abi/openlibm_src/s_exp2.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_exp2f.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/s_exp2l.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_fdim.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_fma.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_fmaf.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_fmal.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_nextafter.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_nextafterf.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_nextafterl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_ilogb.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_ilogbf.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_ilogbl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}

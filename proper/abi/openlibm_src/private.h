@@ -95,6 +95,22 @@ inline double set_high_word(double d, uint32_t v) noexcept {
   return set_double_from_words(v, get<1>(extract_words(d)));
 }
 
+inline uint64_t extract_word64(double d) noexcept {
+  static_assert(sizeof(double) == sizeof(uint64_t),
+                "sizeof(double) == sizeof(uint64_t)");
+  uint64_t rv;
+  __builtin_memcpy(&rv, &d, sizeof(double));
+  return rv;
+}
+
+inline double insert_word64(uint64_t i) noexcept {
+  static_assert(sizeof(double) == sizeof(uint64_t),
+                "sizeof(double) == sizeof(uint64_t)");
+  double rv;
+  __builtin_memcpy(&rv, &i, sizeof(double));
+  return rv;
+}
+
 
 struct IEEE_f2bits {
 #if __BIG_ENDIAN__

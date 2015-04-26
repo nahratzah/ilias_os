@@ -190,10 +190,10 @@ inline long double hypot(long double x, long double y) noexcept {
   return hypotl(x, y);
 }
 
-inline float ilogb(float x) noexcept {
+inline int ilogb(float x) noexcept {
   return ilogbf(x);
 }
-inline long double ilogb(long double x) noexcept {
+inline int ilogb(long double x) noexcept {
   return ilogbl(x);
 }
 
