@@ -226,6 +226,9 @@ OPENLIBM_SRCS += abi/openlibm_src/s_nearbyint.cc
 # OPENLIBM_SRCS += abi/openlibm_src/s_rint.cc
 # OPENLIBM_SRCS += abi/openlibm_src/s_rintf.cc
 # OPENLIBM_SRCS += abi/openlibm_src/s_rintl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_nexttoward.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_nexttowardf.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_nexttowardl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}
