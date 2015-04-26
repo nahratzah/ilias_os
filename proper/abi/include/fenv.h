@@ -10,6 +10,9 @@
 #endif
 
 #if !defined(TEST) && defined(__cplusplus)
+using std::fenv_t;
+using std::fexcept_t;
+
 using std::feclearexcept;
 using std::fegetexceptflag;
 using std::fesetexceptflag;
