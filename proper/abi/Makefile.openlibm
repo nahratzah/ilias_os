@@ -178,6 +178,9 @@ OPENLIBM_SRCS += abi/openlibm_src/ld80/e_sinhl.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_asinh.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_asinhf.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/s_asinhl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_cbrt.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_cbrtf.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_cbrtl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}
