@@ -600,6 +600,24 @@ long double abs(long double x) noexcept;
 
 _namespace_end(std)
 
+_USING_STD(__fpclassifyf)
+_USING_STD(__fpclassify)
+_USING_STD(__fpclassifyl)
+_USING_STD(__isfinitef)
+_USING_STD(__isfinite)
+_USING_STD(__isfinitel)
+_USING_STD(__isinff)
+_USING_STD(__isinf)
+_USING_STD(__isinfl)
+_USING_STD(__isnanf)
+_USING_STD(__isnan)
+_USING_STD(__isnanl)
+_USING_STD(__isnormalf)
+_USING_STD(__isnormal)
+_USING_STD(__isnormall)
+_USING_STD(__signbitf)
+_USING_STD(__signbit)
+_USING_STD(__signbitl)
 
 #undef _USING_STD
 
