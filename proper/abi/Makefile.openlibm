@@ -206,6 +206,12 @@ OPENLIBM_SRCS += abi/openlibm_src/s_ilogbl.cc
 # OPENLIBM_SRCS += abi/openlibm_src/s_llrint.cc
 # OPENLIBM_SRCS += abi/openlibm_src/s_llrintf.cc
 # OPENLIBM_SRCS += abi/openlibm_src/s_llrintl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_lround.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_lroundf.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_lroundl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_llround.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_llroundf.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_llroundl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}

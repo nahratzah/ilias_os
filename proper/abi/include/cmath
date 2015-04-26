@@ -123,14 +123,14 @@ double      ldexp(double, int) noexcept;
 double      lgamma(double) noexcept;
 double      lgamma_r(double, int*) noexcept;
 long long   llrint(double) noexcept;
-double      llround(double) noexcept;
+long long   llround(double) noexcept;
 double      log(double) noexcept;
 double      log10(double) noexcept;
 double      log1p(double) noexcept;
 double      log2(double) noexcept;
 double      logb(double) noexcept;
 long        lrint(double) noexcept;
-double      lround(double) noexcept;
+long        lround(double) noexcept;
 double      modf(double, double*) noexcept;
 double      nan(const char*) noexcept;
 float       nanf(const char*) noexcept;
@@ -287,8 +287,8 @@ long long   llrintf(float) noexcept;
 long long   llrintl(long double) noexcept;
 
 _USING_STD(llround)
-float       llroundf(float) noexcept;
-long double llroundl(long double) noexcept;
+long long   llroundf(float) noexcept;
+long long   llroundl(long double) noexcept;
 
 _USING_STD(log)
 float       logf(float) noexcept;
@@ -315,8 +315,8 @@ long        lrintf(float) noexcept;
 long        lrintl(long double) noexcept;
 
 _USING_STD(lround)
-float       lroundf(float) noexcept;
-long double lroundl(long double) noexcept;
+long        lroundf(float) noexcept;
+long        lroundl(long double) noexcept;
 
 _USING_STD(modf)
 float       modff(float, float*) noexcept;
@@ -536,8 +536,8 @@ float       lgamma_r(float, int*) noexcept;
 long double lgamma_r(long double, int*) noexcept;
 long long   llrint(float) noexcept;
 long long   llrint(long double) noexcept;
-float       llround(float) noexcept;
-long double llround(long double) noexcept;
+long long   llround(float) noexcept;
+long long   llround(long double) noexcept;
 float       log(float) noexcept;
 long double log(long double) noexcept;
 float       log10(float) noexcept;
@@ -550,8 +550,8 @@ float       logb(float) noexcept;
 long double logb(long double) noexcept;
 long        lrint(float) noexcept;
 long        lrint(long double) noexcept;
-float       lround(float) noexcept;
-long double lround(long double) noexcept;
+long        lround(float) noexcept;
+long        lround(long double) noexcept;
 float       modf(float, float*) noexcept;
 long double modf(long double, long double*) noexcept;
 float       nearbyint(float) noexcept;

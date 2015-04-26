@@ -225,10 +225,10 @@ inline long long llrint(long double x) noexcept {
   return llrintl(x);
 }
 
-inline float llround(float x) noexcept {
+inline long long llround(float x) noexcept {
   return llroundf(x);
 }
-inline long double llround(long double x) noexcept {
+inline long long llround(long double x) noexcept {
   return llroundl(x);
 }
 
@@ -274,10 +274,10 @@ inline long lrint(long double x) noexcept {
   return lrintl(x);
 }
 
-inline float lround(float x) noexcept {
+inline long lround(float x) noexcept {
   return lroundf(x);
 }
-inline long double lround(long double x) noexcept {
+inline long lround(long double x) noexcept {
   return lroundl(x);
 }
 
