@@ -30,6 +30,8 @@
 
 //__FBSDID("$FreeBSD: src/lib/msun/src/s_lrint.c,v 1.1 2005/01/11 23:12:55 das Exp $");
 
+_namespace_begin(std)
+
 /*
  * C99 says we should not raise a spurious inexact exception when an
  * invalid exception is raised.  Unfortunately, the set of inputs
@@ -46,3 +48,5 @@ long lrint(double x) noexcept {
   feupdateenv(&env);
   return d;
 }
+
+_namespace_end(std)

@@ -200,6 +200,12 @@ OPENLIBM_SRCS += abi/openlibm_src/s_nextafterl.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_ilogb.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_ilogbf.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_ilogbl.cc
+# OPENLIBM_SRCS += abi/openlibm_src/s_lrint.cc
+# OPENLIBM_SRCS += abi/openlibm_src/s_lrintf.cc
+# OPENLIBM_SRCS += abi/openlibm_src/s_lrintl.cc
+# OPENLIBM_SRCS += abi/openlibm_src/s_llrint.cc
+# OPENLIBM_SRCS += abi/openlibm_src/s_llrintf.cc
+# OPENLIBM_SRCS += abi/openlibm_src/s_llrintl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}

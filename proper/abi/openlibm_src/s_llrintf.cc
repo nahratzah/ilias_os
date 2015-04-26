@@ -27,13 +27,14 @@
 #include <cmath>
 #include <fenv.h>
 #include "private.h"
-//__FBSDID("$FreeBSD: src/lib/msun/src/s_lrintl.c,v 1.1 2008/01/14 02:12:06 das Exp $");
 
-long lrintl(long double x) noexcept {
+//__FBSDID("$FreeBSD: src/lib/msun/src/s_lrintf.c,v 1.1 2005/01/11 23:12:55 das Exp $");
+
+long long llrintf(float x) noexcept {
   fenv_t env;
 
   feholdexcept(&env);
-  const long d = static_cast<long>(rintl(x));
+  const long long d = static_cast<long long>(rintf(x));
   if (fetestexcept(FE_INVALID)) feclearexcept(FE_INEXACT);
   feupdateenv(&env);
   return d;

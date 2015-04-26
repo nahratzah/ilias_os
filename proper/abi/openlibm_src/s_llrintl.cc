@@ -29,11 +29,11 @@
 #include "private.h"
 //__FBSDID("$FreeBSD: src/lib/msun/src/s_lrintl.c,v 1.1 2008/01/14 02:12:06 das Exp $");
 
-long lrintl(long double x) noexcept {
+long long llrintl(long double x) noexcept {
   fenv_t env;
 
   feholdexcept(&env);
-  const long d = static_cast<long>(rintl(x));
+  const long long d = static_cast<long long>(rintl(x));
   if (fetestexcept(FE_INVALID)) feclearexcept(FE_INEXACT);
   feupdateenv(&env);
   return d;

@@ -218,10 +218,10 @@ inline long double lgamma_r(long double x, int* signgam) noexcept {
   return lgammal_r(x, signgam);
 }
 
-inline float llrint(float x) noexcept {
+inline long long llrint(float x) noexcept {
   return llrintf(x);
 }
-inline long double llrint(long double x) noexcept {
+inline long long llrint(long double x) noexcept {
   return llrintl(x);
 }
 
@@ -267,10 +267,10 @@ inline long double logb(long double x) noexcept {
   return logbl(x);
 }
 
-inline float lrint(float x) noexcept {
+inline long lrint(float x) noexcept {
   return lrintf(x);
 }
-inline long double lrint(long double x) noexcept {
+inline long lrint(long double x) noexcept {
   return lrintl(x);
 }
 

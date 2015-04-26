@@ -27,14 +27,26 @@
 #include <cmath>
 #include <fenv.h>
 #include "private.h"
-//__FBSDID("$FreeBSD: src/lib/msun/src/s_lrintl.c,v 1.1 2008/01/14 02:12:06 das Exp $");
 
-long lrintl(long double x) noexcept {
+//__FBSDID("$FreeBSD: src/lib/msun/src/s_lrint.c,v 1.1 2005/01/11 23:12:55 das Exp $");
+
+_namespace_begin(std)
+
+/*
+ * C99 says we should not raise a spurious inexact exception when an
+ * invalid exception is raised.  Unfortunately, the set of inputs
+ * that overflows depends on the rounding mode when 'dtype' has more
+ * significant bits than 'type'.  Hence, we bend over backwards for the
+ * sake of correctness; an MD implementation could be more efficient.
+ */
+long long llrint(double x) noexcept {
   fenv_t env;
 
   feholdexcept(&env);
-  const long d = static_cast<long>(rintl(x));
+  const long long d = static_cast<long long>(rint(x));
   if (fetestexcept(FE_INVALID)) feclearexcept(FE_INEXACT);
   feupdateenv(&env);
   return d;
 }
+
+_namespace_end(std)
