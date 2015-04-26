@@ -49,6 +49,7 @@ ABI_SRCS += abi/src/system_error.cc
 ABI_SRCS += abi/src/typeinfo.cc
 ABI_SRCS += abi/src/vector.cc
 ABI_SRCS += abi/src/fenv.cc
+ABI_SRCS += abi/src/ieeefp.cc
 ABI_SRCS += abi/src/stdimpl_allocator_cloneable.cc
 ABI_SRCS += abi/src/stdimpl_simple_bitset.cc
 ABI_SRCS += abi/src/stdimpl_stats.cc

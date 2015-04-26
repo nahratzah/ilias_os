@@ -1,7 +1,7 @@
 #ifndef _FENV_H_
 #define _FENV_H_
 
-#if defined(__x86_64__)
+#if defined(__amd64__) || defined(__x86_64__)
 #include <stdimpl/fenv_amd64.h>
 #elif defined(__i386__)
 #include <stdimpl/fenv_i386.h>

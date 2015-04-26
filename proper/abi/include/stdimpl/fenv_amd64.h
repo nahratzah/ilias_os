@@ -35,6 +35,7 @@
 
 #include <cdecl.h>
 #include <cstdint>
+#include "fp_intel_asm.h"
 
 _namespace_begin(std)
 _cdecl_begin
@@ -86,22 +87,6 @@ typedef	uint16_t fexcept_t;
 extern const fenv_t __fe_dfl_env;
 #define	FE_DFL_ENV	(&__fe_dfl_env)
 
-__attribute__((always_inline)) inline void __fldcw(uint16_t cw) noexcept {
-  asm volatile("fldcw %0" : : "m"(cw));
-}
-__attribute__((always_inline)) inline uint16_t __fnstcw() noexcept {
-  uint16_t cw;
-  asm volatile("fnstcw %0" : "=m"(cw));
-  return cw;
-}
-
-__attribute__((always_inline)) inline void __fnclex() noexcept {
-  asm volatile("fnclex");
-}
-__attribute__((always_inline)) inline void __fwait() noexcept {
-  asm volatile("fwait");
-}
-
 __attribute__((always_inline)) inline void __fldenv(const __fenv_t__x87& env)
     noexcept {
   asm volatile("fldenv %0" : : "m"(env));
@@ -118,21 +103,6 @@ __attribute__((always_inline)) inline __fenv_t__x87 __fnstenv() noexcept {
   __fenv_t__x87 env;
   asm volatile("fnstenv %0" : "=m"(env));
   return env;
-}
-
-__attribute__((always_inline)) inline uint16_t __fnstsw() noexcept {
-  uint16_t sw;
-  asm volatile("fnstsw %0" : "=am"(sw));
-  return sw;
-}
-
-__attribute__((always_inline)) inline void __ldmxcsr(uint32_t csr) noexcept {
-  asm volatile("ldmxcsr %0" : : "m"(csr));
-}
-__attribute__((always_inline)) inline uint32_t __stmxcsr() noexcept {
-  uint32_t csr;
-  asm volatile("stmxcsr %0" : "=m" (csr));
-  return csr;
 }
 
 _FENV_INLINE int feclearexcept(int excepts) noexcept {
