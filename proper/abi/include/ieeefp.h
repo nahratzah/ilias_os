@@ -8,17 +8,17 @@
 #endif
 
 #if !defined(TEST) && defined(__cplusplus)
-using _namespace(std)::fp_rnd_t;
-using _namespace(std)::fp_prec_t;
-using _namespace(std)::fp_except_t;
+using std::fp_rnd_t;
+using std::fp_prec_t;
+using std::fp_except_t;
 
-using _namespace(std)::fpgetround;
-using _namespace(std)::fpsetround;
-using _namespace(std)::fpgetprec;
-using _namespace(std)::fpsetprec;
-using _namespace(std)::fpgetmask;
-using _namespace(std)::fpsetmask;
-using _namespace(std)::fpgetsticky;
+using std::fpgetround;
+using std::fpsetround;
+using std::fpgetprec;
+using std::fpsetprec;
+using std::fpgetmask;
+using std::fpsetmask;
+using std::fpgetsticky;
 #endif
 
 #endif /* _IEEEFP_H_ */
