@@ -95,7 +95,7 @@ double      atan2(double, double) noexcept;
 double      atanh(double) noexcept;
 double      cbrt(double) noexcept;
 double      ceil(double) noexcept;
-double      copysign(double) noexcept;
+double      copysign(double, double) noexcept;
 double      cos(double) noexcept;
 double      cosh(double) noexcept;
 double      erf(double) noexcept;
@@ -192,8 +192,8 @@ float       ceilf(float) noexcept;
 long double ceill(long double) noexcept;
 
 _USING_STD(copysign)
-float       copysignf(float) noexcept;
-long double copysignl(long double) noexcept;
+float       copysignf(float, float) noexcept;
+long double copysignl(long double, long double) noexcept;
 
 _USING_STD(cos)
 float       cosf(float) noexcept;
@@ -489,8 +489,8 @@ float       cbrt(float) noexcept;
 long double cbrt(long double) noexcept;
 float       ceil(float) noexcept;
 long double ceil(long double) noexcept;
-float       copysign(float) noexcept;
-long double copysign(long double) noexcept;
+float       copysign(float, float) noexcept;
+long double copysign(long double, long double) noexcept;
 float       cos(float) noexcept;
 long double cos(long double) noexcept;
 float       cosh(float) noexcept;

@@ -71,11 +71,11 @@ inline long double ceil(long double x) noexcept {
   return ceill(x);
 }
 
-inline float copysign(float x) noexcept {
-  return copysignf(x);
+inline float copysign(float x, float y) noexcept {
+  return copysignf(x, y);
 }
-inline long double copysign(long double x) noexcept {
-  return copysignl(x);
+inline long double copysign(long double x, long double y) noexcept {
+  return copysignl(x, y);
 }
 
 inline float cos(float x) noexcept {
