@@ -190,6 +190,7 @@ OPENLIBM_SRCS += abi/openlibm_src/ld80/s_erfl.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_exp2.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_exp2f.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/s_exp2l.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_fdim.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}
