@@ -104,7 +104,7 @@ template<size_t I, typename T, bool = is_empty<T>::value> class cons_elem {
     return static_cast<add_rvalue_reference_t<T>>(self.value_);
   }
 
-  friend auto get_value_(disambiguator, const cons_elem& self) noexcept
+  friend constexpr auto get_value_(disambiguator, const cons_elem& self) noexcept
   -> add_lvalue_reference_t<add_const_t<T>> {
     return self.value_;
   }
@@ -119,7 +119,7 @@ template<size_t I, typename T, bool = is_empty<T>::value> class cons_elem {
     return static_cast<add_rvalue_reference_t<T>>(self.value_);
   }
 
-  friend auto get_value_by_type_(id, const cons_elem& self) noexcept
+  friend constexpr auto get_value_by_type_(id, const cons_elem& self) noexcept
   -> add_lvalue_reference_t<add_const_t<T>> {
     return self.value_;
   }
@@ -426,7 +426,7 @@ template<typename... Types> using sorted_cons_generator_t =
  */
 template<size_t I> struct _get_value {
   template<typename T0, typename... TT>
-  static auto impl(T0&&, TT&&... v)
+  static constexpr auto impl(T0&&, TT&&... v)
       noexcept(noexcept(_get_value<I - 1>::impl(forward<TT>(v)...)))
   -> decltype(_get_value<I - 1>::impl(forward<TT>(v)...)) {
     return _get_value<I - 1>::impl(forward<TT>(v)...);
@@ -435,7 +435,7 @@ template<size_t I> struct _get_value {
 
 template<> struct _get_value<0> {
   template<typename T0, typename... TT>
-  static auto impl(T0&& v, TT&&...)
+  static constexpr auto impl(T0&& v, TT&&...)
       noexcept(noexcept(forward<T0>(v)))
   -> decltype(forward<T0>(v)) {
     return forward<T0>(v);
@@ -443,7 +443,7 @@ template<> struct _get_value<0> {
 };
 
 template<size_t I, typename... Types>
-auto get_value(Types&&... v)
+constexpr auto get_value(Types&&... v)
     noexcept(noexcept(_get_value<I>::impl(forward<Types>(v)...)))
 -> decltype(_get_value<I>::impl(forward<Types>(v)...)) {
   static_assert(sizeof...(Types) > I,

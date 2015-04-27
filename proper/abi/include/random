@@ -1,0 +1,640 @@
+#ifndef _RANDOM_
+#define _RANDOM_
+
+#include <cdecl.h>
+#include <array>
+#include <cstddef>
+#include <initializer_list>
+#include <limits>
+#include <string>
+#include <type_traits>
+#include <vector>
+#include <stdimpl/ziggurat-fwd.h>
+
+_namespace_begin(std)
+
+
+template<typename UIntType, UIntType A, UIntType C, UIntType M>
+class linear_congruential_engine {
+ public:
+  using result_type = UIntType;
+
+  static_assert(M == 0 || A < M, "multiplier < modulus");
+  static_assert(M == 0 || C < M, "increment < modulus");
+
+  static constexpr result_type multiplier = A;
+  static constexpr result_type increment = C;
+  static constexpr result_type modulus = M;
+  static constexpr result_type min() { return (increment == 0U ? 1U : 0U); }
+  static constexpr result_type max() { return modulus - 1U; }
+  static constexpr result_type default_seed = 1U;
+
+  explicit linear_congruential_engine(result_type = default_seed);
+  template<typename Sseq> explicit linear_congruential_engine(Sseq&);  // XXX: iff Sseq is a seed sequence
+  void seed(result_type = default_seed);
+  template<typename Sseq> void seed(Sseq&);  // XXX: iff Sseq is a seed sequence
+
+  result_type operator()();
+  void discard(unsigned long long);
+
+ private:
+  template<typename Sseq> static result_type process_sseq_(Sseq&);
+
+  result_type x_;
+};
+
+template<typename UIntType, size_t W, size_t N, size_t M, size_t R,
+         UIntType A, size_t U,
+         UIntType D, size_t S,
+         UIntType B, size_t T,
+         UIntType C, size_t L,
+         UIntType F>
+class mersenne_twister_engine {
+ public:
+  using result_type = UIntType;
+
+  static constexpr size_t word_size = W;
+
+ private:
+  static constexpr result_type modulus =
+      ((word_size == numeric_limits<result_type>::digits) ?
+       static_cast<result_type>(0U) :
+       static_cast<result_type>(1U) << word_size);
+
+ public:
+  static_assert(0 < M, "0 < shift_size");
+  static_assert(M <= N, "shift_size <= state_size");
+  static_assert(2U < W, "2 < word_size");
+  static_assert(R <= W, "mask_bits <= word_size");
+  static_assert(U <= W, "tempering_u <= word_size");
+  static_assert(S <= W, "tempering_s <= word_size");
+  static_assert(T <= W, "tempering_t <= word_size");
+  static_assert(L <= W, "tempering_l <= word_size");
+  static_assert(W <= numeric_limits<UIntType>::digits,
+                "word_size <= numeric_limits<result_type>::digits");
+  static_assert(A <= modulus - 1U,
+                "xor_mask <= 2 ** word_size - 1");
+  static_assert(B <= modulus - 1U,
+                "tempering_b <= 2 ** word_size - 1");
+  static_assert(C <= modulus - 1U,
+                "tempering_c <= 2 ** word_size - 1");
+  static_assert(D <= modulus - 1U,
+                "tempering_d <= 2 ** word_size - 1");
+  static_assert(F <= modulus - 1U,
+                "initialization_multiplier <= 2 ** word_size - 1");
+
+  static constexpr size_t state_size = N;
+  static constexpr size_t shift_size = M;
+  static constexpr size_t mask_bits = R;
+  static constexpr result_type xor_mask = A;
+  static constexpr size_t tempering_u = U;
+  static constexpr result_type tempering_d = D;
+  static constexpr size_t tempering_s = S;
+  static constexpr result_type tempering_b = B;
+  static constexpr size_t tempering_t = T;
+  static constexpr result_type tempering_c = C;
+  static constexpr size_t tempering_l = L;
+  static constexpr result_type initialization_multiplier = F;
+  static constexpr result_type min() { return 0; }
+  static constexpr result_type max() { return modulus - 1U; }
+  static constexpr result_type default_seed = 5489U;
+
+  explicit mersenne_twister_engine(result_type = default_seed);
+  template<typename Sseq> explicit mersenne_twister_engine(Sseq&);  // XXX: iff Sseq is a seed sequence
+  void seed(result_type = default_seed);
+  template<typename Sseq> void seed(Sseq&);  // XXX: iff Sseq is a seed sequence
+
+  result_type operator()();
+  void discard(unsigned long long);
+
+ private:
+  result_type transition_() const;
+
+  array<result_type, state_size> x_;
+};
+
+template<typename UIntType, size_t W, size_t S, size_t R>
+class subtract_with_carry_engine {
+ public:
+  using result_type = UIntType;
+
+  static constexpr size_t word_size = W;
+
+ private:
+  static constexpr result_type modulus =
+      ((word_size == numeric_limits<result_type>::digits) ?
+       static_cast<result_type>(0U) :
+       static_cast<result_type>(1U) << word_size);
+
+ public:
+  static_assert(0 < S, "0 < short_lag");
+  static_assert(S < R, "short_lag < long_lag");
+  static_assert(0 < W, "0 < word_size");
+  static_assert(W <= numeric_limits<result_type>::digits,
+                "word_size <= numeric_limits<result_type>::digits");
+
+  static constexpr size_t short_lag = S;
+  static constexpr size_t long_lag = R;
+  static constexpr result_type min() { return 0; }
+  static constexpr result_type max() { return modulus - 1U; }
+  static constexpr result_type default_seed = 19780503U;
+
+  explicit subtract_with_carry_engine(result_type = default_seed);
+  template<typename Sseq> explicit subtract_with_carry_engine(Sseq&);  // XXX: iff Sseq is a seed sequence
+  void seed(result_type = default_seed);
+  template<typename Sseq> void seed(Sseq&);  // XXX: iff Sseq is a seed sequence
+
+  result_type operator()();
+  void discard(unsigned long long);
+
+ private:
+  array<result_type, long_lag> x_;
+  result_type c_;
+};
+
+template<typename Engine, size_t P, size_t R>
+class discard_block_engine {
+ public:
+  using result_type = typename Engine::result_type;
+
+  static_assert(0 < R, "0 < used_block");
+  static_assert(R <= P, "used_block <= block_size");
+
+  static constexpr size_t block_size = P;
+  static constexpr size_t used_block = R;
+  static constexpr result_type min() { return Engine::min(); }
+  static constexpr result_type max() { return Engine::max(); }
+
+  discard_block_engine() = default;
+  explicit discard_block_engine(const Engine&);
+  explicit discard_block_engine(Engine&&);
+  explicit discard_block_engine(result_type);
+  template<typename Sseq> explicit discard_block_engine(Sseq&);  // XXX: iff Sseq is a seed sequence
+
+  void seed();
+  void seed(result_type);
+  template<typename Sseq> void seed(Sseq&);  // XXX: iff Sseq is a seed sequence
+
+  result_type operator()();
+  void discard(unsigned long long);
+
+  const Engine& base() const noexcept { return e_; }
+
+ private:
+  Engine e_;
+  size_t n_ = 0;
+};
+
+template<typename Engine, size_t W, typename UIntType>
+class independent_bits_engine {
+ public:
+  using result_type = UIntType;
+
+  static_assert(0 < W, "0 < W");
+  static_assert(W <= numeric_limits<result_type>::digits,
+                "W <= numeric_limits<result_type>::digits");
+
+  static constexpr result_type min() { return 0; }
+  static constexpr result_type max();
+
+  independent_bits_engine() = default;
+  explicit independent_bits_engine(const Engine&);
+  explicit independent_bits_engine(Engine&&);
+  explicit independent_bits_engine(result_type);
+  template<typename Sseq> explicit independent_bits_engine(Sseq&);  // XXX: iff Sseq is a seed sequence
+
+  void seed();
+  void seed(result_type);
+  template<typename Sseq> void seed(Sseq&);  // XXX: iff Sseq is a seed sequence
+
+  result_type operator()();
+  void discard(unsigned long long);
+
+  const Engine& base() const noexcept { return e_; }
+
+ private:
+  /*
+   * Gather constants for use in algorithm.
+   *
+   * The constant generation is a bit complicated, since the value of `n`
+   * depends on `y0` which is derived from `n`.
+   * The derive_*() functions help in deciding what a value would be,
+   * for a given `n` and to assist in making the decision.
+   */
+  static constexpr result_type modulus =
+      (W >= numeric_limits<result_type>::digits ?
+       static_cast<result_type>(0U) :
+       static_cast<result_type>(1U) << W);
+  static constexpr typename Engine::result_type R =
+      Engine::max() - Engine::min() + 1U;
+  static constexpr size_t m =
+      (R == 0 ?
+       numeric_limits<typename Engine::result_type>::digits :
+       abi::ext::log2_down(R));
+  static constexpr size_t derive_w0(size_t n) { return W / n; }
+  static constexpr size_t derive_n0(size_t n) { return n - W % n; }
+  static constexpr result_type derive_two_pow_w0(size_t n) {
+    return (derive_w0(n) >= numeric_limits<result_type>::digits ?
+            static_cast<result_type>(0) :
+            static_cast<result_type>(1) << w0);
+  }
+  static constexpr result_type derive_y0(size_t n) {
+    return derive_two_pow_w0(n) * (R / derive_two_pow_w0(n));
+  }
+  static constexpr size_t derive_n() {
+    constexpr size_t n = (W + (m - 1U)) / m;
+    return (R - derive_y0(n)) <= derive_y0(n) / n ? n : 1U + n;
+  }
+  static constexpr size_t n = derive_n();
+  static constexpr size_t w0 = derive_w0(n);
+  static constexpr size_t n0 = derive_n0(n);
+  static constexpr result_type y0 = derive_y0(n);
+  static constexpr result_type y1 = (derive_two_pow_w0(n) << 1) *
+                                    (R / (derive_two_pow_w0(n) << 1));
+
+  /* Validate the above derivations. */
+  static_assert(
+      W == n0 * w0 + (n - n0) * (w0 + 1U),
+      "This relation should always hold.  Math/programming mistake?");
+
+  Engine e_;
+};
+
+template<typename Engine, size_t K>
+class shuffle_order_engine {
+ public:
+  using result_type = typename Engine::result_type;
+
+  static_assert(0 < K, "0 < table_size");
+
+  static constexpr size_t table_size = K;
+  static constexpr result_type min() { return Engine::min(); }
+  static constexpr result_type max() { return Engine::max(); }
+
+  shuffle_order_engine();
+  explicit shuffle_order_engine(const Engine&);
+  explicit shuffle_order_engine(Engine&&);
+  explicit shuffle_order_engine(result_type);
+  template<typename Sseq> explicit shuffle_order_engine(Sseq& q);  // XXX: iff Sseq is a seed sequence
+
+  void seed();
+  void seed(result_type);
+  template<typename Sseq> void seed(Sseq& q);  // XXX: iff Sseq is a seed sequence
+
+  result_type operator()();
+  void discard(unsigned long long);
+
+  const Engine& base() const noexcept { return e_; }
+
+ private:
+  void init();
+
+  Engine e_;
+  result_type Y_;
+  array<result_type, table_size> V_;
+};
+
+using minstd_rand0 = linear_congruential_engine<uint_fast32_t,
+                                                16807, 0, 2147483647>;
+using minstd_rand = linear_congruential_engine<uint_fast32_t,
+                                               48271, 0, 2147483647>;
+using mt19937 = mersenne_twister_engine<uint_fast32_t, 32U, 624U, 397U, 31U,
+                                        0x9908b0dfU, 11U,
+                                        0xffffffffU,  7U,
+                                        0x9d2c5680U, 15U,
+                                        0xefc60000U, 18U,
+                                        1812433253U>;
+using mt19937_64 = mersenne_twister_engine<uint_fast64_t, 64U, 312U, 156U, 31U,
+                                           0xb5026f5aa96619e9ULL, 29U,
+                                           0x5555555555555555ULL, 17U,
+                                           0x71d67fffeda60000ULL, 37U,
+                                           0xfff7eee000000000ULL, 43U,
+                                           6364136223846793005ULL>;
+using ranlux24_base = subtract_with_carry_engine<uint_fast32_t, 24, 10, 24>;
+using ranlux48_base = subtract_with_carry_engine<uint_fast64_t, 48,  5, 12>;
+using ranlux24 = discard_block_engine<ranlux24_base, 223, 23>;
+using ranlux48 = discard_block_engine<ranlux48_base, 389, 11>;
+using knuth_b = shuffle_order_engine<minstd_rand0, 256>;
+using default_random_engine = conditional_t<sizeof(void*) <= 4,
+                                            mt19937,
+                                            mt19937_64>;
+
+
+class random_device {
+ public:
+  using result_type = unsigned int;
+
+  static constexpr result_type min() {
+    return numeric_limits<result_type>::min();
+  }
+  static constexpr result_type max() {
+    return numeric_limits<result_type>::max();
+  }
+
+  explicit random_device(const string& = "ignored") {}
+
+  result_type operator()() noexcept;
+
+  double entropy() const noexcept;
+
+  // We don't really care, but the standard requires it.
+  random_device(const random_device&) = delete;
+  random_device& operator=(const random_device&) = delete;
+};
+
+class seed_seq {
+ public:
+  using result_type = uint_least32_t;
+
+  seed_seq() = default;
+  template<typename U> seed_seq(initializer_list<U>);
+  template<typename InputIter> seed_seq(InputIter, InputIter);
+
+  template<typename RandomAccessIterator> void generate(RandomAccessIterator,
+                                                        RandomAccessIterator);
+
+  size_t size() const;
+  template<typename OutputIterator> void param(OutputIterator) const;
+
+  seed_seq(const seed_seq&) = delete;
+  seed_seq& operator=(const seed_seq&) = delete;
+
+ private:
+  static constexpr result_type T(result_type v) { return v ^ (v >> 27); }
+  static constexpr result_type modulus = 0xffffffffU + 1U;
+
+  vector<result_type> v_;
+};
+
+template<typename RealType, size_t Bits, typename URNG>
+RealType generate_canonical(URNG&);
+
+template<typename IntType = int>
+class uniform_int_distribution {
+ public:
+  using result_type = IntType;
+
+ private:
+  using rt_unsigned = make_unsigned_t<result_type>;
+
+ public:
+  struct param_type {
+    result_type lo_ = 0;
+    rt_unsigned range_ = 0;
+  };
+
+  explicit uniform_int_distribution(
+      result_type = 0, result_type = numeric_limits<result_type>::max());
+  explicit uniform_int_distribution(const param_type&);
+  void reset();
+
+  template<typename URNG> result_type operator()(URNG&);
+  template<typename URNG> result_type operator()(URNG&, const param_type&);
+
+  result_type a() const { return p_.lo_; }
+  result_type b() const { return p_.lo_ + (p_.range_ - 1U); }
+  param_type param() const { return p_; }
+  void param(const param_type& parm) { p_ = parm; }
+  result_type min() const { return a(); }
+  result_type max() const { return b(); }
+
+ private:
+  template<typename URNG> rt_unsigned generate_(URNG&);
+
+  param_type p_;
+};
+
+template<typename RealType = double>
+class uniform_real_distribution {
+ public:
+  using result_type = RealType;
+
+  struct param_type {
+    result_type lo_ = 0;
+    result_type range_ = 1;
+  };
+
+  explicit uniform_real_distribution(result_type = 0, result_type = 1);
+  explicit uniform_real_distribution(const param_type&);
+  void reset();
+
+  template<typename URNG> result_type operator()(URNG&);
+  template<typename URNG> result_type operator()(URNG&, const param_type&);
+
+  result_type a() const { return p_.lo_; }
+  result_type b() const { return p_.lo_ + p_.range_; }
+  param_type param() const { return p_; }
+  void param(const param_type& parm) { p_ = parm; }
+  result_type min() const { return a(); }
+  result_type max() const { return b(); }
+
+ private:
+  param_type p_;
+};
+
+class bernoulli_distribution {
+ public:
+  using result_type = bool;
+
+  struct param_type {
+    double p_ = 0.5;
+  };
+
+  explicit bernoulli_distribution(double = 0.5);
+  explicit bernoulli_distribution(const param_type&);
+  void reset();
+
+  template<typename URNG> result_type operator()(URNG&);
+  template<typename URNG> result_type operator()(URNG&, const param_type&);
+
+  double p() const { return p_.p_; }
+  param_type param() const { return p_; }
+  void param(const param_type& parm) { p_ = parm; }
+  result_type min() const { return numeric_limits<result_type>::min(); }
+  result_type max() const { return numeric_limits<result_type>::max(); }
+
+ private:
+  param_type p_;
+};
+
+template<typename IntType = int>
+class binomial_distribution {
+ public:
+  using result_type = IntType;
+
+  struct param_type {
+    double p_ = 0.5;
+    result_type t_ = 1;
+  };
+
+  explicit binomial_distribution(result_type = 1, double = 0.5);
+  explicit binomial_distribution(const param_type&);
+  void reset();
+
+  template<typename URNG> result_type operator()(URNG&);
+  template<typename URNG> result_type operator()(URNG&, const param_type&);
+
+  result_type t() const { return p_.t_; }
+  double p() const { return p_.p_; }
+  param_type param() const { return p_; }
+  void param(const param_type& parm) { p_ = parm; }
+  result_type min() const { return 0; }
+  result_type max() const { return p_.t_; }
+
+ private:
+  param_type p_;
+};
+
+template<typename IntType = int>
+class geometric_distribution {
+ public:
+  using result_type = IntType;
+
+  struct param_type {
+    double p_ = 0.5;
+  };
+
+  explicit geometric_distribution(double = 0.5);
+  explicit geometric_distribution(const param_type&);
+  void reset();
+
+  template<typename URNG> result_type operator()(URNG&);
+  template<typename URNG> result_type operator()(URNG&, const param_type&);
+
+  double p() const { return p_.p_; }
+  param_type param() const { return p_; }
+  void param(const param_type& parm) { p_ = parm; }
+  result_type min() const { return 0; }
+  result_type max() const { return numeric_limits<result_type>::max(); }
+
+ private:
+  param_type p_;
+};
+
+template<typename IntType = int>
+class negative_binomial_distribution {
+ public:
+  using result_type = IntType;
+
+  struct param_type {
+    double p_ = 0.5;
+    result_type k = 1;
+  };
+
+  explicit negative_binomial_distribution(result_type = 1, double = 0.5);
+  explicit negative_binomial_distribution(const param_type&);
+  void reset();
+
+  template<typename URNG> result_type operator()(URNG&);
+  template<typename URNG> result_type operator()(URNG&, const param_type&);
+
+  result_type k() const { return p_.k_; }
+  double p() const { return p_.p_; }
+  param_type param() const { return p_; }
+  void param(const param_type& parm) { p_ = parm; }
+  result_type min() const { return 0; }
+  result_type max() const { return numeric_limits<result_type>::max(); }
+
+ private:
+  param_type p_;
+};
+
+
+// XXX: implementation needed below this point.
+
+
+template<typename IntType = int>
+class poisson_distribution;
+
+template<typename RealType = double>
+class exponential_distribution;
+
+template<typename RealType = double>
+class gamma_distribution;
+
+template<typename RealType = double>
+class weibull_distribution;
+
+template<typename RealType = double>
+class extreme_value_distribution;
+
+template<typename RealType = double>
+class normal_distribution {
+ public:
+  using result_type = RealType;
+
+  struct param_type {
+    result_type mean, stddev;
+  };
+
+  explicit normal_distribution(result_type = 0, result_type = 1);
+  explicit normal_distribution(const param_type&);
+  void reset() {}
+
+  template<typename URNG> result_type operator()(URNG&);
+  template<typename URNG> result_type operator()(URNG&, const param_type&);
+
+  result_type mean() const { return p_.mean; }
+  result_type stddev() const { return p_.stddev; }
+  param_type params() const { return p_; }
+  void params(const param_type& parm) const { p_ = parm; }
+  result_type min() const { return numeric_limits<result_type>::min(); }
+  result_type max() const { return numeric_limits<result_type>::max(); }
+
+ private:
+  param_type p_;
+};
+
+template<typename RealType = double>
+class lognormal_distribution;
+
+template<typename RealType = double>
+class chi_squared_distribution;
+
+template<typename RealType = double>
+class cauchy_distribution;
+
+template<typename RealType = double>
+class fisher_f_distribution;
+
+template<typename RealType = double>
+class student_t_distribution;
+
+template<typename IntType = int>
+class discrete_distribution;
+
+template<typename RealType = double>
+class piecewise_constant_distribution;
+
+template<typename RealType = double>
+class piecewise_linear_distribution;
+
+
+extern template class linear_congruential_engine<uint_fast32_t,
+                                                 16807, 0, 2147483647>;
+extern template class linear_congruential_engine<uint_fast32_t,
+                                                 48271, 0, 2147483647>;
+extern template class mersenne_twister_engine<uint_fast32_t, 32U, 624U, 397U, 31U,
+                                              0x9908b0dfU, 11U,
+                                              0xffffffffU,  7U,
+                                              0x9d2c5680U, 15U,
+                                              0xefc60000U, 18U,
+                                              1812433253U>;
+extern template class mersenne_twister_engine<uint_fast64_t, 64U, 312U, 156U, 31U,
+                                              0xb5026f5aa96619e9ULL, 29U,
+                                              0x5555555555555555ULL, 17U,
+                                              0x71d67fffeda60000ULL, 37U,
+                                              0xfff7eee000000000ULL, 43U,
+                                              6364136223846793005ULL>;
+extern template class subtract_with_carry_engine<uint_fast32_t, 24, 10, 24>;
+extern template class subtract_with_carry_engine<uint_fast64_t, 48,  5, 12>;
+extern template class discard_block_engine<ranlux24_base, 223, 23>;
+extern template class discard_block_engine<ranlux48_base, 389, 11>;
+extern template class shuffle_order_engine<minstd_rand0, 256>;
+
+
+_namespace_end(std)
+
+#include "random-inl.h"
+
+#endif /* _RANDOM_ */
