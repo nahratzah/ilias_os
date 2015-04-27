@@ -248,6 +248,11 @@ OPENLIBM_SRCS += abi/openlibm_src/s_tanl.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_tanh.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_tanhf.cc
 OPENLIBM_SRCS += abi/openlibm_src/ld80/s_tanhl.cc
+OPENLIBM_SRCS += abi/openlibm_src/b_log.cc
+OPENLIBM_SRCS += abi/openlibm_src/b_exp.cc
+OPENLIBM_SRCS += abi/openlibm_src/b_tgamma.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_tgammaf.cc
+OPENLIBM_SRCS += abi/openlibm_src/ld80/e_tgammal.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}

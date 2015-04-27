@@ -311,6 +311,18 @@ float __ldexp_expf(float, int) noexcept;
 double k_log1p(double) noexcept;
 float k_log1pf(float) noexcept;
 
+struct Double {
+  double a, b;
+};
+
+inline double TRUNC(double d) noexcept {
+  uint32_t lw = get<0>(extract_words(d));
+  return set_low_word(d, lw & 0xf8000000);
+}
+
+double __exp__D(double, double) noexcept;
+struct Double __log__D(double) noexcept;
+
 } /* namespace std::impl */
 _namespace_end(std)
 
