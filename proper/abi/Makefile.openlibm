@@ -236,6 +236,9 @@ OPENLIBM_SRCS += abi/openlibm_src/s_scalbln.cc
 # OPENLIBM_SRCS += abi/openlibm_src/s_scalbn.cc
 # OPENLIBM_SRCS += abi/openlibm_src/s_scalbnf.cc
 # OPENLIBM_SRCS += abi/openlibm_src/s_scalbnl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_sincos.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_sincosf.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_sincosl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}

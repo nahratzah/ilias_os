@@ -365,6 +365,13 @@ inline long double sin(long double x) noexcept {
   return sinl(x);
 }
 
+inline void sincos(float x, float* s, float* c) noexcept {
+  sincosf(x, s, c);
+}
+inline void sincos(long double x, long double* s, long double* c) noexcept {
+  sincosl(x, s, c);
+}
+
 inline float sinh(float x) noexcept {
   return sinhf(x);
 }

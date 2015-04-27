@@ -146,6 +146,7 @@ double      round(double) noexcept;
 double      scalbln(double, long) noexcept;
 double      scalbn(double, int) noexcept;
 double      sin(double) noexcept;
+void        sincos(double, double*, double*) noexcept;
 double      sinh(double) noexcept;
 double      sqrt(double) noexcept;
 double      tan(double) noexcept;
@@ -370,6 +371,10 @@ _USING_STD(sin)
 float       sinf(float) noexcept;
 long double sinl(long double) noexcept;
 
+_USING_STD(sincos)
+void        sincosf(float, float*, float*) noexcept;
+void        sincosl(long double, long double*, long double*) noexcept;
+
 _USING_STD(sinh)
 float       sinhf(float) noexcept;
 long double sinhl(long double) noexcept;
@@ -576,6 +581,8 @@ float       scalbn(float, int) noexcept;
 long double scalbn(long double, int) noexcept;
 float       sin(float) noexcept;
 long double sin(long double) noexcept;
+void        sincos(float, float*, float*) noexcept;
+void        sincos(long double, long double*, long double*) noexcept;
 float       sinh(float) noexcept;
 long double sinh(long double) noexcept;
 float       sqrt(float) noexcept;
