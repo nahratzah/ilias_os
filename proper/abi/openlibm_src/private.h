@@ -297,10 +297,13 @@ int __kernel_rem_pio2(double*, double*, int, int, int) noexcept;
 
 double __kernel_sin(double, double, int) noexcept;
 double __kernel_cos(double, double) noexcept;
+double __kernel_tan(double, double, int) noexcept;
 float __kernel_sindf(double) noexcept;
 float __kernel_cosdf(double) noexcept;
+float __kernel_tandf(double, int) noexcept;
 long double __kernel_sinl(long double, long double, int) noexcept;
 long double __kernel_cosl(long double, long double) noexcept;
+long double __kernel_tanl(long double, long double, int) noexcept;
 
 double __ldexp_exp(double, int) noexcept;
 float __ldexp_expf(float, int) noexcept;

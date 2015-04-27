@@ -88,6 +88,7 @@ OPENLIBM_SRCS_64 += abi/openlibm_src/e_log10f.cc
 OPENLIBM_SRCS_64 += abi/openlibm_src/s_copysign.cc
 OPENLIBM_SRCS_64 += abi/openlibm_src/s_copysignf.cc
 OPENLIBM_SRCS_64 += abi/openlibm_src/s_copysignl.cc
+OPENLIBM_SRCS_64 += abi/openlibm_src/s_tan.cc
 
 OPENLIBM_SRCS += abi/openlibm_src/s_fpclassify.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_isfinite.cc
@@ -239,6 +240,14 @@ OPENLIBM_SRCS += abi/openlibm_src/s_scalbln.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_sincos.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_sincosf.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_sincosl.cc
+OPENLIBM_SRCS += abi/openlibm_src/k_tan.cc
+OPENLIBM_SRCS += abi/openlibm_src/k_tanf.cc
+OPENLIBM_SRCS += abi/openlibm_src/ld80/k_tanl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_tanf.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_tanl.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_tanh.cc
+OPENLIBM_SRCS += abi/openlibm_src/s_tanhf.cc
+OPENLIBM_SRCS += abi/openlibm_src/ld80/s_tanhl.cc
 
 SRCS += ${OPENLIBM_SRCS}
 SRCS_32 += ${OPENLIBM_SRCS_32}
