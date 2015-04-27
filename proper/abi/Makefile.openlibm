@@ -89,6 +89,9 @@ OPENLIBM_SRCS_64 += abi/openlibm_src/s_copysign.cc
 OPENLIBM_SRCS_64 += abi/openlibm_src/s_copysignf.cc
 OPENLIBM_SRCS_64 += abi/openlibm_src/s_copysignl.cc
 OPENLIBM_SRCS_64 += abi/openlibm_src/s_tan.cc
+OPENLIBM_SRCS_64 += abi/openlibm_src/s_trunc.cc
+OPENLIBM_SRCS_64 += abi/openlibm_src/s_truncf.cc
+OPENLIBM_SRCS_64 += abi/openlibm_src/s_truncl.cc
 
 OPENLIBM_SRCS += abi/openlibm_src/s_fpclassify.cc
 OPENLIBM_SRCS += abi/openlibm_src/s_isfinite.cc
