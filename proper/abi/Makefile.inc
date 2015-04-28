@@ -34,6 +34,7 @@ ABI_SRCS += abi/src/random.cc
 ABI_SRCS += abi/src/stdexcept.cc
 ABI_SRCS += abi/src/streambuf.cc
 ABI_SRCS += abi/src/string.cc
+ABI_SRCS += abi/src/limits.cc
 ABI_SRCS += abi/src/locale_misc_codecvt.cc
 ABI_SRCS += abi/src/locale_misc_collate.cc
 ABI_SRCS += abi/src/locale_misc_ctype.cc
