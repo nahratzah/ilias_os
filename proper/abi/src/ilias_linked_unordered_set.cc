@@ -1,5 +1,6 @@
 #include <ilias/linked_unordered_set.h>
 #include <algorithm>
+#include <cmath>
 #include <abi/ext/log2.h>
 
 _namespace_begin(ilias)
@@ -7,11 +8,11 @@ namespace impl {
 
 
 uint64_t ceil_uls_(long double f, uint64_t max) noexcept {
-  if (f >= static_cast<long double>(max)) return max;
+  using _namespace(std)::min;
+  using _namespace(std)::llrint;
+  using _namespace(std)::ceil;
 
-  uint64_t truncated = static_cast<uint64_t>(f);
-  if (static_cast<long double>(truncated) < f) ++truncated;
-  return _namespace(std)::min(truncated, max);
+  return min(static_cast<uint64_t>(llrint(ceil(f))), max);
 }
 
 
