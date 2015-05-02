@@ -140,6 +140,19 @@ constexpr auto flags::apply(const permission& perm, bool leaf)
   return (flags() & ~clear) | set;
 }
 
+constexpr auto flags::get_permission() const noexcept -> permission {
+  /* Convenience define,
+   * to avoid having to write permission() all the time. */
+  constexpr permission nil{};
+
+  return permission::READ() |
+         (rw() ? permission::WRITE() : nil) |
+         (!nx() ? permission::EXEC() : nil) |
+         (g() ? permission::GLOBAL() : nil) |
+         (pcd() ? permission::NO_CACHE_READ() : nil) |
+         (pwt() ? permission::NO_CACHE_WRITE() : nil);
+}
+
 
 constexpr auto pdpe_record::create(page_no_proxy pg, x86_shared::flags fl) ->
     pdpe_record {
@@ -170,6 +183,10 @@ constexpr auto pdpe_record::combine(const permission& perm) const noexcept ->
     pdpe_record {
   return (p() ? create(address(), flags().apply(perm, false)) :
                 create(nullptr, flags().apply(perm, false)));
+}
+
+constexpr auto pdpe_record::get_permission() const noexcept -> permission {
+  return permission();
 }
 
 
@@ -230,6 +247,10 @@ constexpr auto pdp_record::combine(const permission& perm) const noexcept ->
           create(address(), flags().apply(perm, ps())));
 }
 
+constexpr auto pdp_record::get_permission() const noexcept -> permission {
+  return (p() && ps() ? flags().get_permission() : permission());
+}
+
 
 constexpr auto pte_record::create(page_no_proxy pg, x86_shared::flags fl) ->
     pte_record {
@@ -262,6 +283,10 @@ constexpr auto pte_record::combine(const permission& perm) const noexcept ->
   return (!p() || (!perm.read && !perm.write && !perm.exec) ?
           create(nullptr, flags().apply(perm, true)) :
           create(address(), flags().apply(perm, true)));
+}
+
+constexpr auto pte_record::get_permission() const noexcept -> permission {
+  return (p() ? flags().get_permission() : permission());
 }
 
 

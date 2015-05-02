@@ -87,6 +87,7 @@ class flags {
   constexpr bool nx() const noexcept;
 
   constexpr flags apply(const permission&, bool leaf) const noexcept;
+  constexpr permission get_permission() const noexcept;
 
  private:
   uint64_t fl_ = 0;
@@ -138,6 +139,7 @@ struct pdpe_record {
 
   constexpr auto combine(const permission&) const noexcept ->
       pdpe_record;
+  constexpr auto get_permission() const noexcept -> permission;
 };
 
 struct pdp_record {
@@ -176,6 +178,7 @@ struct pdp_record {
 
   constexpr auto combine(const permission&) const noexcept ->
       pdp_record;
+  constexpr auto get_permission() const noexcept -> permission;
 };
 
 struct pte_record {
@@ -205,6 +208,7 @@ struct pte_record {
 
   constexpr auto combine(const permission&) const noexcept ->
       pte_record;
+  constexpr auto get_permission() const noexcept -> permission;
 
   static_assert(PT_PAT == x86_shared::flags(uint64_t(1) << 7),
                 "This code assumes no translation of PAT bit is required.");

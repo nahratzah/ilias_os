@@ -56,7 +56,7 @@ class page
   public ll_list_hook<tags::page_cache>,
   public linked_set_element<page, tags::page_alloc>,
   public refcount_base<page>,
-  public pmap_page<native_arch, native_varch>
+  public pmap_page
 {
   friend page_list;
   friend page_alloc;

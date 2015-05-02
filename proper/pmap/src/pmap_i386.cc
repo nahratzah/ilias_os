@@ -88,6 +88,16 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
   return std::make_tuple(pg, 1, p);
 }
 
+auto pmap<arch::i386>::reduce_permission(vpage_no<arch::i386> va,
+                                         permission perm) ->
+    reduce_permission_result {
+  vpage_no<arch::i386> lo, hi;
+  std::tie(lo, hi) = managed_range();
+  if (va < lo || va >= hi)
+    throw std::out_of_range("va outside of managed range");
+  return reduce_permission_(va, perm);
+}
+
 auto pmap<arch::i386>::map(vpage_no<arch::i386> va,
                            page_no<arch::i386> pa,
                            permission perm) -> void {
@@ -109,6 +119,66 @@ auto pmap<arch::i386>::unmap(vpage_no<arch::i386> va,
   if (va < lo || va_end > hi)
     throw std::out_of_range("va outside of managed range");
   unmap_(va, npg);
+}
+
+auto pmap<arch::i386>::reduce_permission_(vpage_no<arch::i386> va,
+                                          permission perm) noexcept ->
+    reduce_permission_result {
+  using namespace x86_shared;
+
+  auto p = vaddr<arch::i386>(va).get();
+  page_ptr<arch::i386> pdp_ptr;
+  page_ptr<arch::i386> pte_ptr;
+
+  /* Resolve pdpe offset. */
+  const uint32_t pdpe_off = (p & pdpe_mask) >> pdpe_addr_offset;
+  p &= ~pdpe_mask;
+
+  /* Resolve pde. */
+  pdpe_record& pdpe_value = pdpe_[pdpe_off];
+  if (!pdpe_value.p())
+    return reduce_permission_result::UNMAPPED;
+  else
+    pdp_ptr = page_ptr<arch::i386>(pdpe_value.address());
+  auto mapped_pdp = map_pdp(pdp_ptr.get(), va);
+
+  /* Resolve pde offset. */
+  const uintptr_t pdp_off = (p & pdp_mask) >> pdp_addr_offset;
+  p &= ~pdp_mask;
+
+  /* Resolve pte. */
+  pdp_record& pdp_value = (*mapped_pdp)[pdp_off];
+  if (!pdp_value.p())
+    return reduce_permission_result::UNMAPPED;
+  else
+    pte_ptr = page_ptr<arch::i386>(pdp_value.address());
+  auto mapped_pte = map_pte(pte_ptr.get(), va);
+
+  /* Resolve pte offset. */
+  const uintptr_t pte_off = (p & pte_mask) >> pte_addr_offset;
+  p &= ~pte_mask;
+
+  /* Resolve page entry. */
+  pte_record& pte_value = (*mapped_pte)[pte_off];
+  if (!pte_value.p())
+    return reduce_permission_result::UNMAPPED;
+
+  /* Resolve new permissions. */
+  permission reduced = perm & pte_value.get_permission();
+
+  /* Assign page entry. */
+  const auto new_pte_value = pte_value.combine(reduced);
+  assert(new_pte_value.valid());
+  pte_value = new_pte_value;
+
+  /*
+   * Note that there is no need to propagate the permission up the tree,
+   * as the earlier entries should already have all the eventual permissions.
+   */
+
+  return (new_pte_value.p() ?
+          reduce_permission_result::OK :
+          reduce_permission_result::UNMAPPED);
 }
 
 auto pmap<arch::i386>::map_(vpage_no<arch::i386> va, page_no<arch::i386> pg,

@@ -10,6 +10,12 @@ namespace ilias {
 namespace pmap {
 
 
+enum class reduce_permission_result {
+  OK,
+  UNMAPPED
+};
+
+
 template<arch Arch> class pmap_support {
  public:
   pmap_support(bool userspace) noexcept : userspace(userspace) {}
@@ -74,6 +80,6 @@ constexpr bool operator!=(const permission&, const permission&) noexcept;
 
 }} /* namespace ilias::pmap */
 
-#include <ilias/pmap/pmap-inl.h>
+#include "pmap-inl.h"
 
 #endif /* _ILIAS_PMAP_PMAP_H_ */
