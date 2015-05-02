@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <ilias/pmap/page.h>
+#include <ilias/pmap/pmap_page.h>
 #include <ilias/linked_list.h>
 #include <ilias/linked_set.h>
 #include <atomic>
@@ -54,7 +55,8 @@ class page
 : public linked_list_element<tags::page_list>,
   public ll_list_hook<tags::page_cache>,
   public linked_set_element<page, tags::page_alloc>,
-  public refcount_base<page>
+  public refcount_base<page>,
+  public pmap_page<native_arch, native_varch>
 {
   friend page_list;
   friend page_alloc;
@@ -90,8 +92,6 @@ class page
   page& operator=(const page&) = delete;
   page(page_no<native_arch>) noexcept;
   ~page() noexcept;
-
-  page_no<native_arch> address() const noexcept { return pgno_; }
 
   flags_type get_flags() const noexcept;
   flags_type set_flag(flags_type) noexcept;

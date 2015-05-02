@@ -295,6 +295,12 @@ constexpr auto operator/(const page_count<A>&, const page_count<A>&)
     noexcept -> typename page_count<A>::type;
 
 
+enum class reduce_permission_result {
+  OK,
+  UNMAPPED
+};
+
+
 }} /* namespace ilias::pmap */
 
 /*

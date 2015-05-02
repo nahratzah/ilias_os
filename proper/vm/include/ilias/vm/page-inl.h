@@ -301,7 +301,7 @@ namespace std {
 
 inline auto hash<ilias::vm::page>::operator()(const ilias::vm::page& pg)
     const noexcept -> size_t {
-  return hash<ilias::pmap::page_no<ilias::native_arch>>()(pg.address());
+  return hash<ilias::pmap::page_no<ilias::native_arch>>()(pg.address);
 }
 
 } /* namespace std */

@@ -7,7 +7,7 @@ namespace vm {
 
 
 page::page(page_no<native_arch> pgno) noexcept
-: pgno_(pgno)
+: pmap_page<native_arch, native_varch>(pgno)
 {}
 
 page::~page() noexcept {}
@@ -269,7 +269,7 @@ namespace {
 
 struct _page_address_less {
   bool operator()(const page& x, const page& y) const noexcept {
-    return x.address() < y.address();
+    return x.address < y.address;
   }
 };
 
@@ -308,9 +308,9 @@ auto page_list::merge_adjecent_entries() noexcept -> void {
     succ = next(i);
 
     /* Verify that there is no overlap. */
-    assert(i->address() + i->npgl_ <= succ->address());
+    assert(i->address + i->npgl_ <= succ->address);
 
-    if (i->address() + i->npgl_ == succ->address() &&
+    if (i->address + i->npgl_ == succ->address &&
         &*i + i->npgl_.get() == &*succ) {
       i->npgl_ += exchange(succ->npgl_, page_count<native_arch>(0));
       data_.unlink(succ);
