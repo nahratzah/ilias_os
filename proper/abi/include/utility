@@ -115,7 +115,7 @@ template<typename T, T N> using make_integer_sequence =
 template<size_t N> using make_index_sequence =
     make_integer_sequence<size_t, N>;
 
-template<typename... T> using index_sequence_for =
+template<class... T> using index_sequence_for =
     make_index_sequence<sizeof...(T)>;
 
 static_assert(is_same<index_sequence<>, make_index_sequence<0>>::value,
