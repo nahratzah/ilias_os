@@ -3,7 +3,7 @@
 
 #include <ilias/arch.h>
 #include <ilias/pmap/page.h>
-#include <ilias/linked_unordered_set.h>
+#include <ilias/linked_set.h>
 #include <tuple>
 #include <memory>
 
@@ -15,12 +15,13 @@ template<arch, arch> class rmap;
 
 template<arch Arch>
 class rmap_entry
-: public linked_unordered_set_element<>
+: public linked_set_element<rmap_entry<Arch>, void>
 {
  public:
   using tuple_type = std::tuple<pmap<Arch>&, vpage_no<Arch>>;
   struct hash;
   struct equality;
+  struct less;
 
   rmap_entry(pmap<Arch>&, vpage_no<Arch>&) noexcept;
 
@@ -32,9 +33,8 @@ template<arch PhysArch, arch VirtArch>
 class rmap {
  private:
   using rmap_set =
-      linked_unordered_set<rmap_entry<VirtArch>,
-                           typename rmap_entry<VirtArch>::hash,
-                           typename rmap_entry<VirtArch>::equality>;
+      linked_set<rmap_entry<VirtArch>, void,
+                 typename rmap_entry<VirtArch>::less>;
 
  public:
   rmap(const rmap&) = delete;
@@ -74,6 +74,18 @@ struct rmap_entry<Arch>::equality {
   static auto convert_(const rmap_entry&) noexcept -> tuple_type;
   static bool compare_(const tuple_type&, const tuple_type&)
       noexcept;
+
+ public:
+  template<typename T, typename U> bool operator()(const T& t, const U& u)
+      const noexcept;
+};
+
+template<arch Arch>
+struct rmap_entry<Arch>::less {
+ private:
+  static auto convert_(tuple_type) noexcept -> tuple_type;
+  static auto convert_(const rmap_entry&) noexcept -> tuple_type;
+  static bool compare_(const tuple_type&, const tuple_type&) noexcept;
 
  public:
   template<typename T, typename U> bool operator()(const T& t, const U& u)

@@ -3,7 +3,6 @@
 
 #include "rmap.h"
 #include <functional>
-#include <cfloat>
 #include <iterator>
 
 namespace ilias {
@@ -18,9 +17,7 @@ rmap_entry<Arch>::rmap_entry(pmap<Arch>& pmap, vpage_no<Arch>& addr) noexcept
 
 
 template<arch PhysArch, arch VirtArch>
-rmap<PhysArch, VirtArch>::rmap() noexcept {
-  rmap_.max_load_factor(INFINITY);
-}
+rmap<PhysArch, VirtArch>::rmap() noexcept {}
 
 template<arch PhysArch, arch VirtArch>
 rmap<PhysArch, VirtArch>::~rmap() noexcept {
@@ -43,7 +40,7 @@ auto rmap<PhysArch, VirtArch>::reduce_permissions(bool reduce_kernel,
     i_succ = next(i);
 
     if (reduce_kernel || i->pmap_.userspace()) {
-      if (i->pmap_.reduce_permission(i->addr_, *this, perm) ==
+      if (i->pmap_.reduce_permission(i->addr_, perm) ==
           reduce_permission_result::UNMAPPED)
         delete rmap_.unlink(i);
     }
@@ -60,7 +57,7 @@ auto rmap<PhysArch, VirtArch>::unmap(bool unmap_kernel) noexcept ->
     i_succ = next(i);
 
     if (unmap_kernel || i->pmap_.userspace()) {
-      i->pmap_.unmap_no_rmap_(i->addr_, *this);
+      i->pmap_.unmap(i->addr_);
       delete rmap_.unlink(i);
     }
   }
@@ -115,6 +112,38 @@ auto rmap_entry<Arch>::equality::compare_(const tuple_type& x,
 template<arch Arch>
 template<typename T, typename U>
 auto rmap_entry<Arch>::equality::operator()(const T& x, const U& y)
+    const noexcept -> bool {
+  return compare_(convert_(x), convert_(y));
+}
+
+
+template<arch Arch>
+auto rmap_entry<Arch>::less::convert_(tuple_type v) noexcept ->
+    tuple_type {
+  return v;
+}
+
+template<arch Arch>
+auto rmap_entry<Arch>::less::convert_(const rmap_entry& v) noexcept ->
+    tuple_type {
+  using std::cref;
+
+  return make_tuple(cref(v.pmap_), v.addr_);
+}
+
+template<arch Arch>
+auto rmap_entry<Arch>::less::compare_(const tuple_type& x,
+                                      const tuple_type& y) noexcept ->
+    bool {
+  using std::get;
+
+  return &get<0>(x) < &get<0>(y) ||
+         (&get<0>(x) == &get<0>(y) && get<1>(x) < get<1>(y));
+}
+
+template<arch Arch>
+template<typename T, typename U>
+auto rmap_entry<Arch>::less::operator()(const T& x, const U& y)
     const noexcept -> bool {
   return compare_(convert_(x), convert_(y));
 }
