@@ -1,6 +1,7 @@
 #include <ilias/pmap/pmap_page.h>
 #include <ilias/pmap/pmap.h>
 #include <ilias/pmap/pmap_i386.h>
+#include <ilias/pmap/pmap_amd64.h>
 
 namespace ilias {
 namespace pmap {

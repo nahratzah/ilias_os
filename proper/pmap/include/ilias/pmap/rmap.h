@@ -17,16 +17,22 @@ template<arch Arch>
 class rmap_entry
 : public linked_set_element<rmap_entry<Arch>, void>
 {
+  template<arch, arch> friend class rmap;
+
  public:
-  using tuple_type = std::tuple<pmap<Arch>&, vpage_no<Arch>>;
+  using tuple_type = std::tuple<const pmap<Arch>&, vpage_no<Arch>>;
   struct hash;
   struct equality;
   struct less;
 
+  rmap_entry() noexcept = default;
+  rmap_entry(const rmap_entry&) noexcept = default;
+  rmap_entry& operator=(const rmap_entry&) noexcept = default;
   rmap_entry(pmap<Arch>&, vpage_no<Arch>&) noexcept;
 
-  pmap<Arch>& pmap_;
-  const vpage_no<Arch> addr_;
+ private:
+  pmap<Arch>* pmap_ = nullptr;
+  vpage_no<Arch> addr_;
 };
 
 template<arch PhysArch, arch VirtArch>
@@ -45,13 +51,11 @@ class rmap {
   rmap() noexcept;
   ~rmap() noexcept;
 
- private:
   void pmap_register(std::unique_ptr<rmap_entry<VirtArch>>) noexcept;
   std::unique_ptr<rmap_entry<VirtArch>> pmap_deregister(pmap<VirtArch>&,
-                                                        vpage_no<VirtArch>&)
+                                                        vpage_no<VirtArch>)
       noexcept;
 
- public:
   bool linked() const noexcept;
   void reduce_permissions(bool, permission) noexcept;
   void unmap(bool) noexcept;

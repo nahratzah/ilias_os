@@ -106,6 +106,16 @@ auto pmap_page_tmpl<PhysArch, arch_set<VirtArch...>>::unmap_(bool unmap_kernel)
                std::index_sequence_for<decltype(VirtArch)...>());
 }
 
+template<arch PhysArch, arch... VirtArch>
+template<arch VA>
+auto pmap_page_tmpl<PhysArch, arch_set<VirtArch...>>::pmap_deregister_(
+    pmap<VA>& p, vpage_no<VA> va) noexcept -> void {
+  using std::get;
+
+  /* This page is already locked. */
+  get<rmap<PhysArch, VA>>(rmap_).pmap_deregister(p, va);
+}
+
 
 }} /* namespace ilias::pmap */
 

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <ilias/arch.h>
 #include <ilias/pmap/page.h>
+#include <ilias/pmap/pmap_page-fwd.h>
 
 namespace ilias {
 namespace pmap {
@@ -16,22 +17,38 @@ enum class reduce_permission_result {
 };
 
 
-template<arch Arch> class pmap_support {
+class basic_pmap_support {
  public:
-  pmap_support(bool userspace) noexcept : userspace(userspace) {}
-  virtual ~pmap_support() noexcept {}
-
-  virtual vpage_no<Arch> map_page(page_no<Arch>) = 0;
-  virtual void unmap_page(vpage_no<Arch>) noexcept = 0;
-  virtual page_no<Arch> allocate_page() = 0;
-  virtual void deallocate_page(page_no<Arch>) noexcept = 0;
+  basic_pmap_support(bool userspace) noexcept : userspace(userspace) {}
+  virtual ~basic_pmap_support() noexcept {}
 
   /* Set if the pmap controls a userspace map. */
   const bool userspace;
 };
 
+template<arch Arch>
+class pmap_support
+: public basic_pmap_support
+{
+ public:
+  pmap_support(bool userspace) noexcept : basic_pmap_support(userspace) {}
+  virtual ~pmap_support() noexcept {}
+
+  virtual vpage_no<native_arch> map_page(page_no<Arch>) = 0;
+  virtual void unmap_page(vpage_no<native_arch>) noexcept = 0;
+  virtual page_no<Arch> allocate_page() = 0;
+  virtual void deallocate_page(page_no<Arch>) noexcept = 0;
+
+#ifndef _LOADER
+  virtual pmap_page& lookup_pmap_page(page_no<Arch>) noexcept = 0;
+#endif
+};
+
 template<arch> class pmap;  // Undefined.
 template<typename> class pmap_map;  // Undefined.
+
+template<> class pmap<arch::i386>;
+template<> class pmap<arch::amd64>;
 
 class efault : public std::system_error {
  public:

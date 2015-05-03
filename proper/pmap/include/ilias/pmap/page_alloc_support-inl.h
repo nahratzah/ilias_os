@@ -126,7 +126,7 @@ struct unmap_page_deleter {
   void operator()(T* p) const noexcept {
     if (support_) {
       uintptr_t int_p = reinterpret_cast<uintptr_t>(p);
-      support_->unmap_page(vaddr<Arch>(int_p));
+      support_->unmap_page(vaddr<native_arch>(int_p));
     }
   }
 
@@ -137,7 +137,7 @@ struct unmap_page_deleter {
 template<typename T, arch Arch>
 auto pmap_map_page(page_no<Arch> pg, pmap_support<Arch>& support) ->
     pmap_mapped_ptr<T, Arch> {
-  vaddr<Arch> vaddr = support.map_page(pg);
+  vaddr<native_arch> vaddr = support.map_page(pg);
   return pmap_mapped_ptr<T, Arch>(
       static_cast<T*>(reinterpret_cast<void*>(uintptr_t(vaddr.get()))),
       unmap_page_deleter<T, Arch>(&support));

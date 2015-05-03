@@ -2,7 +2,7 @@ INCLUDES += -Ipmap/include
 PMAP_SRCS += pmap/src/pmap.cc
 PMAP_SRCS += pmap/src/pmap_page.cc
 PMAP_SRCS_I386 += pmap/src/pmap_i386.cc
-PMAP_SRCS_AMD64 +=
+PMAP_SRCS_AMD64 += pmap/src/pmap_amd64.cc
 PMAP_SRCS_I386_AMD64 += pmap/src/x86_shared.cc
 
 SRCS += ${PMAP_SRCS}

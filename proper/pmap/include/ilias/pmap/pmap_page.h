@@ -1,6 +1,7 @@
 #ifndef _ILIAS_PMAP_PMAP_PAGE_H_
 #define _ILIAS_PMAP_PMAP_PAGE_H_
 
+#include "pmap_page-fwd.h"
 #include <mutex>
 #include <ilias/arch.h>
 #include <ilias/pmap/page.h>
@@ -31,12 +32,18 @@ class pmap_page_tmpl<PhysArch, arch_set<VirtArch...>> {
   void reduce_permissions_(bool, permission) noexcept;
   void unmap_(bool) noexcept;
 
+  template<arch VA>
+  void pmap_deregister_(pmap<VA>&, vpage_no<VA>) noexcept;
+
+ private:
   rmap_list rmap_;
 };
 
 class pmap_page
 : private pmap_page_tmpl<native_arch, native_varch>
 {
+  template<arch> friend class pmap;
+
  public:
   pmap_page() = delete;
   pmap_page(const pmap_page&) = delete;
