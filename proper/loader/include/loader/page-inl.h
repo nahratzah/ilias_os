@@ -115,15 +115,15 @@ auto page_allocator<Arch>::mark_in_use(ilias::pmap::page_no<Arch> b,
 
 template<ilias::arch Arch>
 auto page_allocator<Arch>::map_page(ilias::pmap::page_no<Arch> pg) ->
-    ilias::pmap::vpage_no<Arch> {
+    ilias::pmap::vpage_no<ilias::native_arch> {
   if (pg.get() > (0xffffffff >> ilias::pmap::page_shift(Arch)))
     throw std::range_error("Physical page cannot be mapped.");
-  return ilias::pmap::vpage_no<Arch>(pg.get());
+  return ilias::pmap::vpage_no<ilias::native_arch>(pg.get());
 }
 
 template<ilias::arch Arch>
-auto page_allocator<Arch>::unmap_page(ilias::pmap::vpage_no<Arch>) noexcept ->
-    void {
+auto page_allocator<Arch>::unmap_page(
+    ilias::pmap::vpage_no<ilias::native_arch>) noexcept -> void {
   return;
 }
 

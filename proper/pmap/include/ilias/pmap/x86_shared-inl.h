@@ -140,36 +140,162 @@ constexpr auto flags::apply(const permission& perm, bool leaf)
   return (flags() & ~clear) | set;
 }
 
+constexpr auto flags::get_permission() const noexcept -> permission {
+  /* Convenience define,
+   * to avoid having to write permission() all the time. */
+  constexpr permission nil{};
 
-constexpr auto pdpe_record::create(page_no_proxy pg, x86_shared::flags fl) ->
+  return permission::READ() |
+         (rw() ? permission::WRITE() : nil) |
+         (!nx() ? permission::EXEC() : nil) |
+         (g() ? permission::GLOBAL() : nil) |
+         (pcd() ? permission::NO_CACHE_READ() : nil) |
+         (pwt() ? permission::NO_CACHE_WRITE() : nil);
+}
+
+
+constexpr auto pml4_record::create(page_no_proxy pg, x86_shared::flags fl) ->
+    pml4_record {
+  if ((pg.pgno_ & (PAGE_MASK >> PAGE_SHIFT)) != pg.pgno_)
+    throw std::out_of_range("page number out of range");
+  return pml4_record{ (pg.pgno_ << PAGE_SHIFT) |
+                      (fl & FLAGS_MASK).get() | PT_P };
+}
+
+constexpr auto pml4_record::create(std::nullptr_t, x86_shared::flags fl)
+    noexcept -> pml4_record {
+  return pml4_record{ (fl & FLAGS_MASK).get() };
+}
+
+constexpr auto pml4_record::address() const noexcept -> page_no_proxy {
+  return page_no_proxy((v_ & PAGE_MASK) >> PAGE_SHIFT);
+}
+constexpr auto pml4_record::flags() const noexcept -> x86_shared::flags {
+  return x86_shared::flags(v_) & FLAGS_MASK;
+}
+
+constexpr auto pml4_record::valid() const noexcept -> bool {
+  return *this == (p() ?
+                   create(address(), flags()) :
+                   create(nullptr, flags()));
+}
+
+constexpr auto pml4_record::combine(const permission& perm) const noexcept ->
+    pml4_record {
+  return (p() ?
+          create(address(), flags().apply(perm, false)) :
+          create(nullptr, flags().apply(perm, false)));
+}
+
+constexpr auto pml4_record::get_permission() const noexcept -> permission {
+  return permission();
+}
+
+
+constexpr auto pdpe_record<arch::i386>::create(page_no_proxy pg,
+                                               x86_shared::flags fl) ->
     pdpe_record {
   if ((pg.pgno_ & (PAGE_MASK >> PAGE_SHIFT)) != pg.pgno_)
     throw std::out_of_range("page number out of range");
   return pdpe_record{ (pg.pgno_ << PAGE_SHIFT) |
                       (fl & FLAGS_MASK).get() | PT_P };
 }
-constexpr auto pdpe_record::create(std::nullptr_t, x86_shared::flags fl)
+constexpr auto pdpe_record<arch::i386>::create(std::nullptr_t,
+                                               x86_shared::flags fl)
     noexcept -> pdpe_record {
   return pdpe_record{ (fl & FLAGS_MASK).get() };
 }
 
-constexpr auto pdpe_record::address() const noexcept -> page_no_proxy {
+constexpr auto pdpe_record<arch::i386>::address() const noexcept ->
+    page_no_proxy {
   return page_no_proxy((v_ & PAGE_MASK) >> PAGE_SHIFT);
 }
-constexpr auto pdpe_record::flags() const noexcept -> x86_shared::flags {
+constexpr auto pdpe_record<arch::i386>::flags() const noexcept ->
+    x86_shared::flags {
   return x86_shared::flags(v_) & FLAGS_MASK;
 }
 
-constexpr auto pdpe_record::valid() const noexcept -> bool {
+constexpr auto pdpe_record<arch::i386>::valid() const noexcept -> bool {
   return *this == (p() ?
                    create(address(), flags()) :
                    create(nullptr, flags()));
 }
 
-constexpr auto pdpe_record::combine(const permission& perm) const noexcept ->
-    pdpe_record {
+constexpr auto pdpe_record<arch::i386>::combine(const permission& perm)
+    const noexcept -> pdpe_record {
   return (p() ? create(address(), flags().apply(perm, false)) :
                 create(nullptr, flags().apply(perm, false)));
+}
+
+constexpr auto pdpe_record<arch::i386>::get_permission() const noexcept ->
+    permission {
+  return permission();
+}
+
+
+constexpr auto pdpe_record<arch::amd64>::create(page_no_proxy pg,
+                                                x86_shared::flags fl,
+                                                bool leaf) ->
+    pdpe_record {
+  auto PAGE_MASK = (leaf ? PAGE_MASK_PS : PAGE_MASK_NPS);
+  if ((pg.pgno_ & (PAGE_MASK_NPS >> PAGE_SHIFT)) != pg.pgno_)
+    throw std::out_of_range("page number out of range");
+  if ((pg.pgno_ & (PAGE_MASK >> PAGE_SHIFT)) != pg.pgno_)
+    throw std::out_of_range("page number insufficiently aligned");
+
+  /* PT_PAT flag requires special handling. */
+  auto FLAGS_MASK = (leaf ?
+                     FLAGS_MASK_PS & ~PT_PAT :
+                     FLAGS_MASK_NPS);
+  auto pt_pat = (leaf && fl.pat() ? PT_PAT_ : 0U);
+
+  return pdpe_record{ (pg.pgno_ << PAGE_SHIFT) |
+                      (fl & FLAGS_MASK).get() |
+                      pt_pat | PT_P | (leaf ? PT_PS : 0U) };
+}
+constexpr auto pdpe_record<arch::amd64>::create(std::nullptr_t,
+                                                x86_shared::flags fl,
+                                                bool leaf)
+    noexcept -> pdpe_record {
+  auto FLAGS_MASK = (leaf ?
+                     FLAGS_MASK_PS & ~PT_PAT :
+                     FLAGS_MASK_NPS);
+  auto pt_pat = (leaf && fl.pat() ? PT_PAT_ : 0U);
+
+  return pdpe_record{ (fl & FLAGS_MASK).get() |
+                      pt_pat | (leaf ? PT_PS : 0U) };
+}
+
+constexpr auto pdpe_record<arch::amd64>::address() const noexcept ->
+    page_no_proxy {
+  auto sel = (ps() ? PAGE_MASK_PS : PAGE_MASK_NPS);
+  return page_no_proxy((v_ & sel) >> PAGE_SHIFT);
+}
+constexpr auto pdpe_record<arch::amd64>::flags() const noexcept ->
+    x86_shared::flags {
+  auto pt_pat = (ps() && (v_ & PT_PAT_) ?
+                 PT_PAT :
+                 x86_shared::flags());
+  auto sel = (ps() ? FLAGS_MASK_PS & ~PT_PAT : FLAGS_MASK_NPS);
+  return pt_pat | x86_shared::flags(v_) & sel;
+}
+
+constexpr auto pdpe_record<arch::amd64>::valid() const noexcept -> bool {
+  return *this == (p() ?
+                   create(address(), flags()) :
+                   create(nullptr, flags()));
+}
+
+constexpr auto pdpe_record<arch::amd64>::combine(const permission& perm)
+    const noexcept -> pdpe_record {
+  return (!p() || (ps() && !perm.read && !perm.write && !perm.exec) ?
+          create(nullptr, flags().apply(perm, ps())) :
+          create(address(), flags().apply(perm, ps())));
+}
+
+constexpr auto pdpe_record<arch::amd64>::get_permission() const noexcept ->
+    permission {
+  return (p() && ps() ? flags().get_permission() : permission());
 }
 
 
@@ -230,6 +356,10 @@ constexpr auto pdp_record::combine(const permission& perm) const noexcept ->
           create(address(), flags().apply(perm, ps())));
 }
 
+constexpr auto pdp_record::get_permission() const noexcept -> permission {
+  return (p() && ps() ? flags().get_permission() : permission());
+}
+
 
 constexpr auto pte_record::create(page_no_proxy pg, x86_shared::flags fl) ->
     pte_record {
@@ -264,11 +394,31 @@ constexpr auto pte_record::combine(const permission& perm) const noexcept ->
           create(address(), flags().apply(perm, true)));
 }
 
+constexpr auto pte_record::get_permission() const noexcept -> permission {
+  return (p() ? flags().get_permission() : permission());
+}
 
-constexpr bool operator==(pdpe_record x, pdpe_record y) noexcept {
+
+constexpr bool operator==(pml4_record x, pml4_record y) noexcept {
   return x.v_ == y.v_;
 }
-constexpr bool operator!=(pdpe_record x, pdpe_record y) noexcept {
+constexpr bool operator!=(pml4_record x, pml4_record y) noexcept {
+  return x.v_ != y.v_;
+}
+constexpr bool operator==(pdpe_record<arch::i386> x,
+                          pdpe_record<arch::i386> y) noexcept {
+  return x.v_ == y.v_;
+}
+constexpr bool operator!=(pdpe_record<arch::i386> x,
+                          pdpe_record<arch::i386> y) noexcept {
+  return x.v_ != y.v_;
+}
+constexpr bool operator==(pdpe_record<arch::amd64> x,
+                          pdpe_record<arch::amd64> y) noexcept {
+  return x.v_ == y.v_;
+}
+constexpr bool operator!=(pdpe_record<arch::amd64> x,
+                          pdpe_record<arch::amd64> y) noexcept {
   return x.v_ != y.v_;
 }
 constexpr bool operator==(pdp_record x, pdp_record y) noexcept {

@@ -12,13 +12,16 @@ namespace x86_shared {
 
 
 class flags;
-struct pdpe_record;
+struct pml4_record;
+template<arch> struct pdpe_record;  // Undefined
 struct pdp_record;
 struct pte_record;
 
 
 class page_no_proxy {
-  friend pdpe_record;
+  friend pml4_record;
+  friend pdpe_record<arch::i386>;
+  friend pdpe_record<arch::amd64>;
   friend pdp_record;
   friend pte_record;
 
@@ -87,6 +90,7 @@ class flags {
   constexpr bool nx() const noexcept;
 
   constexpr flags apply(const permission&, bool leaf) const noexcept;
+  constexpr permission get_permission() const noexcept;
 
  private:
   uint64_t fl_ = 0;
@@ -113,10 +117,42 @@ constexpr flags PT_ALL_FLAGS = PT_RW | PT_US | PT_PWT | PT_PCD | PT_A | PT_D |
                                PT_PAT | PT_G | PT_AVL | PT_NX;
 
 
-struct pdpe_record {
+struct pml4_record {
   uint64_t v_;
 
-  static constexpr x86_shared::flags FLAGS_MASK = PT_PWT | PT_PCD | PT_AVL;
+  static constexpr x86_shared::flags FLAGS_MASK =
+      PT_PWT | PT_PCD | PT_AVL | PT_NX;
+  static constexpr unsigned int PAGE_SHIFT = 12;
+  static constexpr uint64_t PAGE_MASK =
+      (uint64_t(1) << 63) - (uint64_t(1) << 12);
+  static constexpr uint64_t PT_P = uint64_t(1) << 0;
+
+  static constexpr auto create(page_no_proxy,
+                               x86_shared::flags = x86_shared::flags{ 0 }) ->
+      pml4_record;
+  static constexpr auto create(std::nullptr_t,
+                               x86_shared::flags = x86_shared::flags{ 0 })
+      noexcept -> pml4_record;
+
+  constexpr page_no_proxy address() const noexcept;
+  constexpr x86_shared::flags flags() const noexcept;
+
+  constexpr bool p() const noexcept { return v_ & PT_P; }
+  explicit constexpr operator bool() const noexcept { return p(); }
+  constexpr bool valid() const noexcept;
+
+  constexpr auto combine(const permission&) const noexcept ->
+      pml4_record;
+  constexpr auto get_permission() const noexcept -> permission;
+};
+
+template<>
+struct pdpe_record<arch::i386> {
+  uint64_t v_;
+
+  /* amd64 has the NX bit as well. */
+  static constexpr x86_shared::flags FLAGS_MASK =
+      PT_PWT | PT_PCD | PT_AVL;
   static constexpr unsigned int PAGE_SHIFT = 12;
   static constexpr uint64_t PAGE_MASK =
       (uint64_t(1) << 63) - (uint64_t(1) << 12);
@@ -138,6 +174,47 @@ struct pdpe_record {
 
   constexpr auto combine(const permission&) const noexcept ->
       pdpe_record;
+  constexpr auto get_permission() const noexcept -> permission;
+};
+
+template<>
+struct pdpe_record<arch::amd64> {
+  uint64_t v_;
+
+  static constexpr x86_shared::flags FLAGS_MASK_NPS =
+      PT_RW | PT_US | PT_PWT | PT_PCD | PT_A | PT_AVL | PT_NX;
+  static constexpr x86_shared::flags FLAGS_MASK_PS =
+      PT_RW | PT_US | PT_PWT | PT_PCD | PT_A | PT_D | PT_G | PT_AVL |
+      PT_PAT | PT_NX;
+  static constexpr unsigned int PAGE_SHIFT = 12;
+  static constexpr uint64_t PAGE_MASK_NPS =
+      (uint64_t(1) << 63) - (uint64_t(1) << 12);
+  static constexpr uint64_t PAGE_MASK_PS =
+      (uint64_t(1) << 63) - (uint64_t(1) << 30);
+  static constexpr uint64_t PT_P = uint64_t(1) << 0;
+  static constexpr uint64_t PT_PS = uint64_t(1) << 7;
+  static constexpr uint64_t PT_PAT_ = uint64_t(1) << 12;  // Special case.
+
+  static constexpr auto create(page_no_proxy,
+                               x86_shared::flags = x86_shared::flags{ 0 },
+                               bool = false) ->
+      pdpe_record;
+  static constexpr auto create(std::nullptr_t,
+                               x86_shared::flags = x86_shared::flags{ 0 },
+                               bool = false) noexcept ->
+      pdpe_record;
+
+  constexpr page_no_proxy address() const noexcept;
+  constexpr x86_shared::flags flags() const noexcept;
+
+  constexpr bool p() const noexcept { return v_ & PT_P; }
+  explicit constexpr operator bool() const noexcept { return p(); }
+  constexpr bool ps() const noexcept { return v_ & PT_PS; }
+  constexpr bool valid() const noexcept;
+
+  constexpr auto combine(const permission&) const noexcept ->
+      pdpe_record;
+  constexpr auto get_permission() const noexcept -> permission;
 };
 
 struct pdp_record {
@@ -176,6 +253,7 @@ struct pdp_record {
 
   constexpr auto combine(const permission&) const noexcept ->
       pdp_record;
+  constexpr auto get_permission() const noexcept -> permission;
 };
 
 struct pte_record {
@@ -205,14 +283,23 @@ struct pte_record {
 
   constexpr auto combine(const permission&) const noexcept ->
       pte_record;
+  constexpr auto get_permission() const noexcept -> permission;
 
   static_assert(PT_PAT == x86_shared::flags(uint64_t(1) << 7),
                 "This code assumes no translation of PAT bit is required.");
 };
 
 
-constexpr bool operator==(pdpe_record, pdpe_record) noexcept;
-constexpr bool operator!=(pdpe_record, pdpe_record) noexcept;
+constexpr bool operator==(pml4_record, pml4_record) noexcept;
+constexpr bool operator!=(pml4_record, pml4_record) noexcept;
+constexpr bool operator==(pdpe_record<arch::i386>, pdpe_record<arch::i386>)
+    noexcept;
+constexpr bool operator!=(pdpe_record<arch::i386>, pdpe_record<arch::i386>)
+    noexcept;
+constexpr bool operator==(pdpe_record<arch::amd64>, pdpe_record<arch::amd64>)
+    noexcept;
+constexpr bool operator!=(pdpe_record<arch::amd64>, pdpe_record<arch::amd64>)
+    noexcept;
 constexpr bool operator==(pdp_record, pdp_record) noexcept;
 constexpr bool operator!=(pdp_record, pdp_record) noexcept;
 constexpr bool operator==(pte_record, pte_record) noexcept;
@@ -220,13 +307,21 @@ constexpr bool operator!=(pte_record, pte_record) noexcept;
 
 
 /* Validate that record are ABI compliant. */
-static_assert(sizeof(pdpe_record) == 8,
+static_assert(sizeof(pml4_record) == 8,
+              "PML4E record must be 8 bytes");
+static_assert(sizeof(pdpe_record<arch::i386>) == 8,
+              "PDPE record must be 8 bytes");
+static_assert(sizeof(pdpe_record<arch::amd64>) == 8,
               "PDPE record must be 8 bytes");
 static_assert(sizeof(pdp_record) == 8,
               "PDP record must be 8 bytes");
 static_assert(sizeof(pte_record) == 8,
               "PTE record must be 8 bytes");
-static_assert(std::is_pod<pdpe_record>::value,
+static_assert(std::is_pod<pml4_record>::value,
+              "PML4E record must be a plain-old-data type.");
+static_assert(std::is_pod<pdpe_record<arch::i386>>::value,
+              "PDPE record must be a plain-old-data type.");
+static_assert(std::is_pod<pdpe_record<arch::amd64>>::value,
               "PDPE record must be a plain-old-data type.");
 static_assert(std::is_pod<pdp_record>::value,
               "PDP record must be a plain-old-data type.");

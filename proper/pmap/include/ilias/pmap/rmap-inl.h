@@ -11,7 +11,7 @@ namespace pmap {
 
 template<arch Arch>
 rmap_entry<Arch>::rmap_entry(pmap<Arch>& pmap, vpage_no<Arch>& addr) noexcept
-: pmap_(pmap),
+: pmap_(&pmap),
   addr_(addr)
 {}
 
@@ -22,6 +22,26 @@ rmap<PhysArch, VirtArch>::rmap() noexcept {}
 template<arch PhysArch, arch VirtArch>
 rmap<PhysArch, VirtArch>::~rmap() noexcept {
   assert(rmap_.empty());
+}
+
+template<arch PhysArch, arch VirtArch>
+auto rmap<PhysArch, VirtArch>::pmap_register(
+    std::unique_ptr<rmap_entry<VirtArch>> p) noexcept -> void {
+  assert(p != nullptr);
+
+  rmap_.link(p.release(), true);
+}
+
+template<arch PhysArch, arch VirtArch>
+auto rmap<PhysArch, VirtArch>::pmap_deregister(pmap<VirtArch>& p,
+                                               vpage_no<VirtArch> va)
+    noexcept -> std::unique_ptr<rmap_entry<VirtArch>> {
+  using std::cref;
+  using tuple_type = typename rmap_entry<VirtArch>::tuple_type;
+
+  auto i = rmap_.find(tuple_type(cref(p), va));
+  if (i == rmap_.end()) return nullptr;
+  return std::unique_ptr<rmap_entry<VirtArch>>(rmap_.unlink(i));
 }
 
 template<arch PhysArch, arch VirtArch>
@@ -39,8 +59,8 @@ auto rmap<PhysArch, VirtArch>::reduce_permissions(bool reduce_kernel,
   for (iter i_succ, i = rmap_.begin(); i != rmap_.end(); i = i_succ) {
     i_succ = next(i);
 
-    if (reduce_kernel || i->pmap_.userspace()) {
-      if (i->pmap_.reduce_permission(i->addr_, perm) ==
+    if (reduce_kernel || i->pmap_->userspace()) {
+      if (i->pmap_->reduce_permission(i->addr_, perm) ==
           reduce_permission_result::UNMAPPED)
         delete rmap_.unlink(i);
     }
@@ -56,8 +76,8 @@ auto rmap<PhysArch, VirtArch>::unmap(bool unmap_kernel) noexcept ->
   for (iter i_succ, i = rmap_.begin(); i != rmap_.end(); i = i_succ) {
     i_succ = next(i);
 
-    if (unmap_kernel || i->pmap_.userspace()) {
-      i->pmap_.unmap(i->addr_);
+    if (unmap_kernel || i->pmap_->userspace()) {
+      i->pmap_->unmap(i->addr_);
       delete rmap_.unlink(i);
     }
   }
@@ -97,7 +117,7 @@ auto rmap_entry<Arch>::equality::convert_(const rmap_entry& v) noexcept ->
     tuple_type {
   using std::cref;
 
-  return make_tuple(cref(v.pmap_), v.addr_);
+  return make_tuple(cref(*v.pmap_), v.addr_);
 }
 
 template<arch Arch>
@@ -128,7 +148,7 @@ auto rmap_entry<Arch>::less::convert_(const rmap_entry& v) noexcept ->
     tuple_type {
   using std::cref;
 
-  return make_tuple(cref(v.pmap_), v.addr_);
+  return make_tuple(cref(*v.pmap_), v.addr_);
 }
 
 template<arch Arch>

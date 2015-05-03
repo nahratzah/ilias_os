@@ -7,7 +7,7 @@ namespace vm {
 
 
 page::page(page_no<native_arch> pgno) noexcept
-: pmap_page<native_arch, native_varch>(pgno)
+: pmap_page(pgno)
 {}
 
 page::~page() noexcept {}

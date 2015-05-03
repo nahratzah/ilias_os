@@ -46,8 +46,9 @@ class page_allocator
   bool mark_in_use(ilias::pmap::page_no<Arch>, ilias::pmap::page_no<Arch>)
       noexcept;
 
-  ilias::pmap::vpage_no<Arch> map_page(ilias::pmap::page_no<Arch>) override;
-  void unmap_page(ilias::pmap::vpage_no<Arch>) noexcept override;
+  ilias::pmap::vpage_no<ilias::native_arch> map_page(
+      ilias::pmap::page_no<Arch>) override;
+  void unmap_page(ilias::pmap::vpage_no<ilias::native_arch>) noexcept override;
 
  private:
   struct comparator;

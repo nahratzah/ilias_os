@@ -30,19 +30,22 @@ template<> class pmap<arch::i386> final {
   std::tuple<page_no<arch::i386>, size_t, uintptr_t> virt_to_page(
       vaddr<arch::i386>) const;
 
+  reduce_permission_result reduce_permission(vpage_no<arch::i386>, permission);
   void map(vpage_no<arch::i386>, page_no<arch::i386>, permission);
   void unmap(vpage_no<arch::i386>,
              page_count<arch::i386> = page_count<arch::i386>(1));
 
  private:
+  reduce_permission_result reduce_permission_(vpage_no<arch::i386>,
+                                              permission) noexcept;
   void map_(vpage_no<arch::i386>, page_no<arch::i386>, permission);
-  void unmap_(vpage_no<arch::i386>,
-              page_count<arch::i386> = page_count<arch::i386>(1)) noexcept;
+  void unmap_(vpage_no<arch::i386>, page_count<arch::i386>,
+              bool) noexcept;
 
  public:
   static constexpr std::array<size_t, 2> N_PAGES = {{ 1, 1 << 9 }};
 
-  const void* get_pmap_ptr() const noexcept { return &pdpe_; }
+  const void* get_pmap_ptr() const noexcept { return &pdpe_; }  // XXX return phys addr
 
   /*
    * The memory range that this pmap can manage.
@@ -60,10 +63,11 @@ template<> class pmap<arch::i386> final {
    * Since the kernel pmap maps itself, these functions calculate the mapped
    * addresses of the pte/pdp.
    */
-  static vpage_no<arch::i386> kva_pdp_entry(unsigned int);
-  static vpage_no<arch::i386> kva_pte_entry(unsigned int, unsigned int);
-  static vpage_no<arch::i386> kva_pdp_entry(vaddr<arch::i386>);
-  static vpage_no<arch::i386> kva_pte_entry(vaddr<arch::i386>);
+  static constexpr vpage_no<arch::i386> kva_pdp_entry(unsigned int);
+  static constexpr vpage_no<arch::i386> kva_pte_entry(unsigned int,
+                                                      unsigned int);
+  static constexpr vpage_no<arch::i386> kva_pdp_entry(vaddr<arch::i386>);
+  static constexpr vpage_no<arch::i386> kva_pte_entry(vaddr<arch::i386>);
 
   /* Alignment constraint (pageno) for large pages at PDP level. */
   static constexpr uint64_t lp_pdp_pgno_align = 1ULL << 9;
@@ -86,7 +90,7 @@ template<> class pmap<arch::i386> final {
       uint32_t(0) - (uint32_t(1) << pdpe_addr_offset);
   static constexpr uint32_t pdp_mask =
       (uint32_t(1) << pdpe_addr_offset) - (uint32_t(1) << pdp_addr_offset);
-  static constexpr uintptr_t pte_mask =
+  static constexpr uint32_t pte_mask =
       (uint32_t(1) << pdp_addr_offset) - (uint32_t(1) << pte_addr_offset);
 
   /* Number of records in each level. */
@@ -96,8 +100,27 @@ template<> class pmap<arch::i386> final {
 
   /* Worst case, the pmap requires this many pages to hold its information. */
   static constexpr page_count<arch::i386> worst_case_npages =
-      page_count<arch::i386>(N_PDPE + N_PDPE * N_PDP);
-  static const vpage_no<arch::i386> kva_map_self;
+      page_count<arch::i386>(N_PDPE * (1 + N_PDP));
+
+  /*
+   * Memory layout for kva self-mapping:
+   *
+   * address           | data                          | #pages
+   * ------------------+-------------------------------+-----------------
+   * 0xffffffff        |                               |
+   *                   | pdp[0..4)                     | N_PDPE
+   * kva_map_self_pdp  |                               |
+   *                   | pdp[0..4) pte[0..1024)        | N_PDPE * N_PDP
+   * kva_map_self_pte  |                               |
+   *   = kva_map_self  |                               |
+   */
+  static constexpr vpage_no<arch::i386> kva_map_self =
+      vpage_no<arch::i386>(0xffffffff >> page_shift(arch::i386)) -
+      worst_case_npages;
+  static constexpr vpage_no<arch::i386> kva_map_self_pdp =
+      kva_map_self + page_count<arch::i386>(1) * N_PDPE * N_PDP;
+  static constexpr vpage_no<arch::i386> kva_map_self_pte =
+      kva_map_self;
 
   /*
    * Use AVL bit 0 to mark pte's/pdp's as critical.
@@ -106,7 +129,7 @@ template<> class pmap<arch::i386> final {
   static const unsigned int AVL_CRITICAL = 0;
 
   /* Declare our record types. */
-  using pdpe_record = x86_shared::pdpe_record;
+  using pdpe_record = x86_shared::pdpe_record<arch::i386>;
   using pdp_record = x86_shared::pdp_record;
   using pte_record = x86_shared::pte_record;
 
@@ -139,6 +162,30 @@ template<> class pmap<arch::i386> final {
   auto map_pte(page_no<arch::i386>, unsigned int, unsigned int) const ->
       pmap_mapped_ptr<pte, arch::i386>;
 
+  void maybe_gc(
+      pdpe_record&,
+      std::tuple<page_ptr<arch::i386>&,
+                 pmap_mapped_ptr<pdp, arch::i386>&,
+                 pdp_record&>,
+      std::tuple<page_ptr<arch::i386>&,
+                 pmap_mapped_ptr<pte, arch::i386>&,
+                 pte_record&>)
+      noexcept;
+  void maybe_gc(
+      pdpe_record&,
+      std::tuple<page_ptr<arch::i386>&,
+                 pmap_mapped_ptr<pdp, arch::i386>&,
+                 pdp_record&>)
+      noexcept;
+  void maybe_gc(pdpe_record&) noexcept {}
+
+  void break_large_page_(pdp_record&, vaddr<arch::i386>);
+
+  void deregister_from_pg_(
+      page_no<arch::i386>,
+      vpage_no<arch::i386>,
+      page_count<arch::i386> = page_count<arch::i386>(1)) noexcept;
+
   /* Variables start here. */
   pdpe pdpe_;
   pmap_support<arch::i386>& support_;
@@ -169,20 +216,29 @@ template<> class pmap<arch::i386> final {
                 "Masks must be ordered: PDPE > PDP > PTE > page_mask.");
   static_assert(offset_bits == page_shift(arch::i386),
                 "Page shift or offset_bits are wrong.");
+
+  /*
+   * Validate self-mapping calculations.
+   */
+  static_assert(kva_map_self == kva_map_self_pte,
+                "Self-mapping calculation went wrong.");
 };
 
 template<> class pmap_map<pmap<arch::i386>> {
  private:
-  static constexpr auto N_PDPE = pmap<arch::i386>::N_PDPE;
-  static constexpr auto N_PDP = pmap<arch::i386>::N_PDP;
-  static constexpr auto N_PTE = pmap<arch::i386>::N_PTE;
+  static constexpr unsigned int N_PDPE = pmap<arch::i386>::N_PDPE;
+  static constexpr unsigned int N_PDP = pmap<arch::i386>::N_PDP;
+  static constexpr unsigned int N_PTE = pmap<arch::i386>::N_PTE;
 
-  static constexpr auto pdpe_addr_offset = pmap<arch::i386>::pdpe_addr_offset;
-  static constexpr auto pdp_addr_offset = pmap<arch::i386>::pdp_addr_offset;
-  static constexpr auto pte_addr_offset = pmap<arch::i386>::pte_addr_offset;
-  static constexpr auto pdpe_mask = pmap<arch::i386>::pdpe_mask;
-  static constexpr auto pdp_mask = pmap<arch::i386>::pdp_mask;
-  static constexpr auto pte_mask = pmap<arch::i386>::pte_mask;
+  static constexpr unsigned int pdpe_addr_offset =
+      pmap<arch::i386>::pdpe_addr_offset;
+  static constexpr unsigned int pdp_addr_offset =
+      pmap<arch::i386>::pdp_addr_offset;
+  static constexpr unsigned int pte_addr_offset =
+      pmap<arch::i386>::pte_addr_offset;
+  static constexpr uint32_t pdpe_mask = pmap<arch::i386>::pdpe_mask;
+  static constexpr uint32_t pdp_mask = pmap<arch::i386>::pdp_mask;
+  static constexpr uint32_t pte_mask = pmap<arch::i386>::pte_mask;
 
   using pdpe_record = pmap<arch::i386>::pdpe_record;
   using pdp_record = pmap<arch::i386>::pdp_record;
@@ -220,6 +276,6 @@ template<> class pmap_map<pmap<arch::i386>> {
 
 }} /* namespace ilias::pmap */
 
-#include <ilias/pmap/pmap_i386-inl.h>
+#include "pmap_i386-inl.h"
 
 #endif /* _ILIAS_PMAP_PMAP_I386_H_ */

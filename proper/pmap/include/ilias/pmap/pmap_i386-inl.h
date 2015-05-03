@@ -1,7 +1,7 @@
 #ifndef _ILIAS_PMAP_PMAP_I386_INL_H_
 #define _ILIAS_PMAP_PMAP_I386_INL_H_
 
-#include <ilias/pmap/pmap_i386.h>
+#include "pmap_i386.h"
 #include <cassert>
 #include <algorithm>
 #include <utility>
@@ -26,42 +26,44 @@ inline pmap<arch::i386>::pmap(pmap_support<arch::i386>& support) noexcept
 
 inline auto pmap<arch::i386>::managed_range() const noexcept ->
     std::tuple<vpage_no<arch::i386>, vpage_no<arch::i386>> {
-  vpage_no<arch::i386> top = kva_map_self;
+  constexpr auto shift = pdpe_offset_bits + pdp_offset_bits + pte_offset_bits;
+  constexpr auto delta = page_count<arch::i386>(1U << shift);
+
   if (support_.userspace) {
-    const auto shift = pdpe_offset_bits + pdp_offset_bits + pte_offset_bits;
-    top = vpage_no<arch::i386>(1U << shift);
+    return std::make_tuple(vpage_no<arch::i386>(0),
+                           vpage_no<arch::i386>(0) + delta);
   }
-  return std::make_tuple(vpage_no<arch::i386>(0), top);
+  return std::make_tuple(vpage_no<arch::i386>(0), kva_map_self);
 }
 
-inline auto pmap<arch::i386>::kva_pdp_entry(unsigned int pdpe_idx) ->
+constexpr auto pmap<arch::i386>::kva_pdp_entry(unsigned int pdpe_idx) ->
     vpage_no<arch::i386> {
   if (pdpe_idx >= N_PDPE)
     throw std::out_of_range("pdpe");
 
-  return kva_map_self + page_count<arch::i386>(pdpe_idx);
+  return kva_map_self_pdp +
+         page_count<arch::i386>(1) * pdpe_idx;
 }
 
-inline auto pmap<arch::i386>::kva_pte_entry(unsigned int pdpe_idx,
-                                            unsigned int pdp_idx) ->
+constexpr auto pmap<arch::i386>::kva_pte_entry(unsigned int pdpe_idx,
+                                               unsigned int pdp_idx) ->
     vpage_no<arch::i386> {
   if (pdpe_idx >= N_PDPE)
     throw std::out_of_range("pdpe");
   if (pdp_idx >= N_PDP)
     throw std::out_of_range("pdp");
 
-  return kva_map_self +
-         page_count<arch::i386>(N_PDPE) +
+  return kva_map_self_pte +
          page_count<arch::i386>(N_PDP) * pdpe_idx +
-         page_count<arch::i386>(pdp_idx);
+         page_count<arch::i386>(1) * pdp_idx;
 }
 
-inline auto pmap<arch::i386>::kva_pdp_entry(vaddr<arch::i386> va) ->
+constexpr auto pmap<arch::i386>::kva_pdp_entry(vaddr<arch::i386> va) ->
     vpage_no<arch::i386> {
   return kva_pdp_entry((va.get() & pdpe_mask) >> pdpe_addr_offset);
 }
 
-inline auto pmap<arch::i386>::kva_pte_entry(vaddr<arch::i386> va) ->
+constexpr auto pmap<arch::i386>::kva_pte_entry(vaddr<arch::i386> va) ->
     vpage_no<arch::i386> {
   return kva_pte_entry((va.get() & pdpe_mask) >> pdpe_addr_offset,
                        (va.get() & pdp_mask) >> pdp_addr_offset);
