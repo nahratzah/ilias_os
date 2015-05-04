@@ -25,7 +25,7 @@ class page_cache {
   static constexpr unsigned int cold_zone = 1;
   static constexpr unsigned int hot_zone  = 2;
   static constexpr array<page::flags_type, n_zones> pg_flags = {{
-      page::fl_cache_speculative, page::fl_cache_cold, page::fl_cache_hot
+    page::fl_cache_speculative, page::fl_cache_cold, page::fl_cache_hot
   }};
 
   class hot_cold_rebalance_wqjob;
@@ -58,7 +58,7 @@ class page_cache {
                                      page_count<native_arch> npg,
                                      page_list pgl) noexcept;
   cb_future<page_list> try_release_zone_(unsigned int,
-                                      page_count<native_arch> npg) noexcept;
+                                         page_count<native_arch> npg) noexcept;
 
   atomic<intptr_t> hot_cold_diff_{ 0 };  // #hot - (#cold + #speculative).
   atomic<intptr_t> spec_need_diff_{ 0 };  // #speculative - min(#speculative)
