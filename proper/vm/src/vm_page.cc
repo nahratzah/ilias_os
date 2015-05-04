@@ -107,6 +107,19 @@ auto page::undirty() -> void {
   pgo->undirty_async(move(l), off, *this);
 }
 
+auto page::map_ro_and_update_accessed_dirty() noexcept -> page_busy_lock {
+  page_busy_lock l{ *this };
+  reduce_permissions(true, permission::RX() | permission::GLOBAL(), true);
+  return l;
+}
+
+auto page::unmap_all(page_busy_lock l) noexcept -> page_busy_lock {
+  assert(l.get_page() == this);
+
+  this->unmap(true);
+  return l;
+}
+
 auto page::set_page_owner(page_owner& pgo, page_owner::offset_type off)
     noexcept -> void {
   lock_guard<mutex> l{ guard_ };
