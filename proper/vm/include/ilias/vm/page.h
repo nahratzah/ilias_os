@@ -102,7 +102,7 @@ class page
 
   void update_accessed_dirty() noexcept;
   page_ptr try_release_urgent() noexcept;
-  void undirty() {}  // XXX implement
+  void undirty();
   page_busy_lock map_ro_and_update_accessed_dirty() { return page_busy_lock(*this); }  // XXX implement (return busy lock)
   page_busy_lock unmap_all(page_busy_lock) { return page_busy_lock(*this); }  // XXX implement (return busy lock)
 

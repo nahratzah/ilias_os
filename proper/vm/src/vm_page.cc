@@ -93,6 +93,20 @@ auto page::try_release_urgent() noexcept -> page_ptr {
   return nullptr;
 }
 
+auto page::undirty() -> void {
+  page_owner* pgo;
+  tie(pgo, ignore) = pgo_;
+  if (pgo == nullptr) return;
+
+  page_busy_lock l = map_ro_and_update_accessed_dirty();
+  page_owner::offset_type off;
+  tie(pgo, off) = pgo_;
+  if (pgo == nullptr || !(flags_.load(memory_order_relaxed) & fl_dirty))
+    return;
+
+  pgo->undirty_async(move(l), off, *this);
+}
+
 auto page::set_page_owner(page_owner& pgo, page_owner::offset_type off)
     noexcept -> void {
   lock_guard<mutex> l{ guard_ };
