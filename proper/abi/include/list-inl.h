@@ -265,9 +265,10 @@ auto list<T, A>::back() const -> const_reference {
 template<typename T, typename A>
 template<typename... Args>
 auto list<T, A>::emplace_front(Args&&... args) -> void {
-  auto ptr = impl::new_alloc_deleter<T>(this->get_allocator_(),
-                                        (empty() ? this : &front()),
-                                        forward<Args>(args)...);
+  const void*const void_this = this;
+  auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
+                                           (empty() ? void_this : &front()),
+                                           forward<Args>(args)...);
   data_.link_front(ptr.release());
   ++size_;
 }
@@ -292,9 +293,10 @@ auto list<T, A>::pop_front() -> void {
 template<typename T, typename A>
 template<typename... Args>
 auto list<T, A>::emplace_back(Args&&... args) -> void {
-  auto ptr = impl::new_alloc_deleter<T>(this->get_allocator_(),
-                                        (empty() ? this : &back()),
-                                        forward<Args>(args)...);
+  const void*const void_this = this;
+  auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
+                                           (empty() ? void_this : &back()),
+                                           forward<Args>(args)...);
   data_.link_back(ptr.release());
   ++size_;
 }
@@ -320,10 +322,11 @@ auto list<T, A>::pop_back() -> void {
 template<typename T, typename A>
 template<typename... Args>
 auto list<T, A>::emplace(const_iterator i, Args&&... args) -> iterator {
-  auto hint = (i != end() ? &*i : (empty() ? this : &back()));
-  auto ptr = impl::new_alloc_deleter<T>(this->get_allocator_(),
-                                        hint,
-                                        forward<Args>(args)...);
+  const void*const void_this = this;
+  auto hint = (i != end() ? &*i : (empty() ? void_this : &back()));
+  auto ptr = impl::new_alloc_deleter<elem>(this->get_allocator_(),
+                                           hint,
+                                           forward<Args>(args)...);
   ++size_;
   return iterator(data_.link(i.impl_, ptr.release()));
 }
@@ -344,10 +347,11 @@ auto list<T, A>::insert(const_iterator i, size_type n, const_reference v) ->
   typename data_type::iterator i_ = data_.nonconst_iterator(i.impl_);
 
   /* Use temporary storage to create all elements. */
-  auto hint = (i != end() ? &*i : (empty() ? this : &back()));
-  auto gen_fn = [this, &v, hint&]() {
-                  auto rv = impl::new_alloc_deleter<T>(this->get_allocator_(),
-                                                       hint, v);
+  const void*const void_this = this;
+  auto hint = (i != end() ? &*i : (empty() ? void_this : &back()));
+  auto gen_fn = [this, &v, &hint]() {
+                  auto rv = impl::new_alloc_deleter<elem>(
+                      this->get_allocator_(), hint, v);
                   hint = rv.get();
                   return rv;
                 };
@@ -376,20 +380,22 @@ auto list<T, A>::insert(const_iterator i, InputIterator b, InputIterator e) ->
                                InputIterator>::iterator_category
                           >::value,
                iterator> {
+  using v_type = typename iterator_traits<InputIterator>::reference;
+
   size_type n = distance(b, e);
   typename data_type::iterator i_ = data_.nonconst_iterator(i.impl_);
 
   /* Use temporary storage to create all elements. */
-  auto hint = (i != end() ? &*i : (empty() ? this : &back()));
-  auto gen_fn = [this, &v, hint&]() {
-                  auto rv = impl::new_alloc_deleter<T>(this->get_allocator_(),
-                                                       hint, move(v));
+  const void*const void_this = this;
+  auto hint = (i != end() ? &*i : (empty() ? void_this : &back()));
+  auto gen_fn = [this, &hint](v_type v) {
+                  auto rv = impl::new_alloc_deleter<elem>(
+                      this->get_allocator_(), hint, v);
                   hint = rv.get();
                   return rv;
                 };
   using gen_t = impl::alloc_deleter_ptr<elem,
                                         typename alloc_base::allocator_type>;
-  using ii_value_type = typename iterator_traits<InputIterator>::value_type;
   auto array = impl::heap_array<gen_t>(n);
   transform(b, e, back_inserter(array), move(gen_fn));
 
@@ -413,19 +419,21 @@ auto list<T, A>::insert(const_iterator i, InputIterator b, InputIterator e) ->
                                 InputIterator>::iterator_category
                            >::value,
                iterator> {
+  using v_type = typename iterator_traits<InputIterator>::reference;
+
   typename data_type::iterator i_ = data_.nonconst_iterator(i.impl_);
 
   /* Use temporary storage to create all elements. */
-  auto hint = (i != end() ? &*i : (empty() ? this : &back()));
-  auto gen_fn = [this, &v, hint&]() {
-                  auto rv = impl::new_alloc_deleter<T>(this->get_allocator_(),
-                                                       hint, move(v));
+  const void*const void_this = this;
+  auto hint = (i != end() ? &*i : (empty() ? void_this : &back()));
+  auto gen_fn = [this, &hint](v_type v) {
+                  auto rv = impl::new_alloc_deleter<elem>(
+                      this->get_allocator_(), hint, move(v));
                   hint = rv.get();
                   return rv;
                 };
   using gen_t = impl::alloc_deleter_ptr<elem,
                                         typename alloc_base::allocator_type>;
-  using ii_value_type = typename iterator_traits<InputIterator>::value_type;
   auto array = vector<gen_t, temporary_buffer_allocator<gen_t>>();
   transform(b, e, back_inserter(array), move(gen_fn));
 

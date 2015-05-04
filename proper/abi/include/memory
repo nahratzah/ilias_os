@@ -155,7 +155,7 @@ template<typename Alloc> struct allocator_traits {
 
   static pointer allocate(Alloc& alloc, size_type n, const_void_pointer hint)
       noexcept(noexcept(impl::allocator::allocate<pointer>(alloc, move(n),
-                                                          move(hint)))) {
+                                                           move(hint)))) {
     return impl::allocator::allocate<pointer>(alloc, n, hint);
   }
 

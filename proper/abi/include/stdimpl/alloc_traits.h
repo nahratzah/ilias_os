@@ -53,7 +53,7 @@ template<typename P, typename CP> struct void_pointer_for_pointer {
   using void_pointer =
       typename pointer_traits<P>::template rebind<void>;
   using const_void_pointer =
-      typename pointer_traits<CP>::template rebind<void>;
+      typename pointer_traits<CP>::template rebind<const void>;
 };
 
 struct alloc_traits_propagate_defaults {
