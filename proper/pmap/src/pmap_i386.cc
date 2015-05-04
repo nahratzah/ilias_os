@@ -76,7 +76,10 @@ auto pmap<arch::i386>::clear() noexcept -> void {
         continue;  // Skip non-present entries.
       }
       if (pdp_value.ps()) {
-        deregister_from_pg_(pdp_value.address(), va, pdp_skip);
+        const bool accessed = pdp_value.flags().a();
+        const bool dirty = pdp_value.flags().d();
+        deregister_from_pg_(pdp_value.address(), va, accessed, dirty,
+                            pdp_skip);
         continue;  // Leaf node.
       }
 
@@ -88,8 +91,11 @@ auto pmap<arch::i386>::clear() noexcept -> void {
       auto mapped_pte = pmap_map_page<pte>(pte_ptr.get(), support_);
       for (pte_record pte_value : *mapped_pte) {
         /* Release the page. */
-        if (pte_value.p())
-          deregister_from_pg_(pte_value.address(), va);
+        if (pte_value.p()) {
+          const bool accessed = pte_value.flags().a();
+          const bool dirty = pte_value.flags().d();
+          deregister_from_pg_(pte_value.address(), va, accessed, dirty);
+        }
         va += page_count<arch::i386>(1);
       }
     }
@@ -175,6 +181,15 @@ auto pmap<arch::i386>::unmap(vpage_no<arch::i386> va,
   if (va < lo || va_end > hi)
     throw std::out_of_range("va outside of managed range");
   unmap_(va, npg, true);
+}
+
+auto pmap<arch::i386>::flush_accessed_dirty(vpage_no<arch::i386> va)
+    noexcept -> std::tuple<bool, bool> {
+  vpage_no<arch::i386> lo, hi;
+  std::tie(lo, hi) = managed_range();
+  if (va < lo || va >= hi)
+    throw std::out_of_range("va outside of managed range");
+  return flush_accessed_dirty_(va);
 }
 
 auto pmap<arch::i386>::reduce_permission_(vpage_no<arch::i386> va,
@@ -358,7 +373,7 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
        pdpe_iter != pdpe_.end() && c > page_count<arch::i386>(0);
        pdp_off = 0, ++pdpe_iter) {
     const auto pdpe_skip =  // Number of entries covered.
-	min(c, page_count<arch::i386>(N_PTE * N_PDP * (N_PDPE - pdpe_off)));
+        min(c, page_count<arch::i386>(N_PTE * N_PDP * (N_PDPE - pdpe_off)));
     if (!pdpe_iter->p()) {  // PDPE not present.
       c -= pdpe_skip;
       va += pdpe_skip;
@@ -370,65 +385,116 @@ auto pmap<arch::i386>::unmap_(vpage_no<arch::i386> va,
     auto mapped_pdp = map_pdp(pdp_ptr.get(), va);
     for (auto pdp_iter = next(mapped_pdp->begin(), pdp_off);
          pdp_iter != mapped_pdp->end() && c > page_count<arch::i386>(0);
-	 pdp_off = 0, ++pdp_iter) {
+         pdp_off = 0, ++pdp_iter) {
       const auto pdp_skip =  // Number of entries covered.
-	  min(c, page_count<arch::i386>(N_PTE - pte_off));
+          min(c, page_count<arch::i386>(N_PTE - pte_off));
       if (!pdp_iter->p()) {  // PDP not present.
-	c -= pdp_skip;
-	va += pdp_skip;
-	continue;
+        c -= pdp_skip;
+        va += pdp_skip;
+        continue;
       }
       if (pdp_iter->ps()) {  // Large page.
-	/*
-	 * Break the page up into smaller bits, iff the page is unmapped
-	 * partially.
-	 * On failure: just unmap the page and let page-fault deal with it.
-	 */
-	bool broken_up = false;
-	try {
-	  if (pdp_skip != page_count<arch::i386>(N_PTE)) {
-	    break_large_page_(*pdp_iter, va);
-	    broken_up = true;
-	  }
-	} catch (...) {
-	  /* SKIP: broken_up = false, handled below. */
-	}
+        /*
+         * Break the page up into smaller bits, iff the page is unmapped
+         * partially.
+         * On failure: just unmap the page and let page-fault deal with it.
+         */
+        bool broken_up = false;
+        try {
+          if (pdp_skip != page_count<arch::i386>(N_PTE)) {
+            break_large_page_(*pdp_iter, va);
+            broken_up = true;
+          }
+        } catch (...) {
+          /* SKIP: broken_up = false, handled below. */
+        }
 
-	if (!broken_up) {
-	  if (do_deregister) {
-	    deregister_from_pg_(pdp_iter->address(), va,
-				page_count<arch::i386>(N_PTE));
-	  }
-	  va += page_count<arch::i386>(N_PTE);
+        if (!broken_up) {
+          if (do_deregister) {
+            const bool accessed = pdp_iter->flags().a();
+            const bool dirty = pdp_iter->flags().d();
+            deregister_from_pg_(pdp_iter->address(), va, accessed, dirty,
+                                page_count<arch::i386>(N_PTE));
+          }
+          va += page_count<arch::i386>(N_PTE);
 
-	  *pdp_iter = pdp_record::create(nullptr, pdp_iter->flags());
-	  maybe_gc(*pdpe_iter,
-	           std::tie(pdp_ptr, mapped_pdp, *pdp_iter));
-	  continue;
-	}
+          *pdp_iter = pdp_record::create(nullptr, pdp_iter->flags());
+          maybe_gc(*pdpe_iter,
+                   std::tie(pdp_ptr, mapped_pdp, *pdp_iter));
+          continue;
+        }
       }
 
       /* Iterate in pte. */
       auto pte_ptr = page_ptr<arch::i386>(pdp_iter->address());
       auto mapped_pte = map_pte(pte_ptr.get(), va);
       for (auto pte_iter = next(mapped_pte->begin(), pte_off);
-	   pte_iter != mapped_pte->end() && c > page_count<arch::i386>(0);
-	   ++va, --c, ++pte_iter) {
-	if (!pte_iter->p()) {  // PTE not present.
-	  /* Increment/decrement logic is present in loop. */
-	  continue;
-	}
+           pte_iter != mapped_pte->end() && c > page_count<arch::i386>(0);
+           ++va, --c, ++pte_iter) {
+        if (!pte_iter->p()) {  // PTE not present.
+          /* Increment/decrement logic is present in loop. */
+          continue;
+        }
 
-	if (pte_iter->p() && do_deregister)
-	  deregister_from_pg_(pte_iter->address(), va);
+        if (pte_iter->p() && do_deregister) {
+          const bool accessed = pte_iter->flags().a();
+          const bool dirty = pte_iter->flags().d();
+          deregister_from_pg_(pte_iter->address(), va, accessed, dirty);
+        }
 
-	*pte_iter = pte_record::create(nullptr, pte_iter->flags());
-	maybe_gc(*pdpe_iter,
-	         std::tie(pdp_ptr, mapped_pdp, *pdp_iter),
-	         std::tie(pte_ptr, mapped_pte, *pte_iter));
+        *pte_iter = pte_record::create(nullptr, pte_iter->flags());
+        maybe_gc(*pdpe_iter,
+                 std::tie(pdp_ptr, mapped_pdp, *pdp_iter),
+                 std::tie(pte_ptr, mapped_pte, *pte_iter));
       }  // Iterate in pte.
     }  // Iterate in pdp.
   }  // Iterate in pdpe.
+}
+
+auto pmap<arch::i386>::flush_accessed_dirty_(vpage_no<arch::i386> va)
+    noexcept -> std::tuple<bool, bool> {
+  using namespace x86_shared;
+
+  const auto p = vaddr<arch::i386>(va).get();
+
+  /* Resolve pdpe offset. */
+  const uint32_t pdpe_off = (p & pdpe_mask) >> pdpe_addr_offset;
+
+  /* Resolve pde. */
+  pdpe_record& pdpe_value = pdpe_[pdpe_off];
+  if (!pdpe_value.p())
+    return std::make_tuple(false, false);
+  auto pdp_ptr = page_ptr<arch::i386>(pdpe_value.address());
+  auto mapped_pdp = map_pdp(pdp_ptr.get(), va);
+
+  /* Resolve pde offset. */
+  const uintptr_t pdp_off = (p & pdp_mask) >> pdp_addr_offset;
+
+  /* Resolve pte. */
+  pdp_record& pdp_value = (*mapped_pdp)[pdp_off];
+  if (!pdp_value.p())
+    return std::make_tuple(false, false);
+  if (pdp_value.ps()) {  /* Flush flags. */
+    // XXX update _all_ the _pages_!
+    const auto fl = pdp_value.clear_ad_flags();
+    return std::make_tuple(fl.a(), fl.d());
+  }
+  auto pte_ptr = page_ptr<arch::i386>(pdp_value.address());
+  auto mapped_pte = map_pte(pte_ptr.get(), va);
+
+  /* Resolve pte offset. */
+  const uintptr_t pte_off = (p & pte_mask) >> pte_addr_offset;
+
+  /* Resolve page entry. */
+  pte_record& pte_value = (*mapped_pte)[pte_off];
+  if (!pte_value.p())
+    return std::make_tuple(false, false);
+
+  /* Flush flags. */
+  {
+    const auto fl = pte_value.clear_ad_flags();
+    return std::make_tuple(fl.a(), fl.d());
+  }
 }
 
 auto pmap<arch::i386>::map_pdp(page_no<arch::i386> pg, vaddr<arch::i386> va)
@@ -529,11 +595,18 @@ auto pmap<arch::i386>::break_large_page_(pdp_record& pdp_value,
 #ifndef _LOADER
 auto pmap<arch::i386>::deregister_from_pg_(page_no<arch::i386> pa,
                                            vpage_no<arch::i386> va,
+                                           bool accessed, bool dirty,
                                            page_count<arch::i386> n)
     noexcept -> void {
   while (n > page_count<arch::i386>(0)) {
     pmap_page& ppg = support_.lookup_pmap_page(pa);
     ppg.pmap_deregister_(*this, va);
+    if (accessed && dirty)
+      ppg.mark_accessed_and_dirty();
+    else if (accessed)
+      ppg.mark_accessed();
+    else if (dirty)
+      ppg.mark_dirty();
 
     ++va;
     ++pa;
@@ -543,6 +616,7 @@ auto pmap<arch::i386>::deregister_from_pg_(page_no<arch::i386> pa,
 #else
 auto pmap<arch::i386>::deregister_from_pg_(page_no<arch::i386>,
                                            vpage_no<arch::i386>,
+                                           bool, bool,
                                            page_count<arch::i386>)
     noexcept -> void
 {}

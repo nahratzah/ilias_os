@@ -35,6 +35,7 @@ template<> class pmap<arch::amd64> final {
   void map(vpage_no<arch::amd64>, page_no<arch::amd64>, permission);
   void unmap(vpage_no<arch::amd64>,
              page_count<arch::amd64> = page_count<arch::amd64>(1));
+  std::tuple<bool, bool> flush_accessed_dirty(vpage_no<arch::amd64>) noexcept;
 
  private:
   reduce_permission_result reduce_permission_(vpage_no<arch::amd64>,
@@ -42,6 +43,7 @@ template<> class pmap<arch::amd64> final {
   void map_(vpage_no<arch::amd64>, page_no<arch::amd64>, permission);
   void unmap_(vpage_no<arch::amd64>, page_count<arch::amd64>,
               bool do_deregister) noexcept;
+  std::tuple<bool, bool> flush_accessed_dirty_(vpage_no<arch::amd64>) noexcept;
 
  public:
   static constexpr std::array<size_t, 3> N_PAGES = {{ 1, 1 << 9, 1 << 18 }};
@@ -243,6 +245,7 @@ template<> class pmap<arch::amd64> final {
   void deregister_from_pg_(
       page_no<arch::amd64>,
       vpage_no<arch::amd64>,
+      bool, bool,
       page_count<arch::amd64> = page_count<arch::amd64>(1)) noexcept;
 
   /* Variables start here. */
