@@ -55,6 +55,11 @@ class efault : public std::system_error {
   efault(uintptr_t) noexcept;
   ~efault() noexcept override;
 
+  template<arch Arch>
+  efault(ilias::pmap::vaddr<Arch> va) noexcept : efault(va.get()) {}
+  template<arch Arch>
+  efault(vpage_no<Arch> va) noexcept : efault(ilias::pmap::vaddr<Arch>(va)) {}
+
   uintptr_t vaddr;  // Address for which the error occured.
 };
 
