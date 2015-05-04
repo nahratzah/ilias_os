@@ -36,6 +36,15 @@ auto page::set_flag_iff_zero(flags_type f) noexcept -> flags_type {
   return expect;
 }
 
+auto page::update_accessed_dirty() noexcept -> void {
+  constexpr flags_type nil = 0;
+
+  bool accessed, dirty;
+  tie(accessed, dirty) = this->flush_accessed_dirty();
+  flags_.fetch_or((accessed ? fl_accessed : nil) | (dirty ? fl_dirty : nil),
+                  memory_order_relaxed);
+}
+
 auto page::try_release_urgent() noexcept -> page_ptr {
   class pgo_call_lock {
    public:

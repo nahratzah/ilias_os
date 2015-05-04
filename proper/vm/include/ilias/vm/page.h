@@ -100,7 +100,7 @@ class page
   flags_type set_flag_iff_zero(flags_type) noexcept;
   flags_type assign_masked_flags(flags_type, flags_type) noexcept;
 
-  void update_accessed_dirty() {}  // XXX implement
+  void update_accessed_dirty() noexcept;
   page_ptr try_release_urgent() noexcept;
   void undirty() {}  // XXX implement
   page_busy_lock map_ro_and_update_accessed_dirty() { return page_busy_lock(*this); }  // XXX implement (return busy lock)
