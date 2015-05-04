@@ -6,8 +6,8 @@ COMPILER_FLAGS +=	-ffreestanding					\
 			-D_KERNEL=1					\
 			-Wno-tautological-compare			\
 			-Wno-c++1y-extensions				\
-			-ftls-model=initial-exec			\
-			-g
+			-ftls-model=initial-exec
+# -g
 # -mno-sse -mno-sse2 -mno-sse3 -mno-3dnow -mno-mmx -mno-avx -msoft-float
 
 # Disable TLS for now, since clang has a code generation bug.
