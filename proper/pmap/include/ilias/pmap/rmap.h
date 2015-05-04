@@ -57,7 +57,7 @@ class rmap {
       noexcept;
 
   bool linked() const noexcept;
-  void reduce_permissions(bool, permission) noexcept;
+  void reduce_permissions(bool, permission, bool) noexcept;
   void unmap(bool) noexcept;
 
   void flush_accessed_dirty() const noexcept;

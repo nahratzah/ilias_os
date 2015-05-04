@@ -18,9 +18,9 @@ bool linked_(const rmap<PhysArch, VirtArch>& r) noexcept {
 }
 
 template<arch PhysArch, arch VirtArch>
-void reduce_permissions_(bool reduce_kernel, permission perm,
+void reduce_permissions_(bool reduce_kernel, permission perm, bool update_ad,
                          rmap<PhysArch, VirtArch>& r) noexcept {
-  r.reduce_permissions(reduce_kernel, perm);
+  r.reduce_permissions(reduce_kernel, perm, update_ad);
 }
 
 template<arch PhysArch, arch VirtArch>
@@ -47,19 +47,19 @@ bool linked_(const std::tuple<rmap<PhysArch, VirtArch>...>& t,
 
 
 template<arch PhysArch, arch VirtArch, typename... Rmap>
-void reduce_permissions_(bool reduce_kernel, permission perm,
+void reduce_permissions_(bool reduce_kernel, permission perm, bool update_ad,
                          rmap<PhysArch, VirtArch>& r0, Rmap&... r) noexcept {
-  reduce_permissions_(reduce_kernel, perm, r0);
-  reduce_permissions_(reduce_kernel, perm, r...);
+  reduce_permissions_(reduce_kernel, perm, update_ad, r0);
+  reduce_permissions_(reduce_kernel, perm, update_ad, r...);
 }
 
 template<arch PhysArch, arch... VirtArch, size_t... N>
-void reduce_permissions_(bool reduce_kernel, permission perm,
+void reduce_permissions_(bool reduce_kernel, permission perm, bool update_ad,
                          std::tuple<rmap<PhysArch, VirtArch>...>& t,
                          std::index_sequence<N...>) noexcept {
   using std::get;
 
-  reduce_permissions_(reduce_kernel, perm, get<N>(t)...);
+  reduce_permissions_(reduce_kernel, perm, update_ad, get<N>(t)...);
 }
 
 
@@ -83,7 +83,7 @@ void unmap_(bool unmap_kernel,
 template<arch PhysArch, arch VirtArch, typename... Rmap>
 void flush_accessed_dirty_(rmap<PhysArch, VirtArch>& r0, Rmap&... r)
     noexcept {
-  r0.flush_accessed_dirty();
+  flush_accessed_dirty_(r0);
   flush_accessed_dirty_(r...);
 }
 
@@ -112,9 +112,9 @@ auto pmap_page_tmpl<PhysArch, arch_set<VirtArch...>>::linked_()
 
 template<arch PhysArch, arch... VirtArch>
 auto pmap_page_tmpl<PhysArch, arch_set<VirtArch...>>::reduce_permissions_(
-    bool reduce_kernel, permission perm) noexcept -> void {
+    bool reduce_kernel, permission perm, bool update_ad) noexcept -> void {
   /* This page is already locked. */
-  impl::reduce_permissions_(reduce_kernel, perm,
+  impl::reduce_permissions_(reduce_kernel, perm, update_ad,
                             rmap_,
                             std::index_sequence_for<decltype(VirtArch)...>());
 }

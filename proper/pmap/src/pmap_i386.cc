@@ -151,13 +151,13 @@ auto pmap<arch::i386>::virt_to_page(vaddr<arch::i386> va) const ->
 }
 
 auto pmap<arch::i386>::reduce_permission(vpage_no<arch::i386> va,
-                                         permission perm) ->
+                                         permission perm, bool update_ad) ->
     reduce_permission_result {
   vpage_no<arch::i386> lo, hi;
   std::tie(lo, hi) = managed_range();
   if (va < lo || va >= hi)
     throw std::out_of_range("va outside of managed range");
-  return reduce_permission_(va, perm);
+  return reduce_permission_(va, perm, update_ad);
 }
 
 auto pmap<arch::i386>::map(vpage_no<arch::i386> va,
@@ -193,8 +193,8 @@ auto pmap<arch::i386>::flush_accessed_dirty(vpage_no<arch::i386> va)
 }
 
 auto pmap<arch::i386>::reduce_permission_(vpage_no<arch::i386> va,
-                                          permission perm) noexcept ->
-    reduce_permission_result {
+                                          permission perm, bool update_ad)
+    noexcept -> reduce_permission_result {
   using namespace x86_shared;
 
   const auto p = vaddr<arch::i386>(va).get();
@@ -220,7 +220,17 @@ auto pmap<arch::i386>::reduce_permission_(vpage_no<arch::i386> va,
     permission reduced = perm & pdp_value.get_permission();
 
     /* Assign page entry. */
-    const auto new_pdp_value = pdp_value.combine(reduced);
+    auto new_pdp_value = pdp_value.combine(reduced);
+    if (update_ad || !new_pdp_value.p()) {
+      const auto fl = pdp_value.flags();
+      add_flags_to_pg_(pdp_value.address(), fl.a(), fl.d(),
+                       page_count<arch::i386>(N_PTE));
+      if (new_pdp_value.p()) {
+        new_pdp_value =
+            pdp_record::create(new_pdp_value.address(),
+                               new_pdp_value.flags() & ~(PT_A | PT_D));
+      }
+    }
     assert(new_pdp_value.valid());
     pdp_value = new_pdp_value;
 
@@ -250,7 +260,17 @@ auto pmap<arch::i386>::reduce_permission_(vpage_no<arch::i386> va,
     permission reduced = perm & pte_value.get_permission();
 
     /* Assign page entry. */
-    const auto new_pte_value = pte_value.combine(reduced);
+    auto new_pte_value = pte_value.combine(reduced);
+    if (update_ad || !new_pte_value.p()) {
+      const auto fl = pte_value.flags();
+      add_flags_to_pg_(pte_value.address(), fl.a(), fl.d(),
+                       page_count<arch::i386>(N_PTE));
+      if (new_pte_value.p()) {
+        new_pte_value =
+            pte_record::create(new_pte_value.address(),
+                               new_pte_value.flags() & ~(PT_A | PT_D));
+      }
+    }
     assert(new_pte_value.valid());
     pte_value = new_pte_value;
 

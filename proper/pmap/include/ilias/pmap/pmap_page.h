@@ -31,7 +31,7 @@ class pmap_page_tmpl<PhysArch, arch_set<VirtArch...>> {
   ~pmap_page_tmpl() noexcept = default;
 
   bool linked_() const noexcept;
-  void reduce_permissions_(bool, permission) noexcept;
+  void reduce_permissions_(bool, permission, bool) noexcept;
   void unmap_(bool) noexcept;
   void flush_accessed_dirty_() noexcept;
 
@@ -58,7 +58,7 @@ class pmap_page
 
  public:
   bool linked() const noexcept;
-  void reduce_permissions(bool, permission) noexcept;
+  void reduce_permissions(bool, permission, bool) noexcept;
   void unmap(bool) noexcept;
 
   page_no<native_arch> address() const noexcept;

@@ -52,7 +52,8 @@ auto rmap<PhysArch, VirtArch>::linked() const noexcept -> bool {
 
 template<arch PhysArch, arch VirtArch>
 auto rmap<PhysArch, VirtArch>::reduce_permissions(bool reduce_kernel,
-                                                  permission perm) noexcept ->
+                                                  permission perm,
+                                                  bool update_ad) noexcept ->
     void {
   using std::next;
   using iter = typename rmap_set::iterator;
@@ -61,7 +62,7 @@ auto rmap<PhysArch, VirtArch>::reduce_permissions(bool reduce_kernel,
     i_succ = next(i);
 
     if (reduce_kernel || i->pmap_->userspace()) {
-      if (i->pmap_->reduce_permission(i->addr_, perm) ==
+      if (i->pmap_->reduce_permission(i->addr_, perm, update_ad) ==
           reduce_permission_result::UNMAPPED)
         delete rmap_.unlink(i);
     }

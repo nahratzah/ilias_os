@@ -25,10 +25,11 @@ auto pmap_page::linked() const noexcept -> bool {
   return linked_();
 }
 
-auto pmap_page::reduce_permissions(bool reduce_kernel, permission perm)
+auto pmap_page::reduce_permissions(bool reduce_kernel, permission perm,
+                                   bool update_ad)
     noexcept -> void {
   std::lock_guard<std::mutex> lck{ guard_ };
-  reduce_permissions_(reduce_kernel, perm);
+  reduce_permissions_(reduce_kernel, perm, update_ad);
 }
 
 auto pmap_page::unmap(bool unmap_kernel) noexcept -> void {

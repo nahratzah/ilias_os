@@ -30,7 +30,8 @@ template<> class pmap<arch::i386> final {
   std::tuple<page_no<arch::i386>, size_t, uintptr_t> virt_to_page(
       vaddr<arch::i386>) const;
 
-  reduce_permission_result reduce_permission(vpage_no<arch::i386>, permission);
+  reduce_permission_result reduce_permission(vpage_no<arch::i386>, permission,
+                                             bool = false);
   void map(vpage_no<arch::i386>, page_no<arch::i386>, permission);
   void unmap(vpage_no<arch::i386>,
              page_count<arch::i386> = page_count<arch::i386>(1));
@@ -38,7 +39,7 @@ template<> class pmap<arch::i386> final {
 
  private:
   reduce_permission_result reduce_permission_(vpage_no<arch::i386>,
-                                              permission) noexcept;
+                                              permission, bool) noexcept;
   void map_(vpage_no<arch::i386>, page_no<arch::i386>, permission);
   void unmap_(vpage_no<arch::i386>, page_count<arch::i386>,
               bool) noexcept;
