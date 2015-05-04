@@ -29,15 +29,8 @@ void unmap_(bool unmap_kernel, rmap<PhysArch, VirtArch>& r) noexcept {
 }
 
 template<arch PhysArch, arch VirtArch>
-void flush_accessed_dirty_(std::tuple<bool, bool>& out,
-                           rmap<PhysArch, VirtArch>& r0) noexcept {
-  using std::get;
-  using std::tie;
-
-  bool a, d;
-  tie(a, d) = r0.flush_accessed_dirty();
-  get<0>(out) |= a;
-  get<1>(out) |= d;
+void flush_accessed_dirty_(rmap<PhysArch, VirtArch>& r0) noexcept {
+  r0.flush_accessed_dirty();
 }
 
 
@@ -88,28 +81,18 @@ void unmap_(bool unmap_kernel,
 
 
 template<arch PhysArch, arch VirtArch, typename... Rmap>
-void flush_accessed_dirty_(std::tuple<bool, bool>& out,
-                           rmap<PhysArch, VirtArch>& r0, Rmap&... r)
+void flush_accessed_dirty_(rmap<PhysArch, VirtArch>& r0, Rmap&... r)
     noexcept {
-  using std::get;
-  using std::tie;
-
-  {
-    bool a, d;
-    tie(a, d) = r0.flush_accessed_dirty();
-    get<0>(out) |= a;
-    get<1>(out) |= d;
-  }
-  flush_accessed_dirty_(out, r...);
+  r0.flush_accessed_dirty();
+  flush_accessed_dirty_(r...);
 }
 
 template<arch PhysArch, arch... VirtArch, size_t... N>
-void flush_accessed_dirty_(std::tuple<bool, bool>& out,
-                           std::tuple<rmap<PhysArch, VirtArch>...>& t,
+void flush_accessed_dirty_(std::tuple<rmap<PhysArch, VirtArch>...>& t,
                            std::index_sequence<N...>) noexcept {
   using std::get;
 
-  flush_accessed_dirty_(out, get<N>(t)...);
+  flush_accessed_dirty_(get<N>(t)...);
 }
 
 
@@ -146,12 +129,10 @@ auto pmap_page_tmpl<PhysArch, arch_set<VirtArch...>>::unmap_(bool unmap_kernel)
 
 template<arch PhysArch, arch... VirtArch>
 auto pmap_page_tmpl<PhysArch, arch_set<VirtArch...>>::flush_accessed_dirty_()
-    noexcept -> std::tuple<bool, bool> {
+    noexcept -> void {
   /* This page is already locked. */
-  std::tuple<bool, bool> rv = std::make_tuple(false, false);
   impl::flush_accessed_dirty_(
-      rv, rmap_, std::index_sequence_for<decltype(VirtArch)...>());
-  return rv;
+      rmap_, std::index_sequence_for<decltype(VirtArch)...>());
 }
 
 template<arch PhysArch, arch... VirtArch>
@@ -187,9 +168,11 @@ inline auto pmap_page::get_accessed_dirty() noexcept ->
     std::tuple<bool, bool> {
   constexpr auto mask = accessed_mask | dirty_mask;
 
-  const auto m = address_and_ad_.load(std::memory_order_relaxed);
-  if ((m & mask) == mask) return std::make_tuple(true, true);
-  return flush_accessed_dirty();
+  auto m = address_and_ad_.load(std::memory_order_relaxed);
+  if ((m & mask) != mask) flush_accessed_dirty();
+
+  m = address_and_ad_.load(std::memory_order_relaxed);
+  return std::make_tuple(m & accessed_mask, m & dirty_mask);
 }
 
 

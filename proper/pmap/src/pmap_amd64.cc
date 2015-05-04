@@ -232,7 +232,7 @@ auto pmap<arch::amd64>::unmap(vpage_no<arch::amd64> va,
 }
 
 auto pmap<arch::amd64>::flush_accessed_dirty(vpage_no<arch::amd64> va)
-    noexcept -> std::tuple<bool, bool> {
+    noexcept -> void {
   vpage_no<arch::amd64> lo, hi;
   std::tie(lo, hi) = managed_range();
   if (va < lo || va >= hi)
@@ -616,7 +616,7 @@ auto pmap<arch::amd64>::unmap_(vpage_no<arch::amd64> va,
 }
 
 auto pmap<arch::amd64>::flush_accessed_dirty_(vpage_no<arch::amd64> va)
-    noexcept -> std::tuple<bool, bool> {
+    noexcept -> void {
   using namespace x86_shared;
 
   const auto p = vaddr<arch::amd64>(va).get();
@@ -628,8 +628,7 @@ auto pmap<arch::amd64>::flush_accessed_dirty_(vpage_no<arch::amd64> va)
 
   /* Resolve pdpe. */
   pml4_record& pml4_value = (*mapped_pml4)[pml4_off];
-  if (!pml4_value.p())
-    return std::make_tuple(false, false);
+  if (!pml4_value.p()) return;
   auto pdpe_ptr = page_ptr<arch::amd64>(pml4_value.address());
   auto mapped_pdpe = map_pdpe(pdpe_ptr.get(), va);
 
@@ -638,12 +637,12 @@ auto pmap<arch::amd64>::flush_accessed_dirty_(vpage_no<arch::amd64> va)
 
   /* Resolve pdp. */
   pdpe_record& pdpe_value = (*mapped_pdpe)[pdpe_off];
-  if (!pdpe_value.p())
-    return std::make_tuple(false, false);
+  if (!pdpe_value.p()) return;
   if (pdpe_value.ps()) {  /* Flush flags. */
-    // XXX update _all_ the _pages_!
     const auto fl = pdpe_value.clear_ad_flags();
-    return std::make_tuple(fl.a(), fl.d());
+    add_flags_to_pg_(pdpe_value.address(), fl.a(), fl.d(),
+                     page_count<arch::amd64>(N_PDP * N_PTE));
+    return;
   }
   auto pdp_ptr = page_ptr<arch::amd64>(pdpe_value.address());
   auto mapped_pdp = map_pdp(pdp_ptr.get(), va);
@@ -653,12 +652,12 @@ auto pmap<arch::amd64>::flush_accessed_dirty_(vpage_no<arch::amd64> va)
 
   /* Resolve pte. */
   pdp_record& pdp_value = (*mapped_pdp)[pdp_off];
-  if (!pdp_value.p())
-    return std::make_tuple(false, false);
+  if (!pdp_value.p()) return;
   if (pdp_value.ps()) {  /* Flush flags. */
-    // XXX update _all_ the _pages_!
     const auto fl = pdp_value.clear_ad_flags();
-    return std::make_tuple(fl.a(), fl.d());
+    add_flags_to_pg_(pdpe_value.address(), fl.a(), fl.d(),
+                     page_count<arch::amd64>(N_PTE));
+    return;
   }
   auto pte_ptr = page_ptr<arch::amd64>(pdp_value.address());
   auto mapped_pte = map_pte(pte_ptr.get(), va);
@@ -668,13 +667,13 @@ auto pmap<arch::amd64>::flush_accessed_dirty_(vpage_no<arch::amd64> va)
 
   /* Resolve page entry. */
   pte_record& pte_value = (*mapped_pte)[pte_off];
-  if (!pte_value.p())
-    return std::make_tuple(false, false);
+  if (!pte_value.p()) return;
 
   /* Flush flags. */
   {
     const auto fl = pte_value.clear_ad_flags();
-    return std::make_tuple(fl.a(), fl.d());
+    add_flags_to_pg_(pdpe_value.address(), fl.a(), fl.d());
+    return;
   }
 }
 
@@ -875,6 +874,32 @@ auto pmap<arch::amd64>::deregister_from_pg_(page_no<arch::amd64>,
                                             vpage_no<arch::amd64>,
                                             bool, bool,
                                             page_count<arch::amd64>)
+    noexcept -> void
+{}
+#endif  // _LOADER
+
+#ifndef _LOADER
+auto pmap<arch::amd64>::add_flags_to_pg_(page_no<arch::amd64> pa,
+                                         bool accessed, bool dirty,
+                                         page_count<arch::amd64> n)
+    noexcept -> void {
+  while (n > page_count<arch::amd64>(0)) {
+    pmap_page& ppg = support_.lookup_pmap_page(pa);
+    if (accessed && dirty)
+      ppg.mark_accessed_and_dirty();
+    else if (accessed)
+      ppg.mark_accessed();
+    else if (dirty)
+      ppg.mark_dirty();
+
+    ++pa;
+    --n;
+  }
+}
+#else
+auto pmap<arch::amd64>::add_flags_to_pg_(page_no<arch::amd64>,
+                                         bool, bool,
+                                         page_count<arch::amd64>)
     noexcept -> void
 {}
 #endif  // _LOADER

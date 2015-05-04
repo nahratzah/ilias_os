@@ -86,17 +86,11 @@ auto rmap<PhysArch, VirtArch>::unmap(bool unmap_kernel) noexcept ->
 
 template<arch PhysArch, arch VirtArch>
 auto rmap<PhysArch, VirtArch>::flush_accessed_dirty() const noexcept ->
-    std::tuple<bool, bool> {
-  std::tuple<bool, bool> rv = std::make_tuple(false, false);
-
+    void {
   std::for_each(rmap_.begin(), rmap_.end(),
-                [&rv](const rmap_entry<VirtArch>& e) {
-                  bool a, d;
-                  std::tie(a, d) = e.pmap_->flush_accessed_dirty(e.addr_);
-                  std::get<0>(rv) |= a;
-                  std::get<1>(rv) |= d;
+                [](const rmap_entry<VirtArch>& e) {
+                  e.pmap_->flush_accessed_dirty(e.addr_);
                 });
-  return rv;
 }
 
 

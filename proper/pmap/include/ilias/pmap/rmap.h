@@ -60,7 +60,7 @@ class rmap {
   void reduce_permissions(bool, permission) noexcept;
   void unmap(bool) noexcept;
 
-  std::tuple<bool, bool> flush_accessed_dirty() const noexcept;
+  void flush_accessed_dirty() const noexcept;
 
  private:
   rmap_set rmap_;

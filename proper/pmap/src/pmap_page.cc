@@ -42,21 +42,16 @@ auto pmap_page::flush_accessed_dirty(bool clear) noexcept ->
   using std::make_tuple;
 
   std::lock_guard<std::mutex> lck{ guard_ };
-  bool a, d;
-  tie(a, d) = flush_accessed_dirty_();
+  flush_accessed_dirty_();
 
   page_no<native_arch>::type f;
   if (clear) {
     f = address_and_ad_.fetch_and(~(accessed_mask | dirty_mask),
                                   std::memory_order_relaxed);
   } else {
-    f = address_and_ad_.fetch_or((a ? accessed_mask : 0U) |
-                                 (d ? dirty_mask : 0U),
-                                 std::memory_order_relaxed);
+    f = address_and_ad_.load(std::memory_order_relaxed);
   }
-  a |= bool(f & accessed_mask);
-  d |= bool(f & dirty_mask);
-  return make_tuple(a, d);
+  return make_tuple(f & accessed_mask, f & dirty_mask);
 }
 
 

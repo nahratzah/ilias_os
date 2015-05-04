@@ -33,7 +33,7 @@ class pmap_page_tmpl<PhysArch, arch_set<VirtArch...>> {
   bool linked_() const noexcept;
   void reduce_permissions_(bool, permission) noexcept;
   void unmap_(bool) noexcept;
-  std::tuple<bool, bool> flush_accessed_dirty_() noexcept;
+  void flush_accessed_dirty_() noexcept;
 
   template<arch VA>
   void pmap_deregister_(pmap<VA>&, vpage_no<VA>) noexcept;
