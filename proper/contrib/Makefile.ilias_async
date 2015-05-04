@@ -5,6 +5,7 @@ SRCS += contrib/ilias_async/src/hazard.cc
 SRCS += contrib/ilias_async/src/ll_list.cc
 # SRCS += contrib/ilias_async/src/ll_queue.cc
 SRCS += contrib/ilias_async/src/ll_simple_list.cc
+SRCS += contrib/ilias_async/src/monitor.cc
 # SRCS += contrib/ilias_async/src/mq_ptr.cc
 # SRCS += contrib/ilias_async/src/msg_queue.cc
 SRCS += contrib/ilias_async/src/refcnt.cc
