@@ -3,11 +3,13 @@
 
 #include "pmap_page-fwd.h"
 #include <mutex>
+#include <atomic>
 #include <ilias/arch.h>
 #include <ilias/pmap/page.h>
 #include <ilias/pmap/pmap.h>
 #include <ilias/pmap/rmap.h>
 #include <tuple>
+#include <limits>
 
 namespace ilias {
 namespace pmap {
@@ -29,8 +31,9 @@ class pmap_page_tmpl<PhysArch, arch_set<VirtArch...>> {
   ~pmap_page_tmpl() noexcept = default;
 
   bool linked_() const noexcept;
-  void reduce_permissions_(bool, permission) noexcept;
+  void reduce_permissions_(bool, permission, bool) noexcept;
   void unmap_(bool) noexcept;
+  void flush_accessed_dirty_() noexcept;
 
   template<arch VA>
   void pmap_deregister_(pmap<VA>&, vpage_no<VA>) noexcept;
@@ -55,13 +58,30 @@ class pmap_page
 
  public:
   bool linked() const noexcept;
-  void reduce_permissions(bool, permission) noexcept;
+  void reduce_permissions(bool, permission, bool) noexcept;
   void unmap(bool) noexcept;
 
-  const page_no<native_arch> address;
+  page_no<native_arch> address() const noexcept;
+  void mark_accessed() noexcept;
+  void mark_dirty() noexcept;
+  void mark_accessed_and_dirty() noexcept;
+
+ protected:
+  std::tuple<bool, bool> get_accessed_dirty() noexcept;
+  std::tuple<bool, bool> flush_accessed_dirty(bool = false) noexcept;
 
  private:
+  static constexpr unsigned int pgno_bits =
+      std::numeric_limits<page_no<native_arch>::type>::digits - 2;
+  static constexpr page_no<native_arch>::type pgno_mask =
+      (page_no<native_arch>::type(1) << pgno_bits) - 1U;
+  static constexpr page_no<native_arch>::type accessed_mask =
+      page_no<native_arch>::type(1) << (pgno_bits + 0U);
+  static constexpr page_no<native_arch>::type dirty_mask =
+      page_no<native_arch>::type(1) << (pgno_bits + 1U);
+
   mutable std::mutex guard_;  // XXX: Should be a shared mutex.
+  std::atomic<page_no<native_arch>::type> address_and_ad_;
 };
 
 

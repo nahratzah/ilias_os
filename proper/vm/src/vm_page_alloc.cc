@@ -362,8 +362,8 @@ auto default_page_alloc::add_to_freelist_(page* pg,
 
   /* Merge range forward. */
   ranges_type::iterator pg_succ = next(pgi);
-  assert(pg_succ->address >= pgi->address + n);
-  if (pg_succ->address == pgi->address + n &&
+  assert(pg_succ->address() >= pgi->address() + n);
+  if (pg_succ->address() == pgi->address() + n &&
       &*pg_succ == &*pgi + n.get()) {
     pgi->nfree_ += exchange(pg_succ->nfree_, page_count<native_arch>(0));
     ranges_.unlink(pg_succ);
@@ -371,8 +371,8 @@ auto default_page_alloc::add_to_freelist_(page* pg,
 
   /* Merge range backward. */
   ranges_type::iterator pg_pred = prev(pgi);
-  assert(pg_pred->address + pg_pred->nfree_ <= pgi->address);
-  if (pg_pred->address + pg_pred->nfree_ == pgi->address &&
+  assert(pg_pred->address() + pg_pred->nfree_ <= pgi->address());
+  if (pg_pred->address() + pg_pred->nfree_ == pgi->address() &&
       &*pgi == &*pg_pred + pg_pred->nfree_.get()) {
     pg_pred->nfree_ += exchange(pgi->nfree_, page_count<native_arch>(0));
     ranges_.unlink(pgi);

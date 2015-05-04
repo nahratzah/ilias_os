@@ -298,6 +298,13 @@ constexpr auto pdpe_record<arch::amd64>::get_permission() const noexcept ->
   return (p() && ps() ? flags().get_permission() : permission());
 }
 
+inline auto pdpe_record<arch::amd64>::clear_ad_flags() noexcept ->
+    x86_shared::flags {
+  auto& v_atom = reinterpret_cast<std::atomic<uint64_t>&>(v_);
+  return x86_shared::flags(v_atom.fetch_and(~(PT_A | PT_D).get(),
+                                            std::memory_order_acq_rel));
+}
+
 
 constexpr auto pdp_record::create(page_no_proxy pg, x86_shared::flags fl,
                                   bool leaf) -> pdp_record {
@@ -360,6 +367,12 @@ constexpr auto pdp_record::get_permission() const noexcept -> permission {
   return (p() && ps() ? flags().get_permission() : permission());
 }
 
+inline auto pdp_record::clear_ad_flags() noexcept -> x86_shared::flags {
+  auto& v_atom = reinterpret_cast<std::atomic<uint64_t>&>(v_);
+  return x86_shared::flags(v_atom.fetch_and(~(PT_A | PT_D).get(),
+                                            std::memory_order_acq_rel));
+}
+
 
 constexpr auto pte_record::create(page_no_proxy pg, x86_shared::flags fl) ->
     pte_record {
@@ -396,6 +409,12 @@ constexpr auto pte_record::combine(const permission& perm) const noexcept ->
 
 constexpr auto pte_record::get_permission() const noexcept -> permission {
   return (p() ? flags().get_permission() : permission());
+}
+
+inline auto pte_record::clear_ad_flags() noexcept -> x86_shared::flags {
+  auto& v_atom = reinterpret_cast<std::atomic<uint64_t>&>(v_);
+  return x86_shared::flags(v_atom.fetch_and(~(PT_A | PT_D).get(),
+                                            std::memory_order_acq_rel));
 }
 
 

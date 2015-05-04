@@ -7,6 +7,7 @@ namespace ilias {
 namespace vm {
 
 
+class page_busy_lock;
 class page;
 class page_owner;
 class page_list;

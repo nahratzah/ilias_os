@@ -23,7 +23,7 @@ class page_owner {
  public:
   virtual page_ptr release_urgent(offset_type, page&);
   virtual void release_async(offset_type, page&);
-  virtual void undirty_async(offset_type, page&);
+  virtual void undirty_async(page_busy_lock, offset_type, page&);
 };
 
 

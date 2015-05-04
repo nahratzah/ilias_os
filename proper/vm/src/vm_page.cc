@@ -36,6 +36,15 @@ auto page::set_flag_iff_zero(flags_type f) noexcept -> flags_type {
   return expect;
 }
 
+auto page::update_accessed_dirty() noexcept -> void {
+  constexpr flags_type nil = 0;
+
+  bool accessed, dirty;
+  tie(accessed, dirty) = this->flush_accessed_dirty();
+  flags_.fetch_or((accessed ? fl_accessed : nil) | (dirty ? fl_dirty : nil),
+                  memory_order_relaxed);
+}
+
 auto page::try_release_urgent() noexcept -> page_ptr {
   class pgo_call_lock {
    public:
@@ -82,6 +91,33 @@ auto page::try_release_urgent() noexcept -> page_ptr {
     /* SKIP */
   }
   return nullptr;
+}
+
+auto page::undirty() -> void {
+  page_owner* pgo;
+  tie(pgo, ignore) = pgo_;
+  if (pgo == nullptr) return;
+
+  page_busy_lock l = map_ro_and_update_accessed_dirty();
+  page_owner::offset_type off;
+  tie(pgo, off) = pgo_;
+  if (pgo == nullptr || !(flags_.load(memory_order_relaxed) & fl_dirty))
+    return;
+
+  pgo->undirty_async(move(l), off, *this);
+}
+
+auto page::map_ro_and_update_accessed_dirty() noexcept -> page_busy_lock {
+  page_busy_lock l{ *this };
+  reduce_permissions(true, permission::RX() | permission::GLOBAL(), true);
+  return l;
+}
+
+auto page::unmap_all(page_busy_lock l) noexcept -> page_busy_lock {
+  assert(l.get_page() == this);
+
+  this->unmap(true);
+  return l;
 }
 
 auto page::set_page_owner(page_owner& pgo, page_owner::offset_type off)
@@ -269,7 +305,7 @@ namespace {
 
 struct _page_address_less {
   bool operator()(const page& x, const page& y) const noexcept {
-    return x.address < y.address;
+    return x.address() < y.address();
   }
 };
 
@@ -308,9 +344,9 @@ auto page_list::merge_adjecent_entries() noexcept -> void {
     succ = next(i);
 
     /* Verify that there is no overlap. */
-    assert(i->address + i->npgl_ <= succ->address);
+    assert(i->address() + i->npgl_ <= succ->address());
 
-    if (i->address + i->npgl_ == succ->address &&
+    if (i->address() + i->npgl_ == succ->address() &&
         &*i + i->npgl_.get() == &*succ) {
       i->npgl_ += exchange(succ->npgl_, page_count<native_arch>(0));
       data_.unlink(succ);

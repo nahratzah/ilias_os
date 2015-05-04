@@ -13,7 +13,7 @@ auto page_owner::release_async(offset_type, page&) -> void {
   return;
 }
 
-auto page_owner::undirty_async(offset_type, page&) -> void {
+auto page_owner::undirty_async(page_busy_lock, offset_type, page&) -> void {
   return;
 }
 

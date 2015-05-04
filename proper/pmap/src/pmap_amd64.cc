@@ -83,7 +83,10 @@ auto pmap<arch::amd64>::clear() noexcept -> void {
         continue;  // Skip non-present entries.
       }
       if (pdpe_value.ps()) {  // Large page.
-        deregister_from_pg_(pdpe_value.address(), va, pdpe_skip);
+        const bool accessed = pdpe_value.flags().a();
+        const bool dirty = pdpe_value.flags().d();
+        deregister_from_pg_(pdpe_value.address(), va, accessed, dirty,
+                            pdpe_skip);
         va += pdpe_skip;
         continue;
       }
@@ -101,7 +104,10 @@ auto pmap<arch::amd64>::clear() noexcept -> void {
           continue;  // Skip non-present entries.
         }
         if (pdp_value.ps()) {  // Large page.
-          deregister_from_pg_(pdp_value.address(), va, pdp_skip);
+          const bool accessed = pdp_value.flags().a();
+          const bool dirty = pdp_value.flags().d();
+          deregister_from_pg_(pdp_value.address(), va, accessed, dirty,
+                              pdp_skip);
           va += pdpe_skip;
           continue;
         }
@@ -114,8 +120,11 @@ auto pmap<arch::amd64>::clear() noexcept -> void {
         auto mapped_pte = pmap_map_page<pte>(pte_ptr.get(), support_);
         for (pte_record pte_value : *mapped_pte) {
           /* Release the page. */
-          if (pte_value.p())
-            deregister_from_pg_(pte_value.address(), va);
+          if (pte_value.p()) {
+            const bool accessed = pte_value.flags().a();
+            const bool dirty = pte_value.flags().d();
+            deregister_from_pg_(pte_value.address(), va, accessed, dirty);
+          }
           va += page_count<arch::amd64>(1);
         }
       }
@@ -188,14 +197,14 @@ auto pmap<arch::amd64>::virt_to_page(vaddr<arch::amd64> va) const ->
 }
 
 auto pmap<arch::amd64>::reduce_permission(vpage_no<arch::amd64> va,
-                                          permission perm) ->
+                                          permission perm, bool update_ad) ->
     reduce_permission_result {
   vpage_no<arch::amd64> lo, hi;
   std::tie(lo, hi) = managed_range();
   if (va < lo || va >= hi)
     throw std::out_of_range("va outside of managed range");
   if (_predict_false(!valid_sign_extend(va))) throw efault(va.get());
-  return reduce_permission_(va, perm);
+  return reduce_permission_(va, perm, update_ad);
 }
 
 auto pmap<arch::amd64>::map(vpage_no<arch::amd64> va,
@@ -217,13 +226,23 @@ auto pmap<arch::amd64>::unmap(vpage_no<arch::amd64> va,
 
   vpage_no<arch::amd64> lo, hi;
   std::tie(lo, hi) = managed_range();
-  if (va < lo || va >= hi)
+  if (va < lo || va_end > hi)
     throw std::out_of_range("va outside of managed range");
   unmap_(va, npg, true);
 }
 
+auto pmap<arch::amd64>::flush_accessed_dirty(vpage_no<arch::amd64> va)
+    noexcept -> void {
+  vpage_no<arch::amd64> lo, hi;
+  std::tie(lo, hi) = managed_range();
+  if (va < lo || va >= hi)
+    throw std::out_of_range("va outside of managed range");
+  return flush_accessed_dirty_(va);
+}
+
 auto pmap<arch::amd64>::reduce_permission_(vpage_no<arch::amd64> va,
-                                           permission perm) noexcept ->
+                                           permission perm,
+                                           bool update_ad) noexcept ->
     reduce_permission_result {
   using namespace x86_shared;
 
@@ -252,7 +271,17 @@ auto pmap<arch::amd64>::reduce_permission_(vpage_no<arch::amd64> va,
     permission reduced = perm & pdpe_value.get_permission();
 
     /* Assign page entry. */
-    const auto new_pdpe_value = pdpe_value.combine(reduced);
+    auto new_pdpe_value = pdpe_value.combine(reduced);
+    if (update_ad || !new_pdpe_value.p()) {
+      const auto fl = pdpe_value.flags();
+      add_flags_to_pg_(pdpe_value.address(), fl.a(), fl.d(),
+                       page_count<arch::amd64>(N_PDP * N_PTE));
+      if (new_pdpe_value.p()) {
+        new_pdpe_value =
+            pdpe_record::create(new_pdpe_value.address(),
+                                new_pdpe_value.flags() & ~(PT_A | PT_D));
+      }
+    }
     assert(new_pdpe_value.valid());
     pdpe_value = new_pdpe_value;
 
@@ -280,7 +309,17 @@ auto pmap<arch::amd64>::reduce_permission_(vpage_no<arch::amd64> va,
     permission reduced = perm & pdp_value.get_permission();
 
     /* Assign page entry. */
-    const auto new_pdp_value = pdp_value.combine(reduced);
+    auto new_pdp_value = pdp_value.combine(reduced);
+    if (update_ad || !new_pdp_value.p()) {
+      const auto fl = pdp_value.flags();
+      add_flags_to_pg_(pdp_value.address(), fl.a(), fl.d(),
+                       page_count<arch::amd64>(N_PTE));
+      if (new_pdp_value.p()) {
+        new_pdp_value =
+            pdp_record::create(new_pdp_value.address(),
+                               new_pdp_value.flags() & ~(PT_A | PT_D));
+      }
+    }
     assert(new_pdp_value.valid());
     pdp_value = new_pdp_value;
 
@@ -311,7 +350,16 @@ auto pmap<arch::amd64>::reduce_permission_(vpage_no<arch::amd64> va,
     permission reduced = perm & pte_value.get_permission();
 
     /* Assign page entry. */
-    const auto new_pte_value = pte_value.combine(reduced);
+    auto new_pte_value = pte_value.combine(reduced);
+    if (update_ad || !new_pte_value.p()) {
+      const auto fl = pte_value.flags();
+      add_flags_to_pg_(pte_value.address(), fl.a(), fl.d());
+      if (new_pte_value.p()) {
+        new_pte_value =
+            pte_record::create(new_pte_value.address(),
+                               new_pte_value.flags() & ~(PT_A | PT_D));
+      }
+    }
     assert(new_pte_value.valid());
     pte_value = new_pte_value;
 
@@ -509,7 +557,9 @@ auto pmap<arch::amd64>::unmap_(vpage_no<arch::amd64> va,
 
         if (!broken_up) {
           if (do_deregister) {
-            deregister_from_pg_(pdpe_iter->address(), va,
+            const bool accessed = pdpe_iter->flags().a();
+            const bool dirty = pdpe_iter->flags().d();
+            deregister_from_pg_(pdpe_iter->address(), va, accessed, dirty,
                                 page_count<arch::amd64>(N_PTE * N_PDP));
           }
           va += page_count<arch::amd64>(N_PTE * N_PDP);
@@ -552,7 +602,9 @@ auto pmap<arch::amd64>::unmap_(vpage_no<arch::amd64> va,
 
           if (!broken_up) {
             if (do_deregister) {
-              deregister_from_pg_(pdp_iter->address(), va,
+              const bool accessed = pdp_iter->flags().a();
+              const bool dirty = pdp_iter->flags().d();
+              deregister_from_pg_(pdp_iter->address(), va, accessed, dirty,
                                   page_count<arch::amd64>(N_PTE));
             }
             va += page_count<arch::amd64>(N_PTE);
@@ -576,8 +628,11 @@ auto pmap<arch::amd64>::unmap_(vpage_no<arch::amd64> va,
             continue;
           }
 
-          if (pte_iter->p() && do_deregister)
-            deregister_from_pg_(pte_iter->address(), va);
+          if (pte_iter->p() && do_deregister) {
+            const bool accessed = pte_iter->flags().a();
+            const bool dirty = pte_iter->flags().d();
+            deregister_from_pg_(pte_iter->address(), va, accessed, dirty);
+          }
 
           *pte_iter = pte_record::create(nullptr, pte_iter->flags());
           maybe_gc(tie(pml4_ptr, mapped_pml4, *pml4_iter),
@@ -588,6 +643,68 @@ auto pmap<arch::amd64>::unmap_(vpage_no<arch::amd64> va,
       }  // Iterate in pdp.
     }  // Iterate in pdpe.
   }  // Iterate in pml4.
+}
+
+auto pmap<arch::amd64>::flush_accessed_dirty_(vpage_no<arch::amd64> va)
+    noexcept -> void {
+  using namespace x86_shared;
+
+  const auto p = vaddr<arch::amd64>(va).get();
+  auto pml4_ptr = page_ptr<arch::amd64>(pml4_);
+  auto mapped_pml4 = map_pml4(pml4_ptr.get(), va);
+
+  /* Resolve pml4 offset. */
+  const uintptr_t pml4_off = (p & pml4_mask) >> pml4_addr_offset;
+
+  /* Resolve pdpe. */
+  pml4_record& pml4_value = (*mapped_pml4)[pml4_off];
+  if (!pml4_value.p()) return;
+  auto pdpe_ptr = page_ptr<arch::amd64>(pml4_value.address());
+  auto mapped_pdpe = map_pdpe(pdpe_ptr.get(), va);
+
+  /* Resolve pdpe offset. */
+  const uintptr_t pdpe_off = (p & pdpe_mask) >> pdpe_addr_offset;
+
+  /* Resolve pdp. */
+  pdpe_record& pdpe_value = (*mapped_pdpe)[pdpe_off];
+  if (!pdpe_value.p()) return;
+  if (pdpe_value.ps()) {  /* Flush flags. */
+    const auto fl = pdpe_value.clear_ad_flags();
+    add_flags_to_pg_(pdpe_value.address(), fl.a(), fl.d(),
+                     page_count<arch::amd64>(N_PDP * N_PTE));
+    return;
+  }
+  auto pdp_ptr = page_ptr<arch::amd64>(pdpe_value.address());
+  auto mapped_pdp = map_pdp(pdp_ptr.get(), va);
+
+  /* Resolve pdp offset. */
+  const uintptr_t pdp_off = (p & pdp_mask) >> pdp_addr_offset;
+
+  /* Resolve pte. */
+  pdp_record& pdp_value = (*mapped_pdp)[pdp_off];
+  if (!pdp_value.p()) return;
+  if (pdp_value.ps()) {  /* Flush flags. */
+    const auto fl = pdp_value.clear_ad_flags();
+    add_flags_to_pg_(pdpe_value.address(), fl.a(), fl.d(),
+                     page_count<arch::amd64>(N_PTE));
+    return;
+  }
+  auto pte_ptr = page_ptr<arch::amd64>(pdp_value.address());
+  auto mapped_pte = map_pte(pte_ptr.get(), va);
+
+  /* Resolve pte offset. */
+  const uintptr_t pte_off = (p & pte_mask) >> pte_addr_offset;
+
+  /* Resolve page entry. */
+  pte_record& pte_value = (*mapped_pte)[pte_off];
+  if (!pte_value.p()) return;
+
+  /* Flush flags. */
+  {
+    const auto fl = pte_value.clear_ad_flags();
+    add_flags_to_pg_(pdpe_value.address(), fl.a(), fl.d());
+    return;
+  }
 }
 
 auto pmap<arch::amd64>::map_pml4(page_no<arch::amd64> pg,
@@ -764,11 +881,18 @@ auto pmap<arch::amd64>::break_large_page_(pdp_record& pdp_value,
 #ifndef _LOADER
 auto pmap<arch::amd64>::deregister_from_pg_(page_no<arch::amd64> pa,
                                             vpage_no<arch::amd64> va,
+                                            bool accessed, bool dirty,
                                             page_count<arch::amd64> n)
     noexcept -> void {
   while (n > page_count<arch::amd64>(0)) {
     pmap_page& ppg = support_.lookup_pmap_page(pa);
     ppg.pmap_deregister_(*this, va);
+    if (accessed && dirty)
+      ppg.mark_accessed_and_dirty();
+    else if (accessed)
+      ppg.mark_accessed();
+    else if (dirty)
+      ppg.mark_dirty();
 
     ++va;
     ++pa;
@@ -778,7 +902,34 @@ auto pmap<arch::amd64>::deregister_from_pg_(page_no<arch::amd64> pa,
 #else
 auto pmap<arch::amd64>::deregister_from_pg_(page_no<arch::amd64>,
                                             vpage_no<arch::amd64>,
+                                            bool, bool,
                                             page_count<arch::amd64>)
+    noexcept -> void
+{}
+#endif  // _LOADER
+
+#ifndef _LOADER
+auto pmap<arch::amd64>::add_flags_to_pg_(page_no<arch::amd64> pa,
+                                         bool accessed, bool dirty,
+                                         page_count<arch::amd64> n)
+    noexcept -> void {
+  while (n > page_count<arch::amd64>(0)) {
+    pmap_page& ppg = support_.lookup_pmap_page(pa);
+    if (accessed && dirty)
+      ppg.mark_accessed_and_dirty();
+    else if (accessed)
+      ppg.mark_accessed();
+    else if (dirty)
+      ppg.mark_dirty();
+
+    ++pa;
+    --n;
+  }
+}
+#else
+auto pmap<arch::amd64>::add_flags_to_pg_(page_no<arch::amd64>,
+                                         bool, bool,
+                                         page_count<arch::amd64>)
     noexcept -> void
 {}
 #endif  // _LOADER
