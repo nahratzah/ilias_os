@@ -15,3 +15,8 @@ kernel
 *.testlog
 *.ok
 compiler/build
+
+# Compiler temporary files.
+*.o32-*
+*.o64-*
+*.ol-*
