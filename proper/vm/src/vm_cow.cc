@@ -38,19 +38,26 @@ cow_vme::cow_vme(cow_vme&& o) noexcept
 
 cow_vme::~cow_vme() noexcept {}
 
-auto cow_vme::fault_read(shared_ptr<page_alloc> pga,
-                         page_count<native_arch> off) ->
-    shared_cb_future<page_ptr> {
+auto cow_vme::fault_read(cb_promise<page_ptr> pgptr_promise,
+                         monitor_token mt,
+                         shared_ptr<page_alloc> pga,
+                         page_count<native_arch> off) noexcept ->
+    void {
   if (this->anon_vme::present(off))
-    return this->anon_vme::fault_read(move(pga), off);
-  return nested_->fault_read(move(pga), off);
+    return this->anon_vme::fault_read(move(pgptr_promise), move(mt),
+                                      move(pga), off);
+  return nested_->fault_read(move(pgptr_promise), move(mt), move(pga), off);
 }
 
-auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
-                          page_count<native_arch> off) ->
-    shared_cb_future<page_ptr> {
-  if (this->anon_vme::present(off))
-    return this->anon_vme::fault_write(move(pga), off);
+auto cow_vme::fault_write(cb_promise<page_ptr> pgptr_promise,
+                          monitor_token mt,
+                          shared_ptr<page_alloc> pga,
+                          page_count<native_arch> off) noexcept ->
+    void {
+  if (this->anon_vme::present(off)) {
+    return this->anon_vme::fault_write(move(pgptr_promise), move(mt),
+                                       move(pga), off);
+  }
 
   stats::cow.add();  // Record copy-on-write operation.
 
@@ -60,7 +67,9 @@ auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
   /* Allocate page for anon. */
   cb_future<page_ptr> pg = pga->allocate(alloc_fail_not_ok);
   /* Fault underlying storage for read access. */
-  shared_cb_future<page_ptr> orig_pg = nested_->fault_read(move(pga), off);
+  cb_promise<page_ptr> nested_pgptr_promise;
+  cb_future<page_ptr> orig_pg = nested_pgptr_promise.get_future();
+  nested_->fault_read(move(nested_pgptr_promise), mt, move(pga), off);
 
   /* Copy original page to anon page. */
   cb_future<page_ptr> copy_pg =
@@ -77,7 +86,8 @@ auto cow_vme::fault_write(shared_ptr<page_alloc> pga,
             page_unbusy_future(this->get_workq(), move(orig_pg)));
 
   /* Assign the whole thing to the anon. */
-  return this->anon_vme::fault_assign(off, move(copy_pg));
+  this->anon_vme::fault_assign(move(pgptr_promise), move(mt), off,
+                               move(copy_pg));
 }
 
 auto cow_vme::mincore() const -> vector<bool> {

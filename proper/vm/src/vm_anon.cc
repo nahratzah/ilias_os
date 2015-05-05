@@ -10,55 +10,124 @@ anon_vme::entry::~entry() noexcept {
   page_->clear_page_owner();
 }
 
-auto anon_vme::entry::fault(shared_ptr<page_alloc> pga, workq_ptr wq) ->
-    shared_cb_future<page_ptr> {
-  unique_lock<mutex> l{ guard_ };
-
-  if (in_progress_.valid()) return in_progress_;
-
-  if (page_ != nullptr) {
-    cb_promise<page_ptr> rv;
-    rv.set_value(page_);
-    return rv.get_future();
-  }
-
-  cb_future<page_ptr> f = pga->allocate(alloc_fail_not_ok);
-  assert_msg(false, "XXX: implement call to system-wide-allocator.");
-  return assign_locked_(move(wq), move(l), move(f));
-}
-
-auto anon_vme::entry::assign(workq_ptr wq, cb_future<page_ptr> f) ->
-    shared_cb_future<page_ptr> {
-  return assign_locked_(wq, unique_lock<mutex>{ guard_ },
-                        page_unbusy_future(wq, move(f)));
-}
-
-auto anon_vme::entry::assign_locked_(workq_ptr wq, unique_lock<mutex>&& l,
-                                     cb_future<page_ptr> f) ->
-    shared_cb_future<page_ptr> {
+auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
+                            monitor_token mt,
+                            shared_ptr<page_alloc> pga, workq_ptr wq) ->
+    void {
   using std::placeholders::_1;
 
-  assert(l.owns_lock());
-  assert(page_ == nullptr && !in_progress_.valid());
+  /*
+   * Work around std::function needing a copy-constructible wrapped type.
+   * We currently use a shared_ptr.
+   * XXX: figure out a better way (probably implement move_function in
+   *      ilias_async.
+   */
+  shared_ptr<cb_promise<page_ptr>> pgptr;
+  try {
+    pgptr = make_shared<cb_promise<page_ptr>>(move(pgptr_promise));
+  } catch (...) {
+    pgptr_promise.set_exception(current_exception());
+    return;
+  }
 
-  in_progress_ = async(move(wq), launch::aid | launch::defer,
-                       &entry::allocation_callback_,
-                       entry_ptr(this),
-                       move(f));
+  try {
+    auto mt_future = guard_.queue(monitor_access::write);
 
-  shared_cb_future<page_ptr> rv = in_progress_;
-  l.unlock();  // In case promise has already completed.
-  rv.start();
-  return rv;
+    if (page_ != nullptr) {
+      pgptr_promise.set_value(page_);
+      return;
+    }
+
+    cb_future<page_ptr> f = pga->allocate(alloc_fail_not_ok);
+    cb_future<tuple<page_ptr, monitor_token>> fmt =
+        async(wq, launch::parallel | launch::aid,
+              [](page_ptr pg, monitor_token my_mt, monitor_token) {
+                return make_tuple(move(pg), move(my_mt));
+              },
+              move(f), move(mt_future), mt);
+
+    callback(move(fmt),
+             bind([this](const shared_ptr<cb_promise<page_ptr>>& pgptr_promise,
+                         cb_future<tuple<page_ptr, monitor_token>> arg) {
+                    page_ptr pg;
+                    monitor_token my_mt;
+
+                    try {
+                      tie(pg, my_mt) = arg.get();
+
+                      if (page_ != nullptr) {
+                        pgptr_promise->set_value(page_);
+                        return;
+                      }
+                      pgptr_promise->set_value(allocation_callback_(my_mt,
+                                                                    pg));
+                    } catch (...) {
+                      pgptr_promise->set_exception(current_exception());
+                    }
+                  },
+                  pgptr, _1));
+  } catch (...) {
+    pgptr->set_exception(current_exception());
+  }
 }
 
-auto anon_vme::entry::allocation_callback_(page_ptr pg) noexcept ->
-    page_ptr {
-  {
-    lock_guard<mutex> l{ guard_ };
-    assert(page_ == nullptr && in_progress_.valid());
-    page_ = pg;
+auto anon_vme::entry::assign(
+    cb_promise<page_ptr> pgptr_promise,
+    monitor_token mt,
+    workq_ptr wq, cb_future<page_ptr> f) noexcept -> void {
+  try {
+    auto mt_future = async_lazy([mt](monitor_token x) { return x; },
+                                guard_.queue(monitor_access::write));
+
+    return assign_locked_(move(pgptr_promise), wq, move(mt_future),
+                          page_unbusy_future(wq, move(f)));
+  } catch (...) {
+    pgptr_promise.set_exception(current_exception());
   }
+}
+
+auto anon_vme::entry::assign_locked_(cb_promise<page_ptr> pgptr_promise,
+                                     workq_ptr wq, cb_future<monitor_token> mt,
+                                     cb_future<page_ptr> f) noexcept -> void {
+  using std::placeholders::_1;
+
+  /*
+   * Work around std::function needing a copy-constructible wrapped type.
+   * We currently use a shared_ptr.
+   * XXX: figure out a better way (probably implement move_function in
+   *      ilias_async.
+   */
+  shared_ptr<cb_promise<page_ptr>> pgptr;
+  try {
+    pgptr = make_shared<cb_promise<page_ptr>>(move(pgptr_promise));
+  } catch (...) {
+    pgptr_promise.set_exception(current_exception());
+    return;
+  }
+
+  auto acf = async(move(wq), launch::aid,
+                   &entry::allocation_callback_,
+                   entry_ptr(this),
+                   move(mt), move(f));
+  callback(move(acf),
+           bind([](const shared_ptr<cb_promise<page_ptr>>& pgptr,
+                   cb_future<page_ptr> pg) {
+                  try {
+                    pgptr->set_value(pg.get());
+                  } catch (...) {
+                    pgptr->set_exception(current_exception());
+                  }
+                },
+                pgptr, _1));
+}
+
+auto anon_vme::entry::allocation_callback_(monitor_token mt, page_ptr pg)
+    noexcept -> page_ptr {
+  assert(mt.locked() && mt.access() == monitor_access::write &&
+         mt.owner() == &guard_);
+  assert(page_ == nullptr);
+
+  page_ = pg;
   if (_predict_true(pg != nullptr))
     pg->set_page_owner(*this);
   return pg;
@@ -69,7 +138,8 @@ auto anon_vme::entry::release_urgent(page_owner::offset_type, page& pg) ->
   assert(pg.get_flags() & page::fl_pgo_call);
 
   page_ptr rv = nullptr;
-  lock_guard<mutex> l{ guard_ };
+  const monitor_token l = guard_.try_lock();
+  if (!l.locked()) return rv;
 
   if (_predict_false(&pg != page_)) return rv;
   if (pg.get_flags() & page::fl_dirty) return rv;
@@ -78,7 +148,7 @@ auto anon_vme::entry::release_urgent(page_owner::offset_type, page& pg) ->
 
   if (_predict_false(!refcnt_is_solo(pg))) return rv;
   pg.unmap_all(move(busy_lock));
-  rv = move(page_);
+  rv = std::exchange(page_, nullptr);
   return rv;
 }
 
@@ -108,36 +178,44 @@ auto anon_vme::all_present() const noexcept -> bool {
 }
 
 auto anon_vme::present(page_count<native_arch> off) const noexcept -> bool {
+  using unsigned_off = make_unsigned_t<decltype(off.get())>;
+
   assert(off.get() >= 0 &&
-         (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
-          data_.size()));
+         (static_cast<unsigned_off>(off.get()) < data_.size()));
 
   const auto& elem = data_[off.get()];
   return (elem != nullptr && elem->present());
 }
 
-auto anon_vme::fault_read(shared_ptr<page_alloc> pga,
-                          page_count<native_arch> off) ->
-    shared_cb_future<page_ptr> {
-  return fault_rw_(move(pga), move(off));
+auto anon_vme::fault_read(cb_promise<page_ptr> pgptr_promise,
+                          monitor_token mt,
+                          shared_ptr<page_alloc> pga,
+                          page_count<native_arch> off) noexcept -> void {
+  fault_rw_(move(pgptr_promise), move(mt), move(pga), move(off));
 }
 
-auto anon_vme::fault_write(shared_ptr<page_alloc> pga,
-                           page_count<native_arch> off) ->
-    shared_cb_future<page_ptr> {
-  return fault_rw_(move(pga), move(off));
+auto anon_vme::fault_write(cb_promise<page_ptr> pgptr_promise,
+                           monitor_token mt,
+                           shared_ptr<page_alloc> pga,
+                           page_count<native_arch> off) noexcept -> void {
+  fault_rw_(move(pgptr_promise), move(mt), move(pga), move(off));
 }
 
-auto anon_vme::fault_assign(page_count<native_arch> off,
-                            cb_future<page_ptr> pg) ->
-    shared_cb_future<page_ptr> {
+auto anon_vme::fault_assign(cb_promise<page_ptr> pgptr_promise,
+                            monitor_token mt,
+                            page_count<native_arch> off,
+                            cb_future<page_ptr> pg) noexcept -> void {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
 
-  auto& elem = data_[off.get()];
-  if (elem == nullptr) elem = new entry();
-  return elem->assign(get_workq(), move(pg));
+  try {
+    auto& elem = data_[off.get()];
+    if (elem == nullptr) elem = new entry();
+    elem->assign(move(pgptr_promise), move(mt), get_workq(), move(pg));
+  } catch (...) {
+    pgptr_promise.set_exception(current_exception());
+  }
 }
 
 auto anon_vme::mincore() const -> vector<bool> {
@@ -169,16 +247,21 @@ auto anon_vme::split_no_alloc(page_count<native_arch> off) const ->
            anon_vme(get_workq(), data_.begin() + split, data_.end()) };
 }
 
-auto anon_vme::fault_rw_(shared_ptr<page_alloc> pga,
-                         page_count<native_arch> off) ->
-    shared_cb_future<page_ptr> {
+auto anon_vme::fault_rw_(cb_promise<page_ptr> pgptr_promise,
+                         monitor_token mt,
+                         shared_ptr<page_alloc> pga,
+                         page_count<native_arch> off) noexcept -> void {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
 
-  auto& elem = data_[off.get()];
-  if (elem == nullptr) elem = new entry();
-  return elem->fault(move(pga), this->get_workq());
+  try {
+    auto& elem = data_[off.get()];
+    if (elem == nullptr) elem = new entry();
+    elem->fault(move(pgptr_promise), move(mt), move(pga), this->get_workq());
+  } catch (...) {
+    pgptr_promise.set_exception(current_exception());
+  }
 }
 
 

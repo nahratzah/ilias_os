@@ -10,12 +10,12 @@
 #include <vector>
 #include <utility>
 #include <algorithm>
-#include <mutex>
 #include <vector>
 #include <ilias/stats-fwd.h>
 #include <ilias/future.h>
 #include <ilias/workq.h>
 #include <ilias/refcnt.h>
+#include <ilias/monitor.h>
 
 namespace ilias {
 namespace vm {
@@ -121,10 +121,14 @@ class vmmap_entry
  public:
   virtual ~vmmap_entry() noexcept;
 
-  virtual shared_cb_future<page_ptr> fault_read(shared_ptr<page_alloc>,
-                                                page_count<native_arch>) = 0;
-  virtual shared_cb_future<page_ptr> fault_write(shared_ptr<page_alloc>,
-                                                 page_count<native_arch>) = 0;
+  virtual void fault_read(cb_promise<page_ptr>,
+                          monitor_token,
+                          shared_ptr<page_alloc>,
+                          page_count<native_arch>) noexcept = 0;
+  virtual void fault_write(cb_promise<page_ptr>,
+                           monitor_token,
+                           shared_ptr<page_alloc>,
+                           page_count<native_arch>) noexcept = 0;
 
   virtual vmmap_entry_ptr clone() const = 0;
   virtual pair<vmmap_entry_ptr, vmmap_entry_ptr> split(page_count<native_arch>)
@@ -180,10 +184,10 @@ class vmmap_shard {
     vmmap_entry& data() const noexcept;
     friend void swap(entry& x, entry& y) noexcept { swap(x.data_, y.data_); }
 
-    shared_cb_future<page_ptr> fault_read(shared_ptr<page_alloc>,
-                                          vpage_no<Arch>);
-    shared_cb_future<page_ptr> fault_write(shared_ptr<page_alloc>,
-                                           vpage_no<Arch>);
+    void fault_read(cb_promise<page_ptr>, monitor_token,
+                    shared_ptr<page_alloc>, vpage_no<Arch>) noexcept;
+    void fault_write(cb_promise<page_ptr>, monitor_token,
+                     shared_ptr<page_alloc>, vpage_no<Arch>) noexcept;
 
     fork_style get_fork_style() const noexcept;
     fork_style set_fork_style(fork_style s) noexcept;
@@ -256,10 +260,10 @@ class vmmap_shard {
   void merge(vmmap_shard&&) noexcept;
   template<typename Iter> void fanout(Iter, Iter) noexcept;
 
-  shared_cb_future<page_ptr> fault_read(shared_ptr<page_alloc>,
-                                        vpage_no<Arch>);
-  shared_cb_future<page_ptr> fault_write(shared_ptr<page_alloc>,
-                                         vpage_no<Arch>);
+  void fault_read(cb_promise<page_ptr>, monitor_token,
+                  shared_ptr<page_alloc>, vpage_no<Arch>) noexcept;
+  void fault_write(cb_promise<page_ptr>, monitor_token,
+                   shared_ptr<page_alloc>, vpage_no<Arch>) noexcept;
 
  private:
   void map_link_(unique_ptr<entry>&&);
@@ -302,11 +306,11 @@ class vmmap {
   vmmap(vmmap&&);
   ~vmmap() noexcept = default;
 
-  void reshard(size_t, size_t);
+  cb_future<void> reshard(size_t, size_t);
 
   cb_future<void> fault_read(vpage_no<Arch>);
   cb_future<void> fault_write(vpage_no<Arch>);
-  vector<bool> mincore(vpage_no<Arch>, vpage_no<Arch>) const;
+  cb_future<vector<bool>> mincore(vpage_no<Arch>, vpage_no<Arch>) const;
 
  private:
   typename shard_list::iterator find_shard_locked_(vpage_no<Arch>) noexcept;
@@ -319,10 +323,11 @@ class vmmap {
   typename shard_list::const_iterator heap_end() const noexcept;
   bool heap_empty() const noexcept;
 
-  void swap_slot_(size_t) noexcept;  // With lock held.
+  cb_future<void> swap_slot_(size_t) noexcept;  // With lock held.
+  void reshard_(monitor_token, size_t, size_t);
 
   //pmap<Arch> pmap_;
-  mutable mutex avail_guard_;
+  mutable monitor avail_guard_;
   shard_list avail_;
   typename shard_list::size_type in_use_ = 0;
 

@@ -6,6 +6,7 @@
 #include <vector>
 #include <mutex>
 #include <ilias/refcnt.h>
+#include <ilias/monitor.h>
 #include <ilias/vm/page_owner.h>
 
 namespace ilias {
@@ -30,20 +31,22 @@ class anon_vme
     entry& operator=(entry&&) = delete;
     ~entry() noexcept;
 
-    shared_cb_future<page_ptr> fault(shared_ptr<page_alloc>, workq_ptr);
+    void fault(cb_promise<page_ptr>, monitor_token,
+               shared_ptr<page_alloc>, workq_ptr);
     bool present() const noexcept;
-    shared_cb_future<page_ptr> assign(workq_ptr, cb_future<page_ptr>);
+    void assign(cb_promise<page_ptr>, monitor_token,
+                workq_ptr, cb_future<page_ptr>) noexcept;
 
    private:
-    shared_cb_future<page_ptr> assign_locked_(workq_ptr, unique_lock<mutex>&&,
-                                           cb_future<page_ptr>);
-    page_ptr allocation_callback_(page_ptr) noexcept;
+    void assign_locked_(cb_promise<page_ptr>, workq_ptr,
+                        cb_future<monitor_token>,
+                        cb_future<page_ptr>) noexcept;
+    page_ptr allocation_callback_(monitor_token, page_ptr) noexcept;
 
     page_ptr release_urgent(page_owner::offset_type, page&) override;
 
-    mutable mutex guard_;
+    mutable monitor guard_;
     page_ptr page_ = nullptr;
-    shared_cb_future<page_ptr> in_progress_;
   };
 
   using entry_ptr = refpointer<entry>;
@@ -61,12 +64,14 @@ class anon_vme
   bool all_present() const noexcept;
   bool present(page_count<native_arch>) const noexcept;
 
-  shared_cb_future<page_ptr> fault_read(shared_ptr<page_alloc>,
-                                        page_count<native_arch>) override;
-  shared_cb_future<page_ptr> fault_write(shared_ptr<page_alloc>,
-                                         page_count<native_arch>) override;
-  shared_cb_future<page_ptr> fault_assign(page_count<native_arch>,
-                                          cb_future<page_ptr>);
+  void fault_read(cb_promise<page_ptr>, monitor_token,
+                  shared_ptr<page_alloc>, page_count<native_arch>)
+      noexcept override;
+  void fault_write(cb_promise<page_ptr>, monitor_token,
+                   shared_ptr<page_alloc>, page_count<native_arch>)
+      noexcept override;
+  void fault_assign(cb_promise<page_ptr>, monitor_token,
+                    page_count<native_arch>, cb_future<page_ptr>) noexcept;
   vector<bool> mincore() const override;
 
   vmmap_entry_ptr clone() const override;
@@ -75,8 +80,10 @@ class anon_vme
   pair<anon_vme, anon_vme> split_no_alloc(page_count<native_arch>) const;
 
  private:
-  shared_cb_future<page_ptr> fault_rw_(shared_ptr<page_alloc>,
-                                       page_count<native_arch>);
+  void fault_rw_(cb_promise<page_ptr>,
+                 monitor_token,
+                 shared_ptr<page_alloc>,
+                 page_count<native_arch>) noexcept;
 
   data_type data_;
 };

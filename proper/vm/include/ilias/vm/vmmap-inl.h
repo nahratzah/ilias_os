@@ -165,27 +165,31 @@ auto vmmap_shard<Arch>::entry::data() const noexcept -> vmmap_entry& {
 }
 
 template<arch Arch>
-auto vmmap_shard<Arch>::entry::fault_read(shared_ptr<page_alloc> pga,
-                                          vpage_no<Arch> pgno) ->
-    shared_cb_future<page_ptr> {
+auto vmmap_shard<Arch>::entry::fault_read(cb_promise<page_ptr> pgptr_promise,
+                                          monitor_token mt,
+                                          shared_ptr<page_alloc> pga,
+                                          vpage_no<Arch> pgno) noexcept ->
+    void {
   assert(pgno >= get_addr_used() && pgno < get_addr_free());
 
   auto arch_off = pgno - get_addr_used();
   page_count<native_arch> off = page_count<native_arch>(arch_off.get());
   assert(off.get() == arch_off.get());  // Verify cast.
-  return data().fault_read(move(pga), off);
+  data().fault_read(move(pgptr_promise), move(mt), move(pga), off);
 }
 
 template<arch Arch>
-auto vmmap_shard<Arch>::entry::fault_write(shared_ptr<page_alloc> pga,
-                                           vpage_no<Arch> pgno) ->
-    shared_cb_future<page_ptr> {
+auto vmmap_shard<Arch>::entry::fault_write(cb_promise<page_ptr> pgptr_promise,
+                                           monitor_token mt,
+                                           shared_ptr<page_alloc> pga,
+                                           vpage_no<Arch> pgno) noexcept ->
+    void {
   assert(pgno >= get_addr_used() && pgno < get_addr_free());
 
   auto arch_off = pgno - get_addr_used();
   page_count<native_arch> off = page_count<native_arch>(arch_off.get());
   assert(off.get() == arch_off.get());  // Verify cast.
-  return data().fault_write(move(pga), off);
+  data().fault_write(move(pgptr_promise), move(mt), move(pga), off);
 }
 
 template<arch Arch>
@@ -519,23 +523,29 @@ auto vmmap_shard<Arch>::fanout(Iter b, Iter e) noexcept -> void {
 }
 
 template<arch Arch>
-auto vmmap_shard<Arch>::fault_read(shared_ptr<page_alloc> pga,
-                                   vpage_no<Arch> pgno) ->
-    shared_cb_future<page_ptr> {
+auto vmmap_shard<Arch>::fault_read(cb_promise<page_ptr> pgptr_promise,
+                                   monitor_token mt,
+                                   shared_ptr<page_alloc> pga,
+                                   vpage_no<Arch> pgno) noexcept -> void {
   entry* e = find_entry_for_addr_(pgno);
-  if (_predict_false(e == nullptr))
-    return efault_future_<page_ptr>(pgno);
-  return e->fault_read(move(pga), pgno);
+  if (_predict_false(e == nullptr)) {
+    pgptr_promise.set_exception(make_exception_ptr(efault(pgno)));
+    return;
+  }
+  e->fault_read(move(pgptr_promise), move(mt), move(pga), pgno);
 }
 
 template<arch Arch>
-auto vmmap_shard<Arch>::fault_write(shared_ptr<page_alloc> pga,
-                                    vpage_no<Arch> pgno) ->
-    shared_cb_future<page_ptr> {
+auto vmmap_shard<Arch>::fault_write(cb_promise<page_ptr> pgptr_promise,
+                                    monitor_token mt,
+                                    shared_ptr<page_alloc> pga,
+                                    vpage_no<Arch> pgno) noexcept -> void {
   entry* e = find_entry_for_addr_(pgno);
-  if (_predict_false(e == nullptr))
-    return efault_future_<page_ptr>(pgno);
-  return e->fault_write(move(pga), pgno);
+  if (_predict_false(e == nullptr)) {
+    pgptr_promise.set_exception(make_exception_ptr(efault(pgno)));
+    return;
+  }
+  e->fault_write(move(pgptr_promise), move(mt), move(pga), pgno);
 }
 
 template<arch Arch>
@@ -769,105 +779,105 @@ vmmap<Arch>::vmmap(vmmap&& o)
 {}
 
 template<arch Arch>
-auto vmmap<Arch>::reshard(size_t n_shards, size_t in_use) -> void {
-  auto l = stats::tracked_lock(avail_guard_, stats::vmmap_contention);
-
-  if (n_shards == 0) n_shards = 1;
-  in_use_ = 0;  // Reset use counter.
-
-  if (avail_.empty()) {
-    avail_.resize(n_shards);
-    return;
-  }
-  avail_.reserve(n_shards);
-
-  /* Merge all shards together. */
-  for_each(next(avail_.begin()), avail_.end(),
-           [this](vmmap_shard<Arch>& shard) {
-             this->avail_.front().merge(move(shard));
-           });
-
-  /* Allocate shards (all shards except the first are empty). */
-  avail_.resize(n_shards);
-
-  if (n_shards > 1U) {
-    /* Distribute pages across shards. */
-    avail_.front().fanout(avail_.begin(), avail_.end());
-
-    /* Heap sort, so the range with the most free pages is at the front. */
-    make_heap(avail_.begin(), avail_.end(), &shard_free_less_);
-  }
-
-  /* Assign in-use shards. */
-  while (in_use_ < min(in_use, n_shards)) {
-    pop_heap(avail_.begin(), avail_.end() - in_use_, &shard_free_less_);
-    ++in_use_;
-  }
-
-  /* Try to reduce memory usage (not a big deal if this fails). */
-  try {
-    avail_.shrink_to_fit();
-  } catch (...) {
-    /* IGNORE */
-  }
+auto vmmap<Arch>::reshard(size_t n_shards, size_t in_use) -> cb_future<void> {
+  return async(wq_, &vmmap::reshard_,
+               this, avail_guard_.queue(monitor_access::write),
+               n_shards, in_use);
 }
 
 template<arch Arch>
 auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> cb_future<void> {
-  typename shard_list::iterator shard;
+  using std::placeholders::_1;
 
-  unique_lock<mutex> l{ avail_guard_ };
-  shard = find_shard_locked_(pgno);
-  if (_predict_false(shard == avail_.end()))
-    return vmmap_shard<Arch>::template efault_future_<void>(pgno);
+  auto mt_future = avail_guard_.queue(monitor_access::read).share();
 
-  // XXX lock shard, unlock avail_guard_.
-  shared_cb_future<page_ptr> pg = shard->fault_read(pga_, pgno);
-  l.unlock();  // XXX unlock shard
+  cb_future<typename shard_list::iterator> find_shard_future =
+      async(wq_, launch::parallel,
+            [this, pgno](monitor_token) {
+              typename shard_list::iterator shard =
+                  this->find_shard_locked_(pgno);
+              if (_predict_false(shard == avail_.end()))
+                throw efault(pgno);
+              return shard;
+            },
+            mt_future);
 
-  return async(wq_,
-               [](page_ptr pg, vpage_no<Arch>) -> void {
+  cb_future<page_ptr> pgptr_future =
+      async(wq_, launch::parallel | launch::aid,
+            pass_promise<page_ptr>([](cb_promise<page_ptr> pgptr_promise,
+                                      typename shard_list::iterator shard,
+                                      monitor_token mt,
+                                      shared_ptr<page_alloc> pga,
+                                      vpage_no<Arch> pgno) {
+                                     shard->fault_read(move(pgptr_promise),
+                                                       mt, move(pga), pgno);
+                                   }),
+            move(find_shard_future),
+            mt_future, this->pga_, pgno);
+
+  return async(wq_, launch::parallel | launch::aid,
+               [](monitor_token, page_ptr pg, vpage_no<Arch>) {
                  assert(pg != nullptr);
-                 assert_msg(false, "XXX: invoke pmap");  // XXX implement
+                 assert_msg(false, "XXX: invoke pmap");
                },
-               move(pg),
-               pgno);
+               mt_future, move(pgptr_future), pgno);
 }
 
 template<arch Arch>
 auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> cb_future<void> {
-  typename shard_list::iterator shard;
+  using std::placeholders::_1;
 
-  unique_lock<mutex> l{ avail_guard_ };
-  shard = find_shard_locked_(pgno);
-  if (_predict_false(shard == avail_.end()))
-    return vmmap_shard<Arch>::template efault_future_<void>(pgno);
+  auto mt_future = avail_guard_.queue(monitor_access::read).share();
 
-  // XXX lock shard, unlock avail_guard_.
-  shared_cb_future<page_ptr> pg = shard->fault_write(pga_, pgno);
-  l.unlock();  // XXX unlock shard
+  cb_future<typename shard_list::iterator> find_shard_future =
+      async(wq_, launch::parallel,
+            [this, pgno](monitor_token) {
+              typename shard_list::iterator shard =
+                  this->find_shard_locked_(pgno);
+              if (_predict_false(shard == avail_.end()))
+                throw efault(pgno);
+              return shard;
+            },
+            mt_future);
 
-  return async_lazy([](page_ptr pg, vpage_no<Arch>) -> void {
-                      assert(pg != nullptr);
-                      assert_msg(false, "XXX: invoke pmap");  // XXX implement
-                    },
-                    move(pg),
-                    pgno);
+  cb_future<page_ptr> pgptr_future =
+      async(wq_, launch::parallel | launch::aid,
+            pass_promise<page_ptr>([](cb_promise<page_ptr> pgptr_promise,
+                                      typename shard_list::iterator shard,
+                                      monitor_token mt,
+                                      shared_ptr<page_alloc> pga,
+                                      vpage_no<Arch> pgno) {
+                                     shard->fault_write(move(pgptr_promise),
+                                                        mt, move(pga), pgno);
+                                   }),
+            move(find_shard_future),
+            mt_future, ref(this->pga_), pgno);
+
+  return async(wq_, launch::parallel | launch::aid,
+               [](monitor_token, page_ptr pg, vpage_no<Arch>) {
+                 assert(pg != nullptr);
+                 assert_msg(false, "XXX: invoke pmap");  // XXX implement
+               },
+               mt_future, move(pgptr_future), pgno);
 }
 
 template<arch Arch>
 auto vmmap<Arch>::mincore(vpage_no<Arch> addr_b, vpage_no<Arch> addr_e)
-    const -> vector<bool> {
-  vector<bool> rv((addr_e - addr_b).get());
+    const -> cb_future<vector<bool>> {
+  auto mt_future = avail_guard_.queue(monitor_access::read);
 
-  lock_guard<mutex> l{ avail_guard_ };
-  for (const vmmap_shard<Arch>& shard : avail_) {
-    vector<bool> shard_rv = shard.mincore(addr_b, addr_e);
-    transform(shard_rv.begin(), shard_rv.end(), rv.begin(), rv.begin(),
-              logical_or<bool>());
-  }
-
-  return rv;
+  return async(wq_, launch::parallel,
+               [this, addr_b, addr_e](monitor_token) {
+                 vector<bool> rv((addr_e - addr_b).get());
+                 for (const vmmap_shard<Arch>& shard : avail_) {
+                   vector<bool> shard_rv = shard.mincore(addr_b, addr_e);
+                   transform(shard_rv.begin(), shard_rv.end(), rv.begin(),
+                             rv.begin(),
+                             logical_or<bool>());
+                 }
+                 return rv;
+               },
+               move(mt_future));
 }
 
 template<arch Arch>
@@ -920,12 +930,62 @@ auto vmmap<Arch>::heap_empty() const noexcept -> bool {
 }
 
 template<arch Arch>
-auto vmmap<Arch>::swap_slot_(size_t slot_idx) noexcept -> void {
-  auto l = stats::tracked_lock(avail_guard_, stats::vmmap_contention);
+auto vmmap<Arch>::swap_slot_(size_t slot_idx) noexcept -> cb_future<void> {
+  auto mt_future = avail_guard_.queue(monitor_access::write);
 
-  pop_heap(heap_begin(), heap_end(), &shard_free_less_);
-  iter_swap(prev(heap_end()), prev(avail_.end(), slot_idx + 1U));
-  push_heap(heap_begin(), heap_end(), &shard_free_less_);
+  return async(wq_,
+               [this](monitor_token, size_t slot_idx) {
+                 pop_heap(heap_begin(), heap_end(), &shard_free_less_);
+                 iter_swap(prev(heap_end()), prev(avail_.end(),
+                           slot_idx + 1U));
+                 push_heap(heap_begin(), heap_end(), &shard_free_less_);
+               },
+               move(mt_future), slot_idx);
+}
+
+template<arch Arch>
+auto vmmap<Arch>::reshard_(monitor::token mt, size_t n_shards,
+                           size_t in_use) -> void {
+  assert(mt.locked() && mt.access() == monitor_access::write);
+
+  if (n_shards == 0) n_shards = 1;
+  in_use_ = 0;  // Reset use counter.
+
+  if (avail_.empty()) {
+    avail_.resize(n_shards);
+    return;
+  }
+  avail_.reserve(n_shards);
+
+  /* Merge all shards together. */
+  for_each(next(avail_.begin()), avail_.end(),
+           [this](vmmap_shard<Arch>& shard) {
+             this->avail_.front().merge(move(shard));
+           });
+
+  /* Allocate shards (all shards except the first are empty). */
+  avail_.resize(n_shards);
+
+  if (n_shards > 1U) {
+    /* Distribute pages across shards. */
+    avail_.front().fanout(avail_.begin(), avail_.end());
+
+    /* Heap sort, so the range with the most free pages is at the front. */
+    make_heap(avail_.begin(), avail_.end(), &shard_free_less_);
+  }
+
+  /* Assign in-use shards. */
+  while (in_use_ < min(in_use, n_shards)) {
+    pop_heap(avail_.begin(), avail_.end() - in_use_, &shard_free_less_);
+    ++in_use_;
+  }
+
+  /* Try to reduce memory usage (not a big deal if this fails). */
+  try {
+    avail_.shrink_to_fit();
+  } catch (...) {
+    /* IGNORE */
+  }
 }
 
 
