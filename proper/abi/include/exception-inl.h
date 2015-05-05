@@ -47,7 +47,7 @@ inline bool exception_ptr::operator!=(const exception_ptr& o) const noexcept {
 }
 
 
-template<typename T> exception_ptr make_exception(T e) noexcept {
+template<typename T> exception_ptr make_exception_ptr(T e) noexcept {
   try {
     throw e;
   } catch (const T& t) {
