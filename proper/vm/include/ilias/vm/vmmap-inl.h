@@ -810,9 +810,10 @@ auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> cb_future<void> {
             mt_future, this->pga_, pgno);
 
   return async(wq_, launch::parallel | launch::aid,
-               [](monitor_token, page_ptr pg, vpage_no<Arch>) {
-                 assert(pg != nullptr);
-                 assert_msg(false, "XXX: invoke pmap");
+               [this](monitor_token, page_ptr pg, vpage_no<Arch> pgno) {
+                 const auto npa = page_no<native_arch>(pg->address());
+                 const auto pa = page_no<Arch>(npa.get());
+                 pmap_.map(pgno, pa, permission::RO());  // XXX Use permissions from entry.
                },
                mt_future, move(pgptr_future), pgno);
 }
@@ -848,9 +849,10 @@ auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> cb_future<void> {
             mt_future, ref(this->pga_), pgno);
 
   return async(wq_, launch::parallel | launch::aid,
-               [](monitor_token, page_ptr pg, vpage_no<Arch>) {
-                 assert(pg != nullptr);
-                 assert_msg(false, "XXX: invoke pmap");  // XXX implement
+               [this](monitor_token, page_ptr pg, vpage_no<Arch> pgno) {
+                 const auto npa = page_no<native_arch>(pg->address());
+                 const auto pa = page_no<Arch>(npa.get());
+                 pmap_.map(pgno, pa, permission::RW());  // XXX Use permissions from entry.
                },
                mt_future, move(pgptr_future), pgno);
 }
