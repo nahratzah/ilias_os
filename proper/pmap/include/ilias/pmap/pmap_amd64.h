@@ -25,6 +25,7 @@ template<> class pmap<arch::amd64> final {
 
   void clear() noexcept;
   bool userspace() const noexcept { return support_.userspace; }
+  pmap_support<arch::amd64>& get_support() const noexcept { return support_; }
 
   phys_addr<arch::amd64> virt_to_phys(vaddr<arch::amd64>) const;
   std::tuple<page_no<arch::amd64>, size_t, uintptr_t> virt_to_page(

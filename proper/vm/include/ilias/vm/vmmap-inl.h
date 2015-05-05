@@ -754,28 +754,22 @@ auto vmmap_shard<Arch>::efault_future_(vpage_no<Arch>) -> cb_future<T> {
 
 
 template<arch Arch>
-vmmap<Arch>::vmmap(shared_ptr<page_alloc> pga, workq_service& wqs)
-: avail_(1),
+vmmap<Arch>::vmmap(pmap_support<Arch>& ps, shared_ptr<page_alloc> pga,
+                   workq_service& wqs)
+: pmap_(ps),
+  avail_(1),
   pga_(pga),
   wq_(wqs.new_workq())
 {}
 
 template<arch Arch>
-vmmap<Arch>::vmmap(shared_ptr<page_alloc> pga, workq_service& wqs,
+vmmap<Arch>::vmmap(pmap_support<Arch>& ps, shared_ptr<page_alloc> pga,
+                   workq_service& wqs,
                    vpage_no<Arch> b, vpage_no<Arch> e)
-: avail_(1, vmmap_shard<Arch>(b, e)),
+: pmap_(ps),
+  avail_(1, vmmap_shard<Arch>(b, e)),
   pga_(pga),
   wq_(wqs.new_workq())
-{}
-
-template<arch Arch>
-vmmap<Arch>::vmmap(const vmmap& o)
-: avail_(o.avail_)
-{}
-
-template<arch Arch>
-vmmap<Arch>::vmmap(vmmap&& o)
-: avail_(move(o.avail_))
 {}
 
 template<arch Arch>

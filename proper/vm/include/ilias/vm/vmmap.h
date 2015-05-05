@@ -16,6 +16,8 @@
 #include <ilias/workq.h>
 #include <ilias/refcnt.h>
 #include <ilias/monitor.h>
+#include <ilias/pmap/pmap_i386.h>
+#include <ilias/pmap/pmap_amd64.h>
 
 namespace ilias {
 namespace vm {
@@ -299,11 +301,9 @@ class vmmap {
   using shard_list = vector<vmmap_shard<Arch>>;
 
  public:
-  explicit vmmap(shared_ptr<page_alloc>, workq_service&);
-  vmmap(shared_ptr<page_alloc>, workq_service&,
+  explicit vmmap(pmap_support<Arch>&, shared_ptr<page_alloc>, workq_service&);
+  vmmap(pmap_support<Arch>&, shared_ptr<page_alloc>, workq_service&,
         vpage_no<Arch>, vpage_no<Arch>);
-  vmmap(const vmmap&);
-  vmmap(vmmap&&);
   ~vmmap() noexcept = default;
 
   cb_future<void> reshard(size_t, size_t);
@@ -326,7 +326,7 @@ class vmmap {
   cb_future<void> swap_slot_(size_t) noexcept;  // With lock held.
   void reshard_(monitor_token, size_t, size_t);
 
-  //pmap<Arch> pmap_;
+  pmap<Arch> pmap_;
   mutable monitor avail_guard_;
   shard_list avail_;
   typename shard_list::size_type in_use_ = 0;
