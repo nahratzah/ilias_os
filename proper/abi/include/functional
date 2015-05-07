@@ -279,6 +279,8 @@ namespace _bind {
 
 template<typename, typename...> class expression;
 template<typename, typename, typename...> class expression_r;
+template<typename, typename...> class expression_once;
+template<typename, typename, typename...> class expression_once_r;
 template<typename> class mem_fn;  // Not a bind expression,
                                   // just a simple function wrapper.
 
@@ -286,7 +288,8 @@ template<typename> class mem_fn;  // Not a bind expression,
 
 template<typename F, typename... BoundArgs>
 auto bind(F&& f, BoundArgs&&... bound_args)
-    noexcept(noexcept(_bind::expression<decay_t<F>, decay_t<BoundArgs>...>(
+    noexcept(noexcept(_bind::expression<decay_t<F>,
+                                        decay_t<BoundArgs>...>(
         forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
     _bind::expression<decay_t<F>, decay_t<BoundArgs>...>;
 
@@ -296,6 +299,20 @@ auto bind(F&& f, BoundArgs&&... bound_args)
         _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>(
             forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
     _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>;
+
+template<typename F, typename... BoundArgs>
+auto bind_once(F&& f, BoundArgs&&... bound_args)
+    noexcept(noexcept(_bind::expression_once<decay_t<F>,
+                                             decay_t<BoundArgs>...>(
+        forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
+    _bind::expression_once<decay_t<F>, decay_t<BoundArgs>...>;
+
+template<typename R, typename F, typename... BoundArgs>
+auto bind_once(F&& f, BoundArgs&&... bound_args)
+    noexcept(noexcept(
+        _bind::expression_once_r<R, decay_t<F>, decay_t<BoundArgs>...>(
+            forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
+    _bind::expression_once_r<R, decay_t<F>, decay_t<BoundArgs>...>;
 
 
 namespace placeholders {

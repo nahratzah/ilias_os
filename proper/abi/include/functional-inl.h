@@ -435,6 +435,216 @@ class expression_r<void, F, BoundArgs...>
 };
 
 
+/*
+ * Resolve argument:  case for non-bind-expression, non-placeholder.
+ * Bind_once specialization.
+ */
+template<typename T, typename Args, typename ArgIndices>
+auto resolve_argument_once(T& v, Args, ArgIndices) ->
+    enable_if_t<!is_bind_expression<T>::value &&
+                !is_placeholder<T>::value &&
+                !is_ref_wrapper<T>::value,
+                T&&> {
+  return move(v);
+}
+template<typename T, typename Args, typename ArgIndices>
+auto resolve_argument_once(const reference_wrapper<T>& v, Args, ArgIndices) ->
+    T& {
+  return v.get();
+}
+
+/*
+ * Resolve argument:  case for placeholder.
+ * Bind_once specialization.
+ */
+template<typename T, typename Args, size_t... ArgIndices>
+auto resolve_argument_once(const T&, Args args,
+                           index_sequence<ArgIndices...>) ->
+    typename enable_if_t<is_placeholder<T>::value != 0,
+                         placeholder_type<T>
+                        >::template type<Args> {
+  constexpr int index = is_placeholder<T>::value - 1;
+  using result = typename tuple_element<index, Args>::type;
+  static_assert(is_reference<result>::value,
+                "Argument is not a reference...");
+
+  return static_cast<result>(get<index>(args));
+}
+
+/*
+ * Resolve argument:  case for bind expression.
+ * Bind_once specialization.
+ */
+template<typename T, typename Args, size_t... ArgIndices>
+auto resolve_argument_once(T&& v, Args args,
+                           index_sequence<ArgIndices...>) ->
+    enable_if_t<is_bind_expression<T>::value,
+                decltype(impl::invoke(forward<T>(v),
+                                      get<ArgIndices>(args)...))> {
+  static_assert(!is_void<decltype(impl::invoke(forward<T>(v),
+                                               get<ArgIndices>(args)...))
+                         >::value,
+                "Nested bind expression may not return void.");
+  return impl::invoke(forward<T>(v), get<ArgIndices>(args)...);
+}
+
+
+/*
+ * Invoke tuple of f, bound_args... using tuple of args...
+ * Bind_once specialization.
+ */
+template<typename FTuple, typename ArgTuple,
+         size_t... FTIndices, size_t... ArgIndices>
+auto invoke_tuple_once(FTuple&& ft, ArgTuple args,
+                       index_sequence<FTIndices...>,
+                       index_sequence<ArgIndices...> arg_indices) ->
+    decltype(impl::invoke(get<0>(ft),
+                          resolve_argument_once(get<FTIndices + 1>(ft),
+                                                args,
+                                                arg_indices)...)) {
+  return impl::invoke(get<0>(ft), resolve_argument_once(get<FTIndices + 1>(ft),
+                                                        args, arg_indices)...);
+}
+
+
+/* Bind_once specialization. */
+template<typename F, typename... BoundArgs>
+class expression_once
+: public _result_type<F>
+{
+ private:
+  using data_type = tuple<F, BoundArgs...>;
+
+ public:
+  expression_once() = delete;
+  expression_once(const expression_once&) = default;
+  expression_once& operator=(const expression_once&) = default;
+
+  expression_once(expression_once&& other)
+      noexcept(is_nothrow_move_constructible<data_type>::value)
+  : data_(move(other.data_))
+  {}
+
+  template<typename F_, typename... Args_,
+           typename = enable_if_t<is_constructible<data_type,
+                                                   F_, Args_...>::value,
+                                  void>>
+  explicit expression_once(F_&& f, Args_&&... args)
+      noexcept(is_nothrow_constructible<data_type, F_, Args_...>::value)
+  : data_(forward<F_>(f), forward<Args_>(args)...)
+  {}
+
+  expression_once& operator=(expression_once&& other)
+      noexcept(is_nothrow_move_assignable<data_type>::value) {
+    data_ = move(other.data_);
+    return *this;
+  }
+
+  template<typename... Args>
+  auto operator()(Args&&... args) ->
+      decltype(invoke_tuple_once(declval<expression_once::data_type>(),
+                                 forward_as_tuple(forward<Args>(args)...),
+                                 index_sequence_for<BoundArgs...>(),
+                                 index_sequence_for<Args...>())) {
+    return invoke_tuple_once(move(data_),
+                             forward_as_tuple(forward<Args>(args)...),
+                             index_sequence_for<BoundArgs...>(),
+                             index_sequence_for<Args...>());
+  }
+
+ private:
+  data_type data_;
+};
+
+/* Bind_once specialization. */
+template<typename R, typename F, typename... BoundArgs>
+class expression_once_r
+: public _result_type<F>
+{
+ private:
+  using impl_type = expression_once<F, BoundArgs...>;
+
+ public:
+  using result_type = R;
+
+  expression_once_r() = delete;
+  expression_once_r(const expression_once_r&) = default;
+  expression_once_r& operator=(const expression_once_r&) = default;
+
+  expression_once_r(expression_once_r&& other)
+      noexcept(is_nothrow_move_constructible<impl_type>::value)
+  : impl_(move(other.impl_))
+  {}
+
+  template<typename F_, typename... Args_,
+           typename = enable_if_t<is_constructible<impl_type,
+                                                   F_, Args_...>::value,
+                                  void>>
+  explicit expression_once_r(F_&& f, Args_&&... args)
+      noexcept(is_nothrow_constructible<impl_type, F_, Args_...>::value)
+  : impl_(forward<F_>(f), forward<Args_>(args)...)
+  {}
+
+  expression_once_r& operator=(expression_once_r&& other)
+      noexcept(is_nothrow_move_assignable<impl_type>::value) {
+    impl_ = move(other.impl_);
+    return *this;
+  }
+
+  template<typename... Args>
+  auto operator()(Args&&... args) -> result_type {
+    return impl::invoke(move(impl_), forward<Args>(args)...);
+  }
+
+ private:
+  impl_type impl_;
+};
+/* Specialization for void return type.
+ * Bind_once specialization. */
+template<typename F, typename... BoundArgs>
+class expression_once_r<void, F, BoundArgs...>
+: public _result_type<F>
+{
+ private:
+  using impl_type = expression_once<F, BoundArgs...>;
+
+ public:
+  using result_type = void;
+
+  expression_once_r() = delete;
+  expression_once_r(const expression_once_r&) = default;
+  expression_once_r& operator=(const expression_once_r&) = default;
+
+  expression_once_r(expression_once_r&& other)
+      noexcept(is_nothrow_move_constructible<impl_type>::value)
+  : impl_(move(other.impl_))
+  {}
+
+  template<typename F_, typename... Args_,
+           typename = enable_if_t<is_constructible<impl_type,
+                                                   F_, Args_...>::value,
+                                  void>>
+  explicit expression_once_r(F_&& f, Args_&&... args)
+      noexcept(is_nothrow_constructible<impl_type, F_, Args_...>::value)
+  : impl_(forward<F_>(f), forward<Args_>(args)...)
+  {}
+
+  expression_once_r& operator=(expression_once_r&& other)
+      noexcept(is_nothrow_move_assignable<impl_type>::value) {
+    impl_ = move(other.impl_);
+    return *this;
+  }
+
+  template<typename... Args>
+  auto operator()(Args&&... args) -> result_type {
+    impl::invoke(move(impl_), forward<Args>(args)...);
+  }
+
+ private:
+  impl_type impl_;
+};
+
+
 template<typename F>
 class mem_fn
 : public _result_type<F>
@@ -463,6 +673,13 @@ struct is_bind_expression<_bind::expression<F, BoundArgs...>>
 : true_type {};
 template<typename R, typename F, typename... BoundArgs>
 struct is_bind_expression<_bind::expression_r<R, F, BoundArgs...>>
+: true_type {};
+
+template<typename F, typename... BoundArgs>
+struct is_bind_expression<_bind::expression_once<F, BoundArgs...>>
+: true_type {};
+template<typename R, typename F, typename... BoundArgs>
+struct is_bind_expression<_bind::expression_once_r<R, F, BoundArgs...>>
 : true_type {};
 
 template<typename T> struct is_bind_expression<const T>
@@ -506,6 +723,28 @@ auto bind(F&& f, BoundArgs&&... bound_args)
     _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...> {
   static_assert(is_bind_expression<_bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>>::value, "GRMBL");
   return _bind::expression_r<R, decay_t<F>, decay_t<BoundArgs>...>(
+      forward<F>(f), forward<BoundArgs>(bound_args)...);
+}
+
+
+template<typename F, typename... BoundArgs>
+auto bind_once(F&& f, BoundArgs&&... bound_args)
+    noexcept(noexcept(_bind::expression_once<decay_t<F>, decay_t<BoundArgs>...>(
+        forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
+    _bind::expression_once<decay_t<F>, decay_t<BoundArgs>...> {
+  static_assert(is_bind_expression<_bind::expression_once<decay_t<F>, decay_t<BoundArgs>...>>::value, "GRMBL");
+  return _bind::expression_once<decay_t<F>, decay_t<BoundArgs>...>(
+      forward<F>(f), forward<BoundArgs>(bound_args)...);
+}
+
+template<typename R, typename F, typename... BoundArgs>
+auto bind_once(F&& f, BoundArgs&&... bound_args)
+    noexcept(noexcept(
+        _bind::expression_once_r<R, decay_t<F>, decay_t<BoundArgs>...>(
+            forward<F>(f), forward<BoundArgs>(bound_args)...))) ->
+    _bind::expression_once_r<R, decay_t<F>, decay_t<BoundArgs>...> {
+  static_assert(is_bind_expression<_bind::expression_once_r<R, decay_t<F>, decay_t<BoundArgs>...>>::value, "GRMBL");
+  return _bind::expression_once_r<R, decay_t<F>, decay_t<BoundArgs>...>(
       forward<F>(f), forward<BoundArgs>(bound_args)...);
 }
 

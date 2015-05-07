@@ -16,20 +16,6 @@ auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
     void {
   using std::placeholders::_1;
 
-  /*
-   * Work around std::function needing a copy-constructible wrapped type.
-   * We currently use a shared_ptr.
-   * XXX: figure out a better way (probably implement move_function in
-   *      ilias_async.
-   */
-  shared_ptr<cb_promise<page_ptr>> pgptr;
-  try {
-    pgptr = make_shared<cb_promise<page_ptr>>(move(pgptr_promise));
-  } catch (...) {
-    pgptr_promise.set_exception(current_exception());
-    return;
-  }
-
   try {
     auto mt_future = guard_.queue(monitor_access::write);
 
@@ -47,27 +33,27 @@ auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
               move(f), move(mt_future), mt);
 
     callback(move(fmt),
-             bind([this](const shared_ptr<cb_promise<page_ptr>>& pgptr_promise,
-                         cb_future<tuple<page_ptr, monitor_token>> arg) {
-                    page_ptr pg;
-                    monitor_token my_mt;
+             bind_once([this](cb_promise<page_ptr> pgptr_promise,
+                              cb_future<tuple<page_ptr, monitor_token>> arg) {
+                         page_ptr pg;
+                         monitor_token my_mt;
 
-                    try {
-                      tie(pg, my_mt) = arg.get();
+                         try {
+                           tie(pg, my_mt) = arg.get();
 
-                      if (page_ != nullptr) {
-                        pgptr_promise->set_value(page_);
-                        return;
-                      }
-                      pgptr_promise->set_value(allocation_callback_(my_mt,
-                                                                    pg));
-                    } catch (...) {
-                      pgptr_promise->set_exception(current_exception());
-                    }
-                  },
-                  pgptr, _1));
+                           if (page_ != nullptr) {
+                             pgptr_promise.set_value(page_);
+                             return;
+                           }
+                           pgptr_promise.set_value(allocation_callback_(my_mt,
+                                                                        pg));
+                         } catch (...) {
+                           pgptr_promise.set_exception(current_exception());
+                         }
+                       },
+                       move(pgptr_promise), _1));
   } catch (...) {
-    pgptr->set_exception(current_exception());
+    pgptr_promise.set_exception(current_exception());
   }
 }
 
@@ -91,34 +77,24 @@ auto anon_vme::entry::assign_locked_(cb_promise<page_ptr> pgptr_promise,
                                      cb_future<page_ptr> f) noexcept -> void {
   using std::placeholders::_1;
 
-  /*
-   * Work around std::function needing a copy-constructible wrapped type.
-   * We currently use a shared_ptr.
-   * XXX: figure out a better way (probably implement move_function in
-   *      ilias_async.
-   */
-  shared_ptr<cb_promise<page_ptr>> pgptr;
   try {
-    pgptr = make_shared<cb_promise<page_ptr>>(move(pgptr_promise));
+    auto acf = async(move(wq), launch::aid,
+                     &entry::allocation_callback_,
+                     entry_ptr(this),
+                     move(mt), move(f));
+    callback(move(acf),
+             bind_once([](cb_promise<page_ptr> pgptr,
+                          cb_future<page_ptr> pg) {
+                         try {
+                           pgptr.set_value(pg.get());
+                         } catch (...) {
+                           pgptr.set_exception(current_exception());
+                         }
+                       },
+                       move(pgptr_promise), _1));
   } catch (...) {
     pgptr_promise.set_exception(current_exception());
-    return;
   }
-
-  auto acf = async(move(wq), launch::aid,
-                   &entry::allocation_callback_,
-                   entry_ptr(this),
-                   move(mt), move(f));
-  callback(move(acf),
-           bind([](const shared_ptr<cb_promise<page_ptr>>& pgptr,
-                   cb_future<page_ptr> pg) {
-                  try {
-                    pgptr->set_value(pg.get());
-                  } catch (...) {
-                    pgptr->set_exception(current_exception());
-                  }
-                },
-                pgptr, _1));
 }
 
 auto anon_vme::entry::allocation_callback_(monitor_token mt, page_ptr pg)
