@@ -16,6 +16,7 @@ auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
     void {
   using std::placeholders::_1;
 
+  cb_promise_exceptor<page_ptr> pgptr_exceptor = pgptr_promise;
   try {
     auto mt_future = guard_.queue(monitor_access::write);
 
@@ -37,6 +38,8 @@ auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
                               cb_future<tuple<page_ptr, monitor_token>> arg) {
                          page_ptr pg;
                          monitor_token my_mt;
+                         cb_promise_exceptor<page_ptr> pgptr_exceptor =
+                             pgptr_promise;
 
                          try {
                            tie(pg, my_mt) = arg.get();
@@ -48,12 +51,12 @@ auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
                            pgptr_promise.set_value(allocation_callback_(my_mt,
                                                                         pg));
                          } catch (...) {
-                           pgptr_promise.set_exception(current_exception());
+                           pgptr_exceptor.set_current_exception();
                          }
                        },
                        move(pgptr_promise), _1));
   } catch (...) {
-    pgptr_promise.set_exception(current_exception());
+    pgptr_exceptor.set_current_exception();
   }
 }
 
@@ -61,6 +64,8 @@ auto anon_vme::entry::assign(
     cb_promise<page_ptr> pgptr_promise,
     monitor_token mt,
     workq_ptr wq, cb_future<page_ptr> f) noexcept -> void {
+  cb_promise_exceptor<page_ptr> pgptr_exceptor = pgptr_promise;
+
   try {
     auto mt_future = async_lazy([mt](monitor_token x) { return x; },
                                 guard_.queue(monitor_access::write));
@@ -68,7 +73,7 @@ auto anon_vme::entry::assign(
     return assign_locked_(move(pgptr_promise), wq, move(mt_future),
                           page_unbusy_future(wq, move(f)));
   } catch (...) {
-    pgptr_promise.set_exception(current_exception());
+    pgptr_exceptor.set_current_exception();
   }
 }
 
@@ -77,6 +82,7 @@ auto anon_vme::entry::assign_locked_(cb_promise<page_ptr> pgptr_promise,
                                      cb_future<page_ptr> f) noexcept -> void {
   using std::placeholders::_1;
 
+  cb_promise_exceptor<page_ptr> pgptr_exceptor = pgptr_promise;
   try {
     auto acf = async(move(wq), launch::aid,
                      &entry::allocation_callback_,
@@ -85,15 +91,16 @@ auto anon_vme::entry::assign_locked_(cb_promise<page_ptr> pgptr_promise,
     callback(move(acf),
              bind_once([](cb_promise<page_ptr> pgptr,
                           cb_future<page_ptr> pg) {
+                         cb_promise_exceptor<page_ptr> pgptr_e = pgptr;
                          try {
                            pgptr.set_value(pg.get());
                          } catch (...) {
-                           pgptr.set_exception(current_exception());
+                           pgptr_e.set_current_exception();
                          }
                        },
                        move(pgptr_promise), _1));
   } catch (...) {
-    pgptr_promise.set_exception(current_exception());
+    pgptr_exceptor.set_current_exception();
   }
 }
 
@@ -185,12 +192,13 @@ auto anon_vme::fault_assign(cb_promise<page_ptr> pgptr_promise,
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
 
+  cb_promise_exceptor<page_ptr> pgptr_exceptor = pgptr_promise;
   try {
     auto& elem = data_[off.get()];
     if (elem == nullptr) elem = new entry();
     elem->assign(move(pgptr_promise), move(mt), get_workq(), move(pg));
   } catch (...) {
-    pgptr_promise.set_exception(current_exception());
+    pgptr_exceptor.set_current_exception();
   }
 }
 
@@ -231,12 +239,13 @@ auto anon_vme::fault_rw_(cb_promise<page_ptr> pgptr_promise,
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
 
+  cb_promise_exceptor<page_ptr> pgptr_exceptor = pgptr_promise;
   try {
     auto& elem = data_[off.get()];
     if (elem == nullptr) elem = new entry();
     elem->fault(move(pgptr_promise), move(mt), move(pga), this->get_workq());
   } catch (...) {
-    pgptr_promise.set_exception(current_exception());
+    pgptr_exceptor.set_current_exception();
   }
 }
 
