@@ -44,7 +44,7 @@ auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
                                        }
                                      }),
               move(mt_future), wq);
-    convert(move(pgptr_promise), move(read_pg), [](page_ptr p) { return p; });
+    convert(move(pgptr_promise), move(read_pg));
   } catch (...) {
     pgptr_exceptor.set_current_exception();
   }
@@ -77,8 +77,7 @@ auto anon_vme::entry::assign_locked_(cb_promise<page_ptr> pgptr_promise,
                      &entry::allocation_callback_,
                      entry_ptr(this),
                      move(mt), move(f));
-    convert(move(pgptr_promise), move(acf),
-            [](page_ptr pg) { return pg; });
+    convert(move(pgptr_promise), move(acf));
   } catch (...) {
     pgptr_exceptor.set_current_exception();
   }
