@@ -33,28 +33,12 @@ auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
               },
               move(f), move(mt_future), mt);
 
-    callback(move(fmt),
-             bind_once([this](cb_promise<page_ptr> pgptr_promise,
-                              cb_future<tuple<page_ptr, monitor_token>> arg) {
-                         page_ptr pg;
-                         monitor_token my_mt;
-                         cb_promise_exceptor<page_ptr> pgptr_exceptor =
-                             pgptr_promise;
-
-                         try {
-                           tie(pg, my_mt) = arg.get();
-
-                           if (page_ != nullptr) {
-                             pgptr_promise.set_value(page_);
-                             return;
-                           }
-                           pgptr_promise.set_value(allocation_callback_(my_mt,
-                                                                        pg));
-                         } catch (...) {
-                           pgptr_exceptor.set_current_exception();
-                         }
-                       },
-                       move(pgptr_promise), _1));
+    convert(move(pgptr_promise), move(fmt),
+            [this](tuple<page_ptr, monitor_token> arg) {
+              const auto& pg = get<0>(arg);
+              if (page_ != nullptr) return page_;
+              return allocation_callback_(get<1>(arg), pg);
+            });
   } catch (...) {
     pgptr_exceptor.set_current_exception();
   }
@@ -88,17 +72,8 @@ auto anon_vme::entry::assign_locked_(cb_promise<page_ptr> pgptr_promise,
                      &entry::allocation_callback_,
                      entry_ptr(this),
                      move(mt), move(f));
-    callback(move(acf),
-             bind_once([](cb_promise<page_ptr> pgptr,
-                          cb_future<page_ptr> pg) {
-                         cb_promise_exceptor<page_ptr> pgptr_e = pgptr;
-                         try {
-                           pgptr.set_value(pg.get());
-                         } catch (...) {
-                           pgptr_e.set_current_exception();
-                         }
-                       },
-                       move(pgptr_promise), _1));
+    convert(move(pgptr_promise), move(acf),
+            [](page_ptr pg) { return pg; });
   } catch (...) {
     pgptr_exceptor.set_current_exception();
   }
