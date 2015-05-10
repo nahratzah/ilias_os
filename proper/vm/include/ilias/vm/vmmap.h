@@ -123,14 +123,12 @@ class vmmap_entry
  public:
   virtual ~vmmap_entry() noexcept;
 
-  virtual void fault_read(cb_promise<page_ptr>,
-                          monitor_token,
-                          shared_ptr<page_alloc>,
-                          page_count<native_arch>) noexcept = 0;
-  virtual void fault_write(cb_promise<page_ptr>,
-                           monitor_token,
-                           shared_ptr<page_alloc>,
-                           page_count<native_arch>) noexcept = 0;
+  virtual cb_future<page_ptr> fault_read(monitor_token,
+                                         shared_ptr<page_alloc>,
+                                         page_count<native_arch>) = 0;
+  virtual cb_future<page_ptr> fault_write(monitor_token,
+                                          shared_ptr<page_alloc>,
+                                          page_count<native_arch>) = 0;
 
   virtual vmmap_entry_ptr clone() const = 0;
   virtual pair<vmmap_entry_ptr, vmmap_entry_ptr> split(page_count<native_arch>)
@@ -186,10 +184,12 @@ class vmmap_shard {
     vmmap_entry& data() const noexcept;
     friend void swap(entry& x, entry& y) noexcept { swap(x.data_, y.data_); }
 
-    void fault_read(cb_promise<page_ptr>, monitor_token,
-                    shared_ptr<page_alloc>, vpage_no<Arch>) noexcept;
-    void fault_write(cb_promise<page_ptr>, monitor_token,
-                     shared_ptr<page_alloc>, vpage_no<Arch>) noexcept;
+    cb_future<page_ptr> fault_read(monitor_token,
+                                   shared_ptr<page_alloc>, vpage_no<Arch>)
+	noexcept;
+    cb_future<page_ptr> fault_write(monitor_token,
+                                    shared_ptr<page_alloc>, vpage_no<Arch>)
+	noexcept;
 
     fork_style get_fork_style() const noexcept;
     fork_style set_fork_style(fork_style s) noexcept;
@@ -262,10 +262,10 @@ class vmmap_shard {
   void merge(vmmap_shard&&) noexcept;
   template<typename Iter> void fanout(Iter, Iter) noexcept;
 
-  void fault_read(cb_promise<page_ptr>, monitor_token,
-                  shared_ptr<page_alloc>, vpage_no<Arch>) noexcept;
-  void fault_write(cb_promise<page_ptr>, monitor_token,
-                   shared_ptr<page_alloc>, vpage_no<Arch>) noexcept;
+  cb_future<page_ptr> fault_read(monitor_token,
+                                 shared_ptr<page_alloc>, vpage_no<Arch>);
+  cb_future<page_ptr> fault_write(monitor_token,
+                                  shared_ptr<page_alloc>, vpage_no<Arch>);
 
  private:
   void map_link_(unique_ptr<entry>&&);

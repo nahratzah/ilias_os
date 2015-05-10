@@ -165,31 +165,39 @@ auto vmmap_shard<Arch>::entry::data() const noexcept -> vmmap_entry& {
 }
 
 template<arch Arch>
-auto vmmap_shard<Arch>::entry::fault_read(cb_promise<page_ptr> pgptr_promise,
-                                          monitor_token mt,
+auto vmmap_shard<Arch>::entry::fault_read(monitor_token mt,
                                           shared_ptr<page_alloc> pga,
                                           vpage_no<Arch> pgno) noexcept ->
-    void {
+    cb_future<page_ptr> {
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  using std::placeholders::_3;
+  using std::placeholders::_4;
+
   assert(pgno >= get_addr_used() && pgno < get_addr_free());
 
   auto arch_off = pgno - get_addr_used();
   page_count<native_arch> off = page_count<native_arch>(arch_off.get());
   assert(off.get() == arch_off.get());  // Verify cast.
-  data().fault_read(move(pgptr_promise), move(mt), move(pga), off);
+  return data().fault_read(move(mt), move(pga), move(off));
 }
 
 template<arch Arch>
-auto vmmap_shard<Arch>::entry::fault_write(cb_promise<page_ptr> pgptr_promise,
-                                           monitor_token mt,
+auto vmmap_shard<Arch>::entry::fault_write(monitor_token mt,
                                            shared_ptr<page_alloc> pga,
                                            vpage_no<Arch> pgno) noexcept ->
-    void {
+    cb_future<page_ptr> {
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  using std::placeholders::_3;
+  using std::placeholders::_4;
+
   assert(pgno >= get_addr_used() && pgno < get_addr_free());
 
   auto arch_off = pgno - get_addr_used();
   page_count<native_arch> off = page_count<native_arch>(arch_off.get());
   assert(off.get() == arch_off.get());  // Verify cast.
-  data().fault_write(move(pgptr_promise), move(mt), move(pga), off);
+  return data().fault_write(move(mt), move(pga), move(off));
 }
 
 template<arch Arch>
@@ -523,29 +531,31 @@ auto vmmap_shard<Arch>::fanout(Iter b, Iter e) noexcept -> void {
 }
 
 template<arch Arch>
-auto vmmap_shard<Arch>::fault_read(cb_promise<page_ptr> pgptr_promise,
-                                   monitor_token mt,
+auto vmmap_shard<Arch>::fault_read(monitor_token mt,
                                    shared_ptr<page_alloc> pga,
-                                   vpage_no<Arch> pgno) noexcept -> void {
+                                   vpage_no<Arch> pgno) ->
+    cb_future<page_ptr> {
   entry* e = find_entry_for_addr_(pgno);
   if (_predict_false(e == nullptr)) {
+    cb_promise<page_ptr> pgptr_promise;
     pgptr_promise.set_exception(make_exception_ptr(efault(pgno)));
-    return;
+    return pgptr_promise.get_future();
   }
-  e->fault_read(move(pgptr_promise), move(mt), move(pga), pgno);
+  return e->fault_read(move(mt), move(pga), pgno);
 }
 
 template<arch Arch>
-auto vmmap_shard<Arch>::fault_write(cb_promise<page_ptr> pgptr_promise,
-                                    monitor_token mt,
+auto vmmap_shard<Arch>::fault_write(monitor_token mt,
                                     shared_ptr<page_alloc> pga,
-                                    vpage_no<Arch> pgno) noexcept -> void {
+                                    vpage_no<Arch> pgno) ->
+    cb_future<page_ptr> {
   entry* e = find_entry_for_addr_(pgno);
   if (_predict_false(e == nullptr)) {
+    cb_promise<page_ptr> pgptr_promise;
     pgptr_promise.set_exception(make_exception_ptr(efault(pgno)));
-    return;
+    return pgptr_promise.get_future();
   }
-  e->fault_write(move(pgptr_promise), move(mt), move(pga), pgno);
+  return e->fault_write(move(mt), move(pga), pgno);
 }
 
 template<arch Arch>
@@ -803,8 +813,9 @@ auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> cb_future<void> {
                                       monitor_token mt,
                                       shared_ptr<page_alloc> pga,
                                       vpage_no<Arch> pgno) {
-                                     shard->fault_read(move(pgptr_promise),
-                                                       mt, move(pga), pgno);
+                                     convert(move(pgptr_promise),
+                                             shard->fault_read(mt, move(pga),
+                                                               pgno));
                                    }),
             move(find_shard_future),
             mt_future, this->pga_, pgno);
@@ -842,8 +853,9 @@ auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> cb_future<void> {
                                       monitor_token mt,
                                       shared_ptr<page_alloc> pga,
                                       vpage_no<Arch> pgno) {
-                                     shard->fault_write(move(pgptr_promise),
-                                                        mt, move(pga), pgno);
+                                     convert(move(pgptr_promise),
+                                             shard->fault_write(mt, move(pga),
+                                                                pgno));
                                    }),
             move(find_shard_future),
             mt_future, ref(this->pga_), pgno);

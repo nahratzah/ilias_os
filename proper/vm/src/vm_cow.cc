@@ -38,26 +38,26 @@ cow_vme::cow_vme(cow_vme&& o) noexcept
 
 cow_vme::~cow_vme() noexcept {}
 
-auto cow_vme::fault_read(cb_promise<page_ptr> pgptr_promise,
-                         monitor_token mt,
+auto cow_vme::fault_read(monitor_token mt,
                          shared_ptr<page_alloc> pga,
-                         page_count<native_arch> off) noexcept ->
-    void {
+                         page_count<native_arch> off) ->
+    cb_future<page_ptr> {
   if (this->anon_vme::present(off))
-    return this->anon_vme::fault_read(move(pgptr_promise), move(mt),
-                                      move(pga), off);
-  return nested_->fault_read(move(pgptr_promise), move(mt), move(pga), off);
+    return this->anon_vme::fault_read(move(mt), move(pga), off);
+  return nested_->fault_read(move(mt), move(pga), off);
 }
 
-auto cow_vme::fault_write(cb_promise<page_ptr> pgptr_promise,
-                          monitor_token mt,
+auto cow_vme::fault_write(monitor_token mt,
                           shared_ptr<page_alloc> pga,
-                          page_count<native_arch> off) noexcept ->
-    void {
-  if (this->anon_vme::present(off)) {
-    return this->anon_vme::fault_write(move(pgptr_promise), move(mt),
-                                       move(pga), off);
-  }
+                          page_count<native_arch> off) ->
+    cb_future<page_ptr> {
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  using std::placeholders::_3;
+  using std::placeholders::_4;
+
+  if (this->anon_vme::present(off))
+    return this->anon_vme::fault_write(move(mt), move(pga), off);
 
   stats::cow.add();  // Record copy-on-write operation.
 
@@ -67,9 +67,7 @@ auto cow_vme::fault_write(cb_promise<page_ptr> pgptr_promise,
   /* Allocate page for anon. */
   cb_future<page_ptr> pg = pga->allocate(alloc_fail_not_ok);
   /* Fault underlying storage for read access. */
-  cb_promise<page_ptr> nested_pgptr_promise;
-  cb_future<page_ptr> orig_pg = nested_pgptr_promise.get_future();
-  nested_->fault_read(move(nested_pgptr_promise), mt, move(pga), off);
+  cb_future<page_ptr> orig_pg = nested_->fault_read(mt, move(pga), off);
 
   /* Copy original page to anon page. */
   cb_future<page_ptr> copy_pg =
@@ -86,8 +84,12 @@ auto cow_vme::fault_write(cb_promise<page_ptr> pgptr_promise,
             page_unbusy_future(this->get_workq(), move(orig_pg)));
 
   /* Assign the whole thing to the anon. */
-  this->anon_vme::fault_assign(move(pgptr_promise), move(mt), off,
-                               move(copy_pg));
+  return async_lazy(pass_promise<page_ptr>(
+      [this](cb_promise<page_ptr> out, monitor_token mt,
+             page_count<native_arch> off, page_ptr copy_pg) {
+        convert(move(out), this->anon_vme::fault_assign(mt, off, copy_pg));
+      }),
+      move(mt), move(off), move(copy_pg));
 }
 
 auto cow_vme::mincore() const -> vector<bool> {
