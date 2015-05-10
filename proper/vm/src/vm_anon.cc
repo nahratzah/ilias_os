@@ -11,34 +11,40 @@ anon_vme::entry::~entry() noexcept {
 }
 
 auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
-                            monitor_token mt,
+                            monitor_token /*mt*/,
                             shared_ptr<page_alloc> pga, workq_ptr wq) ->
     void {
   using std::placeholders::_1;
+  using std::placeholders::_2;
 
-  cb_promise_exceptor<page_ptr> pgptr_exceptor = pgptr_promise;
-  try {
-    auto mt_future = guard_.queue(monitor_access::write);
-
-    if (page_ != nullptr) {
+  {
+    auto lck = guard_.try_lock(monitor_access::read);
+    if (lck && page_ != nullptr) {
       pgptr_promise.set_value(page_);
       return;
     }
+  }
 
-    cb_future<page_ptr> f = pga->allocate(alloc_fail_not_ok);
-    cb_future<tuple<page_ptr, monitor_token>> fmt =
-        async(wq, launch::parallel | launch::aid,
-              [](page_ptr pg, monitor_token my_mt, monitor_token) {
-                return make_tuple(move(pg), move(my_mt));
-              },
-              move(f), move(mt_future), mt);
+  cb_promise_exceptor<page_ptr> pgptr_exceptor = pgptr_promise;
+  try {
+    auto mt_future = guard_.queue(monitor_access::upgrade);
 
-    convert(move(pgptr_promise), move(fmt),
-            [this](tuple<page_ptr, monitor_token> arg) {
-              const auto& pg = get<0>(arg);
-              if (page_ != nullptr) return page_;
-              return allocation_callback_(get<1>(arg), pg);
-            });
+    cb_future<page_ptr> read_pg =
+        async(wq, launch::parallel | launch::defer,
+              pass_promise<page_ptr>([this, pga](cb_promise<page_ptr> pgptr,
+                                                 monitor_token mt,
+                                                 workq_ptr wq) {
+                                       if (page_ != nullptr) {
+                                         pgptr.set_value(page_);
+                                       } else {
+                                         assign_locked_(
+                                             move(pgptr), wq,
+                                             mt.upgrade_to_write(),
+                                             pga->allocate(alloc_fail_not_ok));
+                                       }
+                                     }),
+              move(mt_future), wq);
+    convert(move(pgptr_promise), move(read_pg), [](page_ptr p) { return p; });
   } catch (...) {
     pgptr_exceptor.set_current_exception();
   }
@@ -46,13 +52,12 @@ auto anon_vme::entry::fault(cb_promise<page_ptr> pgptr_promise,
 
 auto anon_vme::entry::assign(
     cb_promise<page_ptr> pgptr_promise,
-    monitor_token mt,
+    monitor_token /*mt*/,
     workq_ptr wq, cb_future<page_ptr> f) noexcept -> void {
   cb_promise_exceptor<page_ptr> pgptr_exceptor = pgptr_promise;
 
   try {
-    auto mt_future = async_lazy([mt](monitor_token x) { return x; },
-                                guard_.queue(monitor_access::write));
+    auto mt_future = guard_.queue(monitor_access::write);
 
     return assign_locked_(move(pgptr_promise), wq, move(mt_future),
                           page_unbusy_future(wq, move(f)));
@@ -68,7 +73,7 @@ auto anon_vme::entry::assign_locked_(cb_promise<page_ptr> pgptr_promise,
 
   cb_promise_exceptor<page_ptr> pgptr_exceptor = pgptr_promise;
   try {
-    auto acf = async(move(wq), launch::aid,
+    auto acf = async(move(wq), launch::parallel | launch::aid,
                      &entry::allocation_callback_,
                      entry_ptr(this),
                      move(mt), move(f));
