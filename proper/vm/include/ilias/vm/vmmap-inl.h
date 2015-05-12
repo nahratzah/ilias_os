@@ -168,7 +168,7 @@ template<arch Arch>
 auto vmmap_shard<Arch>::entry::fault_read(monitor_token mt,
                                           shared_ptr<page_alloc> pga,
                                           vpage_no<Arch> pgno) noexcept ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   using std::placeholders::_1;
   using std::placeholders::_2;
   using std::placeholders::_3;
@@ -186,7 +186,7 @@ template<arch Arch>
 auto vmmap_shard<Arch>::entry::fault_write(monitor_token mt,
                                            shared_ptr<page_alloc> pga,
                                            vpage_no<Arch> pgno) noexcept ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   using std::placeholders::_1;
   using std::placeholders::_2;
   using std::placeholders::_3;
@@ -534,10 +534,10 @@ template<arch Arch>
 auto vmmap_shard<Arch>::fault_read(monitor_token mt,
                                    shared_ptr<page_alloc> pga,
                                    vpage_no<Arch> pgno) ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   entry* e = find_entry_for_addr_(pgno);
   if (_predict_false(e == nullptr)) {
-    cb_promise<page_ptr> pgptr_promise;
+    cb_promise<tuple<page_ptr, monitor_token>> pgptr_promise;
     pgptr_promise.set_exception(make_exception_ptr(efault(pgno)));
     return pgptr_promise.get_future();
   }
@@ -548,10 +548,10 @@ template<arch Arch>
 auto vmmap_shard<Arch>::fault_write(monitor_token mt,
                                     shared_ptr<page_alloc> pga,
                                     vpage_no<Arch> pgno) ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   entry* e = find_entry_for_addr_(pgno);
   if (_predict_false(e == nullptr)) {
-    cb_promise<page_ptr> pgptr_promise;
+    cb_promise<tuple<page_ptr, monitor_token>> pgptr_promise;
     pgptr_promise.set_exception(make_exception_ptr(efault(pgno)));
     return pgptr_promise.get_future();
   }
@@ -806,23 +806,24 @@ auto vmmap<Arch>::fault_read(vpage_no<Arch> pgno) -> cb_future<void> {
             },
             mt_future);
 
-  cb_future<page_ptr> pgptr_future =
+  cb_future<tuple<page_ptr, monitor_token>> pgptr_future =
       async(wq_, launch::parallel | launch::aid,
-            pass_promise<page_ptr>([](cb_promise<page_ptr> pgptr_promise,
-                                      typename shard_list::iterator shard,
-                                      monitor_token mt,
-                                      shared_ptr<page_alloc> pga,
-                                      vpage_no<Arch> pgno) {
-                                     convert(move(pgptr_promise),
-                                             shard->fault_read(mt, move(pga),
-                                                               pgno));
-                                   }),
+            pass_promise<tuple<page_ptr, monitor_token>>(
+                [](cb_promise<tuple<page_ptr, monitor_token>> pgptr_promise,
+                   typename shard_list::iterator shard,
+                   monitor_token mt,
+                   shared_ptr<page_alloc> pga,
+                   vpage_no<Arch> pgno) {
+                  convert(move(pgptr_promise),
+                          shard->fault_read(mt, move(pga), pgno));
+                }),
             move(find_shard_future),
             mt_future, this->pga_, pgno);
 
   return async(wq_, launch::parallel | launch::aid,
-               [this](monitor_token, page_ptr pg, vpage_no<Arch> pgno) {
-                 const auto npa = page_no<native_arch>(pg->address());
+               [this](monitor_token, tuple<page_ptr, monitor_token> pg,
+                      vpage_no<Arch> pgno) {
+                 const auto npa = page_no<native_arch>(get<0>(pg)->address());
                  const auto pa = page_no<Arch>(npa.get());
                  pmap_.map(pgno, pa, permission::RO());  // XXX Use permissions from entry.
                },
@@ -846,23 +847,23 @@ auto vmmap<Arch>::fault_write(vpage_no<Arch> pgno) -> cb_future<void> {
             },
             mt_future);
 
-  cb_future<page_ptr> pgptr_future =
+  cb_future<tuple<page_ptr, monitor_token>> pgptr_future =
       async(wq_, launch::parallel | launch::aid,
-            pass_promise<page_ptr>([](cb_promise<page_ptr> pgptr_promise,
-                                      typename shard_list::iterator shard,
-                                      monitor_token mt,
-                                      shared_ptr<page_alloc> pga,
-                                      vpage_no<Arch> pgno) {
-                                     convert(move(pgptr_promise),
-                                             shard->fault_write(mt, move(pga),
-                                                                pgno));
-                                   }),
+            pass_promise<tuple<page_ptr, monitor_token>>(
+                [](cb_promise<tuple<page_ptr, monitor_token>> pgptr_promise,
+                   typename shard_list::iterator shard,
+                   monitor_token mt,
+                   shared_ptr<page_alloc> pga,
+                   vpage_no<Arch> pgno) {
+                  convert(move(pgptr_promise),
+                          shard->fault_write(mt, move(pga), pgno));
+                }),
             move(find_shard_future),
             mt_future, ref(this->pga_), pgno);
 
   return async(wq_, launch::parallel | launch::aid,
-               [this](monitor_token, page_ptr pg, vpage_no<Arch> pgno) {
-                 const auto npa = page_no<native_arch>(pg->address());
+               [this](monitor_token, tuple<page_ptr, monitor_token> pg, vpage_no<Arch> pgno) {
+                 const auto npa = page_no<native_arch>(get<0>(pg)->address());
                  const auto pa = page_no<Arch>(npa.get());
                  pmap_.map(pgno, pa, permission::RW());  // XXX Use permissions from entry.
                },

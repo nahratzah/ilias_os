@@ -12,7 +12,7 @@ anon_vme::entry::~entry() noexcept {
 
 auto anon_vme::entry::fault(monitor_token /*mt*/,
                             shared_ptr<page_alloc> pga, workq_ptr wq) ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   using std::placeholders::_1;
   using std::placeholders::_2;
   using std::placeholders::_3;
@@ -21,19 +21,21 @@ auto anon_vme::entry::fault(monitor_token /*mt*/,
   {
     auto lck = guard_.try_lock(monitor_access::read);
     if (lck && page_ != nullptr) {
-      cb_promise<page_ptr> pgptr_promise;
-      pgptr_promise.set_value(page_);
+      cb_promise<tuple<page_ptr, monitor_token>> pgptr_promise;
+      pgptr_promise.set_value(make_tuple(page_, lck));
       return pgptr_promise.get_future();
     }
   }
 
   return async(wq, launch::parallel | launch::defer,
-               pass_promise<page_ptr>(
-                   [this, pga](cb_promise<page_ptr> pgptr,
+               pass_promise<tuple<page_ptr, monitor_token>>(
+                   [this, pga](cb_promise<tuple<page_ptr, monitor_token>>
+                                   pgptr,
                                monitor_token mt,
                                workq_ptr wq) {
                      if (page_ != nullptr) {
-                       pgptr.set_value(page_);
+                       pgptr.set_value(make_tuple(page_,
+                                                  mt.downgrade_to_read()));
                      } else {
                        convert(
                            move(pgptr),
@@ -50,7 +52,7 @@ auto anon_vme::entry::fault(monitor_token /*mt*/,
 }
 
 auto anon_vme::entry::assign(monitor_token /*mt*/, workq_ptr wq, page_ptr f)
-    -> cb_future<page_ptr> {
+    -> cb_future<tuple<page_ptr, monitor_token>> {
   using std::placeholders::_1;
   using std::placeholders::_2;
 
@@ -64,7 +66,7 @@ auto anon_vme::entry::assign(monitor_token /*mt*/, workq_ptr wq, page_ptr f)
 }
 
 auto anon_vme::entry::allocation_callback_(monitor_token mt, page_ptr pg)
-    noexcept -> page_ptr {
+    noexcept -> tuple<page_ptr, monitor_token> {
   assert(mt.locked() && mt.access() == monitor_access::write &&
          mt.owner() == &guard_);
   assert(page_ == nullptr);
@@ -72,7 +74,7 @@ auto anon_vme::entry::allocation_callback_(monitor_token mt, page_ptr pg)
   page_ = pg;
   if (_predict_true(pg != nullptr))
     pg->set_page_owner(*this);
-  return pg;
+  return make_tuple(pg, mt.downgrade_to_read());
 }
 
 auto anon_vme::entry::release_urgent(page_owner::offset_type, page& pg) ->
@@ -132,21 +134,21 @@ auto anon_vme::present(page_count<native_arch> off) const noexcept -> bool {
 auto anon_vme::fault_read(monitor_token mt,
                           shared_ptr<page_alloc> pga,
                           page_count<native_arch> off) ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   return fault_rw_(move(mt), move(pga), move(off));
 }
 
 auto anon_vme::fault_write(monitor_token mt,
                            shared_ptr<page_alloc> pga,
                            page_count<native_arch> off) ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   return fault_rw_(move(mt), move(pga), move(off));
 }
 
 auto anon_vme::fault_assign(monitor_token mt,
                             page_count<native_arch> off,
                             page_ptr pg) ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
@@ -188,7 +190,7 @@ auto anon_vme::split_no_alloc(page_count<native_arch> off) const ->
 auto anon_vme::fault_rw_(monitor_token mt,
                          shared_ptr<page_alloc> pga,
                          page_count<native_arch> off) ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   assert(off.get() >= 0 &&
          (static_cast<make_unsigned_t<decltype(off.get())>>(off.get()) <
           data_.size()));
@@ -198,7 +200,7 @@ auto anon_vme::fault_rw_(monitor_token mt,
     if (elem == nullptr) elem = new entry();
     return elem->fault(move(mt), move(pga), this->get_workq());
   } catch (...) {
-    cb_promise<page_ptr> pgptr_promise;
+    cb_promise<tuple<page_ptr, monitor_token>> pgptr_promise;
     pgptr_promise.set_exception(std::current_exception());
     return pgptr_promise.get_future();
   }

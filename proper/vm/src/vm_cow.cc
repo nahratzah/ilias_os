@@ -41,7 +41,7 @@ cow_vme::~cow_vme() noexcept {}
 auto cow_vme::fault_read(monitor_token mt,
                          shared_ptr<page_alloc> pga,
                          page_count<native_arch> off) ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   if (this->anon_vme::present(off))
     return this->anon_vme::fault_read(move(mt), move(pga), off);
   return nested_->fault_read(move(mt), move(pga), off);
@@ -50,7 +50,7 @@ auto cow_vme::fault_read(monitor_token mt,
 auto cow_vme::fault_write(monitor_token mt,
                           shared_ptr<page_alloc> pga,
                           page_count<native_arch> off) ->
-    cb_future<page_ptr> {
+    cb_future<tuple<page_ptr, monitor_token>> {
   using std::placeholders::_1;
   using std::placeholders::_2;
   using std::placeholders::_3;
@@ -67,12 +67,17 @@ auto cow_vme::fault_write(monitor_token mt,
   /* Allocate page for anon. */
   cb_future<page_ptr> pg = pga->allocate(alloc_fail_not_ok);
   /* Fault underlying storage for read access. */
-  cb_future<page_ptr> orig_pg = nested_->fault_read(mt, move(pga), off);
+  cb_future<page_ptr> orig_pg =
+      async_lazy([](tuple<page_ptr, monitor_token> pg) {
+                   return get<0>(pg);
+                 },
+                 nested_->fault_read(mt, move(pga), off));
 
   /* Copy original page to anon page. */
   cb_future<page_ptr> copy_pg =
       async(this->get_workq(), launch::aid | launch::parallel | launch::defer,
-            [](page_ptr pg, page_ptr orig_pg) -> page_ptr {
+            [](page_ptr pg, page_ptr orig_pg) ->
+               page_ptr {
               assert(pg != nullptr);
               assert(orig_pg != nullptr);
 
@@ -84,8 +89,8 @@ auto cow_vme::fault_write(monitor_token mt,
             page_unbusy_future(this->get_workq(), move(orig_pg)));
 
   /* Assign the whole thing to the anon. */
-  return async_lazy(pass_promise<page_ptr>(
-      [this](cb_promise<page_ptr> out, monitor_token mt,
+  return async_lazy(pass_promise<tuple<page_ptr, monitor_token>>(
+      [this](cb_promise<tuple<page_ptr, monitor_token>> out, monitor_token mt,
              page_count<native_arch> off, page_ptr copy_pg) {
         convert(move(out), this->anon_vme::fault_assign(mt, off, copy_pg));
       }),

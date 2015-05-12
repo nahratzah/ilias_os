@@ -31,14 +31,16 @@ class anon_vme
     entry& operator=(entry&&) = delete;
     ~entry() noexcept;
 
-    cb_future<page_ptr> fault(monitor_token,
-                              shared_ptr<page_alloc>, workq_ptr);
+    cb_future<tuple<page_ptr, monitor_token>> fault(monitor_token,
+                                                    shared_ptr<page_alloc>,
+                                                    workq_ptr);
     bool present() const noexcept;
-    cb_future<page_ptr> assign(monitor_token,
-                               workq_ptr, page_ptr);
+    cb_future<tuple<page_ptr, monitor_token>> assign(monitor_token,
+                                                     workq_ptr, page_ptr);
 
    private:
-    page_ptr allocation_callback_(monitor_token, page_ptr) noexcept;
+    tuple<page_ptr, monitor_token> allocation_callback_(monitor_token,
+                                                        page_ptr) noexcept;
 
     page_ptr release_urgent(page_owner::offset_type, page&) override;
 
@@ -61,15 +63,12 @@ class anon_vme
   bool all_present() const noexcept;
   bool present(page_count<native_arch>) const noexcept;
 
-  cb_future<page_ptr> fault_read(monitor_token,
-                                 shared_ptr<page_alloc>,
-                                 page_count<native_arch>) override;
-  cb_future<page_ptr> fault_write(monitor_token,
-                                  shared_ptr<page_alloc>,
-                                  page_count<native_arch>) override;
-  cb_future<page_ptr> fault_assign(monitor_token,
-                                   page_count<native_arch>,
-                                   page_ptr);
+  cb_future<tuple<page_ptr, monitor_token>> fault_read(
+      monitor_token, shared_ptr<page_alloc>, page_count<native_arch>) override;
+  cb_future<tuple<page_ptr, monitor_token>> fault_write(
+      monitor_token, shared_ptr<page_alloc>, page_count<native_arch>) override;
+  cb_future<tuple<page_ptr, monitor_token>> fault_assign(
+      monitor_token, page_count<native_arch>, page_ptr);
   vector<bool> mincore() const override;
 
   vmmap_entry_ptr clone() const override;
@@ -78,9 +77,9 @@ class anon_vme
   pair<anon_vme, anon_vme> split_no_alloc(page_count<native_arch>) const;
 
  private:
-  cb_future<page_ptr> fault_rw_(monitor_token,
-                                shared_ptr<page_alloc>,
-                                page_count<native_arch>);
+  cb_future<tuple<page_ptr, monitor_token>> fault_rw_(monitor_token,
+                                                      shared_ptr<page_alloc>,
+                                                      page_count<native_arch>);
 
   data_type data_;
 };
