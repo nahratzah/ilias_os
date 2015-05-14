@@ -33,7 +33,7 @@ std::size_t process(bool wait, std::size_t n) noexcept {
 } /* namespace ilias::cyptr::background_processing */
 
 
-#ifndef _SINGLE_THREADED
+#if !defined(_SINGLE_THREADED) && !defined(_KERNEL) && !defined(_LOADER)
 threaded_processing::threaded_processing() {
   background_processing::enable();
   try {

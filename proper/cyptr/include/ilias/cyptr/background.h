@@ -46,7 +46,7 @@ std::size_t process(bool = false, std::size_t = 1) noexcept;
 } /* namespace ilias::cyptr::background_processing */
 
 
-#ifndef _SINGLE_THREADED
+#if !defined(_SINGLE_THREADED) && !defined(_KERNEL) && !defined(_LOADER)
 /*
  * Trivial helper class that moves processing into a separate thread.
  *

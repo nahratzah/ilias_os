@@ -842,11 +842,11 @@ auto async(launch l, F&& f, Args&&... args) ->
     future<decltype(declval<F>()(declval<Args>()...))> {
   using rv_type = decltype(declval<F>()(declval<Args>()...));
   using future_type = future<rv_type>;
-#ifndef _SINGLE_THREADED
+#if !defined(_SINGLE_THREADED) && !defined(_KERNEL) && !defined(_LOADER)
   using task_type = packaged_task<rv_type(Args...)>;
-#endif  // ! _SINGLE_THREADED
+#endif  // ! _SINGLE_THREADED && ! _KERNEL && ! _LOADER
 
-#ifndef _SINGLE_THREADED
+#if !defined(_SINGLE_THREADED) && !defined(_KERNEL) && !defined(_LOADER)
   /* Case for thread. */
   if ((l & launch::async) == launch::async) {
     task_type pt = task_type(forward<F>(f));
@@ -857,7 +857,7 @@ auto async(launch l, F&& f, Args&&... args) ->
     thr.detach();
     return pt.get_future();
   }
-#endif  // ! _SINGLE_THREADED
+#endif  // ! _SINGLE_THREADED && ! _KERNEL && ! _LOADER
 
   /* Case for deferred. */
   if ((l & launch::deferred) == launch::deferred) {
@@ -868,7 +868,7 @@ auto async(launch l, F&& f, Args&&... args) ->
     return future_type(ptr);
   }
 
-#ifdef _SINGLE_THREADED
+#if defined(_SINGLE_THREADED) || defined(_KERNEL) || defined(_LOADER)
   /* Case for thread, iff threads are not supported. */
   if ((l & launch::async) == launch::async)
     throw system_error(make_error_code(errc::resource_unavailable_try_again));
