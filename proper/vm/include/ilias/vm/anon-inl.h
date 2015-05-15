@@ -12,7 +12,7 @@ namespace vm {
 inline auto anon_vme::entry::present() const noexcept -> bool {
   auto mt_future = guard_.queue(monitor_access::read);
 
-  monitor_token mt = guard_.try_lock(monitor_access::read);
+  monitor_token mt = guard_.try_immediate(monitor_access::read);
   return mt.locked() && page_ != nullptr;
 }
 

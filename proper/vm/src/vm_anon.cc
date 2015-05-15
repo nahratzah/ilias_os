@@ -19,7 +19,7 @@ auto anon_vme::entry::fault(monitor_token /*mt*/,
   using std::placeholders::_4;
 
   {
-    auto lck = guard_.try_lock(monitor_access::read);
+    auto lck = guard_.try_immediate(monitor_access::read);
     if (lck && page_ != nullptr) {
       cb_promise<tuple<page_ptr, monitor_token>> pgptr_promise;
       pgptr_promise.set_value(make_tuple(page_, lck));
@@ -82,7 +82,7 @@ auto anon_vme::entry::release_urgent(page_owner::offset_type, page& pg) ->
   assert(pg.get_flags() & page::fl_pgo_call);
 
   page_ptr rv = nullptr;
-  const monitor_token l = guard_.try_lock();
+  const monitor_token l = guard_.try_immediate();
   if (!l.locked()) return rv;
 
   if (_predict_false(&pg != page_)) return rv;
