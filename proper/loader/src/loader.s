@@ -14,11 +14,23 @@
 .section .text
 .global loader
 .type loader, @function
+.global halt
+.type halt, @function
 loader:
 	mov	$boot_stack_init, %esp		# Initialize stack pointer.
 	# Reset eflags.
 	push	$0
 	popf
+
+	# Allow SSE instructions (otherwise we'll get a Protection Failure
+	mov %cr0, %eax
+	and $0xfffb, %ax			# Clear CR0.EM
+	or $0x2, %ax				# Set CR0.MP
+	mov %eax, %cr0
+	mov %cr4, %eax
+	or $0x600, %ax				# Set CR4.OSFXSR,
+						#     CR4.OSXMMEXCPT
+	mov %eax, %cr4
 
 	# Zero bss area.
 	# To prevent losing the mb_magic and mb_data, we borrow some of the
@@ -51,3 +63,4 @@ halt:
 	jmp halt
 
 .size loader, . - loader
+.size halt, . - halt
