@@ -72,8 +72,8 @@ class pfn_standard_normal_distribution {
 };
 
 
-extern const ziggurat<512, pfn_standard_normal_distribution<>>
-    standard_normal_distribution_ziggurat;
+const ziggurat<512, pfn_standard_normal_distribution<>>&
+    standard_normal_distribution_ziggurat() noexcept;
 
 
 } /* namespace std::impl */

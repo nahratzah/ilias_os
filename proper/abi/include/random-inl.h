@@ -960,7 +960,7 @@ auto normal_distribution<RealType>::operator()(URNG& g,
     result_type {
   const int sign = uniform_int_distribution<int>(0, 1)(g);
 
-  auto x = impl::standard_normal_distribution_ziggurat(g);
+  auto x = impl::standard_normal_distribution_ziggurat()(g);
   if (sign == 0) x = -x;
 
   return x * parm.stddev + parm.mean;
