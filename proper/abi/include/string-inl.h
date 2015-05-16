@@ -383,7 +383,7 @@ basic_string<Char, Traits, Alloc>::basic_string(basic_string&& s,
 template<typename Char, typename Traits, typename Alloc>
 basic_string<Char, Traits, Alloc>::basic_string(
     basic_string_ref<Char, Traits> s, const allocator_type& alloc)
-: basic_string()
+: basic_string(alloc)
 {
   reserve(s.size());
   len_ = s.size();
@@ -392,7 +392,7 @@ basic_string<Char, Traits, Alloc>::basic_string(
 
 template<typename Char, typename Traits, typename Alloc>
 basic_string<Char, Traits, Alloc>::~basic_string() noexcept {
-  if (avail_ > immed_size) {
+  if (use_external_()) {
     allocator_traits<allocator_type>::deallocate(this->get_allocator_(),
                                                  data_.s, avail_);
     data_.s.~pointer();
@@ -450,7 +450,7 @@ auto basic_string<Char, Traits, Alloc>::operator=(
 
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::begin() noexcept -> iterator {
-  return (avail_ > immed_size ? &*data_.s : &data_.immed[0]);
+  return (use_external_() ? &*data_.s : &data_.immed[0]);
 }
 
 template<typename Char, typename Traits, typename Alloc>
@@ -461,7 +461,7 @@ auto basic_string<Char, Traits, Alloc>::end() noexcept -> iterator {
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::begin() const noexcept ->
     const_iterator {
-  return (avail_ > immed_size ? &*data_.s : &data_.immed[0]);
+  return (use_external_() ? &*data_.s : &data_.immed[0]);
 }
 
 template<typename Char, typename Traits, typename Alloc>
@@ -560,24 +560,27 @@ auto basic_string<Char, Traits, Alloc>::capacity() const noexcept ->
 
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::reserve(size_type sz) -> void {
-  if (capacity() >= sz + 1U) return;
+  assert(avail_ >= immed_size);
+  assert(size() <= capacity());
+
+  if (capacity() >= sz) return;
 
   /* Try to double capacity if possible. */
   size_type alloc_sz = max(sz + 1U, min(max_size(), 2U * size()));
 
   /* Try to use resize (saves us a copy instruction). */
-  if (avail_ > immed_size) {
+  if (use_external_()) {
     if (allocator_traits<allocator_type>::resize(this->get_allocator_(),
-                                                 data_.s, avail_, alloc_sz)) {
-      avail_ = alloc_sz - 1U;
-      return;
+                                                 data_.s, avail_,
+                                                 alloc_sz)) {
+      avail_ = alloc_sz;
     } else if (alloc_sz > sz + 1U &&
                allocator_traits<allocator_type>::resize(this->get_allocator_(),
                                                         data_.s, avail_,
                                                         sz + 1U)) {
       avail_ = sz + 1U;
-      return;
     }
+    return;
   }
 
   /* Resize using allocate + copy. */
@@ -593,14 +596,14 @@ auto basic_string<Char, Traits, Alloc>::reserve(size_type sz) -> void {
   }
 
   traits_type::copy(&*s, data(), size());
-  if (avail_ > immed_size) {
+  if (use_external_()) {
     allocator_traits<allocator_type>::deallocate(this->get_allocator_(),
-                                                 data_.s, avail_);
+                                                 data_.s, avail_ + 1U);
     data_.s = s;
   } else {
     new (static_cast<void*>(&data_.s)) pointer(s);
   }
-  avail_ = alloc_sz - 1U;
+  avail_ = alloc_sz;
 }
 
 template<typename Char, typename Traits, typename Alloc>
@@ -615,7 +618,10 @@ auto basic_string<Char, Traits, Alloc>::empty() const noexcept -> bool {
 
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::shrink_to_fit() -> void {
-  if (avail_ <= immed_size) return;
+  assert(avail_ >= immed_size);
+  assert(size() <= capacity());
+
+  if (!use_external_()) return;
 
   if (size() < immed_size) {
     /* Switch over to storing string in immed. */
@@ -1131,18 +1137,18 @@ auto basic_string<Char, Traits, Alloc>::swap(basic_string& other) -> void {
   using _namespace(std)::swap;
 
   this->impl::alloc_base<Alloc>::swap_(
-    static_cast<impl::alloc_base<Alloc>&>(other));
+      static_cast<impl::alloc_base<Alloc>&>(other));
 
-  if (avail_ <= immed_size && other.avail_ <= immed_size)
+  if (!use_external_() && !other.use_external_()) {
     swap(data_.immed, other.data_.immed);
-  else if (avail_ > immed_size && other.avail_ > immed_size)
+  } else if (use_external_() && other.use_external_()) {
     swap(data_.s, other.data_.s);
-  else if (avail_ <= immed_size) {
+  } else if (!use_external_()) {  // other.use_external_() == true
     pointer s = move_if_noexcept(other.data_.s);
     other.data_.s.~pointer();
     traits_type::copy(&other.data_.immed[0], data(), size());
     new (static_cast<void*>(&data_.s)) pointer(move_if_noexcept(s));
-  } else {
+  } else {  // use_external_() == true && other.use_external_() == false
     pointer s = move_if_noexcept(data_.s);
     data_.s.~pointer();
     traits_type::copy(&data_.immed[0], other.data(), other.size());
@@ -1169,7 +1175,7 @@ auto basic_string<Char, Traits, Alloc>::c_str() const noexcept ->
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::data() const noexcept ->
     const char_type* {
-  return (avail_ > immed_size ? &*data_.s : &data_.immed[0]);
+  return (use_external_() ? &*data_.s : &data_.immed[0]);
 }
 
 template<typename Char, typename Traits, typename Alloc>
