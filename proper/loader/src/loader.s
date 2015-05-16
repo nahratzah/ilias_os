@@ -22,7 +22,13 @@ loader:
 	push	$0
 	popf
 
-	# Allow SSE instructions (otherwise we'll get a Protection Failure
+	# To prevent losing the mb_magic and mb_data, we borrow some of the
+	# stack of the loader to save them.
+	push	%eax
+	push	%ebx
+
+	# Allow SSE instructions (otherwise we'll get a Protection Failure)
+	# Note that eax has been saved by now.
 	mov %cr0, %eax
 	and $0xfffb, %ax			# Clear CR0.EM
 	or $0x2, %ax				# Set CR0.MP
@@ -33,20 +39,17 @@ loader:
 	mov %eax, %cr4
 
 	# Zero bss area.
-	# To prevent losing the mb_magic and mb_data, we borrow some of the
-	# stack of the loader to save them.
-	push	%ebx
-	push	%eax
 	call	bss_zero
-	pop	%eax
+
+	# mb_magic and mb_data live in BSS and cannot be assigned earlier.
 	pop	%ebx
+	pop	%eax
+	mov	%eax, mb_magic			# Save magic.
+	mov	%ebx, mb_data			# Save multiboot data pointer.
 
 	mov	$boot_stack_init, %ebp		# Initialize stack base.
 	push	%ebp
 	push	$0
-
-	mov	%eax, mb_magic			# Save magic.
-	mov	%ebx, mb_data			# Save multiboot data pointer.
 
 	call	loader_constructors
 
