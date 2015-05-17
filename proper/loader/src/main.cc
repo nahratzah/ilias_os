@@ -25,6 +25,9 @@ void setup_page_allocator(page_allocator<ilias::native_arch>& pga,
   base = ilias::pmap::round_page_up(base, ilias::native_arch);
   limit = ilias::pmap::round_page_down(limit, ilias::native_arch);
   if (_predict_false(base >= limit)) return;
+  bios_printf("Mapping %#llx - %#llx\n",
+              static_cast<unsigned long long>(base),
+              static_cast<unsigned long long>(limit));
 
   /* Track all pages. */
   for (const auto& range : lde.physmem) {
@@ -44,6 +47,10 @@ void punch_loader(page_allocator<ilias::native_arch>& pga) {
   uintptr_t end = reinterpret_cast<uintptr_t>(&kernel_end);
   start = ilias::pmap::round_page_down(start, ilias::native_arch);
   end = ilias::pmap::round_page_up(end, ilias::native_arch);
+  bios_printf("Punch out loader: %#llx - %#llx\n",
+              static_cast<unsigned long long>(start),
+              static_cast<unsigned long long>(end));
+
   pga.mark_in_use(ilias::pmap::phys_addr<ilias::native_arch>(start),
                   ilias::pmap::phys_addr<ilias::native_arch>(end));
 }
@@ -165,6 +172,12 @@ void main() {
   if (lim < 32 * 1024 * 1024) lim = 32 * 1024 * 1024;
   setup_page_allocator(pga, lde, 1024 * 1024, lim);
   punch_loader(pga);
+
+  /* Print out page allocator state. */
+  bios_printf("Loader page allocator: %lld (%lld used, %lld free)\n",
+              static_cast<unsigned long long>(pga.size()),
+              static_cast<unsigned long long>(pga.used_size()),
+              static_cast<unsigned long long>(pga.free_size()));
 
   /* Create pmap for loader. */
   ilias::pmap::pmap<ilias::native_arch>& loader_pmap = get_pmap(pga);

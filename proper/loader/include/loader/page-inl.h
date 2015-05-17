@@ -10,8 +10,8 @@ namespace loader {
 
 template<ilias::arch Arch>
 page<Arch>::page() noexcept
-: free_(true),
-  pgno_(true)
+: free_(false),
+  pgno_(0)
 {}
 
 template<ilias::arch Arch>
@@ -74,7 +74,7 @@ auto page_allocator<Arch>::add_range(uint64_t base, uint64_t len) ->
   auto e = phys_addr<Arch>(round_page_down(base + len, Arch));
 
   bool need_sort = (!data_.empty() && data_.back().address() >= s);
-  for (auto i = page_no<Arch>(s); i != e && data_.size() <= 2048; ++i)
+  for (auto i = page_no<Arch>(s); i != e; ++i)
     data_.emplace_back(i);
   if (need_sort) std::sort(data_.begin(), data_.end(), comparator());
 }
@@ -125,6 +125,18 @@ template<ilias::arch Arch>
 auto page_allocator<Arch>::unmap_page(
     ilias::pmap::vpage_no<ilias::native_arch>) noexcept -> void {
   return;
+}
+
+template<ilias::arch Arch>
+auto page_allocator<Arch>::free_size() const noexcept -> size_type {
+  return std::count_if(data_.begin(), data_.end(),
+                       [](const page<Arch>& pg) { return pg.is_free(); });
+}
+
+template<ilias::arch Arch>
+auto page_allocator<Arch>::used_size() const noexcept -> size_type {
+  return std::count_if(data_.begin(), data_.end(),
+                       [](const page<Arch>& pg) { return !pg.is_free(); });
 }
 
 

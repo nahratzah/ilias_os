@@ -14,6 +14,8 @@ class page {
  public:
   page() noexcept;
   page(ilias::pmap::page_no<Arch>) noexcept;
+  page(const page&) = default;
+  page& operator=(const page&) = default;
 
   ilias::pmap::page_no<Arch> address() const noexcept;
   bool is_free() const noexcept;
@@ -32,7 +34,12 @@ template<ilias::arch Arch>
 class page_allocator
 : public ilias::pmap::pmap_support<Arch>
 {
+ private:
+  using data_type = std::vector<page<Arch>>;
+
  public:
+  using size_type = typename data_type::size_type;
+
   page_allocator() noexcept : ilias::pmap::pmap_support<Arch>(true) {}
   page_allocator(const page_allocator&) = delete;
   page_allocator& operator=(const page_allocator&) = delete;
@@ -49,6 +56,10 @@ class page_allocator
   ilias::pmap::vpage_no<ilias::native_arch> map_page(
       ilias::pmap::page_no<Arch>) override;
   void unmap_page(ilias::pmap::vpage_no<ilias::native_arch>) noexcept override;
+
+  size_type size() const noexcept { return data_.size(); }
+  size_type free_size() const noexcept;
+  size_type used_size() const noexcept;
 
  private:
   struct comparator;
