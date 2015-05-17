@@ -562,6 +562,7 @@ template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::reserve(size_type sz) -> void {
   assert(avail_ >= immed_size);
   assert(size() <= capacity());
+  assert(avail_ != 0);
 
   if (capacity() >= sz) return;
 
@@ -574,13 +575,14 @@ auto basic_string<Char, Traits, Alloc>::reserve(size_type sz) -> void {
                                                  data_.s, avail_,
                                                  alloc_sz)) {
       avail_ = alloc_sz;
+      return;
     } else if (alloc_sz > sz + 1U &&
                allocator_traits<allocator_type>::resize(this->get_allocator_(),
                                                         data_.s, avail_,
                                                         sz + 1U)) {
       avail_ = sz + 1U;
+      return;
     }
-    return;
   }
 
   /* Resize using allocate + copy. */
@@ -736,7 +738,7 @@ auto basic_string<Char, Traits, Alloc>::operator+=(
 template<typename Char, typename Traits, typename Alloc>
 auto basic_string<Char, Traits, Alloc>::operator+=(
     basic_string_ref<Char, Traits> s) -> basic_string& {
-  reserve(len_ + s.size());
+  reserve(size() + s.size());
   traits_type::copy(begin() + len_, s.data(), s.size());
   len_ += s.size();
   return *this;
