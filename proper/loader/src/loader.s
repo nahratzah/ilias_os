@@ -28,15 +28,7 @@ loader:
 	push	%ebx
 
 	# Allow SSE instructions (otherwise we'll get a Protection Failure)
-	# Note that eax has been saved by now.
-	mov %cr0, %eax
-	and $0xfffb, %ax			# Clear CR0.EM
-	or $0x2, %ax				# Set CR0.MP
-	mov %eax, %cr0
-	mov %cr4, %eax
-	or $0x600, %ax				# Set CR4.OSFXSR,
-						#     CR4.OSXMMEXCPT
-	mov %eax, %cr4
+	call	enable_sse
 
 	# Zero bss area.
 	call	bss_zero
