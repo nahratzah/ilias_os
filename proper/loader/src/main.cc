@@ -9,6 +9,8 @@
 #include <ilias/i386/gdt.h>
 #include <ilias/i386/paging.h>
 #include <mutex>
+#include <array>
+#include <string>
 
 namespace loader {
 
@@ -65,6 +67,14 @@ void setup_loader_pmap(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
   using ilias::pmap::permission;
   using ilias::native_arch;
 
+  bios_put_str("Setting up loader pmap ");
+  static constexpr std::array<std::string_ref, 4> windmill{{
+    std::string_ref("\b-", 2),
+    std::string_ref("\b\\", 2),
+    std::string_ref("\b|", 2),
+    std::string_ref("\b/", 2),
+  }};
+
   const auto end = vaddr<native_arch>(
       round_page_up(reinterpret_cast<uintptr_t>(&kernel_end) - 1U,
                     native_arch));
@@ -73,9 +83,11 @@ void setup_loader_pmap(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
                            native_arch));
        start != end;
        ++start) {
+    bios_put_str(windmill[start.get() % windmill.size()]);
     auto pg = page_no<native_arch>(start.get());  // One-to-one mapping.
     loader_pmap.map(start, pg, permission::RWX());
   }
+  bios_put_str("\b \b\n");
 }
 
 /* Map vram into pmap. */
@@ -90,6 +102,7 @@ void setup_loader_vram(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
 
   uintptr_t vram_begin, vram_end;
   std::tie(vram_begin, vram_end) = vram_ram();
+  bios_put_str("Mapping vram:");
 
   const auto end = vaddr<native_arch>(round_page_up(vram_end - 1U,
                                                     native_arch));
@@ -98,8 +111,16 @@ void setup_loader_vram(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
        start != end;
        ++start) {
     auto pg = page_no<native_arch>(start.get());  // One-to-one mapping.
-    loader_pmap.map(start, pg, permission::RW() | permission::UNCACHED());
+    bios_printf(
+        " %#llx->%#llx",
+        static_cast<unsigned long long>(vaddr<native_arch>(start).get()),
+        static_cast<unsigned long long>(ilias::pmap::phys_addr<native_arch>(pg).get()));
+    /* XXX: we map the video memory as executable,
+     * since we get page faults without;
+     * doesn't look like a bug in the pmap code, maybe it's a qemu thing?  */
+    loader_pmap.map(start, pg, permission::RWX() | permission::UNCACHED());
   }
+  bios_put_str(" DONE\n");
 }
 
 /*

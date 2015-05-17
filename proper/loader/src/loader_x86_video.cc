@@ -36,17 +36,21 @@ std::tuple<uintptr_t, uintptr_t> vram_ram() noexcept {
 void bios_put_char(char ch) noexcept {
   vram_char*const video_ram = reinterpret_cast<vram_char*>(vram_addr);
   static uint32_t video_off = 0;
+  static const vram_char blank = { ' ', gray_on_black };
 
-  if (ch != '\n') {
+  if (ch == '\b') {
+    if (video_off > 0) --video_off;
+  } else if (ch != '\n') {
     if (video_off == vram_columns * vram_lines) {
       memmove(video_ram, video_ram + vram_columns,
               (vram_lines - 1U) * vram_columns * sizeof(vram_char));
       video_off -= vram_columns;
+      std::fill_n(&video_ram[video_off], vram_columns, blank);
     }
     video_ram[video_off++] = vram_char{ ch, white_on_blue };
   } else {
     while (video_off % vram_columns != 0)
-      video_ram[video_off++] = vram_char{ ' ', gray_on_black };
+      video_ram[video_off++] = blank;
   }
 }
 
