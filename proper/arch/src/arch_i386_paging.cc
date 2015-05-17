@@ -44,7 +44,9 @@ void enable_paging(const gdt_t& gdt, pmap::pmap<native_arch>& p) {
       "1:\n"
 
       /* Set up paging (cr4), load pmap (cr3). */
-      "\tmovl %2, %%cr4\n"
+      "\tmovl %%cr4, %%eax\n"
+      "\tor %2, %%eax\n"
+      "\tmovl %%eax, %%cr4\n"
       "\tmovl %0, %%cr3\n"
 
       /* Enable paging. */
