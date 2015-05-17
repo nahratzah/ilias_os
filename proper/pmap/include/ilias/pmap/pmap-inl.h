@@ -103,7 +103,7 @@ constexpr auto permission::RX() noexcept -> permission {
 }
 
 constexpr auto permission::RWX() noexcept -> permission {
-  return permission::READ() | permission::EXEC();
+  return permission::READ() | permission::WRITE() | permission::EXEC();
 }
 
 constexpr auto permission::UNCACHED() noexcept -> permission {
