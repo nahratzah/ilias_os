@@ -8,7 +8,8 @@ namespace ilias {
 namespace vfs {
 
 
-struct credentials {
+class credentials {
+ public:
   uid_t uid;
   gid_t gid;
 };
