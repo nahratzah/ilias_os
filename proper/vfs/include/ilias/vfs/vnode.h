@@ -38,6 +38,8 @@ class vnode
   ~vnode() noexcept = default;
 
  public:
+  const vfs_ptr& get_vfs() const noexcept;
+  const vfs_ptr& get_vfsmountedhere() const noexcept;
   virtual open_vnode_ptr vnopen(flags, credentials) = 0;
 #if 0  // XXX notyet
   virtual cb_future<void> ioctl(ioctl_command, data, credentials) = 0;
@@ -63,9 +65,6 @@ class vnode
   cb_future<optional<tuple<vnode_ptr, off_t>>> bmap(off_t) = 0;
   cb_future<refpointer<vnode_buffer>> bread(off_t) = 0;
 #endif
-
-  vfs_ptr get_vfs() const noexcept;
-  vfs_ptr get_vfsmountedhere() const noexcept;
 
  private:
   virtual void close(open_vnode*) noexcept = 0;
@@ -97,7 +96,7 @@ class open_vnode
   ~open_vnode() noexcept = default;
 
  public:
-  vnode_ptr get_vnode() noexcept;
+  const vnode_ptr& get_vnode() const noexcept;
   virtual cb_future<uio> read(uio, credentials) = 0;
   virtual cb_future<uio> write(uio, credentials) = 0;
   virtual cb_future<void> fsync(credentials) = 0;
