@@ -2,6 +2,7 @@
 #define _ILIAS_VFS_VNODE_H_
 
 #include <ilias/vfs/vfs-fwd.h>
+#include <ilias/vfs/credentials.h>
 #include <ilias/refcnt.h>
 #include <ilias/monitor.h>
 #include <cstdint>
