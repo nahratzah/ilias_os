@@ -78,8 +78,13 @@ static_assert(sizeof(uint32_t) == sizeof(char32_t),
 #endif
 
 /* File offset/size types. */
+#if _USE_INT128
+typedef _ABI_TYPES(int128_t)	_ABI_TYPES(off_t);
+typedef _ABI_TYPES(int128_t)	_ABI_TYPES(fpos_t);
+#else
 typedef _ABI_TYPES(int64_t)	_ABI_TYPES(off_t);
 typedef _ABI_TYPES(int64_t)	_ABI_TYPES(fpos_t);
+#endif
 
 /* Widest integrals. */
 #if _USE_INT128
