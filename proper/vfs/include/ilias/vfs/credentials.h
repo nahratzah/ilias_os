@@ -1,6 +1,7 @@
 #ifndef _ILIAS_VFS_CREDENTIALS_H_
 #define _ILIAS_VFS_CREDENTIALS_H_
 
+#include <ilias/vfs/vfs-fwd.h>
 #include <ugid.h>
 
 namespace ilias {
