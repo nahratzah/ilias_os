@@ -113,7 +113,17 @@ template<typename...> struct is_nothrow_copy_constructible_any_;
 template<typename... T> using is_nothrow_copy_constructible_any =
     integral_constant<bool, is_nothrow_copy_constructible_any_<T...>::value>;
 
+template<typename...> struct is_nothrow_move_assignable_any_;
+template<typename... T> using is_nothrow_move_assignable_any =
+    integral_constant<bool, is_nothrow_move_assignable_any_<T...>::value>;
+
+template<typename...> struct is_nothrow_copy_assignable_any_;
+template<typename... T> using is_nothrow_copy_assignable_any =
+    integral_constant<bool, is_nothrow_copy_assignable_any_<T...>::value>;
+
 template<typename, typename...> struct any_constructor_resolution;
+
+template<size_t, size_t> struct recursive_map;
 
 
 } /* namespace ilias::impl */
@@ -194,6 +204,10 @@ class any {
   any(any&&) noexcept(impl::is_nothrow_move_constructible_any<T...>());
   ~any() noexcept;
 
+  any& operator=(const any&)
+      noexcept(impl::is_nothrow_copy_assignable_any<T...>());
+  any& operator=(any&&) noexcept(impl::is_nothrow_move_assignable_any<T...>());
+
   template<typename U,
            size_t N = _namespace(std)::enable_if_t<
                impl::any_constructor_resolution<U, T...>::found,
@@ -264,6 +278,25 @@ auto map(any<T...>&& v, Fn fn) ->
         decltype(_namespace(std)::declval<Fn>()(
                      get<N>(_namespace(std)::declval<any<T...>>()))),
         any<T...>>;
+
+
+template<typename... T, typename... Fn>
+auto map(any<T...>&, Fn&&...) ->
+    decltype(_namespace(std)::declval<impl::recursive_map<0, sizeof...(T)>>()(
+                 _namespace(std)::declval<any<T...>&>(),
+                 _namespace(std)::declval<Fn>()...));
+
+template<typename... T, typename... Fn>
+auto map(const any<T...>&, Fn&&...) ->
+    decltype(_namespace(std)::declval<impl::recursive_map<0, sizeof...(T)>>()(
+                 _namespace(std)::declval<const any<T...>&>(),
+                 _namespace(std)::declval<Fn>()...));
+
+template<typename... T, typename... Fn>
+auto map(any<T...>&&, Fn&&...) ->
+    decltype(_namespace(std)::declval<impl::recursive_map<0, sizeof...(T)>>()(
+                 _namespace(std)::declval<any<T...>>(),
+                 _namespace(std)::declval<Fn>()...));
 
 
 _namespace_end(ilias)

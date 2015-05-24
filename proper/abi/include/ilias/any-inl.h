@@ -33,6 +33,59 @@ struct recursive_visit<End, End> {
 };
 
 
+template<size_t Idx, size_t End>
+struct recursive_map {
+ private:
+  using next = recursive_map<Idx + 1, End>;
+
+ public:
+  template<typename Any, typename Fn0, typename... Fn>
+  auto operator()(Any&& a, Fn0&& fn0, Fn&&... fn) ->
+      decltype(next()(map<Idx>(forward<Any>(a), forward<Fn0>(fn0)),
+                      forward<Fn>(fn)...)) {
+    using _namespace(std)::forward;
+
+    return next()(map<Idx>(forward<Any>(a), forward<Fn0>(fn0)),
+                  forward<Fn>(fn)...);
+  }
+};
+/* Tail node specialization. */
+template<size_t End>
+struct recursive_map<End, End> {
+  template<typename Any>
+  Any operator()(Any&& a) {
+    return a;
+  }
+};
+
+
+template<typename Result, size_t Idx, size_t End>
+struct recursive_map_onto {
+ private:
+  using next = recursive_map_onto<Result, Idx + 1, End>;
+
+ public:
+  template<typename Any, typename Fn0, typename... Fn>
+  auto operator()(Any&& a, Fn0&& fn0, Fn&&... fn) -> Result {
+    using _namespace(std)::forward;
+
+    if (Idx == a.selector())
+      return fn0(get<Idx>(forward<Any>(a)));
+    return next()(forward<Any>(a), forward<Fn>(fn)...);
+  }
+};
+/* Tail node specialization. */
+template<typename Result, size_t End>
+struct recursive_map_onto<Result, End, End> {
+  template<typename Any>
+  Result operator()(Any&&) {
+    assert_msg(false, "Should be unreachable.");
+    throw logic_error("ilias::impl::recursive_map_onto: "
+                      "base case should be unreachable.");
+  }
+};
+
+
 template<typename, size_t, size_t, size_t> struct copy_skip;  // Unimplemented
 template<typename... T, size_t Idx, size_t Skip, size_t End>
 struct copy_skip<any<T...>, Idx, Skip, End> {
@@ -194,6 +247,30 @@ struct is_nothrow_copy_constructible_any_<> {
 };
 
 
+template<typename T0, typename... T>
+struct is_nothrow_move_assignable_any_<T0, T...> {
+  static constexpr bool value =
+      is_nothrow_move_assignable<T0>::value &&
+      is_nothrow_move_assignable_any_<T...>::value;
+};
+template<>
+struct is_nothrow_move_assignable_any_<> {
+  static constexpr bool value = true;
+};
+
+
+template<typename T0, typename... T>
+struct is_nothrow_copy_assignable_any_<T0, T...> {
+  static constexpr bool value =
+      is_nothrow_copy_assignable<T0>::value &&
+      is_nothrow_copy_assignable_any_<T...>::value;
+};
+template<>
+struct is_nothrow_copy_assignable_any_<> {
+  static constexpr bool value = true;
+};
+
+
 template<size_t Idx, size_t End, typename... T> struct copy_operation;
 template<size_t Idx, size_t End, typename T0, typename... T>
 struct copy_operation<Idx, End, T0, T...> {
@@ -272,6 +349,32 @@ any<T...>::any(any&& other)
 
   _namespace(std)::get<0>(data_) = op(&_namespace(std)::get<1>(data_),
                                       _namespace(std)::move(other));
+}
+
+template<typename... T>
+auto any<T...>::operator=(const any& other)
+    noexcept(impl::is_nothrow_copy_assignable_any<T...>()) -> any& {
+  impl::copy_operation<0, sizeof...(T), T...> op;
+
+  impl::deleter<0, sizeof...(T), T...>()(_namespace(std)::get<0>(data_),
+                                         &_namespace(std)::get<1>(data_));
+  get<0>(data_) = sizeof...(T);
+  _namespace(std)::get<0>(data_) = op(&_namespace(std)::get<1>(data_),
+                                      other);
+  return *this;
+}
+
+template<typename... T>
+auto any<T...>::operator=(any&& other)
+    noexcept(impl::is_nothrow_move_assignable_any<T...>()) -> any& {
+  impl::copy_operation<0, sizeof...(T), T...> op;
+
+  impl::deleter<0, sizeof...(T), T...>()(_namespace(std)::get<0>(data_),
+                                         &_namespace(std)::get<1>(data_));
+  get<0>(data_) = sizeof...(T);
+  _namespace(std)::get<0>(data_) = op(&_namespace(std)::get<1>(data_),
+                                      _namespace(std)::move(other));
+  return *this;
 }
 
 template<typename... T>
@@ -488,6 +591,7 @@ auto map(any<T...>&& v, Fn fn) ->
         decltype(_namespace(std)::declval<Fn>()(get<N>(
                      _namespace(std)::declval<any<T...>>()))),
         any<T...>> {
+  using _namespace(std)::move;
   using type = impl::replace_type<
       N,
       decltype(_namespace(std)::declval<Fn>()(get<N>(
@@ -496,6 +600,58 @@ auto map(any<T...>&& v, Fn fn) ->
 
   if (N == v.selector()) return type::template create<N>(fn(get<N>(move(v))));
   return impl::copy_skip<type, 0, N, sizeof...(T)>()(move(v));
+}
+
+
+template<typename... T, typename... Fn>
+auto map(any<T...>& v, Fn&&... fn) ->
+    decltype(_namespace(std)::declval<impl::recursive_map<0, sizeof...(T)>>()(
+                 _namespace(std)::declval<any<T...>&>(),
+                 _namespace(std)::declval<Fn>()...))
+{
+  return impl::recursive_map<0, sizeof...(T)>()(
+             v, _namespace(std)::forward<Fn>(fn)...);
+}
+
+template<typename... T, typename... Fn>
+auto map(const any<T...>& v, Fn&&... fn) ->
+    decltype(_namespace(std)::declval<impl::recursive_map<0, sizeof...(T)>>()(
+                 _namespace(std)::declval<const any<T...>&>(),
+                 _namespace(std)::declval<Fn>()...))
+{
+  return impl::recursive_map<0, sizeof...(T)>()(
+             v, _namespace(std)::forward<Fn>(fn)...);
+}
+
+template<typename... T, typename... Fn>
+auto map(any<T...>&& v, Fn&&... fn) ->
+    decltype(_namespace(std)::declval<impl::recursive_map<0, sizeof...(T)>>()(
+                 _namespace(std)::declval<any<T...>>(),
+                 _namespace(std)::declval<Fn>()...))
+{
+  using _namespace(std)::move;
+  return impl::recursive_map<0, sizeof...(T)>()(
+             move(v), _namespace(std)::forward<Fn>(fn)...);
+}
+
+
+template<typename Result, typename... T, typename... Fn>
+auto map_onto(any<T...>& v, Fn&&... fn) -> Result {
+  return impl::recursive_map_onto<Result, 0, sizeof...(T)>()(
+             v, _namespace(std)::forward<Fn>(fn)...);
+}
+
+template<typename Result, typename... T, typename... Fn>
+auto map_onto(const any<T...>& v, Fn&&... fn) -> Result {
+  return impl::recursive_map_onto<Result, 0, sizeof...(T)>()(
+             v, _namespace(std)::forward<Fn>(fn)...);
+}
+
+template<typename Result, typename... T, typename... Fn>
+auto map_onto(any<T...>&& v, Fn&&... fn) -> Result {
+  using _namespace(std)::move;
+  return impl::recursive_map_onto<Result, 0, sizeof...(T)>()(
+             move(v), _namespace(std)::forward<Fn>(fn)...);
 }
 
 
