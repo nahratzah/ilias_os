@@ -182,6 +182,10 @@ void main() {
   bios_printf("CPU vendor: %s\n", (ilias::has_cpuid() ?
                                    ilias::cpu_vendor().c_str() :
                                    "unknown (cpuid not supported)"));
+  bios_printf("CPU flags: %s\n",
+              to_string(ilias::cpuid_features()).c_str());
+  bios_printf("    extended flags: %s\n",
+              to_string(ilias::cpuid_extfeatures()).c_str());
 
   /* Initialize export data. */
   ldexport& lde = ldexport_get();
