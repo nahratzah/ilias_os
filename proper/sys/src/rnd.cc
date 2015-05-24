@@ -366,7 +366,7 @@ auto _rs_rekey(uint8_t* dat, size_t datlen) noexcept -> void {
   }
   /* immediately reinit for backtracking resistance */
   _rs_init(rs_buf.data(), KEYSZ + IVSZ);
-  fill(rs_buf.begin(), rs_buf.end(), 0);
+  fill(rs_buf.begin(), rs_buf.begin() + KEYSZ + IVSZ, 0);
   rs_have = RSBUFSZ - KEYSZ - IVSZ;
 }
 
