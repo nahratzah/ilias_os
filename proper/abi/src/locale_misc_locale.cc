@@ -319,7 +319,7 @@ facet_vector_map_* new_facet_vector_map(size_t nelem,
   if (m == nullptr) __throw_bad_alloc();
 
   /* Initialize header. */
-  facet_vector_map_size(m) = 0;
+  facet_vector_map_size(m) = nelem;
   atomic_init(facet_vector_map_refcounter(m), uintptr_t(0));
 
   /* Initialize fields. */
@@ -331,7 +331,7 @@ facet_vector_map_* new_facet_vector_map(size_t nelem,
   /* Initialize name. */
   char*const name_ptr = (name.empty() ?
                          nullptr :
-                         reinterpret_cast<char*>(m) + bytes);
+                         reinterpret_cast<char*>(end(*m)));
   if (!name.empty())
     *copy(name.begin(), name.end(), name_ptr) = '\0';
   reinterpret_cast<uintptr_t*>(m)[FACET_VECTOR_MAP__NAME] =
@@ -426,6 +426,14 @@ facet_vector_map_ptr classic_facet_vector_map(const string_ref name) {
 thread_local facet_vector_map_ptr global_loc;
 
 const facet_vector_map_ptr& get_global_loc() noexcept {
+#ifdef _KERNEL
+  static thread_local once_flag dfl_init_flag;
+  call_once(dfl_init_flag,
+            []() {
+              global_loc = classic_facet_vector_map("C");
+            });
+#endif
+
   return global_loc;
 }
 
