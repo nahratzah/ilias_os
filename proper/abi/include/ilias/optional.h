@@ -94,6 +94,67 @@ class optional {
   _namespace(std)::tuple<bool, storage_t> data_;
 };
 
+template<typename T>
+class optional<T&> {
+ public:
+  using value_type = T;
+  using const_value_type = const T;
+  using reference = value_type&;
+  using const_reference = const_value_type&;
+  using pointer = value_type*;
+  using const_pointer = const_value_type*;
+
+  constexpr optional() noexcept = default;
+  optional(const optional&) noexcept;
+  optional(optional&&) noexcept;
+  optional(value_type&) noexcept;
+  ~optional() noexcept = default;
+
+  optional& operator=(const optional&) noexcept;
+  optional& operator=(optional&&) noexcept;
+
+  explicit operator bool() const noexcept { return is_present(); }
+  bool is_present() const noexcept;
+
+  reference operator*() const;
+  pointer operator->() const;
+
+  void assign(value_type&) noexcept;
+  value_type& release();
+  value_type& get() const;
+
+ private:
+  void ensure_present_() const;
+
+  T* data_ = nullptr;
+};
+
+
+template<typename T, typename Fn>
+auto map(const optional<T>&, Fn) ->
+    decltype(_namespace(std)::declval<Fn>()(
+                 _namespace(std)::declval<const optional<T>&>().get()));
+
+template<typename T, typename Fn>
+auto map(optional<T>&, Fn) ->
+    decltype(_namespace(std)::declval<Fn>()(
+                 _namespace(std)::declval<optional<T>&>().get()));
+
+template<typename T, typename Fn>
+auto map(optional<T>&&, Fn) ->
+    decltype(_namespace(std)::declval<Fn>()(
+                 _namespace(std)::declval<optional<T>>().release()));
+
+
+template<typename T, typename Fn>
+bool visit(const optional<T>&, Fn);
+
+template<typename T, typename Fn>
+bool visit(optional<T>&, Fn);
+
+template<typename T, typename Fn>
+bool visit(optional<T>&&, Fn);
+
 
 _namespace_end(ilias)
 

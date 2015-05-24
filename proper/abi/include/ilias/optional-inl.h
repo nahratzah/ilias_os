@@ -186,6 +186,143 @@ auto optional<T>::ensure_present_() const -> void {
 }
 
 
+template<typename T>
+optional<T&>::optional(const optional& o) noexcept
+: optional()
+{
+  if (o) assign(o.get());
+}
+
+template<typename T>
+optional<T&>::optional(optional&& o) noexcept
+: optional()
+{
+  if (o) assign(o.release());
+}
+
+template<typename T>
+optional<T&>::optional(value_type& v) noexcept
+: optional()
+{
+  assign(v);
+}
+
+template<typename T>
+auto optional<T&>::operator=(const optional& o) noexcept -> optional& {
+  if (o.is_present())
+    assign(o.get());
+  else if (is_present())
+    release();
+  return *this;
+}
+
+template<typename T>
+auto optional<T&>::operator=(optional&& o) noexcept -> optional& {
+  if (o.is_present())
+    assign(o.release());
+  else if (is_present())
+    release();
+  return *this;
+}
+
+template<typename T>
+auto optional<T&>::is_present() const noexcept -> bool {
+  return data_ != nullptr;
+}
+
+template<typename T>
+auto optional<T&>::operator*() const -> reference {
+  return get();
+}
+
+template<typename T>
+auto optional<T&>::operator->() const -> pointer {
+  return &get();
+}
+
+template<typename T>
+auto optional<T&>::assign(value_type& v) noexcept -> void {
+  data_ = &v;
+}
+
+template<typename T>
+auto optional<T&>::release() -> value_type& {
+  ensure_present_();
+  return *_namespace(std)::exchange(data_, nullptr);
+}
+
+template<typename T>
+auto optional<T&>::get() const -> value_type& {
+  ensure_present_();
+  return *data_;
+}
+
+template<typename T>
+auto optional<T&>::ensure_present_() const -> void {
+  if (_predict_false(!is_present()))
+    optional_error::__throw();
+}
+
+
+template<typename T, typename Fn>
+auto map(const optional<T>& o, Fn fn) ->
+    decltype(_namespace(std)::declval<Fn>()(
+                 _namespace(std)::declval<const optional<T>&>().get())) {
+  using type =
+      decltype(_namespace(std)::declval<Fn>()(
+                   _namespace(std)::declval<const optional<T>&>().get()));
+
+  if (!o) return type();
+  return fn(o.get());
+}
+
+template<typename T, typename Fn>
+auto map(optional<T>& o, Fn fn) ->
+    decltype(_namespace(std)::declval<Fn>()(
+                 _namespace(std)::declval<optional<T>&>().get())) {
+  using type =
+      decltype(_namespace(std)::declval<Fn>()(
+                   _namespace(std)::declval<optional<T>&>().get()));
+
+  if (!o) return type();
+  return fn(o.get());
+}
+
+template<typename T, typename Fn>
+auto map(optional<T>&& o, Fn fn) ->
+    decltype(_namespace(std)::declval<Fn>()(
+                 _namespace(std)::declval<optional<T>>().release())) {
+  using type =
+      decltype(_namespace(std)::declval<Fn>()(
+                   _namespace(std)::declval<optional<T>>().release()));
+
+  if (!o) return type();
+  return fn(o.release());
+}
+
+
+template<typename T, typename Fn>
+auto visit(const optional<T>& o, Fn fn) -> bool {
+  if (!o) return false;
+  fn(o.get());
+  return true;
+}
+
+template<typename T, typename Fn>
+auto visit(optional<T>& o, Fn fn) -> bool {
+  if (!o) return false;
+  fn(o.get());
+  return true;
+}
+
+template<typename T, typename Fn>
+auto visit(optional<T>&& o, Fn fn) -> bool {
+  if (!o) return false;
+  fn(o.release());
+  return true;
+}
+
+
 _namespace_end(ilias)
 
 #endif /* _ILIAS_OPTIONAL_INL_H_ */
