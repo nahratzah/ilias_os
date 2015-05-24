@@ -263,7 +263,6 @@ class elf_header {
   static constexpr uint8_t ELFDATA2LSB = 1;
   static constexpr uint8_t ELFDATA2MSB = 2;
 
-  elf_header() noexcept = default;
   elf_header(const elf_header&) noexcept = default;
   elf_header& operator=(const elf_header&) noexcept = default;
   elf_header(streambuf&);
@@ -392,7 +391,7 @@ class elf_section {
  private:
   template<typename T> T endian_to_host(T) const noexcept;
 
-  types::Elf32_Shdr hdr_;
+  any<types::Elf32_Shdr, types::Elf64_Shdr> hdr_;
   uint8_t hdr_data_;
 };
 
