@@ -146,25 +146,6 @@ class elf64_addr {  // XXX
   uint64_t addr_;
 };
 
-class elf32_off {  // XXX
- public:
-  static elf32_off from_elf_off(uint32_t) noexcept;
-
-  uint32_t get() const noexcept { return off_; }
-
- private:
-  uint32_t off_;
-};
-class elf64_off {  // XXX
- public:
-  static elf64_off from_elf_off(uint64_t) noexcept;
-
-  uint64_t get() const noexcept { return off_; }
-
- private:
-  uint64_t off_;
-};
-
 class elf_hdr_flags {  // XXX
  public:
   static elf_hdr_flags from_elf_flags(uint32_t) noexcept;

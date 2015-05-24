@@ -20,19 +20,6 @@ inline auto elf64_addr::from_elf_addr(uint64_t addr) noexcept -> elf64_addr {
 }
 
 
-inline auto elf32_off::from_elf_off(uint32_t off) noexcept -> elf32_off {
-  elf32_off rv;
-  rv.off_ = off;
-  return rv;
-}
-
-inline auto elf64_off::from_elf_off(uint64_t off) noexcept -> elf64_off {
-  elf64_off rv;
-  rv.off_ = off;
-  return rv;
-}
-
-
 inline auto elf_hdr_flags::from_elf_flags(uint32_t fl) noexcept ->
     elf_hdr_flags {
   elf_hdr_flags rv;
