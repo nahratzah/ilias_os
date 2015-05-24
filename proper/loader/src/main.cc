@@ -118,7 +118,7 @@ void setup_loader_vram(ilias::pmap::pmap<ilias::native_arch>& loader_pmap) {
     /* XXX: we map the video memory as executable,
      * since we get page faults without;
      * doesn't look like a bug in the pmap code, maybe it's a qemu thing?  */
-    loader_pmap.map(start, pg, permission::RWX() | permission::UNCACHED());
+    loader_pmap.map(start, pg, permission::RW() | permission::UNCACHED());
   }
   bios_put_str(" DONE\n");
 }
