@@ -1,4 +1,5 @@
 #include <ilias/pmap/x86_shared.h>
+#include <ilias/cpuid.h>
 
 namespace ilias {
 namespace pmap {
@@ -39,6 +40,8 @@ constexpr flags pte_record::FLAGS_MASK;
 constexpr unsigned int pte_record::PAGE_SHIFT;
 constexpr uint64_t pte_record::PAGE_MASK;
 constexpr uint64_t pte_record::PT_P;
+
+const bool has_nx = cpuid_feature_present(cpuid_extfeature_const::nx);
 
 
 }}} /* namespace ilias::pmap */

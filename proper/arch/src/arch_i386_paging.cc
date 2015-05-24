@@ -1,5 +1,6 @@
 #include <ilias/i386/paging.h>
 #include <ilias/i386/gdt.h>
+#include <ilias/cpuid.h>
 #include <ilias/pmap/pmap_i386.h>
 
 namespace ilias {
@@ -15,6 +16,18 @@ void enable_paging(const gdt_t& gdt, pmap::pmap<native_arch>& p) {
   constexpr uint32_t cr4_pse_flag = 1U << 4;  // Actually ignored in PAE.
   constexpr uint32_t cr4_pge_flag = 1U << 7;  // Page-global enable.
   constexpr uint32_t cr4_flags = cr4_pae_flag | cr4_pse_flag | cr4_pge_flag;
+
+  /* Enable NX bit, if supported. */
+  if (cpuid_feature_present(cpuid_extfeature_const::nx)) {
+    asm volatile(
+          "mov $0xc0000080, %%ecx\n"  // specify which MSR we want to read (EFER)
+        "\trdmsr\n"  // edx:eax == 64-bit msr register.
+        "\tor $0x8, %%ah\n"  // msr |= bit[11] (the NX-enable bit)
+        "\twrmsr\n"  // write modified value back
+    :
+    :
+    : "eax", "ecx", "edx");
+  }
 
   asm volatile(
         "cli\n"  // Disable interrupts.

@@ -11,6 +11,8 @@ namespace pmap {
 namespace x86_shared {
 
 
+extern const bool has_nx;
+
 constexpr page_no_proxy::page_no_proxy(page_no<arch::i386> pg) noexcept
 : page_no_proxy(pg.get())
 {}
@@ -100,7 +102,7 @@ constexpr bool flags::nx() const noexcept {
   return bool(*this & PT_NX);
 }
 
-constexpr auto flags::apply(const permission& perm, bool leaf)
+inline auto flags::apply(const permission& perm, bool leaf)
     const noexcept -> flags {
   /* Convenience define,
    * to avoid having to write x86_shared::flags() all the time. */
@@ -108,8 +110,8 @@ constexpr auto flags::apply(const permission& perm, bool leaf)
 
   /* NX bit: set if this is the leaf and perm.exec == false.
    *       : clear if perm.exec == true. */
-  auto set_nx = (leaf && !perm.exec ? PT_NX : nil);
-  auto clear_nx = (perm.exec ? PT_NX : nil);
+  auto set_nx = (has_nx && leaf && !perm.exec ? PT_NX : nil);
+  auto clear_nx = (!has_nx || perm.exec ? PT_NX : nil);
 
   /* WR bit: set if perm.write == true.
    *       : clear if this is the leaf and perm.write == false. */
@@ -180,7 +182,7 @@ constexpr auto pml4_record::valid() const noexcept -> bool {
                    create(nullptr, flags()));
 }
 
-constexpr auto pml4_record::combine(const permission& perm) const noexcept ->
+inline auto pml4_record::combine(const permission& perm) const noexcept ->
     pml4_record {
   return (p() ?
           create(address(), flags().apply(perm, false)) :
@@ -221,7 +223,7 @@ constexpr auto pdpe_record<arch::i386>::valid() const noexcept -> bool {
                    create(nullptr, flags()));
 }
 
-constexpr auto pdpe_record<arch::i386>::combine(const permission& perm)
+inline auto pdpe_record<arch::i386>::combine(const permission& perm)
     const noexcept -> pdpe_record {
   return (p() ? create(address(), flags().apply(perm, false)) :
                 create(nullptr, flags().apply(perm, false)));
@@ -286,7 +288,7 @@ constexpr auto pdpe_record<arch::amd64>::valid() const noexcept -> bool {
                    create(nullptr, flags()));
 }
 
-constexpr auto pdpe_record<arch::amd64>::combine(const permission& perm)
+inline auto pdpe_record<arch::amd64>::combine(const permission& perm)
     const noexcept -> pdpe_record {
   return (!p() || (ps() && !perm.read && !perm.write && !perm.exec) ?
           create(nullptr, flags().apply(perm, ps())) :
@@ -354,7 +356,7 @@ constexpr auto pdp_record::valid() const noexcept -> bool {
                    create(nullptr, flags(), ps()));
 }
 
-constexpr auto pdp_record::combine(const permission& perm) const noexcept ->
+inline auto pdp_record::combine(const permission& perm) const noexcept ->
     pdp_record {
   /* Present bit: clear if this is the leaf and
    * !perm.read && !perm.write && !perm.exec. */
@@ -399,7 +401,7 @@ constexpr auto pte_record::valid() const noexcept -> bool {
                    create(nullptr, flags()));
 }
 
-constexpr auto pte_record::combine(const permission& perm) const noexcept ->
+inline auto pte_record::combine(const permission& perm) const noexcept ->
     pte_record {
   /* Present bit: clear if !perm.read && !perm.write && !perm.exec. */
   return (!p() || (!perm.read && !perm.write && !perm.exec) ?

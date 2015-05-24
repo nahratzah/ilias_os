@@ -89,7 +89,7 @@ class flags {
   constexpr bool pat() const noexcept;
   constexpr bool nx() const noexcept;
 
-  constexpr flags apply(const permission&, bool leaf) const noexcept;
+  inline flags apply(const permission&, bool leaf) const noexcept;
   constexpr permission get_permission() const noexcept;
 
  private:
@@ -141,7 +141,7 @@ struct pml4_record {
   explicit constexpr operator bool() const noexcept { return p(); }
   constexpr bool valid() const noexcept;
 
-  constexpr auto combine(const permission&) const noexcept ->
+  auto combine(const permission&) const noexcept ->
       pml4_record;
   constexpr auto get_permission() const noexcept -> permission;
 };
@@ -172,7 +172,7 @@ struct pdpe_record<arch::i386> {
   explicit constexpr operator bool() const noexcept { return p(); }
   constexpr bool valid() const noexcept;
 
-  constexpr auto combine(const permission&) const noexcept ->
+  auto combine(const permission&) const noexcept ->
       pdpe_record;
   constexpr auto get_permission() const noexcept -> permission;
 };
@@ -212,7 +212,7 @@ struct pdpe_record<arch::amd64> {
   constexpr bool ps() const noexcept { return v_ & PT_PS; }
   constexpr bool valid() const noexcept;
 
-  constexpr auto combine(const permission&) const noexcept ->
+  auto combine(const permission&) const noexcept ->
       pdpe_record;
   constexpr auto get_permission() const noexcept -> permission;
 
@@ -253,7 +253,7 @@ struct pdp_record {
   constexpr bool ps() const noexcept { return v_ & PT_PS; }
   constexpr bool valid() const noexcept;
 
-  constexpr auto combine(const permission&) const noexcept ->
+  auto combine(const permission&) const noexcept ->
       pdp_record;
   constexpr auto get_permission() const noexcept -> permission;
 
@@ -285,7 +285,7 @@ struct pte_record {
   explicit constexpr operator bool() const noexcept { return p(); }
   constexpr bool valid() const noexcept;
 
-  constexpr auto combine(const permission&) const noexcept ->
+  auto combine(const permission&) const noexcept ->
       pte_record;
   constexpr auto get_permission() const noexcept -> permission;
 
