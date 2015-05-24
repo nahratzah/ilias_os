@@ -3,28 +3,308 @@
 
 namespace ilias {
 namespace elf {
+namespace {
 
 
-elf_header::elf_header(streambuf& buf) {
-  using unsigned_len = make_unsigned_t<streamsize>;
+inline auto read_nident(streambuf& buf) -> array<uint8_t, types::EI_NIDENT> {
+  array<uint8_t, types::EI_NIDENT> rv;
+  auto len = buf.sgetn(reinterpret_cast<char*>(rv.data()), rv.size());
+  if (len < 0 || len != rv.size())
+    throw underflow_error("elf_header: wrong size read");
 
-  static_assert(is_pod<types::Elf32_Ehdr>::value,
+  return rv;
+}
+
+auto read_elf_header(streambuf& buf) ->
+    any<types::Elf32_Ehdr, types::Elf64_Ehdr> {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+  using types::EI_CLASS;
+  using types::EI_DATA;
+  using types::EI_NIDENT;
+  using types::ELFMAG;
+  using basic_ident = array<uint8_t, EI_NIDENT>;
+  using ident_type = any<basic_ident, basic_ident>;
+
+  static_assert(is_pod<types::Elf32_Ehdr>::value &&
+                is_pod<types::Elf64_Ehdr>::value,
                 "Memmory copy operation requires elf header to be "
                 "a plain-old-data type.");
 
-  unsigned_len len = buf.sgetn(reinterpret_cast<char*>(&hdr_), sizeof(hdr_));
-  if (_predict_false(len != sizeof(hdr_)))
-    throw underflow_error("elf_header: wrong size read");
+  const auto nident = read_nident(buf);
+  if (!equal(ELFMAG.begin(), ELFMAG.end(), nident.begin()))
+    throw runtime_error("elf_header: magic identifier mismatch");
 
-  if (valid_header()) {
-    if (get_size() < sizeof(hdr_))
-      throw invalid_argument("elf_header: too short");
-
-    while (len < get_size()) {
-      buf.sbumpc();
-      ++len;
-    }
+  ident_type ident = ident_type::create<0>(basic_ident());
+  switch (nident[EI_CLASS]) {
+  case elf_header::ELFCLASS32:
+    ident = ident_type::create<0>(nident);
+    break;
+  case elf_header::ELFCLASS64:
+    ident = ident_type::create<1>(nident);
+    break;
+  case elf_header::ELFCLASSNONE:
+    throw runtime_error("elf_header: no class");
+  default:
+    throw runtime_error("elf_header: unrecognized elf class");
   }
+
+  bool is_big_endian = false;
+  bool is_little_endian = false;
+  switch (nident[EI_DATA]) {
+  default:
+    throw runtime_error("elf_header: endian format not recognized");
+  case elf_header::ELFDATA2MSB:
+    is_big_endian = true;
+    break;
+  case elf_header::ELFDATA2LSB:
+    is_little_endian = true;
+    break;
+  }
+  assert(is_big_endian || is_little_endian);
+
+  streamsize len;
+  auto hdr =
+      map(move(ident),
+          [&len, &buf](basic_ident ident) {
+            Elf32_Ehdr h;
+            h.e_ident = ident;
+            len = buf.sgetn(reinterpret_cast<char*>(&h) + EI_NIDENT,
+                            sizeof(h) - EI_NIDENT);
+            if (len != sizeof(h) - EI_NIDENT)
+              throw underflow_error("elf_header: insufficient data");
+            len += EI_NIDENT;
+            return h;
+          },
+          [&len, &buf](basic_ident ident) {
+            Elf64_Ehdr h;
+            h.e_ident = ident;
+            len = buf.sgetn(reinterpret_cast<char*>(&h) + EI_NIDENT,
+                            sizeof(h) - EI_NIDENT);
+            if (len != sizeof(h) - EI_NIDENT)
+              throw underflow_error("elf_header: insufficient data");
+            len += EI_NIDENT;
+            return h;
+          });
+
+  auto hdrlen = map_onto<streamsize>(
+      hdr,
+      [is_big_endian, is_little_endian](const Elf32_Ehdr& h) {
+        return (is_big_endian ? betoh(h.e_ehsize) : letoh(h.e_ehsize));
+      },
+      [is_big_endian, is_little_endian](const Elf64_Ehdr& h) {
+        return (is_big_endian ? betoh(h.e_ehsize) : letoh(h.e_ehsize));
+      });
+
+  if (hdrlen < len)
+    throw runtime_error("elf_header: header too short");
+
+  while (len < hdrlen) {
+    buf.sbumpc();
+    ++len;
+  }
+
+  return hdr;
+}
+
+
+} /* namespace ilias::elf::<unnamed> */
+
+
+elf_header::elf_header(streambuf& buf)
+: hdr_(read_elf_header(buf))
+{
+  if (get_version() != map_onto<uint8_t>(hdr_,
+                                         [](const types::Elf32_Ehdr& h) {
+                                           return h.e_ident[types::EI_VERSION];
+                                         },
+                                         [](const types::Elf64_Ehdr& h) {
+                                           return h.e_ident[types::EI_VERSION];
+                                         })) {
+    throw runtime_error("elf_header: version validation failed");
+  } else if (get_version() != EV_CURRENT) {
+    throw runtime_error("elf_header: invalid version");
+  }
+}
+
+auto elf_header::get_type() const noexcept -> objtype {
+  return map_onto<objtype>(
+      hdr_,
+      [this](const types::Elf32_Ehdr& h) {
+        return static_cast<objtype>(endian_to_host(h.e_type));
+      },
+      [this](const types::Elf64_Ehdr& h) {
+        return static_cast<objtype>(endian_to_host(h.e_type));
+      });
+}
+
+auto elf_header::get_mach() const noexcept -> machtype {
+  return map_onto<machtype>(
+      hdr_,
+      [this](const types::Elf32_Ehdr& h) {
+        return static_cast<machtype>(endian_to_host(h.e_machine));
+      },
+      [this](const types::Elf64_Ehdr& h) {
+        return static_cast<machtype>(endian_to_host(h.e_machine));
+      });
+}
+
+auto elf_header::get_version() const noexcept -> uint32_t {
+  return map_onto<uint32_t>(
+      hdr_,
+      [this](const types::Elf32_Ehdr& h) {
+        return endian_to_host(h.e_version);
+      },
+      [this](const types::Elf64_Ehdr& h) {
+        return endian_to_host(h.e_version);
+      });
+}
+
+auto elf_header::get_entry() const noexcept ->
+    any<elf32_addr, elf64_addr> {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return elf32_addr::from_elf_addr(endian_to_host(h.e_entry));
+      },
+      [this](const Elf64_Ehdr& h) {
+        return elf64_addr::from_elf_addr(endian_to_host(h.e_entry));
+      });
+}
+
+auto elf_header::get_phoff() const noexcept ->
+    any<elf32_off, elf64_off> {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return elf32_off::from_elf_off(endian_to_host(h.e_phoff));
+      },
+      [this](const Elf64_Ehdr& h) {
+        return elf64_off::from_elf_off(endian_to_host(h.e_phoff));
+      });
+}
+
+auto elf_header::get_shoff() const noexcept ->
+    any<elf32_off, elf64_off> {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return elf32_off::from_elf_off(endian_to_host(h.e_shoff));
+      },
+      [this](const Elf64_Ehdr& h) {
+        return elf64_off::from_elf_off(endian_to_host(h.e_shoff));
+      });
+}
+
+auto elf_header::get_flags() const noexcept -> elf_hdr_flags {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map_onto<elf_hdr_flags>(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return elf_hdr_flags::from_elf_flags(endian_to_host(h.e_flags));
+      },
+      [this](const Elf64_Ehdr& h) {
+        return elf_hdr_flags::from_elf_flags(endian_to_host(h.e_flags));
+      });
+}
+
+auto elf_header::get_size() const noexcept -> size_t {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map_onto<size_t>(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return endian_to_host(h.e_ehsize);
+      },
+      [this](const Elf64_Ehdr& h) {
+        return endian_to_host(h.e_ehsize);
+      });
+}
+
+auto elf_header::get_phsize() const noexcept -> size_t {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map_onto<size_t>(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return endian_to_host(h.e_phentsize);
+      },
+      [this](const Elf64_Ehdr& h) {
+        return endian_to_host(h.e_phentsize);
+      });
+}
+
+auto elf_header::get_phcount() const noexcept -> size_t {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map_onto<size_t>(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return endian_to_host(h.e_phnum);
+      },
+      [this](const Elf64_Ehdr& h) {
+        return endian_to_host(h.e_phnum);
+      });
+}
+
+auto elf_header::get_shsize() const noexcept -> size_t {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map_onto<size_t>(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return endian_to_host(h.e_shentsize);
+      },
+      [this](const Elf64_Ehdr& h) {
+        return endian_to_host(h.e_shentsize);
+      });
+}
+
+auto elf_header::get_shcount() const noexcept -> size_t {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map_onto<size_t>(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return endian_to_host(h.e_shnum);
+      },
+      [this](const Elf64_Ehdr& h) {
+        return endian_to_host(h.e_shnum);
+      });
+}
+
+auto elf_header::get_shstr_index() const noexcept -> optional<size_t> {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  const size_t shstrndx = map_onto<size_t>(
+      hdr_,
+      [this](const Elf32_Ehdr& h) {
+        return endian_to_host(h.e_shstrndx);
+      },
+      [this](const Elf64_Ehdr& h) {
+        return endian_to_host(h.e_shstrndx);
+      });
+
+  if (shstrndx == types::SHN_UNDEF)
+    return optional<size_t>();
+  return shstrndx;
 }
 
 

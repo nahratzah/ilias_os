@@ -7,72 +7,42 @@ namespace ilias {
 namespace elf {
 
 
-inline auto elf_header::get_type() const noexcept -> objtype {
-  return static_cast<objtype>(endian_to_host(hdr_.e_type));
+inline auto elf32_addr::from_elf_addr(uint32_t addr) noexcept -> elf32_addr {
+  elf32_addr rv;
+  rv.addr_ = addr;
+  return rv;
 }
 
-inline auto elf_header::get_mach() const noexcept -> machtype {
-  return static_cast<machtype>(endian_to_host(hdr_.e_machine));
+inline auto elf64_addr::from_elf_addr(uint64_t addr) noexcept -> elf64_addr {
+  elf64_addr rv;
+  rv.addr_ = addr;
+  return rv;
 }
 
-inline auto elf_header::get_version() const noexcept -> uint32_t {
-  return endian_to_host(hdr_.e_version);
+
+inline auto elf32_off::from_elf_off(uint32_t off) noexcept -> elf32_off {
+  elf32_off rv;
+  rv.off_ = off;
+  return rv;
 }
 
-inline auto elf_header::get_entry() const noexcept -> elf_addr {
-  return elf_addr::from_elf_addr(endian_to_host(hdr_.e_entry));
+inline auto elf64_off::from_elf_off(uint64_t off) noexcept -> elf64_off {
+  elf64_off rv;
+  rv.off_ = off;
+  return rv;
 }
 
-inline auto elf_header::get_phoff() const noexcept -> elf_off {
-  return elf_off::from_elf_off(endian_to_host(hdr_.e_phoff));
+
+inline auto elf_hdr_flags::from_elf_flags(uint32_t fl) noexcept ->
+    elf_hdr_flags {
+  elf_hdr_flags rv;
+  rv.fl_ = fl;
+  return rv;
 }
 
-inline auto elf_header::get_shoff() const noexcept -> elf_off {
-  return elf_off::from_elf_off(endian_to_host(hdr_.e_phoff));
-}
-
-inline auto elf_header::get_flags() const noexcept -> elf_hdr_flags {
-  return elf_hdr_flags::from_elf_flags(endian_to_host(hdr_.e_flags));
-}
-
-inline auto elf_header::get_size() const noexcept -> size_t {
-  return endian_to_host(hdr_.e_ehsize);
-}
-
-inline auto elf_header::get_phsize() const noexcept -> size_t {
-  return endian_to_host(hdr_.e_phentsize);
-}
-
-inline auto elf_header::get_phcount() const noexcept -> size_t {
-  return endian_to_host(hdr_.e_phnum);
-}
-
-inline auto elf_header::get_shsize() const noexcept -> size_t {
-  return endian_to_host(hdr_.e_shentsize);
-}
-
-inline auto elf_header::get_shcount() const noexcept -> size_t {
-  return endian_to_host(hdr_.e_shnum);
-}
-
-inline auto elf_header::get_shstr_index() const noexcept -> optional<size_t> {
-  if (endian_to_host(hdr_.e_shstrndx) == types::SHN_UNDEF)
-    return optional<size_t>();
-  return endian_to_host(hdr_.e_shstrndx);
-}
-
-inline auto elf_header::valid_header() const noexcept -> bool {
-  return
-      hdr_.e_ident[types::EI_MAG0] == types::ELFMAG[0] &&
-      hdr_.e_ident[types::EI_MAG1] == types::ELFMAG[1] &&
-      hdr_.e_ident[types::EI_MAG2] == types::ELFMAG[2] &&
-      hdr_.e_ident[types::EI_MAG3] == types::ELFMAG[3] &&
-      hdr_.e_ident[types::EI_VERSION] == EV_CURRENT &&
-      get_version() == EV_CURRENT;
-}
 
 inline auto elf_header::get_class() const noexcept -> uint8_t {
-  return hdr_.e_ident[types::EI_CLASS];
+  return get_ident()[types::EI_CLASS];
 }
 
 inline auto elf_header::is_class_32() const noexcept -> bool {
@@ -84,7 +54,7 @@ inline auto elf_header::is_class_64() const noexcept -> bool {
 }
 
 inline auto elf_header::get_data() const noexcept -> uint8_t {
-  return hdr_.e_ident[types::EI_DATA];
+  return get_ident()[types::EI_DATA];
 }
 
 inline auto elf_header::is_data_big_endian() const noexcept -> bool {
@@ -93,6 +63,21 @@ inline auto elf_header::is_data_big_endian() const noexcept -> bool {
 
 inline auto elf_header::is_data_little_endian() const noexcept -> bool {
   return get_data() == ELFDATA2LSB;
+}
+
+inline auto elf_header::get_ident() const noexcept ->
+    const array<uint8_t, types::EI_NIDENT>& {
+  using types::Elf32_Ehdr;
+  using types::Elf64_Ehdr;
+
+  return map_onto<const array<uint8_t, types::EI_NIDENT>&>(
+      hdr_,
+      [](const Elf32_Ehdr& h) -> const array<uint8_t, types::EI_NIDENT>& {
+        return h.e_ident;
+      },
+      [](const Elf64_Ehdr& h) -> const array<uint8_t, types::EI_NIDENT>& {
+        return h.e_ident;
+      });
 }
 
 template<typename T>
@@ -158,7 +143,8 @@ inline auto elf_section::get_align() const noexcept -> size_t {
   return hdr_.sh_addralign;
 }
 
-inline auto elf_section::get_entsize() const noexcept -> size_t {
+inline auto elf_section::get_entsize() const noexcept -> optional<size_t> {
+  if (hdr_.sh_entsize == 0) return optional<size_t>();
   return hdr_.sh_entsize;
 }
 
