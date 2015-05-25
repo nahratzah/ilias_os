@@ -6,6 +6,7 @@
 #include <array>
 #include <bitset>
 #include <iosfwd>
+#include <ios>
 #include <ilias/optional.h>
 #include <ilias/any.h>
 #include <ilias/elf/elf_types.h>
@@ -109,10 +110,10 @@ class elf_header {
   streamoff get_phoff() const noexcept;
   streamoff get_shoff() const noexcept;
   elf_hdr_flags get_flags() const noexcept;
-  size_t get_size() const noexcept;
-  size_t get_phsize() const noexcept;
+  streamsize get_size() const noexcept;
+  streamsize get_phsize() const noexcept;
   size_t get_phcount() const noexcept;
-  size_t get_shsize() const noexcept;
+  streamsize get_shsize() const noexcept;
   size_t get_shcount() const noexcept;
   optional<size_t> get_shstr_index() const noexcept;
 

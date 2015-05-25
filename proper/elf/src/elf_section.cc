@@ -1,5 +1,6 @@
 #include <ilias/elf/elf_section.h>
 #include <streambuf>
+#include <ilias/elf/elf_error.h>
 
 namespace ilias {
 namespace elf {
@@ -23,8 +24,8 @@ auto read_elf_section(streambuf& buf, const elf_header& eh) ->
       eh.get_underlying_type(),
       [&len, &buf, &eh](const Elf32_Ehdr&) {
         Elf32_Shdr rv;
-        if (sizeof(rv) > eh.get_shsize())
-          throw runtime_error("elf_section: section header too short");
+        if (static_cast<streamsize>(sizeof(rv)) > eh.get_shsize())
+          throw elf_error("elf_section: section header too short");
         len = buf.sgetn(reinterpret_cast<char*>(&rv), sizeof(rv));
         if (len != sizeof(rv))
           throw underflow_error("elf_section: insufficient data");
@@ -32,8 +33,8 @@ auto read_elf_section(streambuf& buf, const elf_header& eh) ->
       },
       [&len, &buf, &eh](const Elf64_Ehdr&) {
         Elf64_Shdr rv;
-        if (sizeof(rv) > eh.get_shsize())
-          throw runtime_error("elf_section: section header too short");
+        if (static_cast<streamsize>(sizeof(rv)) > eh.get_shsize())
+          throw elf_error("elf_section: section header too short");
         len = buf.sgetn(reinterpret_cast<char*>(&rv), sizeof(rv));
         if (len != sizeof(rv))
           throw underflow_error("elf_section: insufficient data");
