@@ -16,7 +16,7 @@ auto read_elf_section(streambuf& buf, const elf_header& eh) ->
 
   static_assert(is_pod<types::Elf32_Shdr>::value &&
                 is_pod<types::Elf64_Shdr>::value,
-                "Memmory copy operation requires elf header to be "
+                "Memory copy operation requires elf header to be "
                 "a plain-old-data type.");
 
   streamsize len;
