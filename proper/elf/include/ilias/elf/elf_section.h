@@ -65,13 +65,13 @@ class elf_section {
   static constexpr sectiontype SHT_HIUSER = sectiontype::SHT_HIUSER;
 
   /* Special section indices. */
-  static constexpr size_t SHN_UNDEF = 0;
-  static constexpr size_t SHN_LORESERVE = 0xff00;
-  static constexpr size_t SHN_LOPROC = 0xff00;
-  static constexpr size_t SHN_HIPROC = 0xff1f;
-  static constexpr size_t SHN_ABS = 0xfff1;
-  static constexpr size_t SHN_COMMON = 0xfff2;
-  static constexpr size_t SHN_HIRESERVE = 0xffff;
+  static constexpr size_t SHN_UNDEF = types::SHN_UNDEF;
+  static constexpr size_t SHN_LORESERVE = types::SHN_LORESERVE;
+  static constexpr size_t SHN_LOPROC = types::SHN_LOPROC;
+  static constexpr size_t SHN_HIPROC = types::SHN_HIPROC;
+  static constexpr size_t SHN_ABS = SHN_ABS;
+  static constexpr size_t SHN_COMMON = SHN_COMMON;
+  static constexpr size_t SHN_HIRESERVE = SHN_HIRESERVE;
 
   /* Special section names. */
   static const string_ref sname_bss;

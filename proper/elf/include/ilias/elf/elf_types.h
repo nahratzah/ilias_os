@@ -12,6 +12,7 @@ using namespace std;
 
 namespace types {
 
+
 using Elf32_Addr = uint32_t;
 using Elf32_Half = uint16_t;
 using Elf32_Off = uint32_t;
@@ -123,6 +124,133 @@ struct Elf64_Shdr {
   Elf64_Xword sh_addralign;
   Elf64_Xword sh_entsize;
 };
+
+
+struct Elf32_Sym {
+  Elf32_Word    st_name;
+  Elf32_Addr    st_value;
+  Elf32_Word    st_size;
+  Elf32_Byte    st_info;
+  Elf32_Byte    st_other;
+  Elf32_Section st_shndx;
+};
+
+struct Elf64_Sym {
+  Elf64_Word    st_name;
+  Elf64_Byte    st_info;
+  Elf64_Byte    st_other;
+  Elf64_Section st_shndx;
+  Elf64_Addr    st_value;
+  Elf64_Xword   st_size;
+};
+
+/* Symbol binding. */
+constexpr uint8_t ELF32_ST_BIND(uint8_t i) noexcept {
+  return i >> 4;
+}
+constexpr uint8_t ELF32_ST_BIND(const Elf32_Sym& s) noexcept {
+  return ELF32_ST_BIND(s.st_info);
+}
+constexpr uint8_t ELF32_ST_BIND(const Elf64_Sym& s) noexcept {
+  return ELF32_ST_BIND(s.st_info);
+}
+
+constexpr uint8_t STB_LOCAL = 0;
+constexpr uint8_t STB_GLOBAL = 1;
+constexpr uint8_t STB_WEAK = 2;
+constexpr uint8_t STB_LOPROC = 13;
+constexpr uint8_t STB_HIPROC = 15;
+
+/* Symbol types. */
+constexpr uint8_t ELF32_ST_TYPE(uint8_t i) noexcept {
+  return i & 0xfU;
+}
+constexpr uint8_t ELF32_ST_TYPE(const Elf32_Sym& s) noexcept {
+  return ELF32_ST_TYPE(s.st_info);
+}
+constexpr uint8_t ELF32_ST_TYPE(const Elf64_Sym& s) noexcept {
+  return ELF32_ST_TYPE(s.st_info);
+}
+
+constexpr uint8_t STT_NOTYPE = 0;
+constexpr uint8_t STT_OBJECT = 1;
+constexpr uint8_t STT_FUNC = 2;
+constexpr uint8_t STT_SECTION = 3;
+constexpr uint8_t STT_FILE = 4;
+constexpr uint8_t STT_LOPROC = 13;
+constexpr uint8_t STT_HIPROC = 15;
+
+
+struct Elf32_Rel {
+  Elf32_Addr  r_offset;
+  Elf32_Word  r_info;
+};
+
+struct Elf64_Rel {
+  Elf64_Addr  r_offset;
+  Elf64_Xword r_sym;
+};
+
+struct Elf32_Rela {
+  Elf32_Addr  r_offset;
+  Elf32_Word  r_info;
+  Elf32_Word  r_addend;
+};
+
+struct Elf64_Rela {
+  Elf64_Addr  r_offset;
+  Elf64_Xword r_sym;
+  Elf64_Xword r_addend;
+};
+
+constexpr uint32_t ELF64_R_SYM(uint64_t info) noexcept {
+  return info >> 32;
+}
+constexpr uint32_t ELF64_R_TYPE(uint64_t info) noexcept {
+  return info & 0xffffffffU;
+}
+
+
+struct Elf32_Phdr {
+  Elf32_Word  p_type;
+  Elf32_Off   p_offset;
+  Elf32_Addr  p_vaddr;
+  Elf32_Addr  p_paddr;
+  Elf32_Word  p_filesz;
+  Elf32_Word  p_memsz;
+  Elf32_Word  p_flags;
+  Elf32_Word  p_align;
+};
+
+struct Elf64_Phdr {
+  Elf64_Word  p_type;
+  Elf64_Word  p_flags;
+  Elf64_Off   p_offset;
+  Elf64_Addr  p_vaddr;
+  Elf64_Addr  p_paddr;
+  Elf64_Xword p_filesz;
+  Elf64_Xword p_memsz;
+  Elf64_Xword p_align;
+};
+
+constexpr uint32_t PT_NULL = 0;
+constexpr uint32_t PT_LOAD = 1;
+constexpr uint32_t PT_DYNAMIC = 2;
+constexpr uint32_t PT_INTERP = 3;
+constexpr uint32_t PT_NOTE = 4;
+constexpr uint32_t PT_SHLIB = 5;
+constexpr uint32_t PT_PHDR = 6;
+constexpr uint32_t PT_TLS = 7;
+constexpr uint32_t PT_LOOS = 0x60000000;
+constexpr uint32_t PT_HIOS = 0x6fffffff;
+constexpr uint32_t PT_LOPROC = 0x70000000;
+constexpr uint32_t PT_HIPROC = 0x7fffffff;
+
+constexpr uint32_t PF_X = 0x1;
+constexpr uint32_t PF_W = 0x2;
+constexpr uint32_t PF_R = 0x4;
+constexpr uint32_t PF_MASKPROC = 0xf0000000;
+
 
 } /* namespace ilias::elf::types */
 
