@@ -90,7 +90,6 @@ class elf_section {
   static const string_ref sname_symtab;
   static const string_ref sname_text;
 
-  elf_section() noexcept = default;
   elf_section(const elf_section&) noexcept = default;
   elf_section& operator=(const elf_section&) noexcept = default;
   elf_section(streambuf&, const elf_header&);
