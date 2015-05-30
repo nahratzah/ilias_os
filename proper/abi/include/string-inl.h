@@ -784,7 +784,7 @@ template<typename InputIter>
 auto basic_string<Char, Traits, Alloc>::append(InputIter b, InputIter e) ->
     basic_string& {
   while (b != e) {
-    append(*b);
+    push_back(*b);
     ++b;
   }
   return *this;
