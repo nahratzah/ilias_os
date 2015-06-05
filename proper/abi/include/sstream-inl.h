@@ -4,8 +4,17 @@
 #include <sstream>
 #include <utility>
 #include <type_traits>
+#include <new>
+#include <cstdio>
 
 _namespace_begin(std)
+
+
+template<typename Char, typename Traits, typename Allocator>
+auto basic_stringbuf<Char, Traits, Allocator>::free_::operator()(Char* p)
+    const noexcept -> void {
+  return_temporary_buffer(p);
+}
 
 
 template<typename Char, typename Traits, typename Allocator>
@@ -54,53 +63,39 @@ auto basic_stringbuf<Char, Traits, Allocator>::swap(
 
   this->basic_streambuf<Char, Traits>::swap(other);
   swap(mode_, other.mode_);
+  swap(data_, other.data_);
   swap(buf_, other.buf_);
-  swap(buf_end_, other.buf_end_);
 }
 
 template<typename Char, typename Traits, typename Allocator>
 auto basic_stringbuf<Char, Traits, Allocator>::str() const ->
-    basic_string<Char, Traits, Allocator> {
-  char_type* lo = nullptr;
-  char_type* hi = nullptr;
-
-  if ((mode_ & ios_base::out) == ios_base::out) {
-    lo = this->pbase();
-    hi = this->epptr();
-  } else if ((mode_ & ios_base::in) == ios_base::in) {
-    lo = this->eback();
-    hi = this->egptr();
-  }
-  return basic_string<Char, Traits, Allocator>(lo, hi);
+    basic_string<char_type, traits_type, allocator_type> {
+  const_cast<basic_stringbuf<Char, Traits, Allocator>&>(*this).sync();
+  return data_;
 }
 
 template<typename Char, typename Traits, typename Allocator>
 auto basic_stringbuf<Char, Traits, Allocator>::str(
-    const basic_string<Char, Traits, Allocator>& s) -> void {
+    const basic_string<char_type, traits_type, allocator_type>& s) -> void {
   str(basic_string_ref<Char, Traits>(s.data(), s.size()));
 }
 
 template<typename Char, typename Traits, typename Allocator>
 auto basic_stringbuf<Char, Traits, Allocator>::str(
-    basic_string_ref<Char, Traits> s) -> void {
-  /* Allocate buffer if required. */
-  if (uintptr_t(buf_end_ - buf_.get()) < s.size()) {
-    buf_ = make_unique<char_type[]>(s.size());
-    buf_end_ = buf_.get() + s.size();
-  }
-
-  /* Copy new data into buffer. */
-  traits_type::copy(buf_.get(), s.data(), s.size());
+    basic_string_ref<char_type, traits_type> s) -> void {
+  data_ = s;
 
   /* Update get/put pointers. */
   if ((mode_ & ios_base::in) == ios_base::in)
-    this->setg(buf_.get(), buf_.get(), buf_.get() + s.size());
+    this->setg(data_.begin(), data_.begin(), data_.end());
   if ((mode_ & ios_base::out) == ios_base::out)
-    this->setp(buf_.get(), buf_.get() + s.size());
+    this->setp(nullptr, nullptr);
 }
 
 template<typename Char, typename Traits, typename Allocator>
 auto basic_stringbuf<Char, Traits, Allocator>::underflow() -> int_type {
+  sync();
+
   if (this->gptr() < this->egptr())
     return traits_type::to_int_type(*this->egptr());
   return traits_type::eof();
@@ -128,11 +123,25 @@ auto basic_stringbuf<Char, Traits, Allocator>::pbackfail(int_type c) ->
 template<typename Char, typename Traits, typename Allocator>
 auto basic_stringbuf<Char, Traits, Allocator>::overflow(int_type c) ->
     int_type {
+  sync();
+
   if (!traits_type::eq_int_type(c, traits_type::eof())) {
-    if (!extend_(1)) return traits_type::eof();
-    assert(this->pptr() < this->epptr());
-    this->sputc(traits_type::to_char_type(c));
+    try {
+      data_.push_back(traits_type::to_char_type(c));
+    } catch (const bad_alloc&) {
+      return traits_type::eof();
+    }
   }
+
+  if (_predict_false(!buf_)) {
+    buf_ = unique_ptr<char_type[], free_>(
+        get_temporary_buffer<char_type>(BUFSIZ).first);
+    if (_predict_false(!buf_)) {
+      this->setp(nullptr, nullptr);
+      __throw_bad_alloc();
+    }
+  }
+  this->setp(buf_.get(), buf_.get() + BUFSIZ);
   return traits_type::not_eof(c);
 }
 
@@ -147,11 +156,9 @@ template<typename Char, typename Traits, typename Allocator>
 auto basic_stringbuf<Char, Traits, Allocator>::seekoff(
     off_type off, ios_base::seekdir way, ios_base::openmode which) ->
     pos_type {
+  sync();
+
   off_type new_off;
-  const auto end = uintptr_t((this->epptr() == nullptr ?
-                              this->egptr() :
-                              this->epptr()) -
-                             buf_.get());
 
   switch (way) {
   case ios_base::cur:
@@ -161,7 +168,11 @@ auto basic_stringbuf<Char, Traits, Allocator>::seekoff(
       new_off = size_t(this->gptr() - this->eback()) + off;
       break;
     case ios_base::out:
-      new_off = size_t(this->pptr() - this->pbase()) + off;
+      if (this->pbase() >= data_.begin() && this->pbase() < data_.end())
+        new_off = this->pbase() - data_.begin();
+      else
+        new_off = data_.length();
+      new_off += size_t(this->pptr() - this->pbase()) + off;
       break;
     default:
       return pos_type(off_type(-1));  // Cannot reposition both in rel mode.
@@ -173,34 +184,45 @@ auto basic_stringbuf<Char, Traits, Allocator>::seekoff(
     break;
 
   case ios_base::end:
-    new_off = end - off;
+    if (off < 0 ||
+        static_cast<make_unsigned_t<off_type>>(off) > data_.length())
+      return pos_type(off_type(-1));  // Past-the-end.
+    new_off = data_.length() - off;
     break;
 
   default:
     return pos_type(off_type(-1));  // Invalid argument.
   }
 
+  /* Verify requested seek mode is open. */
   if ((which & ios_base::in) == ios_base::in &&
-      this->gptr() == nullptr && off != 0)
+      (mode_ && ios_base::in) != ios_base::in)
     return pos_type(off_type(-1));
   if ((which & ios_base::out) == ios_base::out &&
-      this->pptr() == nullptr && off != 0)
+      (mode_ && ios_base::out) != ios_base::out)
     return pos_type(off_type(-1));
+  /*
+   * If this is just a request for the current offset,
+   * don't bother updating the get/put zones.
+   */
+  if (way == ios_base::cur && off == 0) return pos_type(new_off);
 
   /* Validate new offset. */
-  if (off < 0 || make_unsigned_t<off_type>(off) >= end)
+  if (off < 0 || make_unsigned_t<off_type>(off) >= data_.length())
     return pos_type(off_type(-1));
 
   /* Update requested pointers. */
   if ((which & ios_base::in) == ios_base::in)
-    this->setg(this->eback(), this->eback() + off, this->egptr());
+    this->setg(data_.begin(), data_.begin() + off, data_.end());
   if ((which & ios_base::out) == ios_base::out) {
-    this->setp(this->pbase(), this->epptr());
-    while (_predict_false(off > INT_MAX)) {
-      this->pbump(INT_MAX);
-      off -= INT_MAX;
+    if (new_off == data_.length()) {
+      if (buf_)
+        this->setp(buf_.get(), buf_.get() + BUFSIZ);
+      else
+        this->setp(nullptr, nullptr);
+    } else {
+      this->setp(data_.begin() + off, data_.end());
     }
-    this->pbump(off);
   }
 
   /* Return new offset. */
@@ -214,67 +236,15 @@ auto basic_stringbuf<Char, Traits, Allocator>::seekpos(
 }
 
 template<typename Char, typename Traits, typename Allocator>
-auto basic_stringbuf<Char, Traits, Allocator>::extend_(size_t n) -> bool {
-  assert((mode_ & ios_base::out) == ios_base::out);
+auto basic_stringbuf<Char, Traits, Allocator>::sync() -> int {
+  if (this->pbase() == buf_.get()) {
+    data_.append(this->pbase(), this->pptr());
 
-  /* No allocation required. */
-  if (uintptr_t(this->epptr() - this->pptr()) >= n) return true;
-
-  /* If there is sufficient space, just mark it as initialized. */
-  if (uintptr_t(buf_end_ - this->pptr()) >= n) {
-    size_t cur_pos = this->pptr() - this->pbase();
-    this->setp(this->pbase(), this->epptr() + n);
-    while (_predict_false(cur_pos > INT_MAX)) {
-      this->pbump(INT_MAX);
-      cur_pos -= INT_MAX;
-    }
-    this->pbump(cur_pos);
-
-    if ((mode_ & ios_base::in) == ios_base::in)
-      this->setg(this->eback(), this->gptr(), this->epptr());
-    return true;
+    this->setg(data_.begin(), data_.begin() + (this->gptr() - this->eback()),
+               data_.end());
+    this->setp(this->pbase(), this->epptr());
   }
-
-  const char_type*const begin = this->buf_.get();
-  const char_type*const end = this->epptr();
-  const size_t cur_size = end - begin;
-  size_t new_size;
-  unique_ptr<char_type[]> buf;
-
-  /* Allocate buffer. */
-  if (n < cur_size && SIZE_MAX / 2 > cur_size) {
-    new_size = 2 * cur_size;
-    buf.reset(new (nothrow) char_type[new_size]);
-  }
-  if (!buf) {
-    new_size = cur_size + n;
-    buf.reset(new (nothrow) char_type[new_size]);
-  }
-  if (!buf) return false;
-
-  /* Copy current content. */
-  traits_type::copy(buf.get(), begin, end - begin);
-
-  /* Update get pointers. */
-  if ((mode_ & ios_base::in) == ios_base::in) {
-    this->setg(buf.get(),
-               buf.get() + (this->gptr() - begin),
-               buf.get() + cur_size + n);
-  }
-  /* Update put pointers. */
-  size_t cur_pos = this->pptr() - begin;
-  this->setp(buf.get(),
-             buf.get() + cur_size + n);
-  while (_predict_false(cur_pos > INT_MAX)) {
-    this->pbump(INT_MAX);
-    cur_pos -= INT_MAX;
-  }
-  this->pbump(cur_pos);
-  buf_end_ = buf.get() + new_size;
-
-  /* Update ownership. */
-  this->buf_ = move(buf);
-  return true;
+  return 0;
 }
 
 template<typename Char, typename Traits, typename Allocator>

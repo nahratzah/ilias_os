@@ -203,12 +203,11 @@ void temporary_buffer_deallocate(const void* p) {
            p));
   if (assign != assigned.end()) {
     /* Place assignment at the front of the cache. */
-    move(cache().begin(), prev(cache().end()), next(cache().begin()));
+    move_backward(cache().begin(), prev(cache().end()), cache().end());
     cache().front() = make_pair(move(ptr), assign->second);
 
     /* Remove assignment. */
-    move(next(assign), assigned.end(), assign);
-    assigned.back() = make_pair(nullptr, 0);
+    *move(next(assign), assigned.end(), assign) = make_pair(nullptr, 0);
   }
 }
 

@@ -125,6 +125,8 @@ template<typename, typename...> struct any_constructor_resolution;
 
 template<size_t, size_t> struct recursive_map;
 
+template<size_t Idx, size_t End, typename... T> struct copy_operation;
+
 
 } /* namespace ilias::impl */
 
@@ -192,6 +194,9 @@ class any {
   template<size_t N, typename... U>
   friend auto ::_namespace(ilias)::get(any<U...>&&) ->
       std::add_rvalue_reference_t<impl::select_n_t<N, U...>>;
+
+  template<size_t, size_t, typename...>
+  friend struct ::_namespace(ilias)::impl::copy_operation;
 
  private:
   using storage_t = _namespace(std)::aligned_union_t<

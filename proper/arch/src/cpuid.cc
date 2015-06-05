@@ -59,33 +59,33 @@ std::string cpu_vendor() { return ""; }
 #endif
 
 std::string to_string(cpuid_feature_result features) {
-  std::string out;
+  std::ostringstream out;
 
   bool first = true;
   for (const auto& f : cpuid_feature_const::all_features) {
     if (cpuid_feature_present(std::get<0>(f), features)) {
       if (!std::exchange(first, false))
-        out.append(", ");
-      out.append(std::get<1>(f));
+        out << ", ";
+      out << std::get<1>(f);
     }
   }
 
-  return out;
+  return out.str();
 }
 
 std::string to_string(cpuid_extfeature_result features) {
-  std::string out;
+  std::ostringstream out;
 
   bool first = true;
   for (const auto& f : cpuid_extfeature_const::all_extfeatures) {
     if (cpuid_feature_present(std::get<0>(f), features)) {
       if (!std::exchange(first, false))
-        out.append(", ");
-      out.append(std::get<1>(f));
+        out << ", ";
+      out << std::get<1>(f);
     }
   }
 
-  return out;
+  return out.str();
 }
 
 } /* namespace ilias */

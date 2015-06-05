@@ -271,18 +271,20 @@ struct is_nothrow_copy_assignable_any_<> {
 };
 
 
-template<size_t Idx, size_t End, typename... T> struct copy_operation;
 template<size_t Idx, size_t End, typename T0, typename... T>
 struct copy_operation<Idx, End, T0, T...> {
   copy_operation<Idx + 1, End, T...> next;
 
   template<typename AnyIn>
-  size_t operator()(void* vptr, AnyIn&& other) {
-    if (Idx == other.selector()) {
+  size_t operator()(void* vptr, AnyIn&& other, size_t trivial_size) {
+    using origin_type = decltype(get<Idx>(forward<AnyIn>(other)));
+
+    if (!is_trivially_constructible<any_decorate<T0>, origin_type>::value &&
+        Idx == other.selector()) {
       new (vptr) any_decorate<T0>(get<Idx>(forward<AnyIn>(other)));
       return Idx;
     } else {
-      return next(vptr, forward<AnyIn>(other));
+      return next(vptr, forward<AnyIn>(other), trivial_size);
     }
   }
 };
@@ -291,22 +293,25 @@ struct copy_operation<Idx, End, T0&, T...> {
   copy_operation<Idx + 1, End, T...> next;
 
   template<typename AnyIn>
-  size_t operator()(void* vptr, AnyIn&& other) {
-    if (Idx == other.selector()) {
+  size_t operator()(void* vptr, AnyIn&& other, size_t trivial_size) {
+    using origin_type = decltype(&get<Idx>(forward<AnyIn>(other)));
+
+    if (!is_trivially_constructible<any_decorate<T0&>, origin_type>::value &&
+        Idx == other.selector()) {
       new (vptr) any_decorate<T0&>(&get<Idx>(forward<AnyIn>(other)));
       return Idx;
     } else {
-      return next(vptr, forward<AnyIn>(other));
+      return next(vptr, forward<AnyIn>(other), trivial_size);
     }
   }
 };
 template<size_t End>
 struct copy_operation<End, End> {
   template<typename AnyIn>
-  size_t operator()(void*, AnyIn&&) {
-    assert_msg(false, "Should be unreachable.");
-    throw logic_error("ilias::impl::copy_operation: "
-                      "base case should be unreachable.");
+  size_t operator()(void* vptr, AnyIn&& other, size_t trivial_size) {
+    __builtin_memcpy(vptr, &get<1>(other.data_),
+                     min(sizeof(get<1>(other.data_)), trivial_size));
+    return other.selector();
   }
 };
 
@@ -339,7 +344,8 @@ any<T...>::any(const any& other)
     noexcept(impl::is_nothrow_copy_constructible_any<T...>()) {
   impl::copy_operation<0, sizeof...(T), T...> op;
 
-  _namespace(std)::get<0>(data_) = op(&_namespace(std)::get<1>(data_), other);
+  _namespace(std)::get<0>(data_) = op(&_namespace(std)::get<1>(data_), other,
+                                      sizeof(_namespace(std)::get<1>(data_)));
 }
 
 template<typename... T>
@@ -348,7 +354,8 @@ any<T...>::any(any&& other)
   impl::copy_operation<0, sizeof...(T), T...> op;
 
   _namespace(std)::get<0>(data_) = op(&_namespace(std)::get<1>(data_),
-                                      _namespace(std)::move(other));
+                                      _namespace(std)::move(other),
+                                      sizeof(_namespace(std)::get<1>(data_)));
 }
 
 template<typename... T>
@@ -360,7 +367,8 @@ auto any<T...>::operator=(const any& other)
                                          &_namespace(std)::get<1>(data_));
   get<0>(data_) = sizeof...(T);
   _namespace(std)::get<0>(data_) = op(&_namespace(std)::get<1>(data_),
-                                      other);
+                                      other,
+                                      sizeof(_namespace(std)::get<1>(data_)));
   return *this;
 }
 
@@ -373,7 +381,8 @@ auto any<T...>::operator=(any&& other)
                                          &_namespace(std)::get<1>(data_));
   get<0>(data_) = sizeof...(T);
   _namespace(std)::get<0>(data_) = op(&_namespace(std)::get<1>(data_),
-                                      _namespace(std)::move(other));
+                                      _namespace(std)::move(other),
+                                      sizeof(_namespace(std)::get<1>(data_)));
   return *this;
 }
 

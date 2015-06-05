@@ -6,6 +6,7 @@
 #include <streambuf>
 #include <istream>
 #include <string>
+#include <memory>
 
 _namespace_begin(std)
 
@@ -14,6 +15,11 @@ template<typename Char, typename Traits, typename Allocator>
 class basic_stringbuf
 : public basic_streambuf<Char, Traits>
 {
+ private:
+  struct free_ {
+    void operator()(Char*) const noexcept;
+  };
+
  public:
   using char_type = typename basic_streambuf<Char, Traits>::char_type;
   using traits_type = typename basic_streambuf<Char, Traits>::traits_type;
@@ -32,9 +38,9 @@ class basic_stringbuf
   basic_stringbuf& operator=(basic_stringbuf&&);
   void swap(basic_stringbuf&);
 
-  basic_string<Char, Traits, Allocator> str() const;
-  void str(const basic_string<Char, Traits, Allocator>&);
-  void str(basic_string_ref<Char, Traits>);
+  basic_string<char_type, traits_type, allocator_type> str() const;
+  void str(const basic_string<char_type, traits_type, allocator_type>&);
+  void str(basic_string_ref<char_type, traits_type>);
 
  protected:
   int_type underflow() override;
@@ -49,12 +55,12 @@ class basic_stringbuf
                    ios_base::openmode = ios_base::in | ios_base::out)
       override;
 
- private:
-  bool extend_(size_t);
+  int sync() override;
 
+ private:
   ios_base::openmode mode_;
-  char_type* buf_end_ = nullptr;  // End of put buffer.
-  unique_ptr<char_type[]> buf_;
+  basic_string<char_type, traits_type, allocator_type> data_;
+  unique_ptr<char_type[], free_> buf_;
 };
 
 template<typename Char, typename Traits, typename Allocator>
