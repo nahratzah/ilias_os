@@ -467,7 +467,7 @@ basic_ostream<Char, Traits>::sentry::operator bool() const noexcept {
 template<typename Char, typename Traits>
 auto endl(basic_ostream<Char, Traits>& os) ->
     basic_ostream<Char, Traits>& {
-  return os.put(os.widen("\n")).flush();
+  return os.put(os.widen('\n')).flush();
 }
 
 template<typename Char, typename Traits>

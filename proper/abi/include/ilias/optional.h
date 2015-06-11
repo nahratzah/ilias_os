@@ -85,8 +85,12 @@ class optional {
   void assign(value_type&&)
       noexcept(nothrow_move_() && nothrow_move_assign_());
   value_type release();
+  value_type release(const value_type&);
+  value_type release(value_type&&);
   const value_type& get() const;
   value_type& get();
+  value_type get(const value_type&);
+  value_type get(value_type&&);
 
  private:
   void ensure_present_() const;
@@ -121,7 +125,9 @@ class optional<T&> {
 
   void assign(value_type&) noexcept;
   value_type& release();
+  value_type& release(value_type&);
   value_type& get() const;
+  value_type& get(value_type&) const;
 
  private:
   void ensure_present_() const;

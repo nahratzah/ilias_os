@@ -158,6 +158,19 @@ auto optional<T>::release() -> value_type {
 }
 
 template<typename T>
+auto optional<T>::release(const value_type& dfl) -> value_type {
+  if (is_present()) return release();
+  return dfl;
+}
+
+template<typename T>
+auto optional<T>::release(value_type&& dfl) -> value_type {
+  if (is_present()) return release();
+  value_type rv = move(dfl);
+  return rv;
+}
+
+template<typename T>
 auto optional<T>::get() const -> const value_type& {
   using _namespace(std)::get;
 
@@ -177,6 +190,19 @@ auto optional<T>::get() -> value_type& {
   storage_t& storage = get<1>(data_);
   void*const vptr = &storage;
   return *static_cast<pointer>(vptr);
+}
+
+template<typename T>
+auto optional<T>::get(const value_type& dfl) -> value_type {
+  if (is_present()) return get();
+  return dfl;
+}
+
+template<typename T>
+auto optional<T>::get(value_type&& dfl) -> value_type {
+  if (is_present()) return get();
+  value_type rv = move(dfl);
+  return rv;
 }
 
 template<typename T>
@@ -252,9 +278,21 @@ auto optional<T&>::release() -> value_type& {
 }
 
 template<typename T>
+auto optional<T&>::release(value_type& dfl) -> value_type& {
+  if (is_present()) return release();
+  return dfl;
+}
+
+template<typename T>
 auto optional<T&>::get() const -> value_type& {
   ensure_present_();
   return *data_;
+}
+
+template<typename T>
+auto optional<T&>::get(value_type& dfl) const -> value_type& {
+  if (is_present()) return get();
+  return dfl;
 }
 
 template<typename T>
