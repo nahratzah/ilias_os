@@ -4,6 +4,9 @@ OBJS_LOADER += 32.kgzo
 OBJS_LOADER += 64.kgzo
 all: kernel
 
+# Sources for testing infrastructure.
+include test_intf/Makefile.inc
+
 # Import lists of sources.
 include abi/Makefile.inc
 include abi/Makefile.openlibm
