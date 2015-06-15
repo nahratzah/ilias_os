@@ -24,23 +24,9 @@ auto registry::singleton() noexcept -> registry& {
   return *static_cast<registry*>(data_ptr);
 }
 
-auto operator<<(ostream& out, const registry& r) ->
-    ostream& {
-  auto arr_out = out << begin_json << begin_json_array;
-
-  for (auto m : r.modules_) {
-    arr_out << m.first;// << ": " << m.second;
-  }
-  return arr_out << end_json_array << end_json;
-}
-
 
 auto module::instance(string_ref name) -> module& {
   return registry::singleton().modules_[name];
-}
-
-auto module::operator<<(ostream& out, const module& m) noexcept ->
-    ostream& {
 }
 
 

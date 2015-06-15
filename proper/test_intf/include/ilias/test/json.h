@@ -14,39 +14,16 @@ namespace test {
 using namespace std;
 
 
-struct begin_json_t {
-  constexpr begin_json_t() noexcept = default;
-  constexpr begin_json_t(const begin_json_t&) noexcept = default;
-  begin_json_t& operator=(const begin_json_t&) noexcept = default;
-  explicit constexpr begin_json_t(size_t) noexcept;
-
-  constexpr begin_json_t operator()(size_t = 0) const noexcept;
-
-  size_t indent_lvl = 0;
-};
-constexpr begin_json_t begin_json{};
-
-struct end_json_t {};
-constexpr end_json_t end_json{};
-
-struct begin_json_array_t {};
-constexpr begin_json_array_t begin_json_array{};
-
-struct end_json_array_t {};
-constexpr end_json_array_t end_json_array{};
-
-struct begin_json_object_t {};
-constexpr begin_json_object_t begin_json_object{};
-
-struct end_json_object_t {};
-constexpr end_json_object_t end_json_object{};
-
-
+template<typename, typename> class json_term_ostream;
 template<typename> class json_ostream;
 template<typename> class json_ostream_array;
 template<typename> class basic_json_ostream_array;
 template<typename> class json_ostream_object_impl;
 template<typename> class json_ostream_object;
+template<typename Char, typename Traits = char_traits<Char>> class json_key_t;
+
+
+namespace impl {
 
 
 template<typename OChar, typename OTraits, typename SChar, typename STraits>
@@ -76,15 +53,67 @@ static basic_ostream<OChar, OTraits>& emit_json_string(
     const basic_string<SChar, STraits, A>&);
 
 
+template<typename Out, typename String,
+         typename _emit_json_string_rvtype =
+             decltype(emit_json_string(declval<Out>().get_ostream(),
+                                       declval<const String&>()))>
+struct _is_string_emitable;
+
+template<typename Out, typename String> using is_string_emitable =
+    typename _is_string_emitable<Out, String>::type;
+
+
+template<typename S, typename Obj,
+         typename _emit_type =
+              decltype(
+                  declval<json_ostream_object<S>&>() <<
+                  declval<const Obj&>())>
+struct _is_object_emitable;
+
+template<typename S, typename Obj> using is_object_emitable =
+    typename _is_object_emitable<S, Obj>::type;
+
+
+} /* namespace ilias::test::impl */
+
+
+struct begin_json_t {
+  constexpr begin_json_t() noexcept = default;
+  constexpr begin_json_t(const begin_json_t&) noexcept = default;
+  begin_json_t& operator=(const begin_json_t&) noexcept = default;
+  explicit constexpr begin_json_t(size_t) noexcept;
+
+  constexpr begin_json_t operator()(size_t = 0) const noexcept;
+
+  size_t indent_lvl = 0;
+};
+constexpr begin_json_t begin_json{};
+
+struct end_json_t {};
+constexpr end_json_t end_json{};
+
+struct begin_json_array_t {};
+constexpr begin_json_array_t begin_json_array{};
+
+struct end_json_array_t {};
+constexpr end_json_array_t end_json_array{};
+
+struct begin_json_object_t {};
+constexpr begin_json_object_t begin_json_object{};
+
+struct end_json_object_t {};
+constexpr end_json_object_t end_json_object{};
+
+
 /* Terminal node only. */
 template<typename Char, typename Traits>
-auto operator<<(json_ostream<basic_ostream<Char, Traits>>&&, end_json_t)
+auto operator<<(json_term_ostream<Char, Traits>&&, end_json_t)
     noexcept -> basic_ostream<Char, Traits>&;
 
 /* Initial node only. */
 template<typename Char, typename Traits>
 auto operator<<(basic_ostream<Char, Traits>&, begin_json_t) noexcept ->
-    json_ostream<json_ostream<basic_ostream<Char, Traits>>>;
+    json_ostream<json_term_ostream<Char, Traits>>;
 
 /* Nullptr value. */
 template<typename S>
@@ -115,6 +144,11 @@ template<typename S>
 auto operator<<(json_ostream<S>&&, unsigned long long) ->
     typename json_ostream<S>::underlying_stream;
 
+template<typename S, typename String>
+auto operator<<(json_ostream<S>&&, const String&) ->
+    enable_if_t<impl::is_string_emitable<json_ostream<S>, String>::value,
+                typename json_ostream<S>::underlying_stream>;
+
 
 /*
  * Terminal node.
@@ -122,20 +156,21 @@ auto operator<<(json_ostream<S>&&, unsigned long long) ->
  * Only accepts json_end.
  */
 template<typename Char, typename Traits>
-class json_ostream<basic_ostream<Char, Traits>> {
+class json_term_ostream {
  public:
   using basic_stream = basic_ostream<Char, Traits>;
 
-  friend auto operator<<(json_ostream&&, end_json_t) noexcept ->
-      basic_ostream<Char, Traits>&;
+  template<typename C, typename T>
+  friend auto operator<<(json_term_ostream<C, T>&&, end_json_t) noexcept ->
+      basic_ostream<C, T>&;
 
-  json_ostream() noexcept = default;
-  json_ostream(const json_ostream&) = delete;
-  json_ostream& operator=(const json_ostream&) = delete;
-  json_ostream(json_ostream&&) noexcept;
-  json_ostream& operator=(json_ostream&&) noexcept;
-  explicit json_ostream(basic_stream&, size_t = 0) noexcept;
-  ~json_ostream() noexcept = default;
+  json_term_ostream() noexcept = default;
+  json_term_ostream(const json_term_ostream&) = delete;
+  json_term_ostream& operator=(const json_term_ostream&) = delete;
+  json_term_ostream(json_term_ostream&&) noexcept;
+  json_term_ostream& operator=(json_term_ostream&&) noexcept;
+  explicit json_term_ostream(basic_stream&, size_t = 0) noexcept;
+  ~json_term_ostream() noexcept = default;
 
   bool valid() const noexcept { return out_ != nullptr; }
   basic_stream& get_ostream() const noexcept;
@@ -160,25 +195,28 @@ class json_ostream {
 
  public:
   template<typename S>
-  friend auto operator<<(json_ostream<S>, nullptr_t) ->
+  friend auto operator<<(json_ostream<S>&&, nullptr_t) ->
       typename json_ostream<S>::underlying_stream;
   template<typename S>
-  friend auto operator<<(json_ostream<S>, int) ->
+  friend auto operator<<(json_ostream<S>&&, int) ->
       typename json_ostream<S>::underlying_stream;
   template<typename S>
-  friend auto operator<<(json_ostream<S>, unsigned int) ->
+  friend auto operator<<(json_ostream<S>&&, unsigned int) ->
       typename json_ostream<S>::underlying_stream;
   template<typename S>
-  friend auto operator<<(json_ostream<S>, long) ->
+  friend auto operator<<(json_ostream<S>&&, long) ->
       typename json_ostream<S>::underlying_stream;
   template<typename S>
-  friend auto operator<<(json_ostream<S>, unsigned long) ->
+  friend auto operator<<(json_ostream<S>&&, unsigned long) ->
       typename json_ostream<S>::underlying_stream;
   template<typename S>
-  friend auto operator<<(json_ostream<S>, long long) ->
+  friend auto operator<<(json_ostream<S>&&, long long) ->
       typename json_ostream<S>::underlying_stream;
   template<typename S>
-  friend auto operator<<(json_ostream<S>, unsigned long long) ->
+  friend auto operator<<(json_ostream<S>&&, unsigned long long) ->
+      typename json_ostream<S>::underlying_stream;
+  template<typename S, typename String, typename>
+  friend auto operator<<(json_ostream<S>&&, const String&) ->
       typename json_ostream<S>::underlying_stream;
 
   using underlying_stream = UnderlyingStream;
@@ -205,12 +243,23 @@ template<typename S, typename T>
 auto operator<<(basic_json_ostream_array<S>&, const T&) ->
     enable_if_t<!is_void<
                     decltype(
-                        declval<json_ostream<basic_json_ostream_array<S>>>() <<
+                        declval<json_ostream<basic_json_ostream_array<S>&>>()
+                        <<
                         declval<const T&>())>::value,
                 basic_json_ostream_array<S>&>;
 
 template<typename S, typename T>
 auto operator<<(json_ostream_array<S>&, const T&) ->
+    enable_if_t<!is_void<
+                    decltype(
+                        declval<basic_json_ostream_array<
+                            typename json_ostream_array<S>::basic_stream>&>()
+                        <<
+                        declval<const T&>())>::value,
+                json_ostream_array<S>&>;
+
+template<typename S, typename T>
+auto operator<<(json_ostream_array<S>&&, const T&) ->
     enable_if_t<!is_void<
                     decltype(
                         declval<basic_json_ostream_array<
@@ -232,7 +281,7 @@ class basic_json_ostream_array {
   friend auto operator<<(basic_json_ostream_array<S>&, const T&) ->
       enable_if_t<!is_void<
                       decltype(
-                          declval<json_ostream<basic_json_ostream_array<S>>>()
+                          declval<json_ostream<basic_json_ostream_array<S>&>>()
                           <<
                           declval<const T&>())>::value,
                   basic_json_ostream_array<S>&>;
@@ -280,15 +329,17 @@ auto operator<<(json_ostream_array<S>&&, end_json_array_t) ->
  */
 template<typename UnderlyingStream>
 class json_ostream_array
-: public basic_json_ostream_array<typename UnderlyingStream::basic_stream>
+: public basic_json_ostream_array<
+      typename remove_reference_t<UnderlyingStream>::basic_stream>
 {
   template<typename S>
-  friend auto operator<<(json_ostream_array<S>&, end_json_array_t) ->
+  friend auto operator<<(json_ostream_array<S>&&, end_json_array_t) ->
       typename json_ostream_array<S>::underlying_stream;
 
  public:
   using underlying_stream = UnderlyingStream;
-  using basic_stream = typename underlying_stream::basic_stream;
+  using basic_stream =
+      typename remove_reference_t<underlying_stream>::basic_stream;
 
   json_ostream_array() noexcept = default;
   json_ostream_array(const json_ostream_array&) = delete;
@@ -308,10 +359,14 @@ class json_ostream_array
   json_ostream_array& put_collection(const C&);
 
  private:
-  underlying_stream out_;
+  optional<underlying_stream> out_;
   bool terminated_ = false;
 };
 
+
+template<typename S, typename C, typename T>
+auto operator<<(json_ostream_object<S>&, const json_key_t<C, T>&) ->
+    json_ostream<json_ostream_object<S>&>;
 
 /*
  * Abstract object node.
@@ -321,6 +376,10 @@ class json_ostream_array
  */
 template<typename BasicStream>
 class json_ostream_object {
+  template<typename S, typename C, typename T>
+  friend auto operator<<(json_ostream_object<S>&, const json_key_t<C, T>&) ->
+      json_ostream<json_ostream_object<S>&>;
+
  public:
   using basic_stream = BasicStream;
 
@@ -332,6 +391,7 @@ class json_ostream_object {
   json_ostream_object& operator=(json_ostream_object&&) noexcept;
   virtual ~json_ostream_object() noexcept;
 
+ public:
   virtual bool valid() const noexcept = 0;
   virtual basic_stream& get_ostream() const noexcept = 0;
   virtual void do_newline(size_t) = 0;
@@ -360,7 +420,8 @@ auto operator<<(json_ostream_object_impl<S>&& out, end_json_object_t) ->
  */
 template<typename UnderlyingStream>
 class json_ostream_object_impl
-: public json_ostream_object<typename UnderlyingStream::basic_stream>
+: public json_ostream_object<
+      typename remove_reference_t<UnderlyingStream>::basic_stream>
 {
   template<typename S>
   friend auto operator<<(json_ostream_object_impl<S>&& out,
@@ -369,7 +430,8 @@ class json_ostream_object_impl
 
  public:
   using underlying_stream = UnderlyingStream;
-  using basic_stream = typename underlying_stream::basic_stream;
+  using basic_stream =
+      typename remove_reference_t<underlying_stream>::basic_stream;
 
   json_ostream_object_impl() noexcept = default;
   json_ostream_object_impl(const json_ostream_object_impl&) = delete;
@@ -386,15 +448,17 @@ class json_ostream_object_impl
   void do_newline(size_t) override;
 
  private:
-  underlying_stream out_;
+  optional<underlying_stream> out_;
   bool terminated_ = false;
 };
 
-template<typename Char, typename Traits = char_traits<Char>>
+template<typename Char, typename Traits>
 class json_key_t {
  public:
   explicit json_key_t(basic_string_ref<Char, Traits>);
   template<typename A> explicit json_key_t(basic_string<Char, Traits, A>&&);
+
+  basic_string_ref<Char, Traits> key() const noexcept { return key_; }
 
  private:
   basic_string<Char, Traits> key_;
@@ -413,15 +477,11 @@ json_key_t<Char> json_key(const Char*);
 /* Use object serialization if it is defined. */
 template<typename S, typename T>
 auto operator<<(json_ostream<S>&&, const T&) ->
-    enable_if_t<
-        !is_void<
-            decltype(
-                declval<json_ostream_object<
-                    typename json_ostream<S>::basic_stream>&>() <<
-                declval<const T&>())>::value,
-        typename json_ostream<S>::underlying_type>;
+    enable_if_t<impl::is_object_emitable<json_ostream<S>&, T>::value,
+                typename json_ostream<S>::underlying_stream>;
 
 
+#if 0
 /* Use array serialization if it is defined. */
 template<typename S, typename T>
 auto operator<<(json_ostream<S>&&, const T&) ->
@@ -432,6 +492,7 @@ auto operator<<(json_ostream<S>&&, const T&) ->
                     typename json_ostream<S>::basic_stream>&>() <<
                 declval<const T&>())>::value,
         typename json_ostream<S>::underlying_type>;
+#endif
 
 
 }} /* namespace ilias::test */
