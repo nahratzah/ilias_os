@@ -20,19 +20,29 @@ inline testcase::testcase(string_ref name) noexcept
 : name(name)
 {}
 
+inline testcase::testcase(testcase&& other) noexcept
+: name(std::move(other.name))
+{}
+
 
 template<typename T>
 template<typename... Args>
-testcase_functor<T>::testcase_functor(string_ref name, Args&&... args)
+testcase_functor_t<T>::testcase_functor_t(string_ref name, Args&&... args)
 : testcase(name),
   impl_(forward<Args>(args)...)
 {}
 
 template<typename T>
-testcase_functor<T>::~testcase_functor() noexcept {}
+testcase_functor_t<T>::testcase_functor_t(testcase_functor_t&& other)
+: testcase(move(other)),
+  impl_(move(other.impl_))
+{}
 
 template<typename T>
-auto testcase_functor<T>::run(json_log<wostream> log) const ->
+testcase_functor_t<T>::~testcase_functor_t() noexcept {}
+
+template<typename T>
+auto testcase_functor_t<T>::run(json_log<wostream> log) const ->
     testcase_result {
   return impl_(log);
 }
@@ -57,6 +67,25 @@ template<typename C, typename T>
 auto operator<<(basic_ostream<C, T>& out, const testcase& tc) ->
     basic_ostream<C, T>& {
   return out << begin_json << tc << end_json;
+}
+
+
+template<typename F>
+auto testcase_functor(string_ref name, F&& f) ->
+    testcase_functor_t<remove_const_t<remove_reference_t<F>>> {
+  using result_type =
+      testcase_functor_t<remove_const_t<remove_reference_t<F>>>;
+
+  return result_type(name, std::forward<F>(f));
+}
+
+template<typename F, typename... Args>
+auto testcase_functor(string_ref name, Args&&... args) ->
+    testcase_functor_t<F> {
+  using result_type =
+      testcase_functor_t<F>;
+
+  return result_type(name, std::forward<Args>(args)...);
 }
 
 

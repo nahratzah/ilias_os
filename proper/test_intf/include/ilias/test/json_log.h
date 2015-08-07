@@ -18,6 +18,16 @@ class json_log {
 
   template<typename C, typename T, typename... Args>
   void log(basic_string_ref<C, T>, Args&&...);
+  template<typename C, typename T, typename A, typename... Args>
+  void log(const basic_string<C, T, A>&, Args&&...);
+  template<typename... Args>
+  void log(const char*, Args&&...);
+  template<typename... Args>
+  void log(const wchar_t*, Args&&...);
+  template<typename... Args>
+  void log(const char16_t*, Args&&...);
+  template<typename... Args>
+  void log(const char32_t*, Args&&...);
 
  private:
   template<typename Out>

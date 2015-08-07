@@ -28,6 +28,51 @@ auto json_log<S>::log(basic_string_ref<C, T> msg, Args&&... data) -> void {
 }
 
 template<typename S>
+template<typename C, typename T, typename A, typename... Args>
+auto json_log<S>::log(const basic_string<C, T, A>& msg, Args&&... data) ->
+    void {
+  using std::forward;
+
+  log(basic_string_ref<C, T>(msg), forward<Args>(data)...);
+}
+
+template<typename S>
+template<typename... Args>
+auto json_log<S>::log(const char* msg, Args&&... data) ->
+    void {
+  using std::forward;
+
+  log(basic_string_ref<char>(msg), forward<Args>(data)...);
+}
+
+template<typename S>
+template<typename... Args>
+auto json_log<S>::log(const wchar_t* msg, Args&&... data) ->
+    void {
+  using std::forward;
+
+  log(basic_string_ref<wchar_t>(msg), forward<Args>(data)...);
+}
+
+template<typename S>
+template<typename... Args>
+auto json_log<S>::log(const char16_t* msg, Args&&... data) ->
+    void {
+  using std::forward;
+
+  log(basic_string_ref<char16_t>(msg), forward<Args>(data)...);
+}
+
+template<typename S>
+template<typename... Args>
+auto json_log<S>::log(const char32_t* msg, Args&&... data) ->
+    void {
+  using std::forward;
+
+  log(basic_string_ref<char32_t>(msg), forward<Args>(data)...);
+}
+
+template<typename S>
 template<typename Out>
 auto json_log<S>::lshift_each_(Out&&) noexcept -> void {}
 

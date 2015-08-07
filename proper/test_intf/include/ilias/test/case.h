@@ -37,6 +37,7 @@ class testcase
   testcase(string_ref) noexcept;
   testcase() = delete;
   testcase(const testcase&) = delete;
+  testcase(testcase&&) noexcept;
   testcase& operator=(const testcase&) = delete;
 
  public:
@@ -48,12 +49,14 @@ class testcase
 };
 
 template<typename T>
-class testcase_functor
+class testcase_functor_t
 : public testcase
 {
  public:
-  template<typename... Args> explicit testcase_functor(string_ref, Args&&...);
-  ~testcase_functor() noexcept override;
+  template<typename... Args> explicit testcase_functor_t(string_ref,
+                                                         Args&&...);
+  testcase_functor_t(testcase_functor_t&&);
+  ~testcase_functor_t() noexcept override;
 
   testcase_result run(json_log<wostream>) const override;
 
@@ -66,6 +69,14 @@ void operator<<(json_ostream_object<S>&, const testcase&);
 
 template<typename C, typename T>
 basic_ostream<C, T>& operator<<(basic_ostream<C, T>&, const testcase&);
+
+
+template<typename F>
+auto testcase_functor(string_ref, F&& f) ->
+    testcase_functor_t<remove_const_t<remove_reference_t<F>>>;
+template<typename F, typename... Args>
+auto testcase_functor(string_ref, Args&&... args) ->
+    testcase_functor_t<F>;
 
 
 }} /* namespace ilias::test */
