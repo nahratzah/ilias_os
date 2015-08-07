@@ -1,3 +1,5 @@
+ENABLE_TEST?=1
+
 COMPILER_FLAGS +=	-ffreestanding					\
 			-nostdinc					\
 			-fno-stack-protector				\
@@ -7,7 +9,8 @@ COMPILER_FLAGS +=	-ffreestanding					\
 			-Wno-tautological-compare			\
 			-Wno-c++1y-extensions				\
 			-ftls-model=initial-exec			\
-			-g
+			-g						\
+			-D_ENABLE_TEST_=${ENABLE_TEST}
 #			-mno-sse -mno-sse2 -mno-sse3 -mno-3dnow -mno-mmx -mno-avx -msoft-float
 
 # Disable TLS for now, since clang has a code generation bug.
