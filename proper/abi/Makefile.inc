@@ -70,6 +70,10 @@ ILIAS_STD_SRCS += abi/src/ilias_stats.cc
 ILIAS_STD_SRCS += abi/src/ilias_optional.cc
 ILIAS_STD_SRCS += abi/src/ilias_any.cc
 
+# Add test cases
+ABI_SRCS += abi/src/test/module.cc
+ABI_SRCS += abi/src/test/algorithm.cc
+
 include abi/Makefile.compiler_rt.inc
 
 SRCS += ${ABI_SRCS} ${ILIAS_STD_SRCS}
