@@ -12,8 +12,8 @@ LLVM_OPTS += -DLLVM_ENABLE_CXX11:BOOL=OFF
 LLVM_OPTS += -DLLVM_ENABLE_LIBCXX:BOOL=OFF
 LLVM_OPTS += -DLLVM_ENABLE_PIC:BOOL=OFF
 LLVM_OPTS += -DLLVM_FORCE_USE_OLD_TOOLCHAIN:BOOL=ON
-LLVM_OPTS += -DLLVM_EXTERNAL_CLANG_SOURCE_DIR:PATH=../../clang
-# LLVM_OPTS += -DLLVM_EXTERNAL_LLD_SOURCE_DIR:PATH=../../lld
+LLVM_OPTS += -DLLVM_EXTERNAL_CLANG_SOURCE_DIR:PATH=${CURDIR}/clang
+# LLVM_OPTS += -DLLVM_EXTERNAL_LLD_SOURCE_DIR:PATH=${CURDIR}/lld
 
 CC ?= cc
 CXX ?= c++
@@ -47,7 +47,7 @@ ${BUILDDIR}/binutils.done_configure: ${BUILDDIR}/binutils.done_dir
 	cd "${BUILDDIR}/binutils" &&                                          \
 	  env CC="${CC}" CXX="${CXX}"                                         \
 	      CFLAGS="${CFLAGS}" CXXFLAGS="${CXXFLAGS}" LDFLAGS="${LDFLAGS}"  \
-	    ../../binutils/configure --prefix="$(abspath ${INSTALL_PREFIX})" --disable-werror --enable-ld=yes --with-gnu-ld --disable-gdb --disable-nls --target=amd64-unknown-linux
+	    ${CURDIR}/binutils/configure --prefix="$(abspath ${INSTALL_PREFIX})" --disable-werror --enable-ld=yes --with-gnu-ld --disable-gdb --disable-nls --target=amd64-unknown-linux
 	touch "${BUILDDIR}/binutils.done_configure"
 
 ${BUILDDIR}/binutils.done_build: ${BUILDDIR}/binutils.done_configure
@@ -63,7 +63,7 @@ ${BUILDDIR}/llvm.done_configure: ${BUILDDIR}/llvm.done_dir # ${BUILDDIR}/libcxx.
 	cd "${BUILDDIR}/llvm" &&                                              \
 	  env CC="${CC}" CXX="${CXX}"                                         \
 	      CFLAGS="${CFLAGS}" CXXFLAGS="${CXXFLAGS}" LDFLAGS="${LDFLAGS}"  \
-	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ${LLVM_OPTS} ../../llvm
+	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=${CURDIR}/${INSTALL_PREFIX}" ${LLVM_OPTS} ${CURDIR}/llvm
 	touch "${BUILDDIR}/llvm.done_configure"
 
 ${BUILDDIR}/llvm.done_build: ${BUILDDIR}/llvm.done_configure
@@ -81,7 +81,7 @@ ${BUILDDIR}/clang.done_configure: ${BUILDDIR}/clang.done_dir ${BUILDDIR}/llvm.do
 	      CFLAGS="${CFLAGS}" CXXFLAGS="${CXXFLAGS}" LDFLAGS="${LDFLAGS}"  \
 	    ${CMAKE}                                                          \
 	      "-DLLVM_CONFIG=../llvm/bin/llvm-config"                         \
-	      "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ${CLANG_OPTS} ../../clang
+	      "-DCMAKE_INSTALL_PREFIX=${CURDIR}/${INSTALL_PREFIX}" ${CLANG_OPTS} ${CURDIR}/clang
 	touch "${BUILDDIR}/clang.done_configure"
 
 ${BUILDDIR}/clang.done_build: ${BUILDDIR}/clang.done_configure
@@ -97,7 +97,7 @@ ${BUILDDIR}/libcxx.done_configure: ${BUILDDIR}/libcxx.done_dir ${LIBCXX_ALL_FILE
 	cd "${BUILDDIR}/libcxx" &&                                            \
 	  env CC="${CC}" CXX="${CXX}"                                         \
 	      CFLAGS="${CFLAGS}" CXXFLAGS="${CXXFLAGS}" LDFLAGS="${LDFLAGS}"  \
-	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=../../${INSTALL_PREFIX}" ../../libcxx
+	    ${CMAKE} "-DCMAKE_INSTALL_PREFIX=${CURDIR}/${INSTALL_PREFIX}" ${CURDIR}/libcxx
 	touch "${BUILDDIR}/libcxx.done_configure"
 
 ${BUILDDIR}/libcxx.done_build: ${BUILDDIR}/libcxx.done_configure
