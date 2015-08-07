@@ -8,7 +8,7 @@
 #include <ilias/optional.h>
 
 namespace ilias {
-namespace test {
+namespace json {
 
 
 using namespace std;
@@ -74,7 +74,7 @@ template<typename S, typename Obj> using is_object_emitable =
     typename _is_object_emitable<S, Obj>::type;
 
 
-} /* namespace ilias::test::impl */
+} /* namespace ilias::json::impl */
 
 
 struct begin_json_t {
@@ -495,7 +495,7 @@ auto operator<<(json_ostream<S>&&, const T&) ->
 #endif
 
 
-}} /* namespace ilias::test */
+}} /* namespace ilias::json */
 
 #include "json-inl.h"
 

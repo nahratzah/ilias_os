@@ -5,15 +5,21 @@ namespace ilias {
 namespace test {
 
 
+inline module::module(module&& m) noexcept
+: tests_(move(m.tests_))
+{}
+
+
 template<typename S>
 auto operator<<(json_ostream_object<S>& out, const registry& r) -> void {
-  for (auto m : r.modules_)
+  for (const auto& m : r.modules_)
     out << json_key(m.first) << m.second;
 }
 
 template<typename S>
 auto operator<<(json_ostream_object<S>& out, const module& m) -> void {
-  out << json_key("addr") << reinterpret_cast<uintptr_t>(&m);
+  for (const auto& test : m.tests_)
+    out << json_key(test.name) << test;
 }
 
 

@@ -5,6 +5,7 @@
 #include <ostream>
 #include <string>
 #include <ilias/test/json.h>
+#include <ilias/test/case.h>
 
 namespace ilias {
 namespace test {
@@ -30,12 +31,16 @@ class module final {
   module() noexcept = default;
   module(const module&) = default;
   module& operator=(const module&) = default;
+  module(module&&) noexcept;
 
  public:
   ~module() noexcept = default;
 
  public:
-  module& instance(string_ref);
+  static module& instance(string_ref);
+
+ private:
+  linked_forward_list<testcase> tests_;
 };
 
 class registry final {

@@ -4,7 +4,7 @@
 #include "json.h"
 
 namespace ilias {
-namespace test {
+namespace json {
 namespace impl {
 
 
