@@ -12,6 +12,11 @@
 #include <array>
 #include <string>
 
+#if _ENABLE_TEST_
+# include <sstream>
+# include <ilias/test/registry.h>
+#endif
+
 namespace loader {
 
 /* Provided by linker script. */
@@ -186,6 +191,14 @@ void main() {
               to_string(ilias::cpuid_features()).c_str());
   bios_printf("    extended flags: %s\n",
               to_string(ilias::cpuid_extfeatures()).c_str());
+
+#if _ENABLE_TEST_
+  {
+    std::ostringstream out;
+    out << ilias::test::registry::singleton();
+    bios_put_str(out.str());
+  }
+#endif
 
   /* Initialize export data. */
   ldexport& lde = ldexport_get();
