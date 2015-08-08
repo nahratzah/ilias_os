@@ -63,25 +63,25 @@ static basic_ostream<OChar, OTraits>& emit_json_string(
     const basic_string<SChar, STraits, A>&);
 
 
-template<typename Out, typename String,
-         typename _emit_json_string_rvtype =
-             decltype(emit_json_string(declval<Out>().get_ostream(),
-                                       declval<const String&>()))>
+template<typename, typename, typename = int>
 struct _is_string_emitable;
 
 template<typename Out, typename String> using is_string_emitable =
     typename _is_string_emitable<Out, String>::type;
 
 
-template<typename S, typename Obj,
-         typename _emit_type =
-              decltype(
-                  declval<json_ostream_object<S>&>() <<
-                  declval<const Obj&>())>
+template<typename, typename, typename = int>
+struct _is_array_emitable;
+
+template<typename Out, typename C> using is_array_emitable =
+    typename _is_array_emitable<Out, C>::type;
+
+
+template<typename, typename, typename = int>
 struct _is_object_emitable;
 
-template<typename S, typename Obj> using is_object_emitable =
-    typename _is_object_emitable<S, Obj>::type;
+template<typename Out, typename Obj> using is_object_emitable =
+    typename _is_object_emitable<Out, Obj>::type;
 
 
 } /* namespace ilias::json::impl */
@@ -583,21 +583,14 @@ json_key_t<Char> json_key(const Char*);
 template<typename S, typename T>
 auto operator<<(json_ostream<S>&&, const T&) ->
     enable_if_t<impl::is_object_emitable<json_ostream<S>&, T>::value,
-                typename json_ostream<S>::underlying_stream>;
+                S>;
 
 
-#if 0
 /* Use array serialization if it is defined. */
 template<typename S, typename T>
 auto operator<<(json_ostream<S>&&, const T&) ->
-    enable_if_t<
-        !is_void<
-            decltype(
-                declval<basic_json_ostream_array<
-                    typename json_ostream<S>::basic_stream>&>() <<
-                declval<const T&>())>::value,
-        typename json_ostream<S>::underlying_type>;
-#endif
+    enable_if_t<impl::is_array_emitable<json_ostream<S>&, T>::value,
+                S>;
 
 
 }} /* namespace ilias::json */

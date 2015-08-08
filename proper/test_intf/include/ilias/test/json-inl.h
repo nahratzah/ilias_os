@@ -167,14 +167,65 @@ auto emit_json_string(basic_ostream<OChar, OTraits>& out,
 }
 
 
-template<typename Out, typename String, typename _emit_json_string_rvtype>
+template<typename, typename, typename>
 struct _is_string_emitable {
+  using type = false_type;
+};
+/* Specialize for string emitable types. */
+template<typename Out, typename String>
+struct _is_string_emitable<
+    Out, String,
+    decltype(emit_json_string(declval<Out>().get_ostream(),
+                              declval<const String&>()), 0)> {
   using type = true_type;
 };
 
 
-template<typename S, typename Obj, typename _emit_type>
+template<typename, typename, typename>
+struct _is_array_emitable {
+  using type = false_type;
+};
+/* Specialize for array emitable types. */
+template<typename Out, typename C>
+struct _is_array_emitable<
+    Out, C,
+    decltype(is_base_of<forward_iterator_tag,
+                        typename iterator_traits<
+                            decltype(std::begin(declval<const C&>()))
+                          >::iterator_category
+                       >(),
+             0)> {
+  using iterator = decltype(std::begin(declval<const C&>()));
+  using iter_cat = typename iterator_traits<iterator>::iterator_category;
+  static constexpr bool is_forward_iter_ =
+      is_base_of<std::forward_iterator_tag, iter_cat>::value;
+  static constexpr bool is_string_emitable_ =
+      is_string_emitable<Out, C>::value;
+  static constexpr bool is_object_emitable_ =
+      is_object_emitable<Out, C>::value;
+
+  /*
+   * We want to select all collection types,
+   * except for strings.
+   */
+  using type = integral_constant<bool, (is_forward_iter_ &&
+                                        !is_string_emitable_ &&
+                                        !is_object_emitable_)>;
+};
+
+
+template<typename, typename, typename>
 struct _is_object_emitable {
+  using type = false_type;
+};
+/* Specialize for object emitable types. */
+template<typename Out, typename Obj>
+struct _is_object_emitable<
+    Out, Obj,
+    decltype(declval<json_ostream_object<
+                 typename remove_reference_t<Out>::basic_stream>&>() <<
+                      declval<const Obj&>(),
+             0)> {
   using type = true_type;
 };
 
@@ -743,28 +794,21 @@ auto json_key(const Char* k) ->
 template<typename S, typename T>
 auto operator<<(json_ostream<S>&& out, const T& v) ->
     enable_if_t<impl::is_object_emitable<json_ostream<S>&, T>::value,
-                typename json_ostream<S>::underlying_stream> {
+                S> {
   auto objstream = move(out) << begin_json_object;
   objstream << v;
   return move(objstream) << end_json_object;
 }
 
 
-#if 0
 template<typename S, typename T>
 auto operator<<(json_ostream<S>&& out, const T& v) ->
-    enable_if_t<
-        !is_void<
-            decltype(
-                declval<basic_json_ostream_array<
-                    typename json_ostream<S>::basic_stream>&>() <<
-                declval<const T&>())>::value,
-        typename json_ostream<S>::underlying_type> {
-  auto objstream = out << begin_json_array;
-  out << v;
-  return move(out) << end_json_object;
+    enable_if_t<impl::is_array_emitable<json_ostream<S>&, T>::value,
+                S> {
+  auto arr = move(out) << begin_json_array;
+  arr.put_collection(v);
+  return move(arr) << end_json_array;
 }
-#endif
 
 
 }} /* namespace ilias::test */
