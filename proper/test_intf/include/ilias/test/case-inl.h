@@ -12,7 +12,7 @@ auto operator<<(json_ostream<S>&& out, testcase_result r) ->
     decltype(declval<json_ostream<S>>()
              <<
              to_string(declval<testcase_result>())) {
-  return out << to_string(r);
+  return move(out) << to_string(r);
 }
 
 
