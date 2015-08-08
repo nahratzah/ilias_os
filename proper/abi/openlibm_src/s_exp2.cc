@@ -376,14 +376,14 @@ double exp2(double x) noexcept {
   t = get<0>(tbl[i0]);  /* exp2t[i0] */
   z -= get<1>(tbl[i0]);  /* eps[i0]   */
   double twopk, twopkp1000;
-  if (k >= -1021 << 20)
+  if (k >= -1070596096)  // -1070596096 == -1021 << 20
     twopk = set_double_from_words(0x3ff00000 + k, 0);
   else
     twopkp1000 = set_double_from_words(0x3ff00000 + k + (1000 << 20), 0);
   const double r = t + t * z * (P1 + z * (P2 + z * (P3 + z * (P4 + z * P5))));
 
   /* Scale by 2**(k>>20). */
-  if (k >= -1021 << 20) {
+  if (k >= -1070596096) {  // -1070596096 == -1021 << 20
     if (k == 1024 << 20)
       return (r * 2.0 * 0x1p1023);
     return (r * twopk);
